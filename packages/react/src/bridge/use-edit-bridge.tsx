@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getBlockSchemas } from "../registry";
 import { PROTOCOL_VERSION, type BlockRect } from "./protocol";
-import { normalizeOrigin, parseEditorMessage, postToEditor } from "./messages";
+import { parseEditorMessage, postToEditor } from "./messages";
 
 export interface EditBridgeConfig {
   editorOrigin: string;
@@ -38,10 +38,15 @@ export function useEditBridge(
   const [patches, setPatches] = useState<PatchMap>({});
   const [selected, setSelected] = useState<string | null>(null);
 
+  useEffect(() => {
+    setPatches({});
+    setSelected(null);
+  }, [blocks]);
+
   const sendReady = useCallback(() => {
     if (typeof window === "undefined") return;
     try {
-      postToEditor(window.parent, normalizeOrigin(config.editorOrigin), {
+      postToEditor(window.parent, config.editorOrigin, {
         type: "cmssy:ready",
         protocolVersion: PROTOCOL_VERSION,
         blocks: blocks.map((b) => ({

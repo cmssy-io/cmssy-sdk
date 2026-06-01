@@ -101,6 +101,33 @@ describe("edit bridge", () => {
     expect(container.textContent).not.toContain("Hacked");
   });
 
+  it("resets patches when navigating to a different page (no stale overlay)", async () => {
+    const pageA = {
+      id: "pA",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "A", sub: "1" } } },
+      ],
+    };
+    const pageB = {
+      id: "pB",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "B", sub: "2" } } },
+      ],
+    };
+    const { container, rerender } = render(
+      <CmssyPage page={pageA} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
+    });
+    expect(container.textContent).toContain("Edited|1");
+    await act(async () => {
+      rerender(<CmssyPage page={pageB} locale="en" edit={{ editorOrigin }} />);
+    });
+    expect(container.textContent).toContain("B|2");
+    expect(container.textContent).not.toContain("Edited");
+  });
+
   it("does not crash the host when editorOrigin is invalid", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { container } = render(
