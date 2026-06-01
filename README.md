@@ -37,6 +37,8 @@ import "@/cmssy/blocks"; // runs registerComponent(...) side effects
 export default createCmssyPage(cmssy);
 ```
 
+The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then mounts the edit bridge and serves draft content using your server-side `draftSecret` (no secret reaches the editor). Without the flag (or draft mode) it serves published content.
+
 ```ts
 // app/api/draft/route.ts (Node.js runtime)
 import { createDraftRoute } from "@cmssy/next";
