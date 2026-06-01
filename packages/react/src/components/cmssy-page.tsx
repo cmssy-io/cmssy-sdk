@@ -53,7 +53,7 @@ function EditableBlocks({
   defaultLocale,
   edit,
 }: EditableBlocksProps) {
-  const { patches } = useEditBridge(page.blocks, edit);
+  const { patches } = useEditBridge(page, edit);
   return (
     <>
       {page.blocks.map((block) => (
