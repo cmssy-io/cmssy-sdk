@@ -63,6 +63,21 @@ export function parseEditorMessage(
       return data.protocolVersion === PROTOCOL_VERSION
         ? { type: "cmssy:parent-ready", protocolVersion: PROTOCOL_VERSION }
         : null;
+    case "cmssy:insert":
+      return typeof data.blockId === "string" &&
+        typeof data.blockType === "string" &&
+        isObject(data.content) &&
+        typeof data.index === "number" &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:insert",
+            protocolVersion: PROTOCOL_VERSION,
+            blockId: data.blockId,
+            blockType: data.blockType,
+            content: data.content,
+            index: data.index,
+          }
+        : null;
     default:
       return null;
   }
