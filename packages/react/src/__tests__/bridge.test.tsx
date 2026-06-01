@@ -101,6 +101,15 @@ describe("edit bridge", () => {
     expect(container.textContent).not.toContain("Hacked");
   });
 
+  it("does not crash the host when editorOrigin is invalid", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(
+      <CmssyPage page={page} locale="en" edit={{ editorOrigin: "not-an-origin" }} />,
+    );
+    expect(container.textContent).toContain("Hello|World");
+    warn.mockRestore();
+  });
+
   it("does not mount the bridge without edit config", () => {
     const postSpy = vi.spyOn(window.parent, "postMessage");
     render(<CmssyPage page={page} locale="en" />);

@@ -43,7 +43,11 @@ export type {
   EditBridgeState,
   PatchMap,
 } from "./bridge/use-edit-bridge";
-export { postToEditor, parseEditorMessage } from "./bridge/messages";
+export {
+  postToEditor,
+  parseEditorMessage,
+  normalizeOrigin,
+} from "./bridge/messages";
 export type { PostTarget } from "./bridge/messages";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";

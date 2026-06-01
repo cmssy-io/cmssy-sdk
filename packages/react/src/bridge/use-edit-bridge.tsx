@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getBlockSchemas } from "../registry";
 import { PROTOCOL_VERSION, type BlockRect } from "./protocol";
-import { parseEditorMessage, postToEditor } from "./messages";
+import { normalizeOrigin, parseEditorMessage, postToEditor } from "./messages";
 
 export interface EditBridgeConfig {
   editorOrigin: string;
@@ -40,16 +40,22 @@ export function useEditBridge(
 
   const sendReady = useCallback(() => {
     if (typeof window === "undefined") return;
-    postToEditor(window.parent, config.editorOrigin, {
-      type: "cmssy:ready",
-      protocolVersion: PROTOCOL_VERSION,
-      blocks: blocks.map((b) => ({
-        id: b.id,
-        type: b.type,
-        bounds: rectOf(b.id),
-      })),
-      schemas: getBlockSchemas(),
-    });
+    try {
+      postToEditor(window.parent, normalizeOrigin(config.editorOrigin), {
+        type: "cmssy:ready",
+        protocolVersion: PROTOCOL_VERSION,
+        blocks: blocks.map((b) => ({
+          id: b.id,
+          type: b.type,
+          bounds: rectOf(b.id),
+        })),
+        schemas: getBlockSchemas(),
+      });
+    } catch (error) {
+      if (typeof console !== "undefined") {
+        console.warn("[cmssy] failed to post to editor", error);
+      }
+    }
   }, [blocks, config.editorOrigin]);
 
   useEffect(() => {

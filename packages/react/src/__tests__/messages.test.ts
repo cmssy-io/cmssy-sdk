@@ -15,6 +15,20 @@ describe("parseEditorMessage", () => {
     ).toBeNull();
   });
 
+  it("normalizes the expected origin (path/trailing slash) before comparing", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
+        ORIGIN,
+        `${ORIGIN}/editor/`,
+      ),
+    ).toEqual({
+      type: "cmssy:select",
+      blockId: "b",
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
   it("accepts a select message with the matching protocol version", () => {
     expect(
       parseEditorMessage(
