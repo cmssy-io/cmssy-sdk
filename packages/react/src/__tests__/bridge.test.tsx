@@ -71,7 +71,9 @@ describe("edit bridge", () => {
   });
 
   it("posts cmssy:ready (with schemas) on mount", () => {
-    render(<CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />);
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:ready",
@@ -83,13 +85,18 @@ describe("edit bridge", () => {
   });
 
   it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
-    render(<CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />);
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
     expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
           origin: editorOrigin,
-          data: { type: "cmssy:parent-ready", protocolVersion: PROTOCOL_VERSION },
+          data: {
+            type: "cmssy:parent-ready",
+            protocolVersion: PROTOCOL_VERSION,
+          },
         }),
       );
     });
@@ -114,7 +121,9 @@ describe("edit bridge", () => {
     );
     expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
     await act(async () => {
-      rerender(<CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />);
+      rerender(
+        <CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />,
+      );
     });
     expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
   });
@@ -135,7 +144,9 @@ describe("edit bridge", () => {
       <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
-      window.dispatchEvent(patchEvent("https://evil.com", { heading: "Hacked" }));
+      window.dispatchEvent(
+        patchEvent("https://evil.com", { heading: "Hacked" }),
+      );
     });
     expect(container.textContent).toContain("Hello|World");
     expect(container.textContent).not.toContain("Hacked");
@@ -188,7 +199,9 @@ describe("edit bridge", () => {
     });
     expect(container.textContent).toContain("Edited|1");
     await act(async () => {
-      rerender(<CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />);
+      rerender(
+        <CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />,
+      );
     });
     expect(container.textContent).toContain("B|2");
     expect(container.textContent).not.toContain("Edited");
@@ -216,10 +229,66 @@ describe("edit bridge", () => {
     });
     expect(container.textContent).toContain("Edited|1");
     await act(async () => {
-      rerender(<CmssyEditablePage page={after} locale="en" edit={{ editorOrigin }} />);
+      rerender(
+        <CmssyEditablePage page={after} locale="en" edit={{ editorOrigin }} />,
+      );
     });
     expect(container.textContent).toContain("X|Y");
     expect(container.textContent).not.toContain("Edited");
+  });
+
+  it("renders a block inserted via cmssy:insert at the given index, before the base block", async () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:insert",
+            blockId: "new-1",
+            blockType: "hero",
+            content: { heading: "Fresh", sub: "Inserted" },
+            index: 0,
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    const headings = Array.from(container.querySelectorAll("h1")).map(
+      (h) => h.textContent,
+    );
+    expect(headings).toEqual(["Fresh|Inserted", "Hello|World"]);
+  });
+
+  it("live-patches an inserted block by its editor-minted id", async () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:insert",
+            blockId: "new-1",
+            blockType: "hero",
+            content: { heading: "Fresh", sub: "Inserted" },
+            index: 1,
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent(editorOrigin, { heading: "Edited" }, "new-1"),
+      );
+    });
+    expect(container.textContent).toContain("Edited|Inserted");
   });
 
   it("does not post or accept patches when not framed (parent === self)", async () => {
@@ -242,7 +311,11 @@ describe("edit bridge", () => {
     });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { container } = render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin: "not-an-origin" }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin: "not-an-origin" }}
+      />,
     );
     expect(container.textContent).toContain("Hello|World");
     warn.mockRestore();
