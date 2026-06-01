@@ -87,12 +87,38 @@ describe("createCmssyPage", () => {
     });
   });
 
+  it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
+    });
+    expect(element.type).toBe(CmssyEditablePage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: CONFIG.draftSecret,
+    });
+  });
+
   it("stays published when cmssyEdit is absent", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG);
     const element = await Page({
       params: params(["about"]),
       searchParams: searchParams({}),
+    });
+    expect(element.type).toBe(CmssyPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
+  });
+
+  it("stays published when an array cmssyEdit contains no '1'", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
     });
     expect(element.type).toBe(CmssyPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {

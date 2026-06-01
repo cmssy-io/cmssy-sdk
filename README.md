@@ -55,12 +55,22 @@ import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  if (request.cookies.has("__prerender_bypass")) {
+  const editMode =
+    request.cookies.has("__prerender_bypass") ||
+    request.nextUrl.searchParams.getAll("cmssyEdit").includes("1");
+  if (editMode) {
     applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
   }
   return response;
 }
 ```
+
+> **Security.** `?cmssyEdit=1` is a developer-controllable flag, so any request can
+> opt into the edit-mode CSP. This is safe by default - `frame-ancestors` only ever
+> _restricts_ framing to your trusted `editorOrigin` (set it to a concrete origin, never
+> `*`), and `applyCmssyCsp` merges into any existing CSP rather than weakening it. For
+> production, gate the edit path behind a server-set capability (auth/session cookie or a
+> signed token) and scope this middleware with `config.matcher` to editable routes only.
 
 ## Status
 
