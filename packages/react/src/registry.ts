@@ -16,7 +16,14 @@ export interface BlockRegistration {
   schema: BlockSchema;
 }
 
-const registry = new Map<string, BlockRegistration>();
+const REGISTRY_KEY = "__cmssy_block_registry__";
+type RegistryGlobal = typeof globalThis & {
+  [REGISTRY_KEY]?: Map<string, BlockRegistration>;
+};
+const registryGlobal = globalThis as RegistryGlobal;
+const registry =
+  registryGlobal[REGISTRY_KEY] ??
+  (registryGlobal[REGISTRY_KEY] = new Map<string, BlockRegistration>());
 
 export function registerComponent<C extends Record<string, unknown>>(
   component: ComponentType<{ content: C }>,
