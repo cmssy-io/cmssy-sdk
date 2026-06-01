@@ -88,6 +88,12 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
   });
 
+  it("rejects a wildcard editorOrigin for the bridge", () => {
+    expect(() => createCmssyPage({ ...CONFIG, editorOrigin: "*" })).toThrow(
+      /not allowed for the live-edit bridge/,
+    );
+  });
+
   it("resolves the root path for the index route", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG);

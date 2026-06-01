@@ -63,5 +63,11 @@ function resolveBridgeOrigin(editorOrigin: string | string[]): string {
       "[cmssy] multiple editorOrigins configured; the live-edit bridge uses only the first",
     );
   }
-  return toCspOrigin(origins[0]!.trim());
+  const origin = toCspOrigin(origins[0]!.trim());
+  if (origin === "*") {
+    throw new Error(
+      "cmssy: editorOrigin '*' is not allowed for the live-edit bridge; set the concrete editor origin (e.g. https://app.cmssy.io)",
+    );
+  }
+  return origin;
 }
