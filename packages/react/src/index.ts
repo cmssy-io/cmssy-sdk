@@ -41,6 +41,7 @@ export { useEditBridge } from "./bridge/use-edit-bridge";
 export type {
   EditBridgeConfig,
   EditBridgeState,
+  PatchMap,
 } from "./bridge/use-edit-bridge";
 export { postToEditor, parseEditorMessage } from "./bridge/messages";
 export type { PostTarget } from "./bridge/messages";

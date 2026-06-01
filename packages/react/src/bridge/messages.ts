@@ -30,8 +30,13 @@ export function parseEditorMessage(
 
   switch (data.type) {
     case "cmssy:select":
-      return typeof data.blockId === "string"
-        ? { type: "cmssy:select", blockId: data.blockId }
+      return typeof data.blockId === "string" &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:select",
+            protocolVersion: PROTOCOL_VERSION,
+            blockId: data.blockId,
+          }
         : null;
     case "cmssy:patch":
       return typeof data.blockId === "string" &&
