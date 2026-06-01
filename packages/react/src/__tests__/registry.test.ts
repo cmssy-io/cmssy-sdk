@@ -73,6 +73,15 @@ describe("registry", () => {
     expect(Object.keys(schemas).sort()).toEqual(["a", "b"]);
     expect(schemas.a?.t?.type).toBe("singleLine");
   });
+
+  it("backs the registry with a single globalThis Map so the index and client bundles share one instance", () => {
+    registerComponent(Dummy, { type: "shared", props: {} });
+    const store = (globalThis as Record<string, unknown>)[
+      "__cmssy_block_registry__"
+    ] as Map<string, unknown> | undefined;
+    expect(store).toBeInstanceOf(Map);
+    expect(store?.has("shared")).toBe(true);
+  });
 });
 
 describe("protocol", () => {
