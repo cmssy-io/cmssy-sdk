@@ -23,6 +23,12 @@ export type {
   ParentReadyMessage,
   EditorToAppMessage,
 } from "./bridge/protocol";
+export {
+  postToEditor,
+  parseEditorMessage,
+  normalizeOrigin,
+} from "./bridge/messages";
+export type { PostTarget } from "./bridge/messages";
 
 export { fetchPage, normalizeSlug } from "./content/content-client";
 export type {
@@ -37,18 +43,6 @@ export { getBlockContentForLanguage } from "./content/get-block-content";
 
 export { CmssyPage } from "./components/cmssy-page";
 export type { CmssyPageProps } from "./components/cmssy-page";
-export { useEditBridge } from "./bridge/use-edit-bridge";
-export type {
-  EditBridgeConfig,
-  EditBridgeState,
-  PatchMap,
-} from "./bridge/use-edit-bridge";
-export {
-  postToEditor,
-  parseEditorMessage,
-  normalizeOrigin,
-} from "./bridge/messages";
-export type { PostTarget } from "./bridge/messages";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
 export { UnknownBlock } from "./components/unknown-block";

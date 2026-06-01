@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyPage } from "../components/cmssy-page";
+import { CmssyEditablePage } from "../components/editable-page";
 import { registerComponent, clearRegistry } from "../registry";
 import { fields } from "../fields";
 import { PROTOCOL_VERSION } from "../bridge/protocol";
@@ -70,7 +71,7 @@ describe("edit bridge", () => {
   });
 
   it("posts cmssy:ready (with schemas) on mount", () => {
-    render(<CmssyPage page={page} locale="en" edit={{ editorOrigin }} />);
+    render(<CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />);
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:ready",
@@ -82,7 +83,7 @@ describe("edit bridge", () => {
   });
 
   it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
-    render(<CmssyPage page={page} locale="en" edit={{ editorOrigin }} />);
+    render(<CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />);
     expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
     await act(async () => {
       window.dispatchEvent(
@@ -109,18 +110,18 @@ describe("edit bridge", () => {
       ],
     };
     const { rerender } = render(
-      <CmssyPage page={pageA} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={pageA} locale="en" edit={{ editorOrigin }} />,
     );
     expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
     await act(async () => {
-      rerender(<CmssyPage page={pageB} locale="en" edit={{ editorOrigin }} />);
+      rerender(<CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />);
     });
     expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
   });
 
   it("live-patches a block on cmssy:patch, merging over the base content", async () => {
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     expect(container.textContent).toContain("Hello|World");
     await act(async () => {
@@ -131,7 +132,7 @@ describe("edit bridge", () => {
 
   it("ignores a patch from a wrong origin", async () => {
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
       window.dispatchEvent(patchEvent("https://evil.com", { heading: "Hacked" }));
@@ -142,7 +143,7 @@ describe("edit bridge", () => {
 
   it("ignores a patch whose source is not window.parent", async () => {
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
       window.dispatchEvent(
@@ -155,7 +156,7 @@ describe("edit bridge", () => {
 
   it("ignores a patch for an unknown block id", async () => {
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
       window.dispatchEvent(
@@ -180,14 +181,14 @@ describe("edit bridge", () => {
       ],
     };
     const { container, rerender } = render(
-      <CmssyPage page={pageA} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={pageA} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
     expect(container.textContent).toContain("Edited|1");
     await act(async () => {
-      rerender(<CmssyPage page={pageB} locale="en" edit={{ editorOrigin }} />);
+      rerender(<CmssyEditablePage page={pageB} locale="en" edit={{ editorOrigin }} />);
     });
     expect(container.textContent).toContain("B|2");
     expect(container.textContent).not.toContain("Edited");
@@ -208,14 +209,14 @@ describe("edit bridge", () => {
       ],
     };
     const { container, rerender } = render(
-      <CmssyPage page={before} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={before} locale="en" edit={{ editorOrigin }} />,
     );
     await act(async () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
     expect(container.textContent).toContain("Edited|1");
     await act(async () => {
-      rerender(<CmssyPage page={after} locale="en" edit={{ editorOrigin }} />);
+      rerender(<CmssyEditablePage page={after} locale="en" edit={{ editorOrigin }} />);
     });
     expect(container.textContent).toContain("X|Y");
     expect(container.textContent).not.toContain("Edited");
@@ -225,7 +226,7 @@ describe("edit bridge", () => {
     setParent(window);
     const postSpy = vi.spyOn(window, "postMessage");
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     expect(postSpy).not.toHaveBeenCalled();
     await act(async () => {
@@ -241,13 +242,13 @@ describe("edit bridge", () => {
     });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin: "not-an-origin" }} />,
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin: "not-an-origin" }} />,
     );
     expect(container.textContent).toContain("Hello|World");
     warn.mockRestore();
   });
 
-  it("does not mount the bridge without edit config", () => {
+  it("the server CmssyPage does not mount the bridge", () => {
     render(<CmssyPage page={page} locale="en" />);
     expect(mockParent.postMessage).not.toHaveBeenCalled();
   });
