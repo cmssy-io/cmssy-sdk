@@ -1,5 +1,9 @@
-import type { CmssyPageData } from "../content/content-client";
-import { useEditBridge, type EditBridgeConfig } from "../bridge/use-edit-bridge";
+import { useMemo } from "react";
+import type { CmssyPageData, RawBlock } from "../content/content-client";
+import {
+  useEditBridge,
+  type EditBridgeConfig,
+} from "../bridge/use-edit-bridge";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
@@ -39,10 +43,25 @@ function EditableBlocks({
   defaultLocale,
   edit,
 }: EditableBlocksProps) {
-  const { patches } = useEditBridge(page, edit);
+  const { patches, inserted } = useEditBridge(page, edit);
+
+  const blocks = useMemo<RawBlock[]>(() => {
+    const merged = [...page.blocks];
+    const sorted = [...inserted].sort((a, b) => a.index - b.index);
+    for (const ins of sorted) {
+      const at = Math.max(0, Math.min(ins.index, merged.length));
+      merged.splice(at, 0, {
+        id: ins.blockId,
+        type: ins.blockType,
+        content: ins.content,
+      });
+    }
+    return merged;
+  }, [page.blocks, inserted]);
+
   return (
     <>
-      {page.blocks.map((block) => (
+      {blocks.map((block) => (
         <CmssyBlock
           key={block.id}
           block={block}
