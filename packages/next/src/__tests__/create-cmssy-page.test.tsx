@@ -38,6 +38,10 @@ function params(path?: string[]) {
   return Promise.resolve({ path });
 }
 
+function searchParams(sp: Record<string, string | string[]> = {}) {
+  return Promise.resolve(sp);
+}
+
 describe("createCmssyPage", () => {
   beforeEach(() => {
     draftEnabled = false;
@@ -67,6 +71,32 @@ describe("createCmssyPage", () => {
     });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
+    });
+  });
+
+  it("enters edit mode via the cmssyEdit query flag without draft mode", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: "1" }),
+    });
+    expect(element.type).toBe(CmssyEditablePage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: CONFIG.draftSecret,
+    });
+  });
+
+  it("stays published when cmssyEdit is absent", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({}),
+    });
+    expect(element.type).toBe(CmssyPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
     });
   });
 
