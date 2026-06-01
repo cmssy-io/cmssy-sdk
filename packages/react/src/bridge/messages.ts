@@ -8,6 +8,15 @@ export interface PostTarget {
   postMessage: (message: unknown, targetOrigin: string) => void;
 }
 
+export function normalizeOrigin(origin: string): string {
+  if (origin === "*") return "*";
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return origin;
+  }
+}
+
 export function postToEditor(
   target: PostTarget,
   editorOrigin: string,
@@ -25,7 +34,8 @@ export function parseEditorMessage(
   origin: string,
   expectedOrigin: string,
 ): EditorToAppMessage | null {
-  if (expectedOrigin !== "*" && origin !== expectedOrigin) return null;
+  const expected = normalizeOrigin(expectedOrigin);
+  if (expected !== "*" && origin !== expected) return null;
   if (!isObject(data)) return null;
 
   switch (data.type) {
