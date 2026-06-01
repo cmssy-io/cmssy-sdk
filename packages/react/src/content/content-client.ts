@@ -3,9 +3,20 @@ export interface CmssyClientConfig {
   workspaceSlug: string;
 }
 
+export interface FetchLikeResponse {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+}
+
+export type FetchLike = (
+  url: string,
+  init: { method: string; headers: Record<string, string>; body: string },
+) => Promise<FetchLikeResponse>;
+
 export interface FetchPageOptions {
   previewSecret?: string;
-  fetch?: typeof fetch;
+  fetch?: FetchLike;
 }
 
 export interface RawBlock {
@@ -42,7 +53,8 @@ export async function fetchPage(
   options: FetchPageOptions = {},
 ): Promise<CmssyPageData | null> {
   const slug = normalizeSlug(path);
-  const doFetch = options.fetch ?? globalThis.fetch;
+  const doFetch =
+    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
   if (typeof doFetch !== "function") {
     throw new Error(
       "cmssy: no fetch implementation available - pass options.fetch",

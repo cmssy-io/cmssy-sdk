@@ -28,6 +28,8 @@ export { fetchPage, normalizeSlug } from "./content/content-client";
 export type {
   CmssyClientConfig,
   FetchPageOptions,
+  FetchLike,
+  FetchLikeResponse,
   RawBlock,
   CmssyPageData,
 } from "./content/content-client";

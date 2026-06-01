@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { getBlockContentForLanguage } from "../content/get-block-content";
-import { normalizeSlug, fetchPage } from "../content/content-client";
+import {
+  normalizeSlug,
+  fetchPage,
+  type FetchLike,
+} from "../content/content-client";
 
 describe("getBlockContentForLanguage", () => {
   it("returns flat legacy content unchanged", () => {
@@ -66,12 +70,12 @@ describe("normalizeSlug", () => {
 describe("fetchPage", () => {
   const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
 
-  function mockFetch(payload: unknown, ok = true): typeof fetch {
-    return vi.fn(async () => ({
+  function mockFetch(payload: unknown, ok = true): FetchLike {
+    return async () => ({
       ok,
       status: ok ? 200 : 500,
       json: async () => payload,
-    })) as unknown as typeof fetch;
+    });
   }
 
   it("returns publishedBlocks on an open read", async () => {
@@ -105,7 +109,7 @@ describe("fetchPage", () => {
 
   it("treats an empty previewSecret as published (sends null, no draft)", async () => {
     let sentBody: { variables: { previewSecret: unknown } } | undefined;
-    const fetchImpl = vi.fn(async (_url: string, init: { body: string }) => {
+    const fetchImpl: FetchLike = async (_url, init) => {
       sentBody = JSON.parse(init.body);
       return {
         ok: true,
@@ -120,7 +124,7 @@ describe("fetchPage", () => {
           },
         }),
       };
-    }) as unknown as typeof globalThis.fetch;
+    };
     const page = await fetchPage(config, "/", {
       fetch: fetchImpl,
       previewSecret: "",
