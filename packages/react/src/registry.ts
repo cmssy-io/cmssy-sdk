@@ -18,8 +18,8 @@ export interface BlockRegistration {
 
 const registry = new Map<string, BlockRegistration>();
 
-export function registerComponent(
-  component: ComponentType<{ content: Record<string, unknown> }>,
+export function registerComponent<C extends Record<string, unknown>>(
+  component: ComponentType<{ content: C }>,
   options: RegisterOptions,
 ): void {
   const schema: BlockSchema = {};
@@ -30,7 +30,9 @@ export function registerComponent(
     type: options.type,
     label: options.label ?? options.type,
     category: options.category,
-    component,
+    component: component as ComponentType<{
+      content: Record<string, unknown>;
+    }>,
     schema,
   });
 }

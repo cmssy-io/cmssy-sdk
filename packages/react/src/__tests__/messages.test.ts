@@ -5,10 +5,10 @@ import { PROTOCOL_VERSION } from "../bridge/protocol";
 const ORIGIN = "https://editor.cmssy.io";
 
 describe("parseEditorMessage", () => {
-  it("rejects a message from the wrong origin", () => {
+  it("rejects an otherwise-valid message from the wrong origin", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b" },
+        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
         "https://evil.com",
         ORIGIN,
       ),
