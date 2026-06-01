@@ -129,9 +129,19 @@ describe("fetchPage", () => {
     expect(page?.blocks[0]?.id).toBe("b1");
   });
 
-  it("returns null for a missing page", async () => {
+  it("returns null for a genuinely missing page", async () => {
     const fetch = mockFetch({ data: { publicPage: null } });
     expect(await fetchPage(config, "/missing", { fetch })).toBeNull();
+  });
+
+  it("throws on GraphQL errors (not a 404)", async () => {
+    const fetch = mockFetch({
+      data: null,
+      errors: [{ message: "Workspace not found" }],
+    });
+    await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
+      /Workspace not found/,
+    );
   });
 
   it("throws on a non-ok response", async () => {

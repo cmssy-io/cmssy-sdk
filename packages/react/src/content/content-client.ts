@@ -72,7 +72,14 @@ export async function fetchPage(
         publishedBlocks?: RawBlock[] | null;
       } | null;
     };
+    errors?: Array<{ message?: string }>;
   };
+  if (json.errors && json.errors.length > 0) {
+    const message = json.errors
+      .map((error) => error.message ?? "GraphQL error")
+      .join("; ");
+    throw new Error(`cmssy: page fetch error - ${message}`);
+  }
   const page = json.data?.publicPage;
   if (!page) return null;
   const draft = previewSecret !== null;
