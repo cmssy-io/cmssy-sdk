@@ -4,6 +4,7 @@ import {
   getRegisteredComponent,
   getBlockSchemas,
   clearRegistry,
+  REGISTRY_KEY,
 } from "../registry";
 import { fields } from "../fields";
 import { PROTOCOL_VERSION, isProtocolCompatible } from "../bridge/protocol";
@@ -72,6 +73,15 @@ describe("registry", () => {
     const schemas = getBlockSchemas();
     expect(Object.keys(schemas).sort()).toEqual(["a", "b"]);
     expect(schemas.a?.t?.type).toBe("singleLine");
+  });
+
+  it("backs the registry with a single globalThis Map so the index and client bundles share one instance", () => {
+    registerComponent(Dummy, { type: "shared", props: {} });
+    const store = (globalThis as Record<string, unknown>)[REGISTRY_KEY] as
+      | Map<string, unknown>
+      | undefined;
+    expect(store).toBeInstanceOf(Map);
+    expect(store?.has("shared")).toBe(true);
   });
 });
 
