@@ -37,6 +37,13 @@ export { getBlockContentForLanguage } from "./content/get-block-content";
 
 export { CmssyPage } from "./components/cmssy-page";
 export type { CmssyPageProps } from "./components/cmssy-page";
+export { useEditBridge } from "./bridge/use-edit-bridge";
+export type {
+  EditBridgeConfig,
+  EditBridgeState,
+} from "./bridge/use-edit-bridge";
+export { postToEditor, parseEditorMessage } from "./bridge/messages";
+export type { PostTarget } from "./bridge/messages";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
 export { UnknownBlock } from "./components/unknown-block";

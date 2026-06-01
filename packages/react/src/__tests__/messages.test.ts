@@ -1,0 +1,89 @@
+import { describe, it, expect, vi } from "vitest";
+import { parseEditorMessage, postToEditor } from "../bridge/messages";
+import { PROTOCOL_VERSION } from "../bridge/protocol";
+
+const ORIGIN = "https://editor.cmssy.io";
+
+describe("parseEditorMessage", () => {
+  it("rejects a message from the wrong origin", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:select", blockId: "b" },
+        "https://evil.com",
+        ORIGIN,
+      ),
+    ).toBeNull();
+  });
+
+  it("accepts a select message", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:select", blockId: "b" },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({ type: "cmssy:select", blockId: "b" });
+  });
+
+  it("accepts a patch with the matching protocol version", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:patch",
+          blockId: "b",
+          content: { x: 1 },
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:patch",
+      blockId: "b",
+      content: { x: 1 },
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a patch with a wrong protocol version", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:patch", blockId: "b", content: {}, protocolVersion: 999 },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects malformed or unknown messages", () => {
+    expect(
+      parseEditorMessage({ type: "cmssy:patch", blockId: "b" }, ORIGIN, ORIGIN),
+    ).toBeNull();
+    expect(parseEditorMessage("nope", ORIGIN, ORIGIN)).toBeNull();
+    expect(parseEditorMessage({ type: "other" }, ORIGIN, ORIGIN)).toBeNull();
+  });
+
+  it("honors a wildcard expected origin", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:select", blockId: "b" },
+        "https://any.com",
+        "*",
+      ),
+    ).toEqual({ type: "cmssy:select", blockId: "b" });
+  });
+});
+
+describe("postToEditor", () => {
+  it("posts the message to the target with the editor origin", () => {
+    const target = { postMessage: vi.fn() };
+    const message = {
+      type: "cmssy:ready" as const,
+      protocolVersion: PROTOCOL_VERSION,
+      blocks: [],
+      schemas: {},
+    };
+    postToEditor(target, ORIGIN, message);
+    expect(target.postMessage).toHaveBeenCalledWith(message, ORIGIN);
+  });
+});
