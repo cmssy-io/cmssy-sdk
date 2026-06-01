@@ -18,6 +18,10 @@ interface CatchAllProps {
 
 const EDIT_QUERY_PARAM = "cmssyEdit";
 
+function hasEditFlag(value: string | string[] | undefined): boolean {
+  return Array.isArray(value) ? value.includes("1") : value === "1";
+}
+
 export function createCmssyPage(config: CmssyNextConfig) {
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
@@ -33,7 +37,7 @@ export function createCmssyPage(config: CmssyNextConfig) {
     const { path } = await params;
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
-    const editMode = isEnabled || query[EDIT_QUERY_PARAM] === "1";
+    const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
     const locale = config.resolveLocale
       ? await config.resolveLocale()
       : defaultLocale;
