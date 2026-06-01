@@ -21,7 +21,7 @@ interface BridgePage {
 
 function rectOf(blockId: string): BlockRect {
   if (typeof document === "undefined") return { x: 0, y: 0, width: 0, height: 0 };
-  for (const el of Array.from(document.querySelectorAll("[data-block-id]"))) {
+  for (const el of document.querySelectorAll("[data-block-id]")) {
     if (el.getAttribute("data-block-id") === blockId) {
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, width: r.width, height: r.height };
@@ -99,7 +99,7 @@ export function useEditBridge(
     window.addEventListener("message", handler);
     sendReady();
     return () => window.removeEventListener("message", handler);
-  }, [config.editorOrigin, blocksKey]);
+  }, [config.editorOrigin, pageId, blocksKey]);
 
   return { patches, selected };
 }

@@ -95,6 +95,29 @@ describe("edit bridge", () => {
     expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
   });
 
+  it("re-sends cmssy:ready when navigating to a page with the same block signature", async () => {
+    const pageA = {
+      id: "pA",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "A", sub: "1" } } },
+      ],
+    };
+    const pageB = {
+      id: "pB",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "B", sub: "2" } } },
+      ],
+    };
+    const { rerender } = render(
+      <CmssyPage page={pageA} locale="en" edit={{ editorOrigin }} />,
+    );
+    expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      rerender(<CmssyPage page={pageB} locale="en" edit={{ editorOrigin }} />);
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
+  });
+
   it("live-patches a block on cmssy:patch, merging over the base content", async () => {
     const { container } = render(
       <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
