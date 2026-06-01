@@ -16,7 +16,7 @@ export interface BlockRegistration {
   schema: BlockSchema;
 }
 
-const REGISTRY_KEY = "__cmssy_block_registry__";
+export const REGISTRY_KEY = "__cmssy_block_registry__";
 type RegistryGlobal = typeof globalThis & {
   [REGISTRY_KEY]?: Map<string, BlockRegistration>;
 };
