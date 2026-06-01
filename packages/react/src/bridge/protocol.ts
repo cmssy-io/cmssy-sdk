@@ -81,11 +81,18 @@ export interface InsertMessage {
   index: number;
 }
 
+export interface ReorderMessage {
+  type: "cmssy:reorder";
+  protocolVersion: number;
+  blockIds: string[];
+}
+
 export type EditorToAppMessage =
   | SelectMessage
   | PatchMessage
   | ParentReadyMessage
-  | InsertMessage;
+  | InsertMessage
+  | ReorderMessage;
 
 export function isProtocolCompatible(version: number): boolean {
   return version === PROTOCOL_VERSION;
