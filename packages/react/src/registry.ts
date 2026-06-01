@@ -21,9 +21,15 @@ type RegistryGlobal = typeof globalThis & {
   [REGISTRY_KEY]?: Map<string, BlockRegistration>;
 };
 const registryGlobal = globalThis as RegistryGlobal;
-const registry =
-  registryGlobal[REGISTRY_KEY] ??
-  (registryGlobal[REGISTRY_KEY] = new Map<string, BlockRegistration>());
+if (!registryGlobal[REGISTRY_KEY]) {
+  Object.defineProperty(registryGlobal, REGISTRY_KEY, {
+    value: new Map<string, BlockRegistration>(),
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  });
+}
+const registry = registryGlobal[REGISTRY_KEY] as Map<string, BlockRegistration>;
 
 export function registerComponent<C extends Record<string, unknown>>(
   component: ComponentType<{ content: C }>,
