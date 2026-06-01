@@ -9,9 +9,14 @@ interface CatchAllParams {
   path?: string[];
 }
 
+type SearchParams = Record<string, string | string[] | undefined>;
+
 interface CatchAllProps {
   params: Promise<CatchAllParams>;
+  searchParams?: Promise<SearchParams>;
 }
+
+const EDIT_QUERY_PARAM = "cmssyEdit";
 
 export function createCmssyPage(config: CmssyNextConfig) {
   const clientConfig: CmssyClientConfig = {
@@ -21,22 +26,27 @@ export function createCmssyPage(config: CmssyNextConfig) {
   const defaultLocale = config.defaultLocale ?? "en";
   const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
 
-  return async function CmssyCatchAllPage({ params }: CatchAllProps) {
+  return async function CmssyCatchAllPage({
+    params,
+    searchParams,
+  }: CatchAllProps) {
     const { path } = await params;
     const { isEnabled } = await draftMode();
+    const query = searchParams ? await searchParams : {};
+    const editMode = isEnabled || query[EDIT_QUERY_PARAM] === "1";
     const locale = config.resolveLocale
       ? await config.resolveLocale()
       : defaultLocale;
 
     const page = await fetchPage(clientConfig, path, {
-      previewSecret: isEnabled ? config.draftSecret : undefined,
+      previewSecret: editMode ? config.draftSecret : undefined,
     });
 
     if (!page) {
       notFound();
     }
 
-    if (isEnabled) {
+    if (editMode) {
       return (
         <CmssyEditablePage
           page={page}
