@@ -8,11 +8,18 @@ export interface CmssyBlockProps {
   block: RawBlock;
   locale: string;
   defaultLocale: string;
+  patchedContent?: Record<string, unknown>;
 }
 
-export function CmssyBlock({ block, locale, defaultLocale }: CmssyBlockProps) {
+export function CmssyBlock({
+  block,
+  locale,
+  defaultLocale,
+  patchedContent,
+}: CmssyBlockProps) {
   const registration = getRegisteredComponent(block.type);
-  const content = getBlockContentForLanguage(block.content, locale, defaultLocale);
+  const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
+  const content = patchedContent ? { ...base, ...patchedContent } : base;
   return (
     <div
       data-block-id={block.id}

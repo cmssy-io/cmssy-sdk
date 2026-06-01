@@ -35,6 +35,16 @@ describe("registry", () => {
     expect(reg?.schema.ctaHref?.type).toBe("link");
   });
 
+  it("accepts a component whose content prop is typed more narrowly", () => {
+    const Typed = ({ content }: { content: { heading: string } }) =>
+      content.heading;
+    registerComponent(Typed, {
+      type: "typed",
+      props: { heading: fields.singleLine() },
+    });
+    expect(getRegisteredComponent("typed")?.type).toBe("typed");
+  });
+
   it("defaults a field label to its key when omitted", () => {
     registerComponent(Dummy, {
       type: "x",

@@ -11,12 +11,18 @@ export interface FetchLikeResponse {
 
 export type FetchLike = (
   url: string,
-  init: { method: string; headers: Record<string, string>; body: string },
+  init: {
+    method: string;
+    headers: Record<string, string>;
+    body: string;
+    signal?: AbortSignal;
+  },
 ) => Promise<FetchLikeResponse>;
 
 export interface FetchPageOptions {
   previewSecret?: string;
   fetch?: FetchLike;
+  signal?: AbortSignal;
 }
 
 export interface RawBlock {
@@ -60,7 +66,8 @@ export async function fetchPage(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const previewSecret = options.previewSecret ? options.previewSecret : null;
+  const trimmedSecret = options.previewSecret?.trim();
+  const previewSecret = trimmedSecret ? trimmedSecret : null;
   const response = await doFetch(config.apiUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -72,11 +79,10 @@ export async function fetchPage(
         previewSecret,
       },
     }),
+    signal: options.signal,
   });
-  if (!response.ok) {
-    throw new Error(`cmssy: page fetch failed (${response.status})`);
-  }
-  const json = (await response.json()) as {
+
+  type PageResponse = {
     data?: {
       publicPage?: {
         id: string;
@@ -86,6 +92,28 @@ export async function fetchPage(
     };
     errors?: Array<{ message?: string }>;
   };
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const body = (await response.json()) as PageResponse;
+      if (body.errors && body.errors.length > 0) {
+        detail = ` - ${body.errors
+          .map((error) => error.message ?? "GraphQL error")
+          .join("; ")}`;
+      }
+    } catch {
+      detail = "";
+    }
+    throw new Error(`cmssy: page fetch failed (${response.status})${detail}`);
+  }
+
+  let json: PageResponse;
+  try {
+    json = (await response.json()) as PageResponse;
+  } catch {
+    throw new Error("cmssy: invalid JSON response from the page query");
+  }
   if (json.errors && json.errors.length > 0) {
     const message = json.errors
       .map((error) => error.message ?? "GraphQL error")

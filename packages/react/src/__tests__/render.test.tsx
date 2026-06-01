@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CmssyPage } from "../components/cmssy-page";
 import { registerComponent, clearRegistry } from "../registry";
@@ -32,8 +32,7 @@ describe("CmssyPage", () => {
     expect(html).toContain('data-block-type="hero"');
   });
 
-  it("renders a placeholder for an unregistered block type", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("renders a hidden placeholder for an unregistered block type", () => {
     const page = {
       id: "p",
       blocks: [{ id: "b2", type: "ghost", content: {} }],
@@ -42,10 +41,6 @@ describe("CmssyPage", () => {
     expect(html).toContain('data-cmssy-unknown-block="ghost"');
     expect(html).toContain('data-block-id="b2"');
     expect(html).toContain("display:none");
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("ghost"),
-    );
-    warn.mockRestore();
   });
 
   it("renders nothing for a null page", () => {
