@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyPage } from "../components/cmssy-page";
 import { registerComponent, clearRegistry } from "../registry";
@@ -29,15 +29,27 @@ function patchEvent(
   origin: string,
   content: Record<string, unknown>,
   blockId = "b1",
+  source: MessageEventSource | null = null,
 ) {
   return new MessageEvent("message", {
     origin,
+    source,
     data: {
       type: "cmssy:patch",
       blockId,
       content,
       protocolVersion: PROTOCOL_VERSION,
     },
+  });
+}
+
+let mockParent: { postMessage: ReturnType<typeof vi.fn> };
+
+function setParent(value: unknown) {
+  Object.defineProperty(window, "parent", {
+    value,
+    configurable: true,
+    writable: true,
   });
 }
 
@@ -49,12 +61,17 @@ describe("edit bridge", () => {
       type: "hero",
       props: { heading: fields.singleLine() },
     });
+    mockParent = { postMessage: vi.fn() };
+    setParent(mockParent);
+  });
+
+  afterEach(() => {
+    setParent(window);
   });
 
   it("posts cmssy:ready (with schemas) on mount", () => {
-    const postSpy = vi.spyOn(window.parent, "postMessage");
     render(<CmssyPage page={page} locale="en" edit={{ editorOrigin }} />);
-    expect(postSpy).toHaveBeenCalledWith(
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:ready",
         protocolVersion: PROTOCOL_VERSION,
@@ -62,7 +79,20 @@ describe("edit bridge", () => {
       }),
       editorOrigin,
     );
-    postSpy.mockRestore();
+  });
+
+  it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
+    render(<CmssyPage page={page} locale="en" edit={{ editorOrigin }} />);
+    expect(mockParent.postMessage).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          data: { type: "cmssy:parent-ready", protocolVersion: PROTOCOL_VERSION },
+        }),
+      );
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
   });
 
   it("live-patches a block on cmssy:patch, merging over the base content", async () => {
@@ -73,8 +103,31 @@ describe("edit bridge", () => {
     await act(async () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
-    // heading patched, sub preserved from base (partial patch merged)
     expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("ignores a patch from a wrong origin", async () => {
+    const { container } = render(
+      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(patchEvent("https://evil.com", { heading: "Hacked" }));
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Hacked");
+  });
+
+  it("ignores a patch whose source is not window.parent", async () => {
+    const { container } = render(
+      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent(editorOrigin, { heading: "Spoofed" }, "b1", window),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Spoofed");
   });
 
   it("ignores a patch for an unknown block id", async () => {
@@ -88,17 +141,6 @@ describe("edit bridge", () => {
     });
     expect(container.textContent).toContain("Hello|World");
     expect(container.textContent).not.toContain("Ghost");
-  });
-
-  it("ignores a patch from a wrong origin", async () => {
-    const { container } = render(
-      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
-    );
-    await act(async () => {
-      window.dispatchEvent(patchEvent("https://evil.com", { heading: "Hacked" }));
-    });
-    expect(container.textContent).toContain("Hello");
-    expect(container.textContent).not.toContain("Hacked");
   });
 
   it("resets patches when navigating to a different page (no stale overlay)", async () => {
@@ -128,7 +170,24 @@ describe("edit bridge", () => {
     expect(container.textContent).not.toContain("Edited");
   });
 
-  it("does not crash the host when editorOrigin is invalid", () => {
+  it("does not post or accept patches when not framed (parent === self)", async () => {
+    setParent(window);
+    const postSpy = vi.spyOn(window, "postMessage");
+    const { container } = render(
+      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    expect(postSpy).not.toHaveBeenCalled();
+    await act(async () => {
+      window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
+    });
+    expect(container.textContent).toContain("Hello|World");
+    postSpy.mockRestore();
+  });
+
+  it("does not crash the host when postMessage throws (invalid origin)", () => {
+    mockParent.postMessage.mockImplementation(() => {
+      throw new Error("invalid target origin");
+    });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { container } = render(
       <CmssyPage page={page} locale="en" edit={{ editorOrigin: "not-an-origin" }} />,
@@ -138,9 +197,7 @@ describe("edit bridge", () => {
   });
 
   it("does not mount the bridge without edit config", () => {
-    const postSpy = vi.spyOn(window.parent, "postMessage");
     render(<CmssyPage page={page} locale="en" />);
-    expect(postSpy).not.toHaveBeenCalled();
-    postSpy.mockRestore();
+    expect(mockParent.postMessage).not.toHaveBeenCalled();
   });
 });

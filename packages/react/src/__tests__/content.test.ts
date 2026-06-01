@@ -49,6 +49,17 @@ describe("getBlockContentForLanguage", () => {
     ).toEqual({ seo: { description: "d" }, title: "Hi" });
   });
 
+  it("preserves a 2-letter-named object field when availableLocales is given", () => {
+    expect(
+      getBlockContentForLanguage(
+        { id: { x: 1 }, en: { title: "Hi" } },
+        "en",
+        "en",
+        ["en", "pl"],
+      ),
+    ).toEqual({ id: { x: 1 }, title: "Hi" });
+  });
+
   it("returns {} for a non-object value", () => {
     expect(getBlockContentForLanguage(null, "en")).toEqual({});
     expect(getBlockContentForLanguage("x", "en")).toEqual({});
@@ -146,6 +157,51 @@ describe("fetchPage", () => {
     await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
       /Workspace not found/,
     );
+  });
+
+  it("throws a clear error on a non-JSON response", async () => {
+    const fetch: FetchLike = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError("Unexpected token <");
+      },
+    });
+    await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
+      /invalid JSON/,
+    );
+  });
+
+  it("includes GraphQL error messages on a non-ok response", async () => {
+    const fetch: FetchLike = async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ errors: [{ message: "Bad query" }] }),
+    });
+    await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(/Bad query/);
+  });
+
+  it("treats a whitespace-only previewSecret as published", async () => {
+    let sentBody: { variables: { previewSecret: unknown } } | undefined;
+    const fetch: FetchLike = async (_url, init) => {
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            publicPage: {
+              id: "p",
+              blocks: [{ id: "d", type: "h", content: {} }],
+              publishedBlocks: [{ id: "b", type: "h", content: {} }],
+            },
+          },
+        }),
+      };
+    };
+    const result = await fetchPage(config, "/", { fetch, previewSecret: "   " });
+    expect(sentBody?.variables.previewSecret).toBeNull();
+    expect(result?.blocks[0]?.id).toBe("b");
   });
 
   it("throws on a non-ok response", async () => {

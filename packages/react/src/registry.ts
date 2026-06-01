@@ -12,14 +12,14 @@ export interface BlockRegistration {
   type: string;
   label: string;
   category?: string;
-  component: ComponentType<any>;
+  component: ComponentType<{ content: Record<string, unknown> }>;
   schema: BlockSchema;
 }
 
 const registry = new Map<string, BlockRegistration>();
 
 export function registerComponent(
-  component: ComponentType<any>,
+  component: ComponentType<{ content: Record<string, unknown> }>,
   options: RegisterOptions,
 ): void {
   const schema: BlockSchema = {};
