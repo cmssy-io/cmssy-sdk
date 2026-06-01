@@ -65,6 +65,13 @@ export function middleware(request: NextRequest) {
 }
 ```
 
+> **Security.** `?cmssyEdit=1` is a developer-controllable flag, so any request can
+> opt into the edit-mode CSP. This is safe by default - `frame-ancestors` only ever
+> _restricts_ framing to your trusted `editorOrigin` (set it to a concrete origin, never
+> `*`), and `applyCmssyCsp` merges into any existing CSP rather than weakening it. For
+> production, gate the edit path behind a server-set capability (auth/session cookie or a
+> signed token) and scope this middleware with `config.matcher` to editable routes only.
+
 ## Status
 
 Early — built against cmssy epic CMS-642 (headless pivot). Not yet published.

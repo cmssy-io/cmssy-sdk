@@ -113,6 +113,19 @@ describe("createCmssyPage", () => {
     });
   });
 
+  it("stays published when an array cmssyEdit contains no '1'", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
+    });
+    expect(element.type).toBe(CmssyPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
+  });
+
   it("calls notFound when the page is missing", async () => {
     fetchPage.mockResolvedValue(null);
     const Page = createCmssyPage(CONFIG);
