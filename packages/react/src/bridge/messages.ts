@@ -78,6 +78,16 @@ export function parseEditorMessage(
             index: data.index,
           }
         : null;
+    case "cmssy:reorder":
+      return Array.isArray(data.blockIds) &&
+        data.blockIds.every((id) => typeof id === "string") &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:reorder",
+            protocolVersion: PROTOCOL_VERSION,
+            blockIds: data.blockIds as string[],
+          }
+        : null;
     default:
       return null;
   }

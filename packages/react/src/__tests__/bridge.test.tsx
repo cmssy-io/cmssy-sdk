@@ -291,6 +291,42 @@ describe("edit bridge", () => {
     expect(container.textContent).toContain("Edited|Inserted");
   });
 
+  it("reorders rendered blocks on cmssy:reorder", async () => {
+    const twoBlocks = {
+      id: "p2",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "First" } } },
+        { id: "b2", type: "hero", content: { en: { heading: "Second" } } },
+      ],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={twoBlocks}
+        locale="en"
+        edit={{ editorOrigin }}
+      />,
+    );
+    expect(
+      Array.from(container.querySelectorAll("h1")).map((h) => h.textContent),
+    ).toEqual(["First|", "Second|"]);
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:reorder",
+            blockIds: ["b2", "b1"],
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(
+      Array.from(container.querySelectorAll("h1")).map((h) => h.textContent),
+    ).toEqual(["Second|", "First|"]);
+  });
+
   it("does not post or accept patches when not framed (parent === self)", async () => {
     setParent(window);
     const postSpy = vi.spyOn(window, "postMessage");
