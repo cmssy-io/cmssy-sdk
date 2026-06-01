@@ -43,7 +43,7 @@ function EditableBlocks({
   defaultLocale,
   edit,
 }: EditableBlocksProps) {
-  const { patches, inserted } = useEditBridge(page, edit);
+  const { patches, inserted, order } = useEditBridge(page, edit);
 
   const blocks = useMemo<RawBlock[]>(() => {
     const merged = [...page.blocks];
@@ -56,8 +56,15 @@ function EditableBlocks({
         content: ins.content,
       });
     }
+    if (order) {
+      const rank = new Map(order.map((id, i) => [id, i]));
+      const fallback = merged.length;
+      merged.sort(
+        (a, b) => (rank.get(a.id) ?? fallback) - (rank.get(b.id) ?? fallback),
+      );
+    }
     return merged;
-  }, [page.blocks, inserted]);
+  }, [page.blocks, inserted, order]);
 
   return (
     <>

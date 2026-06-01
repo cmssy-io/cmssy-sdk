@@ -166,6 +166,38 @@ describe("parseEditorMessage", () => {
       ),
     ).toBeNull();
   });
+
+  it("accepts a cmssy:reorder message with a string-id array", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:reorder",
+          blockIds: ["b2", "b1"],
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:reorder",
+      blockIds: ["b2", "b1"],
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a cmssy:reorder message whose blockIds contains a non-string", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:reorder",
+          blockIds: ["b1", 2],
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe("postToEditor", () => {
