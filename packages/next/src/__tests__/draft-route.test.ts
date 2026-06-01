@@ -29,6 +29,21 @@ describe("createDraftRoute", () => {
     );
   });
 
+  it("throws when defaultRedirect is an absolute URL", () => {
+    expect(() =>
+      createDraftRoute({
+        draftSecret: SECRET,
+        defaultRedirect: "https://evil.test",
+      }),
+    ).toThrow(/same-origin path/);
+  });
+
+  it("throws when defaultRedirect is protocol-relative", () => {
+    expect(() =>
+      createDraftRoute({ draftSecret: SECRET, defaultRedirect: "//evil.test" }),
+    ).toThrow(/same-origin path/);
+  });
+
   it("rejects a missing secret with 401", async () => {
     const GET = createDraftRoute({ draftSecret: SECRET });
     const res = await GET(new Request("https://pilot.test/api/draft"));
