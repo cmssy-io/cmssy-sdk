@@ -170,6 +170,34 @@ describe("edit bridge", () => {
     expect(container.textContent).not.toContain("Edited");
   });
 
+  it("resets patches when the block set changes on the same page id", async () => {
+    const before = {
+      id: "p",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "A", sub: "1" } } },
+      ],
+    };
+    const after = {
+      id: "p",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "X", sub: "Y" } } },
+        { id: "b2", type: "hero", content: { en: { heading: "Z", sub: "W" } } },
+      ],
+    };
+    const { container, rerender } = render(
+      <CmssyPage page={before} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
+    });
+    expect(container.textContent).toContain("Edited|1");
+    await act(async () => {
+      rerender(<CmssyPage page={after} locale="en" edit={{ editorOrigin }} />);
+    });
+    expect(container.textContent).toContain("X|Y");
+    expect(container.textContent).not.toContain("Edited");
+  });
+
   it("does not post or accept patches when not framed (parent === self)", async () => {
     setParent(window);
     const postSpy = vi.spyOn(window, "postMessage");
