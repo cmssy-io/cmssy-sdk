@@ -95,6 +95,9 @@ describe("createCmssyPage", () => {
       searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
     });
     expect(element.type).toBe(CmssyEditablePage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: CONFIG.draftSecret,
+    });
   });
 
   it("stays published when cmssyEdit is absent", async () => {
