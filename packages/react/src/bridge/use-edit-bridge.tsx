@@ -19,15 +19,19 @@ interface BridgePage {
   blocks: ReadonlyArray<{ id: string; type: string }>;
 }
 
-function rectOf(blockId: string): BlockRect {
-  if (typeof document === "undefined") return { x: 0, y: 0, width: 0, height: 0 };
+const ZERO_RECT: BlockRect = { x: 0, y: 0, width: 0, height: 0 };
+
+function collectRects(): Map<string, BlockRect> {
+  const rects = new Map<string, BlockRect>();
+  if (typeof document === "undefined") return rects;
   for (const el of document.querySelectorAll("[data-block-id]")) {
-    if (el.getAttribute("data-block-id") === blockId) {
+    const id = el.getAttribute("data-block-id");
+    if (id && !rects.has(id)) {
       const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, width: r.width, height: r.height };
+      rects.set(id, { x: r.x, y: r.y, width: r.width, height: r.height });
     }
   }
-  return { x: 0, y: 0, width: 0, height: 0 };
+  return rects;
 }
 
 export function useEditBridge(
@@ -57,13 +61,14 @@ export function useEditBridge(
 
     const sendReady = () => {
       try {
+        const rects = collectRects();
         postToEditor(window.parent, editorOrigin, {
           type: "cmssy:ready",
           protocolVersion: PROTOCOL_VERSION,
           blocks: blocks.map((b) => ({
             id: b.id,
             type: b.type,
-            bounds: rectOf(b.id),
+            bounds: rects.get(b.id) ?? ZERO_RECT,
           })),
           schemas: getBlockSchemas(),
         });
