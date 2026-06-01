@@ -38,6 +38,11 @@ export function createDraftRoute(config: CmssyDraftRouteConfig) {
     );
   }
   const fallbackRedirect = config.defaultRedirect ?? "/";
+  if (safeRedirect(fallbackRedirect, "/") !== fallbackRedirect) {
+    throw new Error(
+      "cmssy: defaultRedirect must be a same-origin path starting with '/'",
+    );
+  }
   return async function GET(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
