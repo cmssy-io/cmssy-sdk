@@ -23,6 +23,12 @@ export type {
   ParentReadyMessage,
   EditorToAppMessage,
 } from "./bridge/protocol";
+export {
+  postToEditor,
+  parseEditorMessage,
+  normalizeOrigin,
+} from "./bridge/messages";
+export type { PostTarget } from "./bridge/messages";
 
 export { fetchPage, normalizeSlug } from "./content/content-client";
 export type {
