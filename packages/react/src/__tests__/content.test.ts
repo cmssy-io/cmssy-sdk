@@ -36,6 +36,15 @@ describe("getBlockContentForLanguage", () => {
     ).toEqual({ showSwitcher: true, title: "Hi" });
   });
 
+  it("preserves non-translatable object fields (detects locale by key)", () => {
+    expect(
+      getBlockContentForLanguage(
+        { en: { title: "Hi" }, seo: { description: "d" } },
+        "en",
+      ),
+    ).toEqual({ seo: { description: "d" }, title: "Hi" });
+  });
+
   it("returns {} for a non-object value", () => {
     expect(getBlockContentForLanguage(null, "en")).toEqual({});
     expect(getBlockContentForLanguage("x", "en")).toEqual({});
@@ -92,6 +101,32 @@ describe("fetchPage", () => {
     });
     const page = await fetchPage(config, "/", { fetch, previewSecret: "s" });
     expect(page?.blocks[0]?.id).toBe("d1");
+  });
+
+  it("treats an empty previewSecret as published (sends null, no draft)", async () => {
+    let sentBody: { variables: { previewSecret: unknown } } | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: { body: string }) => {
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            publicPage: {
+              id: "p1",
+              blocks: [{ id: "d1", type: "hero", content: {} }],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        }),
+      };
+    }) as unknown as typeof globalThis.fetch;
+    const page = await fetchPage(config, "/", {
+      fetch: fetchImpl,
+      previewSecret: "",
+    });
+    expect(sentBody?.variables.previewSecret).toBeNull();
+    expect(page?.blocks[0]?.id).toBe("b1");
   });
 
   it("returns null for a missing page", async () => {

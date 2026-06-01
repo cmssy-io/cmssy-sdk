@@ -39,6 +39,8 @@ describe("CmssyPage", () => {
     };
     const html = renderToStaticMarkup(<CmssyPage page={page} />);
     expect(html).toContain('data-cmssy-unknown-block="ghost"');
+    expect(html).toContain('data-block-id="b2"');
+    expect(html).toContain("display:none");
   });
 
   it("renders nothing for a null page", () => {

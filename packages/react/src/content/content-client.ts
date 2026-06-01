@@ -42,7 +42,13 @@ export async function fetchPage(
   options: FetchPageOptions = {},
 ): Promise<CmssyPageData | null> {
   const slug = normalizeSlug(path);
-  const doFetch = options.fetch ?? fetch;
+  const doFetch = options.fetch ?? globalThis.fetch;
+  if (typeof doFetch !== "function") {
+    throw new Error(
+      "cmssy: no fetch implementation available - pass options.fetch",
+    );
+  }
+  const previewSecret = options.previewSecret ? options.previewSecret : null;
   const response = await doFetch(config.apiUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -51,7 +57,7 @@ export async function fetchPage(
       variables: {
         workspaceSlug: config.workspaceSlug,
         slug,
-        previewSecret: options.previewSecret ?? null,
+        previewSecret,
       },
     }),
   });
@@ -69,7 +75,7 @@ export async function fetchPage(
   };
   const page = json.data?.publicPage;
   if (!page) return null;
-  const draft = Boolean(options.previewSecret);
+  const draft = previewSecret !== null;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
   return { id: page.id, blocks };
 }
