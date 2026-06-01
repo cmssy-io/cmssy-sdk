@@ -72,10 +72,20 @@ export interface ParentReadyMessage {
   protocolVersion: number;
 }
 
+export interface InsertMessage {
+  type: "cmssy:insert";
+  protocolVersion: number;
+  blockId: string;
+  blockType: string;
+  content: Record<string, unknown>;
+  index: number;
+}
+
 export type EditorToAppMessage =
   | SelectMessage
   | PatchMessage
-  | ParentReadyMessage;
+  | ParentReadyMessage
+  | InsertMessage;
 
 export function isProtocolCompatible(version: number): boolean {
   return version === PROTOCOL_VERSION;

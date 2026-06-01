@@ -9,9 +9,17 @@ export interface EditBridgeConfig {
 
 export type PatchMap = Partial<Record<string, Record<string, unknown>>>;
 
+export interface InsertedBlock {
+  blockId: string;
+  blockType: string;
+  content: Record<string, unknown>;
+  index: number;
+}
+
 export interface EditBridgeState {
   patches: PatchMap;
   selected: string | null;
+  inserted: InsertedBlock[];
 }
 
 interface BridgePage {
@@ -40,6 +48,7 @@ export function useEditBridge(
 ): EditBridgeState {
   const [patches, setPatches] = useState<PatchMap>({});
   const [selected, setSelected] = useState<string | null>(null);
+  const [inserted, setInserted] = useState<InsertedBlock[]>([]);
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
@@ -47,6 +56,7 @@ export function useEditBridge(
   useEffect(() => {
     setPatches({});
     setSelected(null);
+    setInserted([]);
   }, [pageId, blocksKey]);
 
   useEffect(() => {
@@ -57,8 +67,6 @@ export function useEditBridge(
         "[cmssy] editorOrigin '*' disables origin checks - dev only, do not use in production",
       );
     }
-    const knownIds = new Set(blocks.map((b) => b.id));
-
     const sendReady = () => {
       try {
         const rects = collectRects();
@@ -88,14 +96,23 @@ export function useEditBridge(
       );
       if (!message) return;
       if (message.type === "cmssy:patch") {
-        if (!knownIds.has(message.blockId)) return;
         setPatches((prev) => ({
           ...prev,
           [message.blockId]: { ...prev[message.blockId], ...message.content },
         }));
       } else if (message.type === "cmssy:select") {
-        if (!knownIds.has(message.blockId)) return;
         setSelected(message.blockId);
+      } else if (message.type === "cmssy:insert") {
+        setInserted((prev) => {
+          const next = prev.filter((b) => b.blockId !== message.blockId);
+          next.push({
+            blockId: message.blockId,
+            blockType: message.blockType,
+            content: message.content,
+            index: message.index,
+          });
+          return next;
+        });
       } else if (message.type === "cmssy:parent-ready") {
         sendReady();
       }
@@ -106,5 +123,5 @@ export function useEditBridge(
     return () => window.removeEventListener("message", handler);
   }, [config.editorOrigin, pageId, blocksKey]);
 
-  return { patches, selected };
+  return { patches, selected, inserted };
 }

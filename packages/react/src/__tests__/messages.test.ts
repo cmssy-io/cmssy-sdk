@@ -8,7 +8,11 @@ describe("parseEditorMessage", () => {
   it("rejects an otherwise-valid message from the wrong origin", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
+        {
+          type: "cmssy:select",
+          blockId: "b",
+          protocolVersion: PROTOCOL_VERSION,
+        },
         "https://evil.com",
         ORIGIN,
       ),
@@ -18,7 +22,11 @@ describe("parseEditorMessage", () => {
   it("normalizes the expected origin (path/trailing slash) before comparing", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
+        {
+          type: "cmssy:select",
+          blockId: "b",
+          protocolVersion: PROTOCOL_VERSION,
+        },
         ORIGIN,
         `${ORIGIN}/editor/`,
       ),
@@ -32,7 +40,11 @@ describe("parseEditorMessage", () => {
   it("accepts a select message with the matching protocol version", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
+        {
+          type: "cmssy:select",
+          blockId: "b",
+          protocolVersion: PROTOCOL_VERSION,
+        },
         ORIGIN,
         ORIGIN,
       ),
@@ -76,7 +88,12 @@ describe("parseEditorMessage", () => {
   it("rejects a patch with a wrong protocol version", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:patch", blockId: "b", content: {}, protocolVersion: 999 },
+        {
+          type: "cmssy:patch",
+          blockId: "b",
+          content: {},
+          protocolVersion: 999,
+        },
         ORIGIN,
         ORIGIN,
       ),
@@ -94,7 +111,11 @@ describe("parseEditorMessage", () => {
   it("honors a wildcard expected origin", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
+        {
+          type: "cmssy:select",
+          blockId: "b",
+          protocolVersion: PROTOCOL_VERSION,
+        },
         "https://any.com",
         "*",
       ),
@@ -103,6 +124,47 @@ describe("parseEditorMessage", () => {
       blockId: "b",
       protocolVersion: PROTOCOL_VERSION,
     });
+  });
+
+  it("accepts a cmssy:insert message", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:insert",
+          blockId: "new-1",
+          blockType: "hero",
+          content: { heading: "x" },
+          index: 2,
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:insert",
+      blockId: "new-1",
+      blockType: "hero",
+      content: { heading: "x" },
+      index: 2,
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a cmssy:insert message with a non-numeric index", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:insert",
+          blockId: "new-1",
+          blockType: "hero",
+          content: {},
+          index: "2",
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
   });
 });
 
