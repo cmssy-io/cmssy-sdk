@@ -55,7 +55,10 @@ import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  if (request.cookies.has("__prerender_bypass")) {
+  const editMode =
+    request.cookies.has("__prerender_bypass") ||
+    request.nextUrl.searchParams.get("cmssyEdit") === "1";
+  if (editMode) {
     applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
   }
   return response;

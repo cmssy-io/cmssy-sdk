@@ -87,6 +87,16 @@ describe("createCmssyPage", () => {
     });
   });
 
+  it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG);
+    const element = await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
+    });
+    expect(element.type).toBe(CmssyEditablePage);
+  });
+
   it("stays published when cmssyEdit is absent", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG);
