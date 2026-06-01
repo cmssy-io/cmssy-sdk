@@ -15,14 +15,28 @@ describe("parseEditorMessage", () => {
     ).toBeNull();
   });
 
-  it("accepts a select message", () => {
+  it("accepts a select message with the matching protocol version", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b" },
+        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
         ORIGIN,
         ORIGIN,
       ),
-    ).toEqual({ type: "cmssy:select", blockId: "b" });
+    ).toEqual({
+      type: "cmssy:select",
+      blockId: "b",
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a select with a wrong protocol version", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:select", blockId: "b", protocolVersion: 999 },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
   });
 
   it("accepts a patch with the matching protocol version", () => {
@@ -66,11 +80,15 @@ describe("parseEditorMessage", () => {
   it("honors a wildcard expected origin", () => {
     expect(
       parseEditorMessage(
-        { type: "cmssy:select", blockId: "b" },
+        { type: "cmssy:select", blockId: "b", protocolVersion: PROTOCOL_VERSION },
         "https://any.com",
         "*",
       ),
-    ).toEqual({ type: "cmssy:select", blockId: "b" });
+    ).toEqual({
+      type: "cmssy:select",
+      blockId: "b",
+      protocolVersion: PROTOCOL_VERSION,
+    });
   });
 });
 

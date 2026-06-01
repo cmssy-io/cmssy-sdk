@@ -18,9 +18,8 @@ export function CmssyBlock({
   patchedContent,
 }: CmssyBlockProps) {
   const registration = getRegisteredComponent(block.type);
-  const content =
-    patchedContent ??
-    getBlockContentForLanguage(block.content, locale, defaultLocale);
+  const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
+  const content = patchedContent ? { ...base, ...patchedContent } : base;
   return (
     <div
       data-block-id={block.id}

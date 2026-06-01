@@ -56,6 +56,7 @@ export type AppToEditorMessage = ReadyMessage | BoundsMessage | ClickMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";
+  protocolVersion: number;
   blockId: string;
 }
 

@@ -7,8 +7,10 @@ export interface EditBridgeConfig {
   editorOrigin: string;
 }
 
+export type PatchMap = Partial<Record<string, Record<string, unknown>>>;
+
 export interface EditBridgeState {
-  patches: Record<string, Record<string, unknown>>;
+  patches: PatchMap;
   selected: string | null;
 }
 
@@ -33,9 +35,7 @@ export function useEditBridge(
   blocks: BridgeBlock[],
   config: EditBridgeConfig,
 ): EditBridgeState {
-  const [patches, setPatches] = useState<
-    Record<string, Record<string, unknown>>
-  >({});
+  const [patches, setPatches] = useState<PatchMap>({});
   const [selected, setSelected] = useState<string | null>(null);
 
   const sendReady = useCallback(() => {
@@ -54,6 +54,7 @@ export function useEditBridge(
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const knownIds = new Set(blocks.map((b) => b.id));
     const handler = (event: MessageEvent) => {
       const message = parseEditorMessage(
         event.data,
@@ -62,8 +63,13 @@ export function useEditBridge(
       );
       if (!message) return;
       if (message.type === "cmssy:patch") {
-        setPatches((prev) => ({ ...prev, [message.blockId]: message.content }));
+        if (!knownIds.has(message.blockId)) return;
+        setPatches((prev) => ({
+          ...prev,
+          [message.blockId]: { ...prev[message.blockId], ...message.content },
+        }));
       } else if (message.type === "cmssy:select") {
+        if (!knownIds.has(message.blockId)) return;
         setSelected(message.blockId);
       } else if (message.type === "cmssy:parent-ready") {
         sendReady();

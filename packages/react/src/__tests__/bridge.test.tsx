@@ -9,20 +9,32 @@ import { PROTOCOL_VERSION } from "../bridge/protocol";
 const editorOrigin = "https://editor.cmssy.io";
 
 const Hero = ({ content }: { content: Record<string, unknown> }) => (
-  <h1>{String(content.heading ?? "")}</h1>
+  <h1>
+    {String(content.heading ?? "")}|{String(content.sub ?? "")}
+  </h1>
 );
 
 const page = {
   id: "p",
-  blocks: [{ id: "b1", type: "hero", content: { en: { heading: "Hello" } } }],
+  blocks: [
+    {
+      id: "b1",
+      type: "hero",
+      content: { en: { heading: "Hello", sub: "World" } },
+    },
+  ],
 };
 
-function patchEvent(origin: string, content: Record<string, unknown>) {
+function patchEvent(
+  origin: string,
+  content: Record<string, unknown>,
+  blockId = "b1",
+) {
   return new MessageEvent("message", {
     origin,
     data: {
       type: "cmssy:patch",
-      blockId: "b1",
+      blockId,
       content,
       protocolVersion: PROTOCOL_VERSION,
     },
@@ -53,15 +65,29 @@ describe("edit bridge", () => {
     postSpy.mockRestore();
   });
 
-  it("live-patches a block on cmssy:patch", async () => {
+  it("live-patches a block on cmssy:patch, merging over the base content", async () => {
     const { container } = render(
       <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
     );
-    expect(container.textContent).toContain("Hello");
+    expect(container.textContent).toContain("Hello|World");
     await act(async () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
-    expect(container.textContent).toContain("Edited");
+    // heading patched, sub preserved from base (partial patch merged)
+    expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("ignores a patch for an unknown block id", async () => {
+    const { container } = render(
+      <CmssyPage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent(editorOrigin, { heading: "Ghost" }, "does-not-exist"),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Ghost");
   });
 
   it("ignores a patch from a wrong origin", async () => {
