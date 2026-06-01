@@ -22,7 +22,7 @@ export function postToEditor(
   editorOrigin: string,
   message: AppToEditorMessage,
 ): void {
-  target.postMessage(message, editorOrigin);
+  target.postMessage(message, normalizeOrigin(editorOrigin));
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

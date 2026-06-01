@@ -118,4 +118,15 @@ describe("postToEditor", () => {
     postToEditor(target, ORIGIN, message);
     expect(target.postMessage).toHaveBeenCalledWith(message, ORIGIN);
   });
+
+  it("normalizes the editor origin before posting", () => {
+    const target = { postMessage: vi.fn() };
+    postToEditor(target, `${ORIGIN}/editor/`, {
+      type: "cmssy:ready",
+      protocolVersion: PROTOCOL_VERSION,
+      blocks: [],
+      schemas: {},
+    });
+    expect(target.postMessage).toHaveBeenCalledWith(expect.anything(), ORIGIN);
+  });
 });
