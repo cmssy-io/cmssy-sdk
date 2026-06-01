@@ -43,7 +43,7 @@ export function useEditBridge(
   useEffect(() => {
     setPatches({});
     setSelected(null);
-  }, [pageId]);
+  }, [pageId, blocksKey]);
 
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) return;
