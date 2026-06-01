@@ -4,6 +4,7 @@ export interface CmssyCspOptions {
 
 interface MutableHeaders {
   headers: {
+    get: (name: string) => string | null;
     set: (name: string, value: string) => void;
     delete: (name: string) => void;
   };
@@ -42,14 +43,28 @@ export function cmssyCspHeaders(
   };
 }
 
+function mergeFrameAncestors(
+  existing: string | null,
+  directive: string,
+): string {
+  if (!existing) return directive;
+  const kept = existing
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && !/^frame-ancestors\b/i.test(part));
+  kept.push(directive);
+  return kept.join("; ");
+}
+
 export function applyCmssyCsp<T extends MutableHeaders>(
   response: T,
   options: CmssyCspOptions,
 ): T {
-  response.headers.set(
-    "Content-Security-Policy",
+  const merged = mergeFrameAncestors(
+    response.headers.get("Content-Security-Policy"),
     frameAncestors(options.editorOrigin),
   );
+  response.headers.set("Content-Security-Policy", merged);
   response.headers.delete("X-Frame-Options");
   return response;
 }

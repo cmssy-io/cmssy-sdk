@@ -73,4 +73,28 @@ describe("applyCmssyCsp", () => {
       "frame-ancestors https://app.cmssy.io http://localhost:3000",
     );
   });
+
+  it("preserves existing CSP directives when merging", () => {
+    const response = {
+      headers: new Headers({
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'",
+      }),
+    };
+    applyCmssyCsp(response, { editorOrigin: "https://app.cmssy.io" });
+    expect(response.headers.get("Content-Security-Policy")).toBe(
+      "default-src 'self'; script-src 'self'; frame-ancestors https://app.cmssy.io",
+    );
+  });
+
+  it("replaces an existing frame-ancestors directive", () => {
+    const response = {
+      headers: new Headers({
+        "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
+      }),
+    };
+    applyCmssyCsp(response, { editorOrigin: "https://app.cmssy.io" });
+    expect(response.headers.get("Content-Security-Policy")).toBe(
+      "default-src 'self'; frame-ancestors https://app.cmssy.io",
+    );
+  });
 });
