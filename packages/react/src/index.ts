@@ -23,3 +23,21 @@ export type {
   ParentReadyMessage,
   EditorToAppMessage,
 } from "./bridge/protocol";
+
+export { fetchPage, normalizeSlug } from "./content/content-client";
+export type {
+  CmssyClientConfig,
+  FetchPageOptions,
+  FetchLike,
+  FetchLikeResponse,
+  RawBlock,
+  CmssyPageData,
+} from "./content/content-client";
+export { getBlockContentForLanguage } from "./content/get-block-content";
+
+export { CmssyPage } from "./components/cmssy-page";
+export type { CmssyPageProps } from "./components/cmssy-page";
+export { CmssyBlock } from "./components/cmssy-block";
+export type { CmssyBlockProps } from "./components/cmssy-block";
+export { UnknownBlock } from "./components/unknown-block";
+export type { UnknownBlockProps } from "./components/unknown-block";
