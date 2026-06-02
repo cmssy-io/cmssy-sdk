@@ -4,6 +4,7 @@ import {
   useEditBridge,
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
+import { useDragAgent } from "../bridge/use-drag-agent";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
@@ -44,6 +45,7 @@ function EditableBlocks({
   edit,
 }: EditableBlocksProps) {
   const { patches, inserted, order, removed } = useEditBridge(page, edit);
+  const { dropY } = useDragAgent(edit);
 
   const blocks = useMemo<RawBlock[]>(() => {
     const removedSet = new Set(removed);
@@ -78,8 +80,23 @@ function EditableBlocks({
           locale={locale}
           defaultLocale={defaultLocale}
           patchedContent={patches[block.id]}
+          editable
         />
       ))}
+      {dropY !== null && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            top: dropY,
+            height: 2,
+            background: "#3b82f6",
+            zIndex: 2147483647,
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </>
   );
 }

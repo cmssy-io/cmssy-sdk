@@ -52,7 +52,25 @@ export interface ClickMessage {
   layoutPosition?: string;
 }
 
-export type AppToEditorMessage = ReadyMessage | BoundsMessage | ClickMessage;
+export interface MoveMessage {
+  type: "cmssy:move";
+  protocolVersion: number;
+  blockId: string;
+  index: number;
+}
+
+export interface DragIndexMessage {
+  type: "cmssy:drag-index";
+  protocolVersion: number;
+  index: number;
+}
+
+export type AppToEditorMessage =
+  | ReadyMessage
+  | BoundsMessage
+  | ClickMessage
+  | MoveMessage
+  | DragIndexMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";
@@ -93,13 +111,26 @@ export interface RemoveMessage {
   blockId: string;
 }
 
+export interface DragOverMessage {
+  type: "cmssy:drag-over";
+  protocolVersion: number;
+  y: number;
+}
+
+export interface DragEndMessage {
+  type: "cmssy:drag-end";
+  protocolVersion: number;
+}
+
 export type EditorToAppMessage =
   | SelectMessage
   | PatchMessage
   | ParentReadyMessage
   | InsertMessage
   | ReorderMessage
-  | RemoveMessage;
+  | RemoveMessage
+  | DragOverMessage
+  | DragEndMessage;
 
 export function isProtocolCompatible(version: number): boolean {
   return version === PROTOCOL_VERSION;
