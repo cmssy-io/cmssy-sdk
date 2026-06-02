@@ -42,7 +42,18 @@ export function useDragAgent(config: DragAgentConfig): {
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) return;
     const { editorOrigin } = config;
+    if (editorOrigin === "*" && typeof console !== "undefined") {
+      console.warn(
+        "[cmssy] editorOrigin '*' disables origin checks - dev only, do not use in production",
+      );
+    }
     let movingId: string | null = null;
+    let lastDropY: number | null = null;
+    const updateDropY = (y: number | null) => {
+      if (y === lastDropY) return;
+      lastDropY = y;
+      setDropY(y);
+    };
 
     // Reorder is an in-document drag, so the agent sees the native events
     // and posts cmssy:move. Drop-to-add is a drag started in the editor
@@ -63,7 +74,7 @@ export function useDragAgent(config: DragAgentConfig): {
     const onDragOver = (event: DragEvent) => {
       if (!movingId) return;
       event.preventDefault();
-      setDropY(computeDropTarget(event.clientY).y);
+      updateDropY(computeDropTarget(event.clientY).y);
     };
 
     const onDrop = (event: DragEvent) => {
@@ -72,7 +83,7 @@ export function useDragAgent(config: DragAgentConfig): {
       const { index } = computeDropTarget(event.clientY);
       const blockId = movingId;
       movingId = null;
-      setDropY(null);
+      updateDropY(null);
       try {
         postToEditor(window.parent, editorOrigin, {
           type: "cmssy:move",
@@ -87,7 +98,7 @@ export function useDragAgent(config: DragAgentConfig): {
 
     const onDragEnd = () => {
       movingId = null;
-      setDropY(null);
+      updateDropY(null);
     };
 
     const onMessage = (event: MessageEvent) => {
@@ -100,7 +111,7 @@ export function useDragAgent(config: DragAgentConfig): {
       if (!message) return;
       if (message.type === "cmssy:drag-over") {
         const { index, y } = computeDropTarget(message.y);
-        setDropY(y);
+        updateDropY(y);
         try {
           postToEditor(window.parent, editorOrigin, {
             type: "cmssy:drag-index",
@@ -111,7 +122,7 @@ export function useDragAgent(config: DragAgentConfig): {
           // ignore
         }
       } else if (message.type === "cmssy:drag-end") {
-        setDropY(null);
+        updateDropY(null);
       }
     };
 
