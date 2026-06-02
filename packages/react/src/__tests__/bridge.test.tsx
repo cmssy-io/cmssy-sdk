@@ -84,6 +84,43 @@ describe("edit bridge", () => {
     );
   });
 
+  it("posts cmssy:click with the block id and rect when a block is clicked", () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const inner = container.querySelector("h1")!;
+    act(() => {
+      inner.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "cmssy:click",
+        blockId: "b1",
+        rect: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          width: expect.any(Number),
+          height: expect.any(Number),
+        }),
+      }),
+      editorOrigin,
+    );
+  });
+
+  it("does not post cmssy:click when the click is outside any block", () => {
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    mockParent.postMessage.mockClear();
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const clickCalls = mockParent.postMessage.mock.calls.filter(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:click",
+    );
+    expect(clickCalls).toHaveLength(0);
+  });
+
   it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
     render(
       <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,

@@ -110,6 +110,13 @@ export function useDragAgent(config: DragAgentConfig): {
       );
       if (!message) return;
       if (message.type === "cmssy:drag-over") {
+        const edge = 64;
+        const step = 20;
+        if (message.y < edge) {
+          window.scrollBy(0, -step);
+        } else if (message.y > window.innerHeight - edge) {
+          window.scrollBy(0, step);
+        }
         const { index, y } = computeDropTarget(message.y);
         updateDropY(y);
         try {

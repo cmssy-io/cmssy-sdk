@@ -24,4 +24,5 @@ export const fields = {
   multiselect: control("multiselect"),
   boolean: control("boolean"),
   color: control("color"),
+  repeater: control("repeater"),
 };

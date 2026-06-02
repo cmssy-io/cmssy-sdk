@@ -113,16 +113,52 @@ describe("drag agent", () => {
     );
   });
 
+  it("auto-scrolls down when the drag-over cursor nears the bottom edge", () => {
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    stubBlockRects();
+    const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    window.dispatchEvent(dragOver(window.innerHeight - 10));
+    expect(scrollBy).toHaveBeenCalledWith(0, expect.any(Number));
+    expect(scrollBy.mock.calls[0]![1]).toBeGreaterThan(0);
+    scrollBy.mockRestore();
+  });
+
+  it("auto-scrolls up when the drag-over cursor nears the top edge", () => {
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    stubBlockRects();
+    const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    window.dispatchEvent(dragOver(10));
+    expect(scrollBy.mock.calls[0]![1]).toBeLessThan(0);
+    scrollBy.mockRestore();
+  });
+
+  it("does not auto-scroll for a drag-over in the middle of the viewport", () => {
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    stubBlockRects();
+    const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    window.dispatchEvent(dragOver(Math.floor(window.innerHeight / 2)));
+    expect(scrollBy).not.toHaveBeenCalled();
+    scrollBy.mockRestore();
+  });
+
   it("reports index 0 for a drag-over above the first block's midpoint", () => {
     render(
       <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
     );
     stubBlockRects();
+    const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
     window.dispatchEvent(dragOver(10));
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "cmssy:drag-index", index: 0 }),
       editorOrigin,
     );
+    scrollBy.mockRestore();
   });
 
   it("posts cmssy:move for a block reorder drag", () => {

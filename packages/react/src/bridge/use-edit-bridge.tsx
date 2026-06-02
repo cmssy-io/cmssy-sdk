@@ -130,9 +130,31 @@ export function useEditBridge(
       }
     };
 
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const el = target?.closest?.("[data-block-id]") as HTMLElement | null;
+      const id = el?.getAttribute("data-block-id");
+      if (!id || !el) return;
+      event.preventDefault();
+      const r = el.getBoundingClientRect();
+      try {
+        postToEditor(window.parent, editorOrigin, {
+          type: "cmssy:click",
+          blockId: id,
+          rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        });
+      } catch {
+        // editor frame may reject during teardown; ignore
+      }
+    };
+
     window.addEventListener("message", handler);
+    document.addEventListener("click", onClick);
     sendReady();
-    return () => window.removeEventListener("message", handler);
+    return () => {
+      window.removeEventListener("message", handler);
+      document.removeEventListener("click", onClick);
+    };
   }, [config.editorOrigin, pageId, blocksKey]);
 
   return { patches, selected, inserted, order, removed };
