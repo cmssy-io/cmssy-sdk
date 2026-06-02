@@ -21,6 +21,7 @@ export interface EditBridgeState {
   selected: string | null;
   inserted: InsertedBlock[];
   order: string[] | null;
+  removed: string[];
 }
 
 interface BridgePage {
@@ -51,6 +52,7 @@ export function useEditBridge(
   const [selected, setSelected] = useState<string | null>(null);
   const [inserted, setInserted] = useState<InsertedBlock[]>([]);
   const [order, setOrder] = useState<string[] | null>(null);
+  const [removed, setRemoved] = useState<string[]>([]);
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
@@ -60,6 +62,7 @@ export function useEditBridge(
     setSelected(null);
     setInserted([]);
     setOrder(null);
+    setRemoved([]);
   }, [pageId, blocksKey]);
 
   useEffect(() => {
@@ -118,6 +121,10 @@ export function useEditBridge(
         });
       } else if (message.type === "cmssy:reorder") {
         setOrder(message.blockIds);
+      } else if (message.type === "cmssy:remove") {
+        setRemoved((prev) =>
+          prev.includes(message.blockId) ? prev : [...prev, message.blockId],
+        );
       } else if (message.type === "cmssy:parent-ready") {
         sendReady();
       }
@@ -128,5 +135,5 @@ export function useEditBridge(
     return () => window.removeEventListener("message", handler);
   }, [config.editorOrigin, pageId, blocksKey]);
 
-  return { patches, selected, inserted, order };
+  return { patches, selected, inserted, order, removed };
 }

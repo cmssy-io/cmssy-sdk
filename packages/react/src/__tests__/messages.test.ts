@@ -198,6 +198,34 @@ describe("parseEditorMessage", () => {
       ),
     ).toBeNull();
   });
+
+  it("accepts a cmssy:remove message", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:remove",
+          blockId: "b2",
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:remove",
+      blockId: "b2",
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a cmssy:remove message without a string blockId", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:remove", protocolVersion: PROTOCOL_VERSION },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
+  });
 });
 
 describe("postToEditor", () => {
