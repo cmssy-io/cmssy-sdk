@@ -84,6 +84,86 @@ describe("edit bridge", () => {
     );
   });
 
+  it("preserves repeater itemSchema and options in the emitted cmssy:ready schema", () => {
+    registerComponent(Hero, {
+      type: "stats",
+      props: {
+        items: fields.repeater({
+          label: "Items",
+          minItems: 1,
+          maxItems: 5,
+          itemSchema: {
+            value: fields.numeric({ label: "Value" }),
+            label: fields.singleLine({ label: "Label" }),
+          },
+        }),
+      },
+    });
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const readyCall = mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    );
+    const ready = readyCall![0] as {
+      schemas: {
+        stats: {
+          items: {
+            type: string;
+            minItems: number;
+            maxItems: number;
+            itemSchema: { value: { type: string }; label: { type: string } };
+          };
+        };
+      };
+    };
+    const items = ready.schemas.stats.items;
+    expect(items.type).toBe("repeater");
+    expect(items.minItems).toBe(1);
+    expect(items.maxItems).toBe(5);
+    expect(items.itemSchema.value.type).toBe("numeric");
+    expect(items.itemSchema.label.type).toBe("singleLine");
+  });
+
+  it("prevents default for a link click inside a block but still selects it", () => {
+    const Linked = () => <a href="/somewhere">go</a>;
+    clearRegistry();
+    registerComponent(Linked, { type: "linked", props: {} });
+    const linkedPage = {
+      id: "pl",
+      blocks: [{ id: "lb", type: "linked", content: {} }],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={linkedPage}
+        locale="en"
+        edit={{ editorOrigin }}
+      />,
+    );
+    const link = container.querySelector("a")!;
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      link.dispatchEvent(ev);
+    });
+    expect(ev.defaultPrevented).toBe(true);
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:click", blockId: "lb" }),
+      editorOrigin,
+    );
+  });
+
+  it("does not prevent default for a non-link click inside a block", () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const inner = container.querySelector("h1")!;
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      inner.dispatchEvent(ev);
+    });
+    expect(ev.defaultPrevented).toBe(false);
+  });
+
   it("posts cmssy:click with the block id and rect when a block is clicked", () => {
     const { container } = render(
       <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
