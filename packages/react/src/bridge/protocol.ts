@@ -11,7 +11,8 @@ export type FieldType =
   | "select"
   | "multiselect"
   | "boolean"
-  | "color";
+  | "color"
+  | "repeater";
 
 export interface FieldDefinition {
   type: FieldType;
@@ -21,6 +22,12 @@ export interface FieldDefinition {
   required?: boolean;
   placeholder?: string;
   options?: string[];
+  itemSchema?: Record<string, FieldDefinition>;
+  itemLabel?: string;
+  addButtonLabel?: string;
+  minItems?: number;
+  maxItems?: number;
+  collapsible?: boolean;
 }
 
 export type BlockSchema = Record<string, FieldDefinition>;
