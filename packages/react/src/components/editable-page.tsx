@@ -61,7 +61,7 @@ function EditableBlocks({
     }
     if (order) {
       const rank = new Map(order.map((id, i) => [id, i]));
-      const fallback = merged.length;
+      const fallback = order.length;
       merged.sort(
         (a, b) => (rank.get(a.id) ?? fallback) - (rank.get(b.id) ?? fallback),
       );
