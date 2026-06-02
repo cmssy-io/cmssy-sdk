@@ -87,12 +87,19 @@ export interface ReorderMessage {
   blockIds: string[];
 }
 
+export interface RemoveMessage {
+  type: "cmssy:remove";
+  protocolVersion: number;
+  blockId: string;
+}
+
 export type EditorToAppMessage =
   | SelectMessage
   | PatchMessage
   | ParentReadyMessage
   | InsertMessage
-  | ReorderMessage;
+  | ReorderMessage
+  | RemoveMessage;
 
 export function isProtocolCompatible(version: number): boolean {
   return version === PROTOCOL_VERSION;
