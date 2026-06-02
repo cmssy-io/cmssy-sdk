@@ -97,6 +97,19 @@ export function parseEditorMessage(
             blockId: data.blockId,
           }
         : null;
+    case "cmssy:drag-over":
+      return typeof data.y === "number" &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:drag-over",
+            protocolVersion: PROTOCOL_VERSION,
+            y: data.y,
+          }
+        : null;
+    case "cmssy:drag-end":
+      return data.protocolVersion === PROTOCOL_VERSION
+        ? { type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION }
+        : null;
     default:
       return null;
   }

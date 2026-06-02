@@ -226,6 +226,44 @@ describe("parseEditorMessage", () => {
       ),
     ).toBeNull();
   });
+
+  it("accepts a cmssy:drag-over message", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:drag-over", y: 120, protocolVersion: PROTOCOL_VERSION },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:drag-over",
+      y: 120,
+      protocolVersion: PROTOCOL_VERSION,
+    });
+  });
+
+  it("rejects a cmssy:drag-over without a numeric y", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:drag-over",
+          y: "120",
+          protocolVersion: PROTOCOL_VERSION,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toBeNull();
+  });
+
+  it("accepts a cmssy:drag-end message", () => {
+    expect(
+      parseEditorMessage(
+        { type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({ type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION });
+  });
 });
 
 describe("postToEditor", () => {
