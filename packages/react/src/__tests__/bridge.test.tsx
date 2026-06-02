@@ -327,6 +327,39 @@ describe("edit bridge", () => {
     ).toEqual(["Second|", "First|"]);
   });
 
+  it("drops a block from the render on cmssy:remove", async () => {
+    const twoBlocks = {
+      id: "p3",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "Keep" } } },
+        { id: "b2", type: "hero", content: { en: { heading: "Gone" } } },
+      ],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={twoBlocks}
+        locale="en"
+        edit={{ editorOrigin }}
+      />,
+    );
+    expect(container.textContent).toContain("Gone|");
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:remove",
+            blockId: "b2",
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(container.textContent).toContain("Keep|");
+    expect(container.textContent).not.toContain("Gone|");
+  });
+
   it("does not post or accept patches when not framed (parent === self)", async () => {
     setParent(window);
     const postSpy = vi.spyOn(window, "postMessage");

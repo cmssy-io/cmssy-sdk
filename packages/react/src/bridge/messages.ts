@@ -88,6 +88,15 @@ export function parseEditorMessage(
             blockIds: data.blockIds as string[],
           }
         : null;
+    case "cmssy:remove":
+      return typeof data.blockId === "string" &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:remove",
+            protocolVersion: PROTOCOL_VERSION,
+            blockId: data.blockId,
+          }
+        : null;
     default:
       return null;
   }
