@@ -135,7 +135,7 @@ export function useEditBridge(
       const el = target?.closest?.("[data-block-id]") as HTMLElement | null;
       const id = el?.getAttribute("data-block-id");
       if (!id || !el) return;
-      event.preventDefault();
+      if (target?.closest?.("a[href]")) event.preventDefault();
       const r = el.getBoundingClientRect();
       try {
         postToEditor(window.parent, editorOrigin, {
