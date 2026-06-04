@@ -3,7 +3,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CmssyPage } from "../components/cmssy-page";
 import { CmssyClientPage } from "../components/cmssy-client-page";
 import { CmssyLayout } from "../components/cmssy-layout";
-import { registerComponent, clearRegistry } from "../registry";
+import {
+  registerComponent,
+  clearRegistry,
+  defineBlock,
+  getRegisteredComponent,
+} from "../registry";
+import { CmssyRegistry } from "../components/cmssy-registry";
 import { fields } from "../fields";
 
 const Hero = ({ content }: { content: Record<string, unknown> }) => (
@@ -126,5 +132,26 @@ describe("CmssyLayout", () => {
         <CmssyLayout groups={groups} position="footer" locale="en" />,
       ),
     ).toBe("");
+  });
+});
+
+describe("CmssyRegistry", () => {
+  beforeEach(() => clearRegistry());
+
+  it("registers the passed blocks on (SSR) render with a default category", () => {
+    const heroBlock = defineBlock({
+      type: "hero",
+      label: "Hero",
+      component: Hero,
+      props: { heading: fields.singleLine() },
+    });
+    const out = renderToStaticMarkup(
+      <CmssyRegistry blocks={[heroBlock]} category="kancelaria" />,
+    );
+    expect(out).toBe("");
+    const reg = getRegisteredComponent("hero");
+    expect(reg?.label).toBe("Hero");
+    expect(reg?.category).toBe("kancelaria");
+    expect(reg?.schema.heading?.type).toBe("singleLine");
   });
 });
