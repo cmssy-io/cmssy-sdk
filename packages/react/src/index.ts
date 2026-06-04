@@ -2,13 +2,19 @@ export { fields } from "./fields";
 export type { FieldControl } from "./fields";
 export {
   registerComponent,
+  defineBlock,
+  registerBlocks,
   getRegisteredComponent,
   getRegistry,
   getBlockSchemas,
   getBlockMeta,
   clearRegistry,
 } from "./registry";
-export type { RegisterOptions, BlockRegistration } from "./registry";
+export type {
+  RegisterOptions,
+  BlockRegistration,
+  BlockDefinition,
+} from "./registry";
 export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";
 export type {
   FieldType,
