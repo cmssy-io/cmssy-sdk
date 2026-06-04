@@ -60,6 +60,44 @@ export function registerComponent<C extends Record<string, unknown>>(
   });
 }
 
+export interface BlockDefinition {
+  type: string;
+  label?: string;
+  category?: string;
+  icon?: string;
+  layoutPositions?: string[];
+  props: Record<string, FieldDefinition>;
+  component: ComponentType<{ content: Record<string, unknown> }>;
+}
+
+export function defineBlock<C extends Record<string, unknown>>(def: {
+  type: string;
+  label?: string;
+  category?: string;
+  icon?: string;
+  layoutPositions?: string[];
+  props: Record<string, FieldDefinition>;
+  component: ComponentType<{ content: C }>;
+}): BlockDefinition {
+  return def as BlockDefinition;
+}
+
+export function registerBlocks(
+  blocks: BlockDefinition[],
+  defaults: { category?: string } = {},
+): void {
+  for (const block of blocks) {
+    registerComponent(block.component, {
+      type: block.type,
+      label: block.label,
+      category: block.category ?? defaults.category,
+      icon: block.icon,
+      layoutPositions: block.layoutPositions,
+      props: block.props,
+    });
+  }
+}
+
 export function getRegisteredComponent(
   type: string,
 ): BlockRegistration | undefined {
