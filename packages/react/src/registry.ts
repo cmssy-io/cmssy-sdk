@@ -1,10 +1,16 @@
 import type { ComponentType } from "react";
-import type { BlockSchema, FieldDefinition } from "./bridge/protocol";
+import type {
+  BlockMeta,
+  BlockSchema,
+  FieldDefinition,
+} from "./bridge/protocol";
 
 export interface RegisterOptions {
   type: string;
   label?: string;
   category?: string;
+  icon?: string;
+  layoutPositions?: string[];
   props: Record<string, FieldDefinition>;
 }
 
@@ -12,6 +18,8 @@ export interface BlockRegistration {
   type: string;
   label: string;
   category?: string;
+  icon?: string;
+  layoutPositions?: string[];
   component: ComponentType<{ content: Record<string, unknown> }>;
   schema: BlockSchema;
 }
@@ -43,6 +51,8 @@ export function registerComponent<C extends Record<string, unknown>>(
     type: options.type,
     label: options.label ?? options.type,
     category: options.category,
+    icon: options.icon,
+    layoutPositions: options.layoutPositions,
     component: component as ComponentType<{
       content: Record<string, unknown>;
     }>,
@@ -63,6 +73,19 @@ export function getRegistry(): ReadonlyMap<string, BlockRegistration> {
 export function getBlockSchemas(): Record<string, BlockSchema> {
   const out: Record<string, BlockSchema> = {};
   for (const [type, reg] of registry) out[type] = reg.schema;
+  return out;
+}
+
+export function getBlockMeta(): Record<string, BlockMeta> {
+  const out: Record<string, BlockMeta> = {};
+  for (const [type, reg] of registry) {
+    out[type] = {
+      label: reg.label,
+      ...(reg.category ? { category: reg.category } : {}),
+      ...(reg.icon ? { icon: reg.icon } : {}),
+      ...(reg.layoutPositions ? { layoutPositions: reg.layoutPositions } : {}),
+    };
+  }
   return out;
 }
 
