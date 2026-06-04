@@ -49,6 +49,27 @@ export type {
 } from "./content/content-client";
 export { getBlockContentForLanguage } from "./content/get-block-content";
 
+export { graphqlRequest } from "./data/graphql-request";
+export type { GraphqlRequestOptions } from "./data/graphql-request";
+export { fetchSiteConfig, resolveWorkspaceId } from "./data/settings-client";
+export type { CmssySiteConfig } from "./data/settings-client";
+export { fetchForm, submitForm } from "./data/form-client";
+export type {
+  CmssyFormDefinition,
+  CmssyFormField,
+  CmssyFormSettings,
+  CmssyFormSubmitResponse,
+  FetchFormOptions,
+  SubmitFormOptions,
+} from "./data/form-client";
+export { fetchModelDefinitions, fetchRecords } from "./data/records-client";
+export type {
+  CmssyModelDefinition,
+  CmssyModelRecord,
+  CmssyRecordList,
+  FetchRecordsOptions,
+} from "./data/records-client";
+
 export { CmssyPage } from "./components/cmssy-page";
 export type { CmssyPageProps } from "./components/cmssy-page";
 export { CmssyBlock } from "./components/cmssy-block";
