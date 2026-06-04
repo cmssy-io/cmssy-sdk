@@ -23,10 +23,13 @@ describe("createDraftRoute", () => {
     redirect.mockClear();
   });
 
-  it("throws when the configured secret is too short", () => {
-    expect(() => createDraftRoute({ draftSecret: "short" })).toThrow(
-      /at least 16/,
+  it("returns 500 at request time when the configured secret is too short", async () => {
+    const GET = createDraftRoute({ draftSecret: "short" });
+    const res = await GET(
+      new Request("https://pilot.test/api/draft?secret=short"),
     );
+    expect(res.status).toBe(500);
+    expect(enable).not.toHaveBeenCalled();
   });
 
   it("throws when defaultRedirect is an absolute URL", () => {
