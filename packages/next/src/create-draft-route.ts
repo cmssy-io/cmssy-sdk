@@ -32,11 +32,6 @@ function safeRedirect(redirect: string | null, fallback: string): string {
 }
 
 export function createDraftRoute(config: CmssyDraftRouteConfig) {
-  if (config.draftSecret.length < MIN_SECRET_LENGTH) {
-    throw new Error(
-      `cmssy: draftSecret must be at least ${MIN_SECRET_LENGTH} characters`,
-    );
-  }
   const fallbackRedirect = config.defaultRedirect ?? "/";
   if (safeRedirect(fallbackRedirect, "/") !== fallbackRedirect) {
     throw new Error(
@@ -44,6 +39,12 @@ export function createDraftRoute(config: CmssyDraftRouteConfig) {
     );
   }
   return async function GET(request: Request): Promise<Response> {
+    if (config.draftSecret.length < MIN_SECRET_LENGTH) {
+      return new Response(
+        `cmssy: draftSecret must be at least ${MIN_SECRET_LENGTH} characters`,
+        { status: 500 },
+      );
+    }
     const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
     if (!secret || !secretsMatch(secret, config.draftSecret)) {
