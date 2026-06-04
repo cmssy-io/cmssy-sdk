@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   registerComponent,
+  defineBlock,
+  registerBlocks,
   getRegisteredComponent,
   getBlockSchemas,
   getBlockMeta,
@@ -11,6 +13,54 @@ import { fields } from "../fields";
 import { PROTOCOL_VERSION, isProtocolCompatible } from "../bridge/protocol";
 
 const Dummy = () => null;
+
+describe("defineBlock / registerBlocks", () => {
+  beforeEach(() => clearRegistry());
+
+  it("registers a list with a shared default category and no casts", () => {
+    const Hero = (_props: { content: { title?: string } }) => null;
+    const Footer = (_props: { content: { brand?: string } }) => null;
+    const hero = defineBlock({
+      type: "hero",
+      label: "Hero",
+      component: Hero,
+      props: { title: fields.singleLine({ label: "Tytuł" }) },
+    });
+    const footer = defineBlock({
+      type: "footer",
+      label: "Footer",
+      component: Footer,
+      layoutPositions: ["footer"],
+      props: { brand: fields.singleLine({ label: "Marka" }) },
+    });
+
+    registerBlocks([hero, footer], { category: "kancelaria" });
+
+    const h = getRegisteredComponent("hero");
+    expect(h?.label).toBe("Hero");
+    expect(h?.category).toBe("kancelaria");
+    expect(h?.schema.title?.type).toBe("singleLine");
+    const f = getRegisteredComponent("footer");
+    expect(f?.layoutPositions).toEqual(["footer"]);
+    expect(f?.category).toBe("kancelaria");
+  });
+
+  it("lets a block override the default category", () => {
+    registerBlocks(
+      [
+        defineBlock({
+          type: "special",
+          label: "Special",
+          component: Dummy,
+          category: "custom",
+          props: {},
+        }),
+      ],
+      { category: "kancelaria" },
+    );
+    expect(getRegisteredComponent("special")?.category).toBe("custom");
+  });
+});
 
 describe("registry", () => {
   beforeEach(() => clearRegistry());
