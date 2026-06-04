@@ -3,6 +3,7 @@ import {
   registerComponent,
   getRegisteredComponent,
   getBlockSchemas,
+  getBlockMeta,
   clearRegistry,
   REGISTRY_KEY,
 } from "../registry";
@@ -73,6 +74,44 @@ describe("registry", () => {
     const schemas = getBlockSchemas();
     expect(Object.keys(schemas).sort()).toEqual(["a", "b"]);
     expect(schemas.a?.t?.type).toBe("singleLine");
+  });
+
+  it("registers a layout block with icon + layoutPositions", () => {
+    registerComponent(Dummy, {
+      type: "site-header",
+      label: "Site Header",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+      props: { logo: fields.media() },
+    });
+    const reg = getRegisteredComponent("site-header");
+    expect(reg?.icon).toBe("layout-panel-top");
+    expect(reg?.layoutPositions).toEqual(["header"]);
+  });
+
+  it("exposes block meta (label/category/icon/layoutPositions) for the ready payload", () => {
+    registerComponent(Dummy, {
+      type: "site-header",
+      label: "Site Header",
+      category: "layout",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+      props: {},
+    });
+    registerComponent(Dummy, {
+      type: "hero",
+      label: "Hero",
+      props: {},
+    });
+    const meta = getBlockMeta();
+    expect(meta["site-header"]).toEqual({
+      label: "Site Header",
+      category: "layout",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+    });
+    // Page blocks carry no layoutPositions, so the drawer keeps them.
+    expect(meta.hero).toEqual({ label: "Hero" });
   });
 
   it("backs the registry with a single globalThis Map so the index and client bundles share one instance", () => {

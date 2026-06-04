@@ -1,7 +1,7 @@
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
-import { CmssyPage, fetchPage, type CmssyClientConfig } from "@cmssy/react";
-import { CmssyEditablePage } from "@cmssy/react/client";
+import { fetchPage, type CmssyClientConfig } from "@cmssy/react";
+import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
 
@@ -62,7 +62,11 @@ export function createCmssyPage(config: CmssyNextConfig) {
     }
 
     return (
-      <CmssyPage page={page} locale={locale} defaultLocale={defaultLocale} />
+      <CmssyClientPage
+        page={page}
+        locale={locale}
+        defaultLocale={defaultLocale}
+      />
     );
   };
 }

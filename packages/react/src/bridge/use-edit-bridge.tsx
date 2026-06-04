@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getBlockSchemas } from "../registry";
+import { getBlockMeta, getBlockSchemas } from "../registry";
 import { PROTOCOL_VERSION, type BlockRect } from "./protocol";
 import { parseEditorMessage, postToEditor } from "./messages";
 
@@ -85,6 +85,7 @@ export function useEditBridge(
             bounds: rects.get(b.id) ?? ZERO_RECT,
           })),
           schemas: getBlockSchemas(),
+          blockMeta: getBlockMeta(),
         });
       } catch (error) {
         if (typeof console !== "undefined") {

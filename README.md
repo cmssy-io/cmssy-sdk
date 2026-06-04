@@ -50,27 +50,49 @@ export const GET = createDraftRoute(cmssy);
 ```ts
 // middleware.ts — let the cmssy editor frame the app in edit mode
 import { NextResponse, type NextRequest } from "next/server";
-import { applyCmssyCsp } from "@cmssy/next";
+import {
+  applyCmssyCsp,
+  isCmssyEditRequest,
+  CMSSY_EDIT_HEADER,
+} from "@cmssy/next";
 import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-  const editMode =
-    request.cookies.has("__prerender_bypass") ||
-    request.nextUrl.searchParams.getAll("cmssyEdit").includes("1");
-  if (editMode) {
-    applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
-  }
+  const editMode = isCmssyEditRequest(request);
+
+  // Forward edit mode to server components (the root layout can't read
+  // searchParams). Strip any inbound value first so a client can't forge it.
+  const headers = new Headers(request.headers);
+  headers.delete(CMSSY_EDIT_HEADER);
+  if (editMode) headers.set(CMSSY_EDIT_HEADER, "1");
+
+  const response = NextResponse.next({ request: { headers } });
+  if (editMode) applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
   return response;
 }
 ```
 
+In your root `layout.tsx`, read `isCmssyEditMode()` to fetch draft vs published
+layout blocks on the same signal as page content:
+
+```tsx
+import { isCmssyEditMode } from "@cmssy/next";
+import { fetchLayouts } from "@cmssy/react";
+
+const editMode = await isCmssyEditMode();
+const groups = await fetchLayouts(client, "/", {
+  previewSecret: editMode ? cmssy.draftSecret : undefined,
+});
+```
+
 > **Security.** `?cmssyEdit=1` is a developer-controllable flag, so any request can
-> opt into the edit-mode CSP. This is safe by default - `frame-ancestors` only ever
-> _restricts_ framing to your trusted `editorOrigin` (set it to a concrete origin, never
-> `*`), and `applyCmssyCsp` merges into any existing CSP rather than weakening it. For
-> production, gate the edit path behind a server-set capability (auth/session cookie or a
-> signed token) and scope this middleware with `config.matcher` to editable routes only.
+> opt into edit mode — equivalent to setting `x-cmssy-edit` directly, which is why the
+> middleware **must strip the inbound header before setting it** (above). This is not an
+> escalation: `frame-ancestors` only _restricts_ framing to your trusted `editorOrigin`
+> (set it to a concrete origin, never `*`), and actual draft **content** is still gated by
+> the server-held `draftSecret` at fetch time. For production, gate the edit path behind a
+> server-set capability (auth/session cookie or signed token) and scope this middleware
+> with `config.matcher` to editable routes only.
 
 ## Status
 

@@ -36,11 +36,31 @@ export interface CmssyPageData {
   blocks: RawBlock[];
 }
 
+export interface RawLayoutBlock {
+  id: string;
+  type: string;
+  content: unknown;
+  order: number;
+  isActive: boolean;
+}
+
+export interface CmssyLayoutGroup {
+  position: string;
+  blocks: RawLayoutBlock[];
+}
+
 const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
   publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
     id
     blocks { id type content }
     publishedBlocks { id type content }
+  }
+}`;
+
+const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
+  publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
+    position
+    blocks { id type content order isActive }
   }
 }`;
 
@@ -125,4 +145,56 @@ export async function fetchPage(
   const draft = previewSecret !== null;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
   return { id: page.id, blocks };
+}
+
+export async function fetchLayouts(
+  config: CmssyClientConfig,
+  path: string | string[] | undefined,
+  options: FetchPageOptions = {},
+): Promise<CmssyLayoutGroup[]> {
+  const pageSlug = normalizeSlug(path);
+  const doFetch =
+    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
+  if (typeof doFetch !== "function") {
+    throw new Error(
+      "cmssy: no fetch implementation available - pass options.fetch",
+    );
+  }
+  const trimmedSecret = options.previewSecret?.trim();
+  const previewSecret = trimmedSecret ? trimmedSecret : null;
+  const response = await doFetch(config.apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      query: PUBLIC_PAGE_LAYOUTS_QUERY,
+      variables: {
+        workspaceSlug: config.workspaceSlug,
+        pageSlug,
+        previewSecret,
+      },
+    }),
+    signal: options.signal,
+  });
+
+  type LayoutsResponse = {
+    data?: { publicPageLayouts?: CmssyLayoutGroup[] | null };
+    errors?: Array<{ message?: string }>;
+  };
+
+  if (!response.ok) {
+    throw new Error(`cmssy: layouts fetch failed (${response.status})`);
+  }
+  let json: LayoutsResponse;
+  try {
+    json = (await response.json()) as LayoutsResponse;
+  } catch {
+    throw new Error("cmssy: invalid JSON response from the layouts query");
+  }
+  if (json.errors && json.errors.length > 0) {
+    const message = json.errors
+      .map((error) => error.message ?? "GraphQL error")
+      .join("; ");
+    throw new Error(`cmssy: layouts fetch error - ${message}`);
+  }
+  return json.data?.publicPageLayouts ?? [];
 }

@@ -32,6 +32,13 @@ export interface FieldDefinition {
 
 export type BlockSchema = Record<string, FieldDefinition>;
 
+export interface BlockMeta {
+  label: string;
+  category?: string;
+  icon?: string;
+  layoutPositions?: string[];
+}
+
 export interface BlockRect {
   x: number;
   y: number;
@@ -44,6 +51,7 @@ export interface ReadyMessage {
   protocolVersion: number;
   blocks: Array<{ id: string; type: string; bounds: BlockRect }>;
   schemas: Record<string, BlockSchema>;
+  blockMeta?: Record<string, BlockMeta>;
 }
 
 export interface BoundsMessage {
@@ -56,7 +64,6 @@ export interface ClickMessage {
   type: "cmssy:click";
   blockId: string;
   rect: BlockRect;
-  layoutPosition?: string;
 }
 
 export interface MoveMessage {

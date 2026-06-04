@@ -5,6 +5,7 @@ export {
   getRegisteredComponent,
   getRegistry,
   getBlockSchemas,
+  getBlockMeta,
   clearRegistry,
 } from "./registry";
 export type { RegisterOptions, BlockRegistration } from "./registry";
@@ -13,6 +14,7 @@ export type {
   FieldType,
   FieldDefinition,
   BlockSchema,
+  BlockMeta,
   BlockRect,
   ReadyMessage,
   BoundsMessage,
@@ -30,7 +32,11 @@ export {
 } from "./bridge/messages";
 export type { PostTarget } from "./bridge/messages";
 
-export { fetchPage, normalizeSlug } from "./content/content-client";
+export {
+  fetchPage,
+  fetchLayouts,
+  normalizeSlug,
+} from "./content/content-client";
 export type {
   CmssyClientConfig,
   FetchPageOptions,
@@ -38,6 +44,8 @@ export type {
   FetchLikeResponse,
   RawBlock,
   CmssyPageData,
+  RawLayoutBlock,
+  CmssyLayoutGroup,
 } from "./content/content-client";
 export { getBlockContentForLanguage } from "./content/get-block-content";
 
@@ -45,5 +53,6 @@ export { CmssyPage } from "./components/cmssy-page";
 export type { CmssyPageProps } from "./components/cmssy-page";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
+export type { CmssyLayoutProps } from "./components/cmssy-layout";
 export { UnknownBlock } from "./components/unknown-block";
 export type { UnknownBlockProps } from "./components/unknown-block";

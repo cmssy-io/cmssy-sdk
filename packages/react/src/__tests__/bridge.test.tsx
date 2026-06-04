@@ -84,6 +84,34 @@ describe("edit bridge", () => {
     );
   });
 
+  it("posts cmssy:ready with blockMeta (label + layoutPositions) so /layouts can list layout blocks", () => {
+    registerComponent(Hero, {
+      type: "site-header",
+      label: "Site Header",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+      props: { heading: fields.singleLine() },
+    });
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const call = mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    );
+    const ready = call?.[0] as {
+      blockMeta: Record<
+        string,
+        { label: string; icon?: string; layoutPositions?: string[] }
+      >;
+    };
+    expect(ready.blockMeta.hero).toEqual({ label: "hero" });
+    expect(ready.blockMeta["site-header"]).toEqual({
+      label: "Site Header",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+    });
+  });
+
   it("preserves repeater itemSchema and options in the emitted cmssy:ready schema", () => {
     registerComponent(Hero, {
       type: "stats",

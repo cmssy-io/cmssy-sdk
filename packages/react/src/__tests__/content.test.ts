@@ -3,6 +3,7 @@ import { getBlockContentForLanguage } from "../content/get-block-content";
 import {
   normalizeSlug,
   fetchPage,
+  fetchLayouts,
   type FetchLike,
 } from "../content/content-client";
 
@@ -178,7 +179,9 @@ describe("fetchPage", () => {
       status: 400,
       json: async () => ({ errors: [{ message: "Bad query" }] }),
     });
-    await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(/Bad query/);
+    await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
+      /Bad query/,
+    );
   });
 
   it("treats a whitespace-only previewSecret as published", async () => {
@@ -199,7 +202,10 @@ describe("fetchPage", () => {
         }),
       };
     };
-    const result = await fetchPage(config, "/", { fetch, previewSecret: "   " });
+    const result = await fetchPage(config, "/", {
+      fetch,
+      previewSecret: "   ",
+    });
     expect(sentBody?.variables.previewSecret).toBeNull();
     expect(result?.blocks[0]?.id).toBe("b");
   });
@@ -209,5 +215,69 @@ describe("fetchPage", () => {
     await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
       /page fetch failed/,
     );
+  });
+});
+
+describe("fetchLayouts", () => {
+  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+
+  function mockFetch(payload: unknown, ok = true): FetchLike {
+    return async () => ({
+      ok,
+      status: ok ? 200 : 500,
+      json: async () => payload,
+    });
+  }
+
+  it("returns the resolved layout groups", async () => {
+    const fetch = mockFetch({
+      data: {
+        publicPageLayouts: [
+          {
+            position: "header",
+            blocks: [
+              {
+                id: "h1",
+                type: "header",
+                content: {},
+                order: 0,
+                isActive: true,
+              },
+            ],
+          },
+          { position: "footer", blocks: [] },
+        ],
+      },
+    });
+    const groups = await fetchLayouts(config, "/", { fetch });
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.position).toBe("header");
+    expect(groups[0]?.blocks[0]?.id).toBe("h1");
+  });
+
+  it("sends pageSlug + null previewSecret on an open read", async () => {
+    let sent: { variables: Record<string, unknown> } | undefined;
+    const fetch: FetchLike = async (_url, init) => {
+      sent = JSON.parse(init.body);
+      return { ok: true, status: 200, json: async () => ({ data: {} }) };
+    };
+    await fetchLayouts(config, ["about"], { fetch });
+    expect(sent?.variables.pageSlug).toBe("/about");
+    expect(sent?.variables.previewSecret).toBeNull();
+  });
+
+  it("forwards previewSecret for a draft read", async () => {
+    let sent: { variables: Record<string, unknown> } | undefined;
+    const fetch: FetchLike = async (_url, init) => {
+      sent = JSON.parse(init.body);
+      return { ok: true, status: 200, json: async () => ({ data: {} }) };
+    };
+    await fetchLayouts(config, "/", { fetch, previewSecret: "secret" });
+    expect(sent?.variables.previewSecret).toBe("secret");
+  });
+
+  it("returns [] when the query yields nothing", async () => {
+    const fetch = mockFetch({ data: { publicPageLayouts: null } });
+    expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
   });
 });

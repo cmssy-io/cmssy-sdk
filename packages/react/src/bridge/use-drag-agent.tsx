@@ -13,10 +13,14 @@ interface DropTarget {
   y: number;
 }
 
+function visible(el: HTMLElement): boolean {
+  return el.offsetParent !== null || el.getClientRects().length > 0;
+}
+
 function blockElements(): HTMLElement[] {
   return Array.from(
     document.querySelectorAll<HTMLElement>("[data-block-id]"),
-  ).filter((el) => el.offsetParent !== null || el.getClientRects().length > 0);
+  ).filter(visible);
 }
 
 function computeDropTarget(clientY: number): DropTarget {
