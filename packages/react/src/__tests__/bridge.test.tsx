@@ -84,6 +84,151 @@ describe("edit bridge", () => {
     );
   });
 
+  it("posts cmssy:ready with blockMeta (label + layoutPositions) so /layouts can list layout blocks", () => {
+    registerComponent(Hero, {
+      type: "site-header",
+      label: "Site Header",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+      props: { heading: fields.singleLine() },
+    });
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const call = mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    );
+    const ready = call?.[0] as {
+      blockMeta: Record<
+        string,
+        { label: string; icon?: string; layoutPositions?: string[] }
+      >;
+    };
+    expect(ready.blockMeta.hero).toEqual({ label: "hero" });
+    expect(ready.blockMeta["site-header"]).toEqual({
+      label: "Site Header",
+      icon: "layout-panel-top",
+      layoutPositions: ["header"],
+    });
+  });
+
+  it("preserves repeater itemSchema and options in the emitted cmssy:ready schema", () => {
+    registerComponent(Hero, {
+      type: "stats",
+      props: {
+        items: fields.repeater({
+          label: "Items",
+          minItems: 1,
+          maxItems: 5,
+          itemSchema: {
+            value: fields.numeric({ label: "Value" }),
+            label: fields.singleLine({ label: "Label" }),
+          },
+        }),
+      },
+    });
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const readyCall = mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    );
+    const ready = readyCall![0] as {
+      schemas: {
+        stats: {
+          items: {
+            type: string;
+            minItems: number;
+            maxItems: number;
+            itemSchema: { value: { type: string }; label: { type: string } };
+          };
+        };
+      };
+    };
+    const items = ready.schemas.stats.items;
+    expect(items.type).toBe("repeater");
+    expect(items.minItems).toBe(1);
+    expect(items.maxItems).toBe(5);
+    expect(items.itemSchema.value.type).toBe("numeric");
+    expect(items.itemSchema.label.type).toBe("singleLine");
+  });
+
+  it("prevents default for a link click inside a block but still selects it", () => {
+    const Linked = () => <a href="/somewhere">go</a>;
+    clearRegistry();
+    registerComponent(Linked, { type: "linked", props: {} });
+    const linkedPage = {
+      id: "pl",
+      blocks: [{ id: "lb", type: "linked", content: {} }],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={linkedPage}
+        locale="en"
+        edit={{ editorOrigin }}
+      />,
+    );
+    const link = container.querySelector("a")!;
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      link.dispatchEvent(ev);
+    });
+    expect(ev.defaultPrevented).toBe(true);
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:click", blockId: "lb" }),
+      editorOrigin,
+    );
+  });
+
+  it("does not prevent default for a non-link click inside a block", () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const inner = container.querySelector("h1")!;
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      inner.dispatchEvent(ev);
+    });
+    expect(ev.defaultPrevented).toBe(false);
+  });
+
+  it("posts cmssy:click with the block id and rect when a block is clicked", () => {
+    const { container } = render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    const inner = container.querySelector("h1")!;
+    act(() => {
+      inner.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "cmssy:click",
+        blockId: "b1",
+        rect: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          width: expect.any(Number),
+          height: expect.any(Number),
+        }),
+      }),
+      editorOrigin,
+    );
+  });
+
+  it("does not post cmssy:click when the click is outside any block", () => {
+    render(
+      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+    );
+    mockParent.postMessage.mockClear();
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const clickCalls = mockParent.postMessage.mock.calls.filter(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:click",
+    );
+    expect(clickCalls).toHaveLength(0);
+  });
+
   it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
     render(
       <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,

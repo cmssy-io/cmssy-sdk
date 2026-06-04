@@ -13,10 +13,14 @@ interface DropTarget {
   y: number;
 }
 
+function visible(el: HTMLElement): boolean {
+  return el.offsetParent !== null || el.getClientRects().length > 0;
+}
+
 function blockElements(): HTMLElement[] {
   return Array.from(
     document.querySelectorAll<HTMLElement>("[data-block-id]"),
-  ).filter((el) => el.offsetParent !== null || el.getClientRects().length > 0);
+  ).filter(visible);
 }
 
 function computeDropTarget(clientY: number): DropTarget {
@@ -110,6 +114,13 @@ export function useDragAgent(config: DragAgentConfig): {
       );
       if (!message) return;
       if (message.type === "cmssy:drag-over") {
+        const edge = 64;
+        const step = 20;
+        if (message.y < edge) {
+          window.scrollBy(0, -step);
+        } else if (message.y > window.innerHeight - edge) {
+          window.scrollBy(0, step);
+        }
         const { index, y } = computeDropTarget(message.y);
         updateDropY(y);
         try {

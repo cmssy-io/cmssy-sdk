@@ -11,7 +11,8 @@ export type FieldType =
   | "select"
   | "multiselect"
   | "boolean"
-  | "color";
+  | "color"
+  | "repeater";
 
 export interface FieldDefinition {
   type: FieldType;
@@ -21,9 +22,22 @@ export interface FieldDefinition {
   required?: boolean;
   placeholder?: string;
   options?: string[];
+  itemSchema?: Record<string, FieldDefinition>;
+  itemLabel?: string;
+  addButtonLabel?: string;
+  minItems?: number;
+  maxItems?: number;
+  collapsible?: boolean;
 }
 
 export type BlockSchema = Record<string, FieldDefinition>;
+
+export interface BlockMeta {
+  label: string;
+  category?: string;
+  icon?: string;
+  layoutPositions?: string[];
+}
 
 export interface BlockRect {
   x: number;
@@ -37,6 +51,7 @@ export interface ReadyMessage {
   protocolVersion: number;
   blocks: Array<{ id: string; type: string; bounds: BlockRect }>;
   schemas: Record<string, BlockSchema>;
+  blockMeta?: Record<string, BlockMeta>;
 }
 
 export interface BoundsMessage {
@@ -49,7 +64,6 @@ export interface ClickMessage {
   type: "cmssy:click";
   blockId: string;
   rect: BlockRect;
-  layoutPosition?: string;
 }
 
 export interface MoveMessage {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CmssyPage, type CmssyPageData } from "@cmssy/react";
-import { CmssyEditablePage } from "@cmssy/react/client";
+import { type CmssyPageData } from "@cmssy/react";
+import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
 
 let draftEnabled = false;
 
@@ -48,11 +48,11 @@ describe("createCmssyPage", () => {
     fetchPage.mockReset();
   });
 
-  it("renders CmssyPage with published content", async () => {
+  it("renders the client page with published content", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG);
     const element = await Page({ params: params(["about"]) });
-    expect(element.type).toBe(CmssyPage);
+    expect(element.type).toBe(CmssyClientPage);
     expect(fetchPage).toHaveBeenCalledWith(
       { apiUrl: CONFIG.apiUrl, workspaceSlug: CONFIG.workspaceSlug },
       ["about"],
@@ -107,7 +107,7 @@ describe("createCmssyPage", () => {
       params: params(["about"]),
       searchParams: searchParams({}),
     });
-    expect(element.type).toBe(CmssyPage);
+    expect(element.type).toBe(CmssyClientPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
     });
@@ -120,7 +120,7 @@ describe("createCmssyPage", () => {
       params: params(["about"]),
       searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
     });
-    expect(element.type).toBe(CmssyPage);
+    expect(element.type).toBe(CmssyClientPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
     });
