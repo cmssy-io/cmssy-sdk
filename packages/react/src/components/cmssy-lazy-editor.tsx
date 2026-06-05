@@ -22,6 +22,7 @@ export function CmssyLazyEditor({ load, ...props }: CmssyLazyEditorProps) {
 
   useEffect(() => {
     let active = true;
+    setLoaded(null);
     (async () => {
       try {
         const m = await load();
