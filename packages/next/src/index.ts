@@ -1,4 +1,8 @@
 export { createCmssyPage } from "./create-cmssy-page";
+export type {
+  CmssyEditorProps,
+  CreateCmssyPageOptions,
+} from "./create-cmssy-page";
 export { createDraftRoute } from "./create-draft-route";
 export type { CmssyDraftRouteConfig } from "./create-draft-route";
 export { cmssyCspHeaders, applyCmssyCsp } from "./csp";

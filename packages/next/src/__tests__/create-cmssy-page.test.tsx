@@ -175,6 +175,35 @@ describe("createCmssyPage", () => {
     });
   });
 
+  it("renders the consumer editor in edit mode when options.editor is given", async () => {
+    draftEnabled = true;
+    fetchPage.mockResolvedValue(PAGE);
+    const Editor = () => null;
+    const Page = createCmssyPage(CONFIG, undefined, { editor: Editor });
+    const element = await Page({ params: params([]) });
+    expect(element.type).toBe(Editor);
+    expect(element.type).not.toBe(CmssyEditablePage);
+    expect(element.props.page).toBe(PAGE);
+    expect(element.props.edit).toEqual({
+      editorOrigin: "https://app.cmssy.io",
+    });
+  });
+
+  it("ignores options.editor on the published path (uses the server page)", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Editor = () => null;
+    const blocks = [
+      defineBlock({
+        type: "editorial-intro",
+        component: () => null,
+        props: {},
+      }),
+    ];
+    const Page = createCmssyPage(CONFIG, blocks, { editor: Editor });
+    const element = await Page({ params: params(["about"]) });
+    expect(element.type).toBe(CmssyServerPage);
+  });
+
   it("warns and uses the first origin for the bridge when several are configured", async () => {
     draftEnabled = true;
     fetchPage.mockResolvedValue(PAGE);
