@@ -160,6 +160,13 @@ describe("block-array helpers (registry-free)", () => {
     expect(map.missing).toBeUndefined();
   });
 
+  it("buildBlockMap is prototype-safe (odd block types resolve to undefined)", () => {
+    const map = buildBlockMap([heroBlock]) as Record<string, unknown>;
+    expect(map.toString).toBeUndefined();
+    expect(map.constructor).toBeUndefined();
+    expect(map.__proto__).toBeUndefined();
+  });
+
   it("blocksToSchemas derives field schemas with key fallback labels", () => {
     const schemas = blocksToSchemas([heroBlock]);
     expect(schemas.hero?.heading?.type).toBe("singleLine");
@@ -204,6 +211,18 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     );
     expect(html).toContain('data-block-id="b1"');
     expect(html).toContain("Hi");
+  });
+
+  it("falls back to UnknownBlock for prototype-chain block types (no crash)", () => {
+    const html = renderToStaticMarkup(
+      <CmssyServerPage
+        page={{ id: "p", blocks: [{ id: "x", type: "toString", content: {} }] }}
+        blocks={[heroBlock]}
+        locale="en"
+      />,
+    );
+    expect(html).toContain('data-block-id="x"');
+    expect(html).not.toContain("[native code]");
   });
 
   it("renders only active layout blocks sorted by order", () => {
