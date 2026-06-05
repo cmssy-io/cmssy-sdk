@@ -63,11 +63,19 @@ function collectLayoutBlocks(
 ): ReadyBlock[] {
   const out: ReadyBlock[] = [];
   if (typeof document === "undefined") return out;
+  const seen = new Set<string>();
   for (const el of document.querySelectorAll("[data-layout-position]")) {
     const id = el.getAttribute("data-block-id");
     const type = el.getAttribute("data-block-type");
     const layoutPosition = el.getAttribute("data-layout-position");
-    if (id && type && layoutPosition && !pageIds.has(id)) {
+    if (
+      id &&
+      type &&
+      layoutPosition !== null &&
+      !pageIds.has(id) &&
+      !seen.has(id)
+    ) {
+      seen.add(id);
       out.push({
         id,
         type,
@@ -188,7 +196,7 @@ export function useEditBridge(
           type: "cmssy:click",
           blockId: id,
           rect: { x: r.x, y: r.y, width: r.width, height: r.height },
-          ...(layoutPosition ? { layoutPosition } : {}),
+          ...(layoutPosition !== null ? { layoutPosition } : {}),
         });
       } catch {
         // editor frame may reject during teardown; ignore
