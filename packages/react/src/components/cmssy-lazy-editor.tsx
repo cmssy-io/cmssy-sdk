@@ -22,9 +22,22 @@ export function CmssyLazyEditor({ load, ...props }: CmssyLazyEditorProps) {
 
   useEffect(() => {
     let active = true;
-    load().then((m) => {
-      if (active) setLoaded({ blocks: m.blocks, category: m.category });
-    });
+    (async () => {
+      try {
+        const m = await load();
+        if (!active) return;
+        if (!Array.isArray(m.blocks)) {
+          throw new Error(
+            "cmssy: CmssyLazyEditor load() must resolve to { blocks: BlockDefinition[] }",
+          );
+        }
+        setLoaded({ blocks: m.blocks, category: m.category });
+      } catch (err) {
+        if (typeof console !== "undefined") {
+          console.error("[cmssy] CmssyLazyEditor failed to load blocks", err);
+        }
+      }
+    })();
     return () => {
       active = false;
     };
