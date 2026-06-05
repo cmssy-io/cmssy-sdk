@@ -318,6 +318,116 @@ describe("edit bridge (blocks-driven)", () => {
     expect(wrapper?.style.display).toBe("none");
   });
 
+  it("prevents default for a link click inside a block but still selects it", () => {
+    const Linked = () => <a href="/somewhere">go</a>;
+    const linkedBlocks = [
+      defineBlock({ type: "linked", component: Linked, props: {} }),
+    ];
+    const linkedPage = {
+      id: "pl",
+      blocks: [{ id: "lb", type: "linked", content: {} }],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={linkedPage}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={linkedBlocks}
+      />,
+    );
+    const link = container.querySelector("a")!;
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      link.dispatchEvent(ev);
+    });
+    expect(ev.defaultPrevented).toBe(true);
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:click", blockId: "lb" }),
+      editorOrigin,
+    );
+  });
+
+  it("posts cmssy:click with the block id and rect on click", () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const inner = container.querySelector("h1")!;
+    act(() => {
+      inner.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "cmssy:click",
+        blockId: "b1",
+        rect: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+        }),
+      }),
+      editorOrigin,
+    );
+  });
+
+  it("ignores a patch whose source is not window.parent", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent(editorOrigin, { heading: "Spoofed" }, "b1", window),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Spoofed");
+  });
+
+  it("ignores a patch for an unknown block id", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent(editorOrigin, { heading: "Ghost" }, "does-not-exist"),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Ghost");
+  });
+
+  it("does not post or accept patches when not framed (parent === self)", async () => {
+    setParent(window);
+    const postSpy = vi.spyOn(window, "postMessage");
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    expect(postSpy).not.toHaveBeenCalled();
+    await act(async () => {
+      window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
+    });
+    expect(container.textContent).toContain("Hello|World");
+    postSpy.mockRestore();
+  });
+
   it("the server page does not mount the bridge", () => {
     render(<CmssyServerPage page={page} blocks={blocks} locale="en" />);
     expect(mockParent.postMessage).not.toHaveBeenCalled();
