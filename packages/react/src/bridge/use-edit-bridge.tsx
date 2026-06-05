@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   PROTOCOL_VERSION,
   type BlockMeta,
@@ -96,6 +96,7 @@ export function useEditBridge(
   const [inserted, setInserted] = useState<InsertedBlock[]>([]);
   const [order, setOrder] = useState<string[] | null>(null);
   const [removed, setRemoved] = useState<string[]>([]);
+  const selectedIdRef = useRef<string | null>(null);
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
@@ -106,6 +107,7 @@ export function useEditBridge(
     setInserted([]);
     setOrder(null);
     setRemoved([]);
+    selectedIdRef.current = null;
   }, [pageId, blocksKey]);
 
   useEffect(() => {
@@ -161,6 +163,7 @@ export function useEditBridge(
         }));
       } else if (message.type === "cmssy:select") {
         setSelected(message.blockId);
+        selectedIdRef.current = message.blockId;
       } else if (message.type === "cmssy:insert") {
         setInserted((prev) => {
           const next = prev.filter((b) => b.blockId !== message.blockId);
@@ -188,6 +191,7 @@ export function useEditBridge(
       const el = target?.closest?.("[data-block-id]") as HTMLElement | null;
       const id = el?.getAttribute("data-block-id");
       if (!id || !el) return;
+      selectedIdRef.current = id;
       if (target?.closest?.("a[href]")) event.preventDefault();
       const r = el.getBoundingClientRect();
       const layoutPosition = el.getAttribute("data-layout-position");
@@ -203,12 +207,49 @@ export function useEditBridge(
       }
     };
 
+    let boundsRaf = 0;
+    let boundsPending = false;
+    const emitSelectedBounds = () => {
+      if (boundsPending || !selectedIdRef.current) return;
+      boundsPending = true;
+      boundsRaf = requestAnimationFrame(() => {
+        boundsPending = false;
+        boundsRaf = 0;
+        const id = selectedIdRef.current;
+        if (!id) return;
+        const el = document.querySelector(
+          `[data-block-id="${id.replace(/["\\]/g, "\\$&")}"]`,
+        );
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        try {
+          postToEditor(window.parent, editorOrigin, {
+            type: "cmssy:bounds",
+            blockId: id,
+            rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+          });
+        } catch {
+          // editor frame may reject during teardown; ignore
+        }
+      });
+    };
+
     window.addEventListener("message", handler);
     document.addEventListener("click", onClick);
+    window.addEventListener("scroll", emitSelectedBounds, {
+      capture: true,
+      passive: true,
+    });
+    window.addEventListener("resize", emitSelectedBounds);
     sendReady();
     return () => {
+      if (boundsRaf) cancelAnimationFrame(boundsRaf);
       window.removeEventListener("message", handler);
       document.removeEventListener("click", onClick);
+      window.removeEventListener("scroll", emitSelectedBounds, {
+        capture: true,
+      });
+      window.removeEventListener("resize", emitSelectedBounds);
     };
   }, [config.editorOrigin, pageId, blocksKey]);
 
