@@ -84,6 +84,29 @@ describe("edit bridge", () => {
     );
   });
 
+  it("uses config-supplied schemas/blockMeta over the registry", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{
+          editorOrigin,
+          schemas: { fromData: { x: { type: "singleLine", label: "X" } } },
+          blockMeta: { fromData: { label: "From Data" } },
+        }}
+      />,
+    );
+    const ready = mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    )?.[0] as {
+      schemas: Record<string, unknown>;
+      blockMeta: Record<string, unknown>;
+    };
+    expect(ready.schemas.fromData).toBeDefined();
+    expect(ready.schemas.hero).toBeUndefined();
+    expect(ready.blockMeta.fromData).toEqual({ label: "From Data" });
+  });
+
   it("posts cmssy:ready with blockMeta (label + layoutPositions) so /layouts can list layout blocks", () => {
     registerComponent(Hero, {
       type: "site-header",
