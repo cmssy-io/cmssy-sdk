@@ -214,13 +214,9 @@ export function useEditBridge(
         boundsRaf = 0;
         const id = selectedIdRef.current;
         if (!id) return;
-        let el: Element | null = null;
-        for (const candidate of document.querySelectorAll("[data-block-id]")) {
-          if (candidate.getAttribute("data-block-id") === id) {
-            el = candidate;
-            break;
-          }
-        }
+        const el = document.querySelector(
+          `[data-block-id="${id.replace(/["\\]/g, "\\$&")}"]`,
+        );
         if (!el) return;
         const r = el.getBoundingClientRect();
         try {
@@ -237,14 +233,19 @@ export function useEditBridge(
 
     window.addEventListener("message", handler);
     document.addEventListener("click", onClick);
-    window.addEventListener("scroll", emitSelectedBounds, true);
+    window.addEventListener("scroll", emitSelectedBounds, {
+      capture: true,
+      passive: true,
+    });
     window.addEventListener("resize", emitSelectedBounds);
     sendReady();
     return () => {
       if (boundsRaf) cancelAnimationFrame(boundsRaf);
       window.removeEventListener("message", handler);
       document.removeEventListener("click", onClick);
-      window.removeEventListener("scroll", emitSelectedBounds, true);
+      window.removeEventListener("scroll", emitSelectedBounds, {
+        capture: true,
+      });
       window.removeEventListener("resize", emitSelectedBounds);
     };
   }, [config.editorOrigin, pageId, blocksKey]);
