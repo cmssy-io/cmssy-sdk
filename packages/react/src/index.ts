@@ -4,6 +4,9 @@ export {
   registerComponent,
   defineBlock,
   registerBlocks,
+  buildBlockMap,
+  blocksToSchemas,
+  blocksToMeta,
   getRegisteredComponent,
   getRegistry,
   getBlockSchemas,
@@ -14,7 +17,12 @@ export type {
   RegisterOptions,
   BlockRegistration,
   BlockDefinition,
+  BlockMap,
 } from "./registry";
+export { CmssyServerPage } from "./components/cmssy-server-page";
+export type { CmssyServerPageProps } from "./components/cmssy-server-page";
+export { CmssyServerLayout } from "./components/cmssy-server-layout";
+export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";
 export type {
   FieldType,

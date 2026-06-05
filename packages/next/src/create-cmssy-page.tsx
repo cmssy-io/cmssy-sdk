@@ -1,6 +1,11 @@
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
-import { fetchPage, type CmssyClientConfig } from "@cmssy/react";
+import {
+  fetchPage,
+  CmssyServerPage,
+  type BlockDefinition,
+  type CmssyClientConfig,
+} from "@cmssy/react";
 import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
@@ -22,7 +27,10 @@ function hasEditFlag(value: string | string[] | undefined): boolean {
   return Array.isArray(value) ? value.includes("1") : value === "1";
 }
 
-export function createCmssyPage(config: CmssyNextConfig) {
+export function createCmssyPage(
+  config: CmssyNextConfig,
+  blocks?: BlockDefinition[],
+) {
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
@@ -57,6 +65,17 @@ export function createCmssyPage(config: CmssyNextConfig) {
           locale={locale}
           defaultLocale={defaultLocale}
           edit={{ editorOrigin: bridgeOrigin }}
+        />
+      );
+    }
+
+    if (blocks) {
+      return (
+        <CmssyServerPage
+          page={page}
+          blocks={blocks}
+          locale={locale}
+          defaultLocale={defaultLocale}
         />
       );
     }

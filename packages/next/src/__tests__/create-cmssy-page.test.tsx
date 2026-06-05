@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type CmssyPageData } from "@cmssy/react";
+import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
 import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
 
 let draftEnabled = false;
@@ -58,6 +58,22 @@ describe("createCmssyPage", () => {
       ["about"],
       { previewSecret: undefined },
     );
+  });
+
+  it("renders the RSC server page when blocks are passed", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const blocks = [
+      defineBlock({
+        type: "editorial-intro",
+        label: "Editorial",
+        component: () => null,
+        props: {},
+      }),
+    ];
+    const Page = createCmssyPage(CONFIG, blocks);
+    const element = await Page({ params: params(["about"]) });
+    expect(element.type).toBe(CmssyServerPage);
+    expect(element.props.blocks).toBe(blocks);
   });
 
   it("renders the editable page with the draft secret in edit mode", async () => {

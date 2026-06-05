@@ -98,6 +98,50 @@ export function registerBlocks(
   }
 }
 
+export type BlockMap = Record<
+  string,
+  ComponentType<{ content: Record<string, unknown> }>
+>;
+
+export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {
+  const map: BlockMap = {};
+  for (const block of blocks) map[block.type] = block.component;
+  return map;
+}
+
+export function blocksToSchemas(
+  blocks: BlockDefinition[],
+): Record<string, BlockSchema> {
+  const out: Record<string, BlockSchema> = {};
+  for (const block of blocks) {
+    const schema: BlockSchema = {};
+    for (const [key, def] of Object.entries(block.props)) {
+      schema[key] = { ...def, label: def.label || key };
+    }
+    out[block.type] = schema;
+  }
+  return out;
+}
+
+export function blocksToMeta(
+  blocks: BlockDefinition[],
+  defaults: { category?: string } = {},
+): Record<string, BlockMeta> {
+  const out: Record<string, BlockMeta> = {};
+  for (const block of blocks) {
+    const category = block.category ?? defaults.category;
+    out[block.type] = {
+      label: block.label ?? block.type,
+      ...(category ? { category } : {}),
+      ...(block.icon ? { icon: block.icon } : {}),
+      ...(block.layoutPositions
+        ? { layoutPositions: block.layoutPositions }
+        : {}),
+    };
+  }
+  return out;
+}
+
 export function getRegisteredComponent(
   type: string,
 ): BlockRegistration | undefined {
