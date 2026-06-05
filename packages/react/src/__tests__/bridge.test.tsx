@@ -373,6 +373,73 @@ describe("edit bridge (blocks-driven)", () => {
     );
   });
 
+  it("re-posts cmssy:bounds for the selected block on scroll", () => {
+    let rafCb: FrameRequestCallback | null = null;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      rafCb = cb;
+      return 1;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    act(() => {
+      rafCb?.(0);
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "cmssy:bounds",
+        blockId: "b1",
+        rect: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+        }),
+      }),
+      editorOrigin,
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("does not schedule a frame on scroll when nothing is selected", () => {
+    let rafCb: FrameRequestCallback | null = null;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      rafCb = cb;
+      return 1;
+    });
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    mockParent.postMessage.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(rafCb).toBeNull();
+    const boundsCalls = mockParent.postMessage.mock.calls.filter(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:bounds",
+    );
+    expect(boundsCalls).toHaveLength(0);
+    vi.unstubAllGlobals();
+  });
+
   it("ignores a patch whose source is not window.parent", async () => {
     const { container } = render(
       <CmssyEditablePage
