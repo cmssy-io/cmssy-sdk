@@ -445,4 +445,94 @@ describe("edit bridge (blocks-driven)", () => {
       ),
     ).toThrow(/requires a blocks array/);
   });
+
+  it("includes DOM layout blocks (data-layout-position) in cmssy:ready, tagged with layoutPosition", () => {
+    const layoutEl = document.createElement("div");
+    layoutEl.setAttribute("data-block-id", "lay1");
+    layoutEl.setAttribute("data-block-type", "site-header");
+    layoutEl.setAttribute("data-layout-position", "header");
+    document.body.appendChild(layoutEl);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      const ready = readyMessage() as unknown as {
+        blocks: Array<{ id: string; type: string; layoutPosition?: string }>;
+      };
+      expect(ready.blocks.find((b) => b.id === "lay1")).toMatchObject({
+        id: "lay1",
+        type: "site-header",
+        layoutPosition: "header",
+      });
+      expect(
+        ready.blocks.find((b) => b.id === "b1")?.layoutPosition,
+      ).toBeUndefined();
+    } finally {
+      document.body.removeChild(layoutEl);
+    }
+  });
+
+  it("emits layoutPosition on cmssy:click for a layout block", () => {
+    const layoutEl = document.createElement("div");
+    layoutEl.setAttribute("data-block-id", "lay1");
+    layoutEl.setAttribute("data-block-type", "site-header");
+    layoutEl.setAttribute("data-layout-position", "header");
+    document.body.appendChild(layoutEl);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      act(() => {
+        layoutEl.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(mockParent.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "cmssy:click",
+          blockId: "lay1",
+          layoutPosition: "header",
+        }),
+        editorOrigin,
+      );
+    } finally {
+      document.body.removeChild(layoutEl);
+    }
+  });
+
+  it("ignores a cmssy:patch carrying a layoutPosition (page render unchanged)", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:patch",
+            blockId: "b1",
+            content: { heading: "Layout" },
+            layoutPosition: "header",
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Layout");
+  });
 });
