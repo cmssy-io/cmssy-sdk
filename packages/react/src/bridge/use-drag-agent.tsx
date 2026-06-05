@@ -19,7 +19,9 @@ function visible(el: HTMLElement): boolean {
 
 function blockElements(): HTMLElement[] {
   return Array.from(
-    document.querySelectorAll<HTMLElement>("[data-block-id]"),
+    document.querySelectorAll<HTMLElement>(
+      "[data-block-id]:not([data-layout-position])",
+    ),
   ).filter(visible);
 }
 

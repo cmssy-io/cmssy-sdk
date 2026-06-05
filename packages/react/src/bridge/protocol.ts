@@ -49,7 +49,12 @@ export interface BlockRect {
 export interface ReadyMessage {
   type: "cmssy:ready";
   protocolVersion: number;
-  blocks: Array<{ id: string; type: string; bounds: BlockRect }>;
+  blocks: Array<{
+    id: string;
+    type: string;
+    bounds: BlockRect;
+    layoutPosition?: string;
+  }>;
   schemas: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
 }
@@ -64,6 +69,7 @@ export interface ClickMessage {
   type: "cmssy:click";
   blockId: string;
   rect: BlockRect;
+  layoutPosition?: string;
 }
 
 export interface MoveMessage {
@@ -97,6 +103,7 @@ export interface PatchMessage {
   protocolVersion: number;
   blockId: string;
   content: Record<string, unknown>;
+  layoutPosition?: string;
 }
 
 export interface ParentReadyMessage {

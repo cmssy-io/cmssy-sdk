@@ -11,6 +11,7 @@ export interface CmssyBlockProps {
   blockMap: BlockMap;
   patchedContent?: Record<string, unknown>;
   editable?: boolean;
+  layoutPosition?: string;
 }
 
 export function CmssyBlock({
@@ -20,6 +21,7 @@ export function CmssyBlock({
   blockMap,
   patchedContent,
   editable,
+  layoutPosition,
 }: CmssyBlockProps) {
   const Component = Object.hasOwn(blockMap, block.type)
     ? blockMap[block.type]
@@ -30,6 +32,7 @@ export function CmssyBlock({
     <div
       data-block-id={block.id}
       data-block-type={block.type}
+      data-layout-position={layoutPosition}
       draggable={editable || undefined}
       style={Component ? undefined : { display: "none" }}
     >
