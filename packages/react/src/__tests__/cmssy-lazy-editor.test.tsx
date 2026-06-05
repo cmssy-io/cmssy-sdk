@@ -63,6 +63,36 @@ describe("CmssyLazyEditor", () => {
     expect(load).toHaveBeenCalledTimes(1);
   });
 
+  it("renders nothing and logs when load() rejects", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { container } = render(
+      <CmssyLazyEditor
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        load={() => Promise.reject(new Error("boom"))}
+      />,
+    );
+    await waitFor(() => expect(err).toHaveBeenCalled());
+    expect(container.textContent).toBe("");
+    err.mockRestore();
+  });
+
+  it("renders nothing and logs when load() resolves a non-array blocks", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { container } = render(
+      <CmssyLazyEditor
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        load={() => Promise.resolve({ blocks: undefined as unknown as never })}
+      />,
+    );
+    await waitFor(() => expect(err).toHaveBeenCalled());
+    expect(container.textContent).toBe("");
+    err.mockRestore();
+  });
+
   it("posts cmssy:ready with the resolved category after load", async () => {
     render(
       <CmssyLazyEditor
