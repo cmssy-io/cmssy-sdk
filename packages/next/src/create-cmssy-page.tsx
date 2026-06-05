@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
 import {
@@ -5,10 +6,30 @@ import {
   CmssyServerPage,
   type BlockDefinition,
   type CmssyClientConfig,
+  type CmssyPageData,
 } from "@cmssy/react";
 import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
+import type { EditBridgeConfig } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
+
+export interface CmssyEditorProps {
+  page: CmssyPageData;
+  locale: string;
+  defaultLocale: string;
+  edit: EditBridgeConfig;
+}
+
+export interface CreateCmssyPageOptions {
+  /**
+   * Consumer-supplied `"use client"` editor that imports the block array in its
+   * own module graph and renders `<CmssyEditablePage blocks={blocks} …/>`. This
+   * is how edit mode reaches the static block components without crossing the
+   * server→client prop boundary (plain server-component refs cannot be passed
+   * as props). Falls back to the global registry when omitted.
+   */
+  editor?: ComponentType<CmssyEditorProps>;
+}
 
 interface CatchAllParams {
   path?: string[];
@@ -30,7 +51,9 @@ function hasEditFlag(value: string | string[] | undefined): boolean {
 export function createCmssyPage(
   config: CmssyNextConfig,
   blocks?: BlockDefinition[],
+  options?: CreateCmssyPageOptions,
 ) {
+  const Editor = options?.editor;
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
@@ -59,6 +82,16 @@ export function createCmssyPage(
     }
 
     if (editMode) {
+      if (Editor) {
+        return (
+          <Editor
+            page={page}
+            locale={locale}
+            defaultLocale={defaultLocale}
+            edit={{ editorOrigin: bridgeOrigin }}
+          />
+        );
+      }
       return (
         <CmssyEditablePage
           page={page}
