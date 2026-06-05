@@ -208,9 +208,12 @@ export function useEditBridge(
     };
 
     let boundsRaf = 0;
+    let boundsPending = false;
     const emitSelectedBounds = () => {
-      if (boundsRaf) return;
+      if (boundsPending || !selectedIdRef.current) return;
+      boundsPending = true;
       boundsRaf = requestAnimationFrame(() => {
+        boundsPending = false;
         boundsRaf = 0;
         const id = selectedIdRef.current;
         if (!id) return;

@@ -374,10 +374,11 @@ describe("edit bridge (blocks-driven)", () => {
   });
 
   it("re-posts cmssy:bounds for the selected block on scroll", () => {
-    vi.stubGlobal(
-      "requestAnimationFrame",
-      (cb: FrameRequestCallback) => (cb(0), 1),
-    );
+    let rafCb: FrameRequestCallback | null = null;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      rafCb = cb;
+      return 1;
+    });
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
     const { container } = render(
       <CmssyEditablePage
@@ -396,6 +397,9 @@ describe("edit bridge (blocks-driven)", () => {
     act(() => {
       window.dispatchEvent(new Event("scroll"));
     });
+    act(() => {
+      rafCb?.(0);
+    });
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:bounds",
@@ -410,11 +414,12 @@ describe("edit bridge (blocks-driven)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not post cmssy:bounds on scroll when nothing is selected", () => {
-    vi.stubGlobal(
-      "requestAnimationFrame",
-      (cb: FrameRequestCallback) => (cb(0), 1),
-    );
+  it("does not schedule a frame on scroll when nothing is selected", () => {
+    let rafCb: FrameRequestCallback | null = null;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      rafCb = cb;
+      return 1;
+    });
     render(
       <CmssyEditablePage
         page={page}
@@ -427,6 +432,7 @@ describe("edit bridge (blocks-driven)", () => {
     act(() => {
       window.dispatchEvent(new Event("scroll"));
     });
+    expect(rafCb).toBeNull();
     const boundsCalls = mockParent.postMessage.mock.calls.filter(
       (c) => (c[0] as { type?: string })?.type === "cmssy:bounds",
     );
