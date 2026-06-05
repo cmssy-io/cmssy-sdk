@@ -1,176 +1,128 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  registerComponent,
   defineBlock,
-  registerBlocks,
-  getRegisteredComponent,
-  getBlockSchemas,
-  getBlockMeta,
-  clearRegistry,
-  REGISTRY_KEY,
+  buildBlockMap,
+  blocksToSchemas,
+  blocksToMeta,
 } from "../registry";
 import { fields } from "../fields";
 import { PROTOCOL_VERSION, isProtocolCompatible } from "../bridge/protocol";
 
 const Dummy = () => null;
 
-describe("defineBlock / registerBlocks", () => {
-  beforeEach(() => clearRegistry());
-
-  it("registers a list with a shared default category and no casts", () => {
-    const Hero = (_props: { content: { title?: string } }) => null;
-    const Footer = (_props: { content: { brand?: string } }) => null;
-    const hero = defineBlock({
-      type: "hero",
-      label: "Hero",
-      component: Hero,
-      props: { title: fields.singleLine({ label: "Tytuł" }) },
+describe("defineBlock", () => {
+  it("returns the definition unchanged and accepts a narrowly-typed content prop", () => {
+    const Typed = ({ content }: { content: { heading: string } }) =>
+      content.heading;
+    const block = defineBlock({
+      type: "typed",
+      label: "Typed",
+      component: Typed,
+      props: { heading: fields.singleLine() },
     });
-    const footer = defineBlock({
-      type: "footer",
-      label: "Footer",
-      component: Footer,
-      layoutPositions: ["footer"],
-      props: { brand: fields.singleLine({ label: "Marka" }) },
-    });
+    expect(block.type).toBe("typed");
+    expect(block.label).toBe("Typed");
+    expect(block.component).toBe(Typed);
+  });
+});
 
-    registerBlocks([hero, footer], { category: "kancelaria" });
-
-    const h = getRegisteredComponent("hero");
-    expect(h?.label).toBe("Hero");
-    expect(h?.category).toBe("kancelaria");
-    expect(h?.schema.title?.type).toBe("singleLine");
-    const f = getRegisteredComponent("footer");
-    expect(f?.layoutPositions).toEqual(["footer"]);
-    expect(f?.category).toBe("kancelaria");
+describe("buildBlockMap", () => {
+  it("maps type → component", () => {
+    const hero = defineBlock({ type: "hero", component: Dummy, props: {} });
+    const footer = defineBlock({ type: "footer", component: Dummy, props: {} });
+    const map = buildBlockMap([hero, footer]);
+    expect(map.hero).toBe(Dummy);
+    expect(map.footer).toBe(Dummy);
   });
 
-  it("lets a block override the default category", () => {
-    registerBlocks(
+  it("is null-prototype so a CMS type like __proto__/toString can't resolve to a prototype member", () => {
+    const map = buildBlockMap([
+      defineBlock({ type: "hero", component: Dummy, props: {} }),
+    ]);
+    expect(Object.getPrototypeOf(map)).toBeNull();
+    expect(map["toString"]).toBeUndefined();
+    expect(map["__proto__"]).toBeUndefined();
+  });
+});
+
+describe("blocksToSchemas", () => {
+  it("derives a schema per block and defaults a field label to its key", () => {
+    const schemas = blocksToSchemas([
+      defineBlock({
+        type: "editorial-intro",
+        component: Dummy,
+        props: {
+          kicker: fields.singleLine({ defaultValue: "Nasze usługi" }),
+          body: fields.richText({ label: "Treść" }),
+        },
+      }),
+    ]);
+    expect(schemas["editorial-intro"]!.kicker?.type).toBe("singleLine");
+    expect(schemas["editorial-intro"]!.kicker?.defaultValue).toBe(
+      "Nasze usługi",
+    );
+    expect(schemas["editorial-intro"]!.kicker?.label).toBe("kicker");
+    expect(schemas["editorial-intro"]!.body?.label).toBe("Treść");
+  });
+
+  it("is null-prototype", () => {
+    const schemas = blocksToSchemas([
+      defineBlock({ type: "hero", component: Dummy, props: {} }),
+    ]);
+    expect(Object.getPrototypeOf(schemas)).toBeNull();
+  });
+});
+
+describe("blocksToMeta", () => {
+  it("derives label/category/icon/layoutPositions and applies the default category", () => {
+    const meta = blocksToMeta(
       [
         defineBlock({
-          type: "special",
-          label: "Special",
+          type: "site-header",
+          label: "Site Header",
+          icon: "layout-panel-top",
+          layoutPositions: ["header"],
           component: Dummy,
-          category: "custom",
+          props: {},
+        }),
+        defineBlock({
+          type: "hero",
+          label: "Hero",
+          component: Dummy,
           props: {},
         }),
       ],
       { category: "kancelaria" },
     );
-    expect(getRegisteredComponent("special")?.category).toBe("custom");
-  });
-});
-
-describe("registry", () => {
-  beforeEach(() => clearRegistry());
-
-  it("registers a component with a field schema (editorial-intro shape)", () => {
-    registerComponent(Dummy, {
-      type: "editorial-intro",
-      label: "Editorial Intro",
-      category: "marketing",
-      props: {
-        kicker: fields.singleLine({ defaultValue: "Nasze usługi" }),
-        body: fields.richText(),
-        image: fields.media(),
-        ctaHref: fields.link(),
-      },
-    });
-    const reg = getRegisteredComponent("editorial-intro");
-    expect(reg?.label).toBe("Editorial Intro");
-    expect(reg?.category).toBe("marketing");
-    expect(reg?.schema.kicker?.type).toBe("singleLine");
-    expect(reg?.schema.kicker?.defaultValue).toBe("Nasze usługi");
-    expect(reg?.schema.body?.type).toBe("richText");
-    expect(reg?.schema.image?.type).toBe("media");
-    expect(reg?.schema.ctaHref?.type).toBe("link");
-  });
-
-  it("accepts a component whose content prop is typed more narrowly", () => {
-    const Typed = ({ content }: { content: { heading: string } }) =>
-      content.heading;
-    registerComponent(Typed, {
-      type: "typed",
-      props: { heading: fields.singleLine() },
-    });
-    expect(getRegisteredComponent("typed")?.type).toBe("typed");
-  });
-
-  it("defaults a field label to its key when omitted", () => {
-    registerComponent(Dummy, {
-      type: "x",
-      props: { heading: fields.singleLine() },
-    });
-    expect(getRegisteredComponent("x")?.schema.heading?.label).toBe("heading");
-  });
-
-  it("keeps an explicit field label", () => {
-    registerComponent(Dummy, {
-      type: "y",
-      props: { heading: fields.singleLine({ label: "Title" }) },
-    });
-    expect(getRegisteredComponent("y")?.schema.heading?.label).toBe("Title");
-  });
-
-  it("defaults the block label to its type", () => {
-    registerComponent(Dummy, { type: "footer", props: {} });
-    expect(getRegisteredComponent("footer")?.label).toBe("footer");
-  });
-
-  it("exposes all schemas for the bridge ready payload", () => {
-    registerComponent(Dummy, { type: "a", props: { t: fields.singleLine() } });
-    registerComponent(Dummy, { type: "b", props: { n: fields.numeric() } });
-    const schemas = getBlockSchemas();
-    expect(Object.keys(schemas).sort()).toEqual(["a", "b"]);
-    expect(schemas.a?.t?.type).toBe("singleLine");
-  });
-
-  it("registers a layout block with icon + layoutPositions", () => {
-    registerComponent(Dummy, {
-      type: "site-header",
-      label: "Site Header",
-      icon: "layout-panel-top",
-      layoutPositions: ["header"],
-      props: { logo: fields.media() },
-    });
-    const reg = getRegisteredComponent("site-header");
-    expect(reg?.icon).toBe("layout-panel-top");
-    expect(reg?.layoutPositions).toEqual(["header"]);
-  });
-
-  it("exposes block meta (label/category/icon/layoutPositions) for the ready payload", () => {
-    registerComponent(Dummy, {
-      type: "site-header",
-      label: "Site Header",
-      category: "layout",
-      icon: "layout-panel-top",
-      layoutPositions: ["header"],
-      props: {},
-    });
-    registerComponent(Dummy, {
-      type: "hero",
-      label: "Hero",
-      props: {},
-    });
-    const meta = getBlockMeta();
     expect(meta["site-header"]).toEqual({
       label: "Site Header",
-      category: "layout",
+      category: "kancelaria",
       icon: "layout-panel-top",
       layoutPositions: ["header"],
     });
-    // Page blocks carry no layoutPositions, so the drawer keeps them.
-    expect(meta.hero).toEqual({ label: "Hero" });
+    expect(meta.hero).toEqual({ label: "Hero", category: "kancelaria" });
   });
 
-  it("backs the registry with a single globalThis Map so the index and client bundles share one instance", () => {
-    registerComponent(Dummy, { type: "shared", props: {} });
-    const store = (globalThis as Record<string, unknown>)[REGISTRY_KEY] as
-      | Map<string, unknown>
-      | undefined;
-    expect(store).toBeInstanceOf(Map);
-    expect(store?.has("shared")).toBe(true);
+  it("lets a block override the default category and defaults the label to the type", () => {
+    const meta = blocksToMeta(
+      [
+        defineBlock({
+          type: "special",
+          category: "custom",
+          component: Dummy,
+          props: {},
+        }),
+      ],
+      { category: "kancelaria" },
+    );
+    expect(meta.special).toEqual({ label: "special", category: "custom" });
+  });
+
+  it("is null-prototype", () => {
+    const meta = blocksToMeta([
+      defineBlock({ type: "hero", component: Dummy, props: {} }),
+    ]);
+    expect(Object.getPrototypeOf(meta)).toBeNull();
   });
 });
 
