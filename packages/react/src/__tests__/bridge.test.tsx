@@ -373,6 +373,67 @@ describe("edit bridge (blocks-driven)", () => {
     );
   });
 
+  it("re-posts cmssy:bounds for the selected block on scroll", () => {
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      (cb: FrameRequestCallback) => (cb(0), 1),
+    );
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "cmssy:bounds",
+        blockId: "b1",
+        rect: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+        }),
+      }),
+      editorOrigin,
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("does not post cmssy:bounds on scroll when nothing is selected", () => {
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      (cb: FrameRequestCallback) => (cb(0), 1),
+    );
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    mockParent.postMessage.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    const boundsCalls = mockParent.postMessage.mock.calls.filter(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:bounds",
+    );
+    expect(boundsCalls).toHaveLength(0);
+    vi.unstubAllGlobals();
+  });
+
   it("ignores a patch whose source is not window.parent", async () => {
     const { container } = render(
       <CmssyEditablePage
