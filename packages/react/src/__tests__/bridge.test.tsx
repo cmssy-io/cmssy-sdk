@@ -535,4 +535,32 @@ describe("edit bridge (blocks-driven)", () => {
     expect(container.textContent).toContain("Hello|World");
     expect(container.textContent).not.toContain("Layout");
   });
+
+  it("ignores a cmssy:patch carrying an empty-string layoutPosition", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:patch",
+            blockId: "b1",
+            content: { heading: "EmptyPos" },
+            layoutPosition: "",
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("EmptyPos");
+  });
 });
