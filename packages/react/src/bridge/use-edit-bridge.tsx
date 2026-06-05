@@ -90,8 +90,12 @@ export function useEditBridge(
             type: b.type,
             bounds: rects.get(b.id) ?? ZERO_RECT,
           })),
-          schemas: config.schemas ?? {},
-          blockMeta: config.blockMeta ?? {},
+          schemas:
+            config.schemas ??
+            (Object.create(null) as Record<string, BlockSchema>),
+          blockMeta:
+            config.blockMeta ??
+            (Object.create(null) as Record<string, BlockMeta>),
         });
       } catch (error) {
         if (typeof console !== "undefined") {

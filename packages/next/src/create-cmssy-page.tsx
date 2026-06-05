@@ -45,6 +45,11 @@ export function createCmssyPage(
   blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
 ) {
+  if (!Array.isArray(blocks)) {
+    throw new Error(
+      "cmssy: createCmssyPage(config, blocks) requires a blocks array — pass your defineBlock(...) array",
+    );
+  }
   const Editor = options?.editor;
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
