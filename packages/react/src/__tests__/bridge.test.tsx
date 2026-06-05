@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyPage } from "../components/cmssy-page";
 import { CmssyEditablePage } from "../components/editable-page";
-import { registerComponent, clearRegistry } from "../registry";
+import { registerComponent, clearRegistry, defineBlock } from "../registry";
 import { fields } from "../fields";
 import { PROTOCOL_VERSION } from "../bridge/protocol";
 
@@ -561,5 +561,230 @@ describe("edit bridge", () => {
   it("the server CmssyPage does not mount the bridge", () => {
     render(<CmssyPage page={page} locale="en" />);
     expect(mockParent.postMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe("edit bridge (blocks-driven, no registry)", () => {
+  const heroBlock = defineBlock({
+    type: "hero",
+    label: "Hero",
+    component: Hero,
+    props: { heading: fields.singleLine(), sub: fields.singleLine() },
+  });
+  const blocks = [heroBlock];
+
+  function readyMessage() {
+    return mockParent.postMessage.mock.calls.find(
+      (c) => (c[0] as { type?: string })?.type === "cmssy:ready",
+    )?.[0] as {
+      schemas: Record<string, unknown>;
+      blockMeta: Record<string, unknown>;
+    };
+  }
+
+  beforeEach(() => {
+    cleanup();
+    // Empty registry: rendering must come from the passed array, not globals.
+    clearRegistry();
+    mockParent = { postMessage: vi.fn() };
+    setParent(mockParent);
+  });
+
+  afterEach(() => {
+    setParent(window);
+  });
+
+  it("renders blocks from the passed array without registering them", () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    expect(container.textContent).toContain("Hello|World");
+  });
+
+  it("derives cmssy:ready schemas/blockMeta from the blocks array", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const ready = readyMessage();
+    expect(ready.schemas.hero).toBeDefined();
+    expect(ready.blockMeta.hero).toEqual({ label: "Hero" });
+  });
+
+  it("applies the category prop to derived blockMeta", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+        category="Marketing"
+      />,
+    );
+    expect(readyMessage().blockMeta.hero).toEqual({
+      label: "Hero",
+      category: "Marketing",
+    });
+  });
+
+  it("lets explicit edit.schemas/blockMeta override the derived ones", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{
+          editorOrigin,
+          schemas: { custom: { x: { type: "singleLine", label: "X" } } },
+          blockMeta: { custom: { label: "Custom" } },
+        }}
+        blocks={blocks}
+      />,
+    );
+    const ready = readyMessage();
+    expect(ready.schemas.custom).toBeDefined();
+    expect(ready.schemas.hero).toBeUndefined();
+    expect(ready.blockMeta.custom).toEqual({ label: "Custom" });
+  });
+
+  it("live-patches a block sourced from the array", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    expect(container.textContent).toContain("Hello|World");
+    await act(async () => {
+      window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
+    });
+    expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("inserts a block sourced from the array", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:insert",
+            blockId: "new-1",
+            blockType: "hero",
+            content: { heading: "Fresh", sub: "Inserted" },
+            index: 0,
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    const headings = Array.from(container.querySelectorAll("h1")).map(
+      (h) => h.textContent,
+    );
+    expect(headings).toEqual(["Fresh|Inserted", "Hello|World"]);
+  });
+
+  it("reorders blocks sourced from the array", async () => {
+    const twoBlocks = {
+      id: "p2",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "First" } } },
+        { id: "b2", type: "hero", content: { en: { heading: "Second" } } },
+      ],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={twoBlocks}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:reorder",
+            blockIds: ["b2", "b1"],
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(
+      Array.from(container.querySelectorAll("h1")).map((h) => h.textContent),
+    ).toEqual(["Second|", "First|"]);
+  });
+
+  it("removes a block sourced from the array", async () => {
+    const twoBlocks = {
+      id: "p3",
+      blocks: [
+        { id: "b1", type: "hero", content: { en: { heading: "Keep" } } },
+        { id: "b2", type: "hero", content: { en: { heading: "Gone" } } },
+      ],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={twoBlocks}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    expect(container.textContent).toContain("Gone|");
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:remove",
+            blockId: "b2",
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(container.textContent).not.toContain("Gone|");
+  });
+
+  it("hides a block whose type is absent from the array (no registry fallback)", () => {
+    const orphan = {
+      id: "po",
+      blocks: [{ id: "bx", type: "missing", content: { en: {} } }],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={orphan}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const wrapper = container.querySelector(
+      '[data-block-id="bx"]',
+    ) as HTMLElement | null;
+    expect(wrapper?.style.display).toBe("none");
   });
 });
