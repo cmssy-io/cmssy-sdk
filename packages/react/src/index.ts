@@ -1,24 +1,12 @@
 export { fields } from "./fields";
 export type { FieldControl } from "./fields";
 export {
-  registerComponent,
   defineBlock,
-  registerBlocks,
   buildBlockMap,
   blocksToSchemas,
   blocksToMeta,
-  getRegisteredComponent,
-  getRegistry,
-  getBlockSchemas,
-  getBlockMeta,
-  clearRegistry,
 } from "./registry";
-export type {
-  RegisterOptions,
-  BlockRegistration,
-  BlockDefinition,
-  BlockMap,
-} from "./registry";
+export type { BlockDefinition, BlockMap } from "./registry";
 export { CmssyServerPage } from "./components/cmssy-server-page";
 export type { CmssyServerPageProps } from "./components/cmssy-server-page";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
@@ -84,10 +72,7 @@ export type {
   FetchRecordsOptions,
 } from "./data/records-client";
 
-export { CmssyPage } from "./components/cmssy-page";
-export type { CmssyPageProps } from "./components/cmssy-page";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
-export type { CmssyLayoutProps } from "./components/cmssy-layout";
 export { UnknownBlock } from "./components/unknown-block";
 export type { UnknownBlockProps } from "./components/unknown-block";

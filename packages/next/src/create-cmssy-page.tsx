@@ -8,7 +8,6 @@ import {
   type CmssyClientConfig,
   type CmssyPageData,
 } from "@cmssy/react";
-import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
@@ -21,13 +20,6 @@ export interface CmssyEditorProps {
 }
 
 export interface CreateCmssyPageOptions {
-  /**
-   * Consumer-supplied `"use client"` editor that imports the block array in its
-   * own module graph and renders `<CmssyEditablePage blocks={blocks} …/>`. This
-   * is how edit mode reaches the static block components without crossing the
-   * server→client prop boundary (plain server-component refs cannot be passed
-   * as props). Falls back to the global registry when omitted.
-   */
   editor?: ComponentType<CmssyEditorProps>;
 }
 
@@ -50,7 +42,7 @@ function hasEditFlag(value: string | string[] | undefined): boolean {
 
 export function createCmssyPage(
   config: CmssyNextConfig,
-  blocks?: BlockDefinition[],
+  blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
 ) {
   const Editor = options?.editor;
@@ -82,18 +74,13 @@ export function createCmssyPage(
     }
 
     if (editMode) {
-      if (Editor) {
-        return (
-          <Editor
-            page={page}
-            locale={locale}
-            defaultLocale={defaultLocale}
-            edit={{ editorOrigin: bridgeOrigin }}
-          />
+      if (!Editor) {
+        throw new Error(
+          'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
         );
       }
       return (
-        <CmssyEditablePage
+        <Editor
           page={page}
           locale={locale}
           defaultLocale={defaultLocale}
@@ -102,20 +89,10 @@ export function createCmssyPage(
       );
     }
 
-    if (blocks) {
-      return (
-        <CmssyServerPage
-          page={page}
-          blocks={blocks}
-          locale={locale}
-          defaultLocale={defaultLocale}
-        />
-      );
-    }
-
     return (
-      <CmssyClientPage
+      <CmssyServerPage
         page={page}
+        blocks={blocks}
         locale={locale}
         defaultLocale={defaultLocale}
       />
