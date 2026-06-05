@@ -1,6 +1,13 @@
 import { useMemo } from "react";
 import type { CmssyPageData, RawBlock } from "../content/content-client";
 import {
+  blocksToMeta,
+  blocksToSchemas,
+  buildBlockMap,
+  type BlockDefinition,
+  type BlockMap,
+} from "../registry";
+import {
   useEditBridge,
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
@@ -12,6 +19,8 @@ export interface CmssyEditablePageProps {
   locale?: string;
   defaultLocale?: string;
   edit: EditBridgeConfig;
+  blocks?: BlockDefinition[];
+  category?: string;
 }
 
 export function CmssyEditablePage({
@@ -19,6 +28,8 @@ export function CmssyEditablePage({
   locale = "en",
   defaultLocale = "en",
   edit,
+  blocks,
+  category,
 }: CmssyEditablePageProps) {
   if (!page) return null;
   return (
@@ -27,6 +38,8 @@ export function CmssyEditablePage({
       locale={locale}
       defaultLocale={defaultLocale}
       edit={edit}
+      blocks={blocks}
+      category={category}
     />
   );
 }
@@ -36,6 +49,8 @@ interface EditableBlocksProps {
   locale: string;
   defaultLocale: string;
   edit: EditBridgeConfig;
+  blocks?: BlockDefinition[];
+  category?: string;
 }
 
 function EditableBlocks({
@@ -43,11 +58,30 @@ function EditableBlocks({
   locale,
   defaultLocale,
   edit,
+  blocks,
+  category,
 }: EditableBlocksProps) {
-  const { patches, inserted, order, removed } = useEditBridge(page, edit);
-  const { dropY } = useDragAgent(edit);
+  const blockMap = useMemo<BlockMap | undefined>(
+    () => (blocks ? buildBlockMap(blocks) : undefined),
+    [blocks],
+  );
 
-  const blocks = useMemo<RawBlock[]>(() => {
+  const bridgeConfig = useMemo<EditBridgeConfig>(() => {
+    if (!blocks) return edit;
+    return {
+      ...edit,
+      schemas: edit.schemas ?? blocksToSchemas(blocks),
+      blockMeta: edit.blockMeta ?? blocksToMeta(blocks, { category }),
+    };
+  }, [edit, blocks, category]);
+
+  const { patches, inserted, order, removed } = useEditBridge(
+    page,
+    bridgeConfig,
+  );
+  const { dropY } = useDragAgent(bridgeConfig);
+
+  const renderBlocks = useMemo<RawBlock[]>(() => {
     const removedSet = new Set(removed);
     const merged = page.blocks.filter((b) => !removedSet.has(b.id));
     const sorted = [...inserted]
@@ -73,13 +107,14 @@ function EditableBlocks({
 
   return (
     <>
-      {blocks.map((block) => (
+      {renderBlocks.map((block) => (
         <CmssyBlock
           key={block.id}
           block={block}
           locale={locale}
           defaultLocale={defaultLocale}
           patchedContent={patches[block.id]}
+          blockMap={blockMap}
           editable
         />
       ))}

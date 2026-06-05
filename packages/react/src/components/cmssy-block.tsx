@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { getRegisteredComponent } from "../registry";
+import { getRegisteredComponent, type BlockMap } from "../registry";
 import { getBlockContentForLanguage } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
 import { UnknownBlock } from "./unknown-block";
@@ -10,6 +10,7 @@ export interface CmssyBlockProps {
   defaultLocale: string;
   patchedContent?: Record<string, unknown>;
   editable?: boolean;
+  blockMap?: BlockMap;
 }
 
 export function CmssyBlock({
@@ -18,8 +19,13 @@ export function CmssyBlock({
   defaultLocale,
   patchedContent,
   editable,
+  blockMap,
 }: CmssyBlockProps) {
-  const registration = getRegisteredComponent(block.type);
+  const Component = blockMap
+    ? Object.hasOwn(blockMap, block.type)
+      ? blockMap[block.type]
+      : undefined
+    : getRegisteredComponent(block.type)?.component;
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
   return (
@@ -27,10 +33,10 @@ export function CmssyBlock({
       data-block-id={block.id}
       data-block-type={block.type}
       draggable={editable || undefined}
-      style={registration ? undefined : { display: "none" }}
+      style={Component ? undefined : { display: "none" }}
     >
-      {registration ? (
-        createElement(registration.component, { content })
+      {Component ? (
+        createElement(Component, { content })
       ) : (
         <UnknownBlock type={block.type} />
       )}

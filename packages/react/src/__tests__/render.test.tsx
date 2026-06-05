@@ -5,6 +5,7 @@ import { CmssyClientPage } from "../components/cmssy-client-page";
 import { CmssyLayout } from "../components/cmssy-layout";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyServerLayout } from "../components/cmssy-server-layout";
+import { CmssyBlock } from "../components/cmssy-block";
 import {
   registerComponent,
   clearRegistry,
@@ -56,6 +57,44 @@ describe("CmssyPage", () => {
 
   it("renders nothing for a null page", () => {
     expect(renderToStaticMarkup(<CmssyPage page={null} />)).toBe("");
+  });
+});
+
+describe("CmssyBlock blockMap proto-safety", () => {
+  // A consumer may pass a plain-object blockMap; a CMS-supplied type like
+  // "toString"/"__proto__" must not resolve to a prototype member.
+  for (const evilType of ["toString", "constructor", "__proto__"]) {
+    it(`treats "${evilType}" as unknown when not an own key of a plain map`, () => {
+      const block = { id: "bx", type: evilType, content: {} };
+      const html = renderToStaticMarkup(
+        <CmssyBlock
+          block={block}
+          locale="en"
+          defaultLocale="en"
+          blockMap={{}}
+        />,
+      );
+      expect(html).toContain(`data-cmssy-unknown-block="${evilType}"`);
+      expect(html).toContain("display:none");
+    });
+  }
+
+  it("still resolves a real own entry in the map", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{ id: "b1", type: "hero", content: { en: { heading: "Hi" } } }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={buildBlockMap([
+          defineBlock({
+            type: "hero",
+            component: Hero,
+            props: { heading: fields.singleLine() },
+          }),
+        ])}
+      />,
+    );
+    expect(html).toContain("Hi");
   });
 });
 
