@@ -9,6 +9,7 @@ export function useLayoutPatchBridge(
   const [patches, setPatches] = useState<PatchMap>({});
 
   useEffect(() => {
+    setPatches({});
     if (typeof window === "undefined" || window.parent === window) return;
     const { editorOrigin } = config;
     const handler = (event: MessageEvent) => {

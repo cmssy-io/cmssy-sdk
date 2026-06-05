@@ -121,6 +121,31 @@ describe("drag agent", () => {
     );
   });
 
+  it("excludes layout blocks (data-layout-position) from the page drop index", () => {
+    const layoutEl = document.createElement("div");
+    layoutEl.setAttribute("data-block-id", "lay1");
+    layoutEl.setAttribute("data-layout-position", "header");
+    document.body.appendChild(layoutEl);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      stubBlockRects();
+      window.dispatchEvent(dragOver(150));
+      expect(mockParent.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "cmssy:drag-index", index: 2 }),
+        editorOrigin,
+      );
+    } finally {
+      document.body.removeChild(layoutEl);
+    }
+  });
+
   it("auto-scrolls down when the drag-over cursor nears the bottom edge", () => {
     render(
       <CmssyEditablePage
