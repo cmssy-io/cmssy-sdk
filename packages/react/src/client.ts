@@ -1,11 +1,9 @@
 "use client";
 
-export { CmssyLayout } from "./components/cmssy-layout";
-export type { CmssyLayoutProps } from "./components/cmssy-layout";
-export { CmssyClientPage } from "./components/cmssy-client-page";
-export type { CmssyClientPageProps } from "./components/cmssy-client-page";
 export { CmssyEditablePage } from "./components/editable-page";
 export type { CmssyEditablePageProps } from "./components/editable-page";
+export { CmssyLazyEditor } from "./components/cmssy-lazy-editor";
+export type { CmssyLazyEditorProps } from "./components/cmssy-lazy-editor";
 export { useEditBridge } from "./bridge/use-edit-bridge";
 export type {
   EditBridgeConfig,

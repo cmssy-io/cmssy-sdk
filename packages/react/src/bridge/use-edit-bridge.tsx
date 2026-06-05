@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getBlockMeta, getBlockSchemas } from "../registry";
 import {
   PROTOCOL_VERSION,
   type BlockMeta,
@@ -91,8 +90,12 @@ export function useEditBridge(
             type: b.type,
             bounds: rects.get(b.id) ?? ZERO_RECT,
           })),
-          schemas: config.schemas ?? getBlockSchemas(),
-          blockMeta: config.blockMeta ?? getBlockMeta(),
+          schemas:
+            config.schemas ??
+            (Object.create(null) as Record<string, BlockSchema>),
+          blockMeta:
+            config.blockMeta ??
+            (Object.create(null) as Record<string, BlockMeta>),
         });
       } catch (error) {
         if (typeof console !== "undefined") {
