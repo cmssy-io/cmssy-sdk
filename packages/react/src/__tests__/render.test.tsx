@@ -3,7 +3,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CmssyPage } from "../components/cmssy-page";
 import { CmssyClientPage } from "../components/cmssy-client-page";
 import { CmssyLayout } from "../components/cmssy-layout";
-import { registerComponent, clearRegistry } from "../registry";
+import { CmssyServerPage } from "../components/cmssy-server-page";
+import { CmssyServerLayout } from "../components/cmssy-server-layout";
+import {
+  registerComponent,
+  clearRegistry,
+  defineBlock,
+  blocksToSchemas,
+  blocksToMeta,
+  buildBlockMap,
+} from "../registry";
 import { fields } from "../fields";
 
 const Hero = ({ content }: { content: Record<string, unknown> }) => (
@@ -126,5 +135,115 @@ describe("CmssyLayout", () => {
         <CmssyLayout groups={groups} position="footer" locale="en" />,
       ),
     ).toBe("");
+  });
+});
+
+describe("block-array helpers (registry-free)", () => {
+  const heroBlock = defineBlock({
+    type: "hero",
+    label: "Hero",
+    component: Hero,
+    props: { heading: fields.singleLine() },
+  });
+  const footerBlock = defineBlock({
+    type: "footer",
+    label: "Footer",
+    component: Hero,
+    layoutPositions: ["footer"],
+    props: { brand: fields.singleLine() },
+  });
+
+  it("buildBlockMap maps type to component", () => {
+    const map = buildBlockMap([heroBlock, footerBlock]);
+    expect(map.hero).toBe(Hero);
+    expect(map.footer).toBe(Hero);
+    expect(map.missing).toBeUndefined();
+  });
+
+  it("blocksToSchemas derives field schemas with key fallback labels", () => {
+    const schemas = blocksToSchemas([heroBlock]);
+    expect(schemas.hero?.heading?.type).toBe("singleLine");
+    expect(schemas.hero?.heading?.label).toBe("heading");
+  });
+
+  it("blocksToMeta derives label/category/layoutPositions", () => {
+    const meta = blocksToMeta([heroBlock, footerBlock], {
+      category: "kancelaria",
+    });
+    expect(meta.hero).toEqual({ label: "Hero", category: "kancelaria" });
+    expect(meta.footer).toEqual({
+      label: "Footer",
+      category: "kancelaria",
+      layoutPositions: ["footer"],
+    });
+  });
+});
+
+describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => {
+  beforeEach(() => clearRegistry());
+
+  const heroBlock = defineBlock({
+    type: "hero",
+    label: "Hero",
+    component: Hero,
+    props: { heading: fields.singleLine() },
+  });
+
+  it("renders blocks from the passed array without any global registration", () => {
+    const html = renderToStaticMarkup(
+      <CmssyServerPage
+        page={{
+          id: "p",
+          blocks: [
+            { id: "b1", type: "hero", content: { en: { heading: "Hi" } } },
+          ],
+        }}
+        blocks={[heroBlock]}
+        locale="en"
+      />,
+    );
+    expect(html).toContain('data-block-id="b1"');
+    expect(html).toContain("Hi");
+  });
+
+  it("renders only active layout blocks sorted by order", () => {
+    const groups = [
+      {
+        position: "footer",
+        blocks: [
+          {
+            id: "f2",
+            type: "hero",
+            content: { en: { heading: "B" } },
+            order: 2,
+            isActive: true,
+          },
+          {
+            id: "f1",
+            type: "hero",
+            content: { en: { heading: "A" } },
+            order: 1,
+            isActive: true,
+          },
+          {
+            id: "f3",
+            type: "hero",
+            content: { en: { heading: "Off" } },
+            order: 3,
+            isActive: false,
+          },
+        ],
+      },
+    ];
+    const html = renderToStaticMarkup(
+      <CmssyServerLayout
+        groups={groups}
+        blocks={[heroBlock]}
+        position="footer"
+        locale="en"
+      />,
+    );
+    expect(html.indexOf("A")).toBeLessThan(html.indexOf("B"));
+    expect(html).not.toContain("Off");
   });
 });
