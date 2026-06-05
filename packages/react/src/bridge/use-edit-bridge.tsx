@@ -146,7 +146,7 @@ export function useEditBridge(
       );
       if (!message) return;
       if (message.type === "cmssy:patch") {
-        if (message.layoutPosition) return;
+        if (message.layoutPosition !== undefined) return;
         setPatches((prev) => ({
           ...prev,
           [message.blockId]: { ...prev[message.blockId], ...message.content },
