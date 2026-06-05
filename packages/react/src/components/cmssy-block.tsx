@@ -22,7 +22,9 @@ export function CmssyBlock({
   blockMap,
 }: CmssyBlockProps) {
   const Component = blockMap
-    ? blockMap[block.type]
+    ? Object.hasOwn(blockMap, block.type)
+      ? blockMap[block.type]
+      : undefined
     : getRegisteredComponent(block.type)?.component;
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
