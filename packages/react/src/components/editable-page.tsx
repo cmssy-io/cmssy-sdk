@@ -5,7 +5,6 @@ import {
   blocksToSchemas,
   buildBlockMap,
   type BlockDefinition,
-  type BlockMap,
 } from "../registry";
 import {
   useEditBridge,
@@ -16,29 +15,34 @@ import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
   page: CmssyPageData | null;
+  blocks: BlockDefinition[];
   locale?: string;
   defaultLocale?: string;
   edit: EditBridgeConfig;
-  blocks?: BlockDefinition[];
   category?: string;
 }
 
 export function CmssyEditablePage({
   page,
+  blocks,
   locale = "en",
   defaultLocale = "en",
   edit,
-  blocks,
   category,
 }: CmssyEditablePageProps) {
+  if (!Array.isArray(blocks)) {
+    throw new Error(
+      "cmssy: CmssyEditablePage requires a blocks array — pass your defineBlock(...) array",
+    );
+  }
   if (!page) return null;
   return (
     <EditableBlocks
       page={page}
+      blocks={blocks}
       locale={locale}
       defaultLocale={defaultLocale}
       edit={edit}
-      blocks={blocks}
       category={category}
     />
   );
@@ -46,34 +50,31 @@ export function CmssyEditablePage({
 
 interface EditableBlocksProps {
   page: CmssyPageData;
+  blocks: BlockDefinition[];
   locale: string;
   defaultLocale: string;
   edit: EditBridgeConfig;
-  blocks?: BlockDefinition[];
   category?: string;
 }
 
 function EditableBlocks({
   page,
+  blocks,
   locale,
   defaultLocale,
   edit,
-  blocks,
   category,
 }: EditableBlocksProps) {
-  const blockMap = useMemo<BlockMap | undefined>(
-    () => (blocks ? buildBlockMap(blocks) : undefined),
-    [blocks],
-  );
+  const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
 
-  const bridgeConfig = useMemo<EditBridgeConfig>(() => {
-    if (!blocks) return edit;
-    return {
+  const bridgeConfig = useMemo<EditBridgeConfig>(
+    () => ({
       ...edit,
       schemas: edit.schemas ?? blocksToSchemas(blocks),
       blockMeta: edit.blockMeta ?? blocksToMeta(blocks, { category }),
-    };
-  }, [edit, blocks, category]);
+    }),
+    [edit, blocks, category],
+  );
 
   const { patches, inserted, order, removed } = useEditBridge(
     page,

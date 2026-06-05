@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { CmssyEditablePage } from "../components/editable-page";
-import { registerComponent, clearRegistry } from "../registry";
+import { defineBlock } from "../registry";
 import { fields } from "../fields";
 import { PROTOCOL_VERSION } from "../bridge/protocol";
 
@@ -11,6 +11,14 @@ const editorOrigin = "https://editor.cmssy.io";
 const Hero = ({ content }: { content: Record<string, unknown> }) => (
   <h1>{String(content.heading ?? "")}</h1>
 );
+
+const blocks = [
+  defineBlock({
+    type: "hero",
+    component: Hero,
+    props: { heading: fields.singleLine() },
+  }),
+];
 
 const page = {
   id: "p",
@@ -79,11 +87,6 @@ function dropEvent(clientY: number, data: string | null, moveTarget?: Element) {
 describe("drag agent", () => {
   beforeEach(() => {
     cleanup();
-    clearRegistry();
-    registerComponent(Hero, {
-      type: "hero",
-      props: { heading: fields.singleLine() },
-    });
     mockParent = { postMessage: vi.fn() };
     setParent(mockParent);
   });
@@ -99,7 +102,12 @@ describe("drag agent", () => {
 
   it("reports cmssy:drag-index from the editor-forwarded cursor (drag-over)", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     window.dispatchEvent(dragOver(150)); // below b2 midpoint → index 2
@@ -115,7 +123,12 @@ describe("drag agent", () => {
 
   it("auto-scrolls down when the drag-over cursor nears the bottom edge", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
@@ -127,7 +140,12 @@ describe("drag agent", () => {
 
   it("auto-scrolls up when the drag-over cursor nears the top edge", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
@@ -138,7 +156,12 @@ describe("drag agent", () => {
 
   it("does not auto-scroll for a drag-over in the middle of the viewport", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
@@ -149,7 +172,12 @@ describe("drag agent", () => {
 
   it("reports index 0 for a drag-over above the first block's midpoint", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
@@ -163,7 +191,12 @@ describe("drag agent", () => {
 
   it("posts cmssy:move for a block reorder drag", () => {
     const { container } = render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const b1El = container.querySelector('[data-block-id="b1"]')!;
@@ -182,7 +215,12 @@ describe("drag agent", () => {
 
   it("ignores a native drop that is not a reorder (no drag started)", () => {
     render(
-      <CmssyEditablePage page={page} locale="en" edit={{ editorOrigin }} />,
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
     );
     stubBlockRects();
     const { make } = dropEvent(50, null);
