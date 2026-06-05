@@ -9,6 +9,7 @@ import {
   type CmssyPageData,
 } from "@cmssy/react";
 import { CmssyClientPage, CmssyEditablePage } from "@cmssy/react/client";
+import type { EditBridgeConfig } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
 
@@ -16,7 +17,7 @@ export interface CmssyEditorProps {
   page: CmssyPageData;
   locale: string;
   defaultLocale: string;
-  edit: { editorOrigin: string };
+  edit: EditBridgeConfig;
 }
 
 export interface CreateCmssyPageOptions {
