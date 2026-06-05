@@ -477,6 +477,37 @@ describe("edit bridge (blocks-driven)", () => {
     }
   });
 
+  it("de-duplicates layout blocks that share a data-block-id (responsive variants)", () => {
+    const make = () => {
+      const el = document.createElement("div");
+      el.setAttribute("data-block-id", "dup1");
+      el.setAttribute("data-block-type", "site-header");
+      el.setAttribute("data-layout-position", "header");
+      return el;
+    };
+    const a = make();
+    const b = make();
+    document.body.appendChild(a);
+    document.body.appendChild(b);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      const ready = readyMessage() as unknown as {
+        blocks: Array<{ id: string }>;
+      };
+      expect(ready.blocks.filter((bl) => bl.id === "dup1")).toHaveLength(1);
+    } finally {
+      document.body.removeChild(a);
+      document.body.removeChild(b);
+    }
+  });
+
   it("emits layoutPosition on cmssy:click for a layout block", () => {
     const layoutEl = document.createElement("div");
     layoutEl.setAttribute("data-block-id", "lay1");
