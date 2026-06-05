@@ -50,6 +50,35 @@ function collectRects(): Map<string, BlockRect> {
   return rects;
 }
 
+interface ReadyBlock {
+  id: string;
+  type: string;
+  bounds: BlockRect;
+  layoutPosition?: string;
+}
+
+function collectLayoutBlocks(
+  rects: Map<string, BlockRect>,
+  pageIds: Set<string>,
+): ReadyBlock[] {
+  const out: ReadyBlock[] = [];
+  if (typeof document === "undefined") return out;
+  for (const el of document.querySelectorAll("[data-layout-position]")) {
+    const id = el.getAttribute("data-block-id");
+    const type = el.getAttribute("data-block-type");
+    const layoutPosition = el.getAttribute("data-layout-position");
+    if (id && type && layoutPosition && !pageIds.has(id)) {
+      out.push({
+        id,
+        type,
+        layoutPosition,
+        bounds: rects.get(id) ?? ZERO_RECT,
+      });
+    }
+  }
+  return out;
+}
+
 export function useEditBridge(
   page: BridgePage,
   config: EditBridgeConfig,
@@ -82,14 +111,18 @@ export function useEditBridge(
     const sendReady = () => {
       try {
         const rects = collectRects();
+        const pageIds = new Set(blocks.map((b) => b.id));
         postToEditor(window.parent, editorOrigin, {
           type: "cmssy:ready",
           protocolVersion: PROTOCOL_VERSION,
-          blocks: blocks.map((b) => ({
-            id: b.id,
-            type: b.type,
-            bounds: rects.get(b.id) ?? ZERO_RECT,
-          })),
+          blocks: [
+            ...blocks.map((b) => ({
+              id: b.id,
+              type: b.type,
+              bounds: rects.get(b.id) ?? ZERO_RECT,
+            })),
+            ...collectLayoutBlocks(rects, pageIds),
+          ],
           schemas:
             config.schemas ??
             (Object.create(null) as Record<string, BlockSchema>),
@@ -113,6 +146,7 @@ export function useEditBridge(
       );
       if (!message) return;
       if (message.type === "cmssy:patch") {
+        if (message.layoutPosition) return;
         setPatches((prev) => ({
           ...prev,
           [message.blockId]: { ...prev[message.blockId], ...message.content },
@@ -148,11 +182,13 @@ export function useEditBridge(
       if (!id || !el) return;
       if (target?.closest?.("a[href]")) event.preventDefault();
       const r = el.getBoundingClientRect();
+      const layoutPosition = el.getAttribute("data-layout-position");
       try {
         postToEditor(window.parent, editorOrigin, {
           type: "cmssy:click",
           blockId: id,
           rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+          ...(layoutPosition ? { layoutPosition } : {}),
         });
       } catch {
         // editor frame may reject during teardown; ignore

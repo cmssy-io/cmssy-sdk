@@ -57,6 +57,9 @@ export function parseEditorMessage(
             blockId: data.blockId,
             content: data.content,
             protocolVersion: PROTOCOL_VERSION,
+            ...(typeof data.layoutPosition === "string"
+              ? { layoutPosition: data.layoutPosition }
+              : {}),
           }
         : null;
     case "cmssy:parent-ready":
