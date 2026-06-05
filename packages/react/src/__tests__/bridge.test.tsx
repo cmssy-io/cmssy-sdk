@@ -322,4 +322,17 @@ describe("edit bridge (blocks-driven)", () => {
     render(<CmssyServerPage page={page} blocks={blocks} locale="en" />);
     expect(mockParent.postMessage).not.toHaveBeenCalled();
   });
+
+  it("throws when blocks is not an array", () => {
+    expect(() =>
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={undefined as unknown as never}
+        />,
+      ),
+    ).toThrow(/requires a blocks array/);
+  });
 });

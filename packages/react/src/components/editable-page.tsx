@@ -30,6 +30,11 @@ export function CmssyEditablePage({
   edit,
   category,
 }: CmssyEditablePageProps) {
+  if (!Array.isArray(blocks)) {
+    throw new Error(
+      "cmssy: CmssyEditablePage requires a blocks array — pass your defineBlock(...) array",
+    );
+  }
   if (!page) return null;
   return (
     <EditableBlocks

@@ -93,6 +93,29 @@ describe("CmssyLazyEditor", () => {
     err.mockRestore();
   });
 
+  it("reloads when the load callback changes (no stale blocks)", async () => {
+    const load1 = vi.fn(() => Promise.resolve({ blocks, category: "a" }));
+    const { container, rerender } = render(
+      <CmssyLazyEditor
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        load={load1}
+      />,
+    );
+    await waitFor(() => expect(container.textContent).toContain("Hello"));
+    const load2 = vi.fn(() => Promise.resolve({ blocks, category: "b" }));
+    rerender(
+      <CmssyLazyEditor
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        load={load2}
+      />,
+    );
+    await waitFor(() => expect(load2).toHaveBeenCalledTimes(1));
+  });
+
   it("posts cmssy:ready with the resolved category after load", async () => {
     render(
       <CmssyLazyEditor
