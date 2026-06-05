@@ -51,7 +51,6 @@ export function CmssyEditableLayout({
           blockMap={blockMap}
           patchedContent={patches[block.id]}
           layoutPosition={position}
-          editable
         />
       ))}
     </>

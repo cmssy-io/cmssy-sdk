@@ -20,6 +20,7 @@ export function CmssyLazyLayout({ load, ...props }: CmssyLazyLayoutProps) {
 
   useEffect(() => {
     let active = true;
+    setBlocks(null);
     (async () => {
       try {
         const m = await load();

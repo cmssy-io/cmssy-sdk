@@ -107,6 +107,7 @@ describe("CmssyEditableLayout", () => {
     expect(container.textContent).not.toContain("Off");
     const wrapper = container.querySelector('[data-block-id="h1"]');
     expect(wrapper?.getAttribute("data-layout-position")).toBe("header");
+    expect(wrapper?.getAttribute("draggable")).toBeNull();
   });
 
   it("renders nothing for a position with no active blocks", () => {
