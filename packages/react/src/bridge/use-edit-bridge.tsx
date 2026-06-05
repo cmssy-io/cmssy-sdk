@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { getBlockMeta, getBlockSchemas } from "../registry";
-import { PROTOCOL_VERSION, type BlockRect } from "./protocol";
+import {
+  PROTOCOL_VERSION,
+  type BlockMeta,
+  type BlockRect,
+  type BlockSchema,
+} from "./protocol";
 import { parseEditorMessage, postToEditor } from "./messages";
 
 export interface EditBridgeConfig {
   editorOrigin: string;
+  schemas?: Record<string, BlockSchema>;
+  blockMeta?: Record<string, BlockMeta>;
 }
 
 export type PatchMap = Partial<Record<string, Record<string, unknown>>>;
@@ -84,8 +91,8 @@ export function useEditBridge(
             type: b.type,
             bounds: rects.get(b.id) ?? ZERO_RECT,
           })),
-          schemas: getBlockSchemas(),
-          blockMeta: getBlockMeta(),
+          schemas: config.schemas ?? getBlockSchemas(),
+          blockMeta: config.blockMeta ?? getBlockMeta(),
         });
       } catch (error) {
         if (typeof console !== "undefined") {
