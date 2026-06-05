@@ -104,7 +104,7 @@ export type BlockMap = Record<
 >;
 
 export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {
-  const map: BlockMap = {};
+  const map = Object.create(null) as BlockMap;
   for (const block of blocks) map[block.type] = block.component;
   return map;
 }
@@ -112,7 +112,7 @@ export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {
 export function blocksToSchemas(
   blocks: BlockDefinition[],
 ): Record<string, BlockSchema> {
-  const out: Record<string, BlockSchema> = {};
+  const out: Record<string, BlockSchema> = Object.create(null);
   for (const block of blocks) {
     const schema: BlockSchema = {};
     for (const [key, def] of Object.entries(block.props)) {
@@ -127,7 +127,7 @@ export function blocksToMeta(
   blocks: BlockDefinition[],
   defaults: { category?: string } = {},
 ): Record<string, BlockMeta> {
-  const out: Record<string, BlockMeta> = {};
+  const out: Record<string, BlockMeta> = Object.create(null);
   for (const block of blocks) {
     const category = block.category ?? defaults.category;
     out[block.type] = {
