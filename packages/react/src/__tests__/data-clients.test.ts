@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
-import { fetchSiteConfig, resolveWorkspaceId } from "../data/settings-client";
-import { fetchForm, submitForm } from "../data/form-client";
-import { fetchModelDefinitions, fetchRecords } from "../data/records-client";
+import { createCmssyClient } from "../data/client";
+import {
+  FORM_QUERY,
+  MODEL_RECORDS_QUERY,
+  SUBMIT_FORM_MUTATION,
+} from "../data/queries";
 
 const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
 
@@ -16,229 +19,167 @@ function mockFetch(payload: unknown, ok = true): FetchLike {
 
 function capturingFetch(payload: unknown): {
   fetch: FetchLike;
-  bodies: Array<{ query: string; variables: Record<string, unknown> }>;
+  calls: Array<{
+    headers: Record<string, string>;
+    query: string;
+    variables: Record<string, unknown>;
+  }>;
 } {
-  const bodies: Array<{ query: string; variables: Record<string, unknown> }> =
-    [];
+  const calls: Array<{
+    headers: Record<string, string>;
+    query: string;
+    variables: Record<string, unknown>;
+  }> = [];
   const fetch: FetchLike = async (_url, init) => {
-    bodies.push(JSON.parse(init.body));
+    const body = JSON.parse(init.body);
+    calls.push({ headers: init.headers, ...body });
     return { ok: true, status: 200, json: async () => payload };
   };
-  return { fetch, bodies };
+  return { fetch, calls };
 }
 
-describe("fetchSiteConfig / resolveWorkspaceId", () => {
-  const siteConfig = {
-    id: "sc1",
-    workspaceId: "w1",
-    siteName: "Site",
-    defaultLanguage: "en",
-    enabledLanguages: ["en"],
-    enabledFeatures: [],
-    notFoundPageId: null,
-    previewUrl: "https://app.test",
-  };
-
-  it("returns the site config", async () => {
-    const fetch = mockFetch({ data: { publicSiteConfig: siteConfig } });
-    const result = await fetchSiteConfig(config, { fetch });
-    expect(result?.workspaceId).toBe("w1");
-    expect(result?.siteName).toBe("Site");
-  });
-
-  it("returns null when absent", async () => {
-    const fetch = mockFetch({ data: { publicSiteConfig: null } });
-    expect(await fetchSiteConfig(config, { fetch })).toBeNull();
-  });
-
-  it("resolves the workspace id", async () => {
-    const fetch = mockFetch({ data: { publicSiteConfig: siteConfig } });
-    expect(await resolveWorkspaceId(config, { fetch })).toBe("w1");
-  });
-
-  it("throws when the workspace id can't be resolved", async () => {
-    const fetch = mockFetch({ data: { publicSiteConfig: null } });
-    await expect(resolveWorkspaceId(config, { fetch })).rejects.toThrow(
-      /could not resolve workspaceId/,
+describe("createCmssyClient().query (raw)", () => {
+  it("runs a document and returns data, without scoping", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { publicForm: { id: "f1", name: "Contact" } },
+    });
+    const client = createCmssyClient(config);
+    const data = await client.query<{ publicForm: { name: string } }>(
+      FORM_QUERY,
+      { formId: "f1" },
+      { fetch },
     );
+    expect(data.publicForm.name).toBe("Contact");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.headers["x-workspace-id"]).toBeUndefined();
+    expect(calls[0]?.variables).toEqual({ formId: "f1" });
+  });
+
+  it("propagates a GraphQL error", async () => {
+    const fetch = mockFetch({ errors: [{ message: "boom" }] });
+    const client = createCmssyClient(config);
+    await expect(
+      client.query(
+        SUBMIT_FORM_MUTATION,
+        { formId: "f1", input: {} },
+        { fetch },
+      ),
+    ).rejects.toThrow(/boom/);
   });
 });
 
-describe("fetchForm / submitForm", () => {
-  it("fetches a form by id", async () => {
-    const fetch = mockFetch({
-      data: {
-        publicForm: {
-          id: "f1",
-          name: "Contact",
-          slug: "contact",
-          description: null,
-          fields: [{ id: "fld1", name: "email", fieldType: "email" }],
-          settings: { actionType: "contact", requireLogin: false },
-        },
-      },
+describe("createCmssyClient().queryScoped", () => {
+  it("sets the x-workspace-id header (header-scoped read, e.g. forms)", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { publicForm: null },
     });
-    const form = await fetchForm(config, "f1", { fetch, workspaceId: "w1" });
-    expect(form?.name).toBe("Contact");
-    expect(form?.fields[0]?.fieldType).toBe("email");
+    const client = createCmssyClient(config);
+    await client.queryScoped(
+      FORM_QUERY,
+      { formId: "f1" },
+      { fetch, workspaceId: "w1" },
+    );
+    expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
+    expect(calls[0]?.variables).toEqual({ formId: "f1" });
   });
 
-  it("returns null for a missing form", async () => {
-    const fetch = mockFetch({ data: { publicForm: null } });
-    expect(
-      await fetchForm(config, "x", { fetch, workspaceId: "w1" }),
-    ).toBeNull();
+  it("injects $workspaceId as a variable when the document declares it (records)", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+    });
+    const client = createCmssyClient(config);
+    await client.queryScoped(
+      MODEL_RECORDS_QUERY,
+      { modelSlug: "posts", filter: { status: "published" } },
+      { fetch, workspaceId: "w1" },
+    );
+    expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
+    expect(calls[0]?.variables).toMatchObject({
+      workspaceId: "w1",
+      modelSlug: "posts",
+      filter: { status: "published" },
+    });
   });
 
-  it("scopes the form read with an x-workspace-id header", async () => {
-    let sentHeaders: Record<string, string> = {};
-    const fetch: FetchLike = async (_url, init) => {
-      sentHeaders = init.headers;
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ data: { publicForm: null } }),
-      };
-    };
-    await fetchForm(config, "f1", { fetch, workspaceId: "w1" });
-    expect(sentHeaders["x-workspace-id"]).toBe("w1");
+  it("does not overwrite an explicit workspaceId variable", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+    });
+    const client = createCmssyClient(config);
+    await client.queryScoped(
+      MODEL_RECORDS_QUERY,
+      { workspaceId: "explicit", modelSlug: "posts" },
+      { fetch, workspaceId: "w1" },
+    );
+    expect(calls[0]?.variables.workspaceId).toBe("explicit");
+    expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
   });
 
   it("resolves the workspace id via site config when not provided", async () => {
     let call = 0;
     const fetch: FetchLike = async (_url, init) => {
       call += 1;
-      const headers = init.headers;
       return {
         ok: true,
         status: 200,
         json: async () =>
           call === 1
             ? { data: { publicSiteConfig: { id: "sc", workspaceId: "w7" } } }
-            : (expect(headers["x-workspace-id"]).toBe("w7"),
+            : (expect(init.headers["x-workspace-id"]).toBe("w7"),
               { data: { publicForm: null } }),
       };
     };
-    await fetchForm(config, "f1", { fetch });
+    const client = createCmssyClient(config);
+    await client.queryScoped(FORM_QUERY, { formId: "f1" }, { fetch });
     expect(call).toBe(2);
   });
 
-  it("submits with data + honeypot website, returns the response", async () => {
-    const { fetch, bodies } = capturingFetch({
-      data: {
-        submitForm: {
-          success: true,
-          message: "Thanks",
-          submissionId: "s1",
-          redirectUrl: null,
-          accessToken: null,
-          customer: null,
-        },
-      },
-    });
-    const res = await submitForm(
-      config,
-      "f1",
-      { email: "a@b.com" },
-      { fetch, website: "" },
-    );
-    expect(res.success).toBe(true);
-    expect(res.submissionId).toBe("s1");
-    expect(bodies[0]?.variables).toEqual({
-      formId: "f1",
-      input: { data: { email: "a@b.com" }, website: "" },
-    });
-  });
-
-  it("propagates a GraphQL error", async () => {
-    const fetch = mockFetch({ errors: [{ message: "boom" }] });
-    await expect(submitForm(config, "f1", {}, { fetch })).rejects.toThrow(
-      /boom/,
-    );
+  it("caches the resolved workspace id across calls (single round-trip)", async () => {
+    let siteConfigCalls = 0;
+    const fetch: FetchLike = async (_url, init) => {
+      const body = JSON.parse(init.body);
+      const isSiteConfig = body.query.includes("publicSiteConfig");
+      if (isSiteConfig) siteConfigCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () =>
+          isSiteConfig
+            ? { data: { publicSiteConfig: { id: "sc", workspaceId: "w7" } } }
+            : { data: { publicForm: null } },
+      };
+    };
+    const client = createCmssyClient(config);
+    await client.queryScoped(FORM_QUERY, { formId: "f1" }, { fetch });
+    await client.queryScoped(FORM_QUERY, { formId: "f2" }, { fetch });
+    expect(siteConfigCalls).toBe(1);
   });
 });
 
-describe("fetchModelDefinitions / fetchRecords", () => {
-  it("uses an explicit workspaceId without resolving", async () => {
-    const { fetch, bodies } = capturingFetch({
-      data: {
-        publicModelDefinitions: [{ id: "m1", name: "Posts", slug: "posts" }],
-      },
-    });
-    const models = await fetchModelDefinitions(config, {
-      fetch,
-      workspaceId: "w1",
-    });
-    expect(models[0]?.slug).toBe("posts");
-    expect(bodies).toHaveLength(1);
-    expect(bodies[0]?.variables.workspaceId).toBe("w1");
-  });
-
-  it("resolves the workspaceId via site config when not provided", async () => {
+describe("createCmssyClient().resolveWorkspaceId", () => {
+  it("resolves and caches the workspace id", async () => {
     let call = 0;
     const fetch: FetchLike = async () => {
       call += 1;
       return {
         ok: true,
         status: 200,
-        json: async () =>
-          call === 1
-            ? { data: { publicSiteConfig: { id: "sc", workspaceId: "w9" } } }
-            : { data: { publicModelDefinitions: [] } },
+        json: async () => ({
+          data: { publicSiteConfig: { id: "sc", workspaceId: "w1" } },
+        }),
       };
     };
-    const models = await fetchModelDefinitions(config, { fetch });
-    expect(models).toEqual([]);
-    expect(call).toBe(2);
+    const client = createCmssyClient(config);
+    expect(await client.resolveWorkspaceId({ fetch })).toBe("w1");
+    expect(await client.resolveWorkspaceId({ fetch })).toBe("w1");
+    expect(call).toBe(1);
   });
 
-  it("passes filter/sort/limit/offset/populate to the records query", async () => {
-    const { fetch, bodies } = capturingFetch({
-      data: {
-        publicModelRecords: {
-          items: [
-            {
-              id: "r1",
-              modelId: "m1",
-              data: { title: "Hello" },
-              status: "published",
-              createdAt: null,
-              updatedAt: null,
-            },
-          ],
-          total: 1,
-          hasMore: false,
-        },
-      },
-    });
-    const result = await fetchRecords(config, "posts", {
-      fetch,
-      workspaceId: "w1",
-      filter: { status: "published" },
-      sort: "-createdAt",
-      limit: 10,
-      offset: 5,
-      populate: ["author"],
-    });
-    expect(result.total).toBe(1);
-    expect(result.items[0]?.data.title).toBe("Hello");
-    expect(bodies[0]?.variables).toMatchObject({
-      workspaceId: "w1",
-      modelSlug: "posts",
-      filter: { status: "published" },
-      sort: "-createdAt",
-      limit: 10,
-      offset: 5,
-      populate: ["author"],
-    });
-  });
-
-  it("returns an empty list when records are absent", async () => {
-    const fetch = mockFetch({ data: { publicModelRecords: null } });
-    const result = await fetchRecords(config, "posts", {
-      fetch,
-      workspaceId: "w1",
-    });
-    expect(result).toEqual({ items: [], total: 0, hasMore: false });
+  it("throws when the workspace id can't be resolved", async () => {
+    const fetch = mockFetch({ data: { publicSiteConfig: null } });
+    const client = createCmssyClient(config);
+    await expect(client.resolveWorkspaceId({ fetch })).rejects.toThrow(
+      /could not resolve workspaceId/,
+    );
   });
 });
