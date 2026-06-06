@@ -56,7 +56,6 @@ export function createCmssyPage(
     workspaceSlug: config.workspaceSlug,
   };
   const defaultLocale = config.defaultLocale ?? "en";
-  const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
 
   return async function CmssyCatchAllPage({
     params,
@@ -84,6 +83,7 @@ export function createCmssyPage(
           'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
         );
       }
+      const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       return (
         <Editor
           page={page}
