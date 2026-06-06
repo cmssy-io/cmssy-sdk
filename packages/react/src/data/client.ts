@@ -30,13 +30,14 @@ export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
   ): Promise<string> {
     if (cachedWorkspaceId) return Promise.resolve(cachedWorkspaceId);
     if (!inFlight) {
-      inFlight = resolveWorkspaceIdFromConfig(config, options).then((id) => {
-        cachedWorkspaceId = id;
-        return id;
-      });
-      inFlight.catch(() => {
-        inFlight = undefined;
-      });
+      inFlight = resolveWorkspaceIdFromConfig(config, options)
+        .then((id) => {
+          cachedWorkspaceId = id;
+          return id;
+        })
+        .finally(() => {
+          inFlight = undefined;
+        });
     }
     return inFlight;
   }
