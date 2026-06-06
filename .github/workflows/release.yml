@@ -28,7 +28,11 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -r typecheck
+
+      - run: pnpm -r test
 
       - run: pnpm -r build
 
