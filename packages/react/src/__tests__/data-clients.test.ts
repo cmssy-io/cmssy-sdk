@@ -115,6 +115,19 @@ describe("createCmssyClient().queryScoped", () => {
     expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
   });
 
+  it("injects the resolved id when an existing workspaceId var is nullish", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+    });
+    const client = createCmssyClient(config);
+    await client.queryScoped(
+      MODEL_RECORDS_QUERY,
+      { workspaceId: undefined, modelSlug: "posts" },
+      { fetch, workspaceId: "w1" },
+    );
+    expect(calls[0]?.variables.workspaceId).toBe("w1");
+  });
+
   it("resolves the workspace id via site config when not provided", async () => {
     let call = 0;
     const fetch: FetchLike = async (_url, init) => {
