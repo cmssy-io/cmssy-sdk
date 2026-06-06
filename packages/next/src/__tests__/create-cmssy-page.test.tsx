@@ -159,10 +159,24 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
   });
 
-  it("rejects a wildcard editorOrigin for the bridge", () => {
-    expect(() =>
-      createCmssyPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS),
-    ).toThrow(/not allowed for the live-edit bridge/);
+  it("rejects a wildcard editorOrigin only when entering edit mode", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
+      editor: Editor,
+    });
+    await expect(
+      Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1" }),
+      }),
+    ).rejects.toThrow(/not allowed for the live-edit bridge/);
+  });
+
+  it("does not require editorOrigin for a published render", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage({ ...CONFIG, editorOrigin: "" }, BLOCKS);
+    const element = await Page({ params: params(["about"]) });
+    expect(element.type).toBe(CmssyServerPage);
   });
 
   it("resolves the root path for the index route", async () => {
