@@ -38,7 +38,7 @@ export const cmssy: CmssyNextConfig = {
 mode (draft cookie or `?cmssyEdit=1`) it renders your `editor` instead and frames
 the live-edit bridge. A published build does **not** require `editorOrigin`.
 
-## Draft preview + revalidation
+## Draft preview
 
 ```ts
 // app/api/draft/route.ts
