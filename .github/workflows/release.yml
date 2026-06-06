@@ -24,6 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
       # On a tag release, the tag must match the package versions being
       # published (package.json is the source of truth). Manual dispatch
       # publishes the current branch's package.json version as-is.
@@ -38,15 +47,6 @@ jobs:
               exit 1
             fi
           done
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
 
