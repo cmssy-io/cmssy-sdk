@@ -50,11 +50,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Build first: @cmssy/next typechecks against @cmssy/react's dist .d.ts,
+      # which doesn't exist on a fresh checkout until react is built.
+      - run: pnpm -r build
+
       - run: pnpm -r typecheck
 
       - run: pnpm -r test
-
-      - run: pnpm -r build
 
       # Publish in dependency order (react before next). Skips a package whose
       # current version is already on npm, so re-runs are safe.
