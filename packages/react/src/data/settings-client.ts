@@ -1,29 +1,6 @@
 import type { CmssyClientConfig } from "../content/content-client";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
-
-export interface CmssySiteConfig {
-  id: string;
-  workspaceId: string;
-  siteName: unknown;
-  defaultLanguage: string | null;
-  enabledLanguages: string[];
-  enabledFeatures: string[];
-  notFoundPageId: string | null;
-  previewUrl: string | null;
-}
-
-const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
-  publicSiteConfig(workspaceSlug: $workspaceSlug) {
-    id
-    workspaceId
-    siteName
-    defaultLanguage
-    enabledLanguages
-    enabledFeatures
-    notFoundPageId
-    previewUrl
-  }
-}`;
+import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 
 export async function fetchSiteConfig(
   config: CmssyClientConfig,

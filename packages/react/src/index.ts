@@ -53,24 +53,26 @@ export { getBlockContentForLanguage } from "./content/get-block-content";
 
 export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
-export { fetchSiteConfig, resolveWorkspaceId } from "./data/settings-client";
-export type { CmssySiteConfig } from "./data/settings-client";
-export { fetchForm, submitForm } from "./data/form-client";
+export { createCmssyClient } from "./data/client";
+export type { CmssyClient, QueryScopedOptions } from "./data/client";
+export {
+  SITE_CONFIG_QUERY,
+  MODEL_DEFINITIONS_QUERY,
+  MODEL_RECORDS_QUERY,
+  FORM_QUERY,
+  SUBMIT_FORM_MUTATION,
+} from "./data/queries";
 export type {
+  CmssySiteConfig,
+  CmssyModelDefinition,
+  CmssyModelRecord,
+  CmssyRecordList,
   CmssyFormDefinition,
   CmssyFormField,
   CmssyFormSettings,
   CmssyFormSubmitResponse,
-  FetchFormOptions,
-  SubmitFormOptions,
-} from "./data/form-client";
-export { fetchModelDefinitions, fetchRecords } from "./data/records-client";
-export type {
-  CmssyModelDefinition,
-  CmssyModelRecord,
-  CmssyRecordList,
-  FetchRecordsOptions,
-} from "./data/records-client";
+  SubmitFormInput,
+} from "./data/queries";
 
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
