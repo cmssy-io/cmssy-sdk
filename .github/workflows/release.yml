@@ -1,0 +1,53 @@
+name: Release
+
+# Publishes @cmssy/react + @cmssy/next to npm.
+# Trigger by pushing a version tag (e.g. `git tag v0.1.1 && git push --tags`)
+# or manually via the Actions tab. Requires an npm Automation access token
+# (bypasses 2FA) stored as the `NPM_TOKEN` repository secret.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --no-frozen-lockfile
+
+      - run: pnpm -r build
+
+      # Publish in dependency order (react before next). Skips a package whose
+      # current version is already on npm, so re-runs are safe.
+      - name: Publish packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          for pkg in react next; do
+            cd "packages/$pkg"
+            name=$(node -p "require('./package.json').name")
+            version=$(node -p "require('./package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version already on npm — skipping"
+            else
+              echo "Publishing $name@$version"
+              pnpm publish --access public --no-git-checks
+            fi
+            cd ../..
+          done
