@@ -1,6 +1,21 @@
 {
   "name": "@cmssy/next",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "Next.js App Router bindings for cmssy headless sites (createCmssyPage + draft preview)",
+  "keywords": [
+    "cmssy",
+    "cms",
+    "headless",
+    "nextjs",
+    "next",
+    "app-router"
+  ],
+  "homepage": "https://cmssy.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmssy-io/cmssy-sdk.git",
+    "directory": "packages/next"
+  },
   "type": "module",
   "license": "MIT",
   "publishConfig": {

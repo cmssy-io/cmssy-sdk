@@ -1,6 +1,21 @@
 {
   "name": "@cmssy/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "React blocks, renderers, data client and editor bridge for cmssy headless sites",
+  "keywords": [
+    "cmssy",
+    "cms",
+    "headless",
+    "react",
+    "blocks",
+    "graphql"
+  ],
+  "homepage": "https://cmssy.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmssy-io/cmssy-sdk.git",
+    "directory": "packages/react"
+  },
   "type": "module",
   "license": "MIT",
   "publishConfig": {
