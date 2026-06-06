@@ -65,8 +65,10 @@ export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
       const { workspaceId: provided, headers, ...rest } = options;
       const workspaceId =
         provided ?? (await resolveWorkspaceId({ ...rest, headers }));
+      const hasWorkspaceId =
+        variables.workspaceId !== undefined && variables.workspaceId !== null;
       const scopedVariables =
-        /\$workspaceId\b/.test(document) && !("workspaceId" in variables)
+        /\$workspaceId\b/.test(document) && !hasWorkspaceId
           ? { ...variables, workspaceId }
           : variables;
       return graphqlRequest<T>(
