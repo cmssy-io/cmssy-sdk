@@ -23,13 +23,22 @@ export interface CmssyClient {
 
 export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
   let cachedWorkspaceId: string | undefined;
+  let inFlight: Promise<string> | undefined;
 
-  async function resolveWorkspaceId(
+  function resolveWorkspaceId(
     options?: GraphqlRequestOptions,
   ): Promise<string> {
-    if (cachedWorkspaceId) return cachedWorkspaceId;
-    cachedWorkspaceId = await resolveWorkspaceIdFromConfig(config, options);
-    return cachedWorkspaceId;
+    if (cachedWorkspaceId) return Promise.resolve(cachedWorkspaceId);
+    if (!inFlight) {
+      inFlight = resolveWorkspaceIdFromConfig(config, options).then((id) => {
+        cachedWorkspaceId = id;
+        return id;
+      });
+      inFlight.catch(() => {
+        inFlight = undefined;
+      });
+    }
+    return inFlight;
   }
 
   return {
@@ -40,7 +49,13 @@ export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
       variables: Record<string, unknown> = {},
       options?: GraphqlRequestOptions,
     ): Promise<T> {
-      return graphqlRequest<T>(config, document, variables, options, "query");
+      return graphqlRequest<T>(
+        config,
+        document,
+        variables,
+        options,
+        "graphql operation",
+      );
     },
     async queryScoped<T = unknown>(
       document: string,
@@ -48,7 +63,8 @@ export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
       options: QueryScopedOptions = {},
     ): Promise<T> {
       const { workspaceId: provided, headers, ...rest } = options;
-      const workspaceId = provided ?? (await resolveWorkspaceId(rest));
+      const workspaceId =
+        provided ?? (await resolveWorkspaceId({ ...rest, headers }));
       const scopedVariables =
         /\$workspaceId\b/.test(document) && !("workspaceId" in variables)
           ? { ...variables, workspaceId }
@@ -58,7 +74,7 @@ export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
         document,
         scopedVariables,
         { ...rest, headers: { ...headers, "x-workspace-id": workspaceId } },
-        "query",
+        "graphql operation",
       );
     },
   };
