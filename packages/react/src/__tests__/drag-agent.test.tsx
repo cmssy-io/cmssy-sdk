@@ -277,7 +277,7 @@ describe("drag agent", () => {
     const counter = { n: 0 };
     stubBlockRectsCounting(counter);
     for (let i = 0; i < 5; i++) window.dispatchEvent(dragOver(150));
-    expect(counter.n).toBe(3);
+    expect(counter.n).toBe(2);
     expect(mockParent.postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "cmssy:drag-index", index: 2 }),
       editorOrigin,
@@ -297,14 +297,14 @@ describe("drag agent", () => {
     stubBlockRectsCounting(counter);
     const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
     window.dispatchEvent(dragOver(150));
-    expect(counter.n).toBe(3);
+    expect(counter.n).toBe(2);
     Object.defineProperty(window, "scrollY", {
       value: 100,
       configurable: true,
     });
     try {
       window.dispatchEvent(dragOver(50));
-      expect(counter.n).toBe(3);
+      expect(counter.n).toBe(2);
       expect(mockParent.postMessage).toHaveBeenLastCalledWith(
         expect.objectContaining({ type: "cmssy:drag-index", index: 2 }),
         editorOrigin,
@@ -330,7 +330,7 @@ describe("drag agent", () => {
     const counter = { n: 0 };
     stubBlockRectsCounting(counter);
     window.dispatchEvent(dragOver(150));
-    expect(counter.n).toBe(3);
+    expect(counter.n).toBe(2);
     window.dispatchEvent(
       new MessageEvent("message", {
         origin: editorOrigin,
@@ -339,7 +339,7 @@ describe("drag agent", () => {
       }),
     );
     window.dispatchEvent(dragOver(150));
-    expect(counter.n).toBe(6);
+    expect(counter.n).toBe(4);
   });
 
   it("ignores a native drop that is not a reorder (no drag started)", () => {
