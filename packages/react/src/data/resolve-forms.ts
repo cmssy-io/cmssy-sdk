@@ -1,7 +1,6 @@
 import type { CmssyClientConfig, RawBlock } from "../content/content-client";
 import { getBlockContentForLanguage } from "../content/get-block-content";
-import { createCmssyClient } from "./client";
-import type { GraphqlRequestOptions } from "./graphql-request";
+import { createCmssyClient, type QueryScopedOptions } from "./client";
 import { FORM_QUERY, type CmssyFormDefinition } from "./queries";
 
 export function collectFormIds(
@@ -17,7 +16,7 @@ export function collectFormIds(
       defaultLocale,
     );
     const formId = content.formId;
-    if (typeof formId === "string" && formId) ids.add(formId);
+    if (typeof formId === "string" && formId.trim()) ids.add(formId);
   }
   return [...ids];
 }
@@ -27,7 +26,7 @@ export async function resolveForms(
   blocks: RawBlock[],
   locale: string,
   defaultLocale: string,
-  options?: GraphqlRequestOptions,
+  options?: QueryScopedOptions,
 ): Promise<Record<string, CmssyFormDefinition>> {
   const ids = collectFormIds(blocks, locale, defaultLocale);
   if (ids.length === 0) return {};
