@@ -42,18 +42,16 @@ function createDropTargetResolver(): DropTargetResolver {
   const build = () => {
     const els = blockElements();
     const scrollY = window.scrollY;
+    let absLastBottom = scrollY;
     const blocks = els.map((el, index) => {
       const r = el.getBoundingClientRect();
+      absLastBottom = r.bottom + scrollY;
       return {
         index,
         absTop: r.top + scrollY,
         absMid: r.top + scrollY + r.height / 2,
       };
     });
-    const last = els[els.length - 1];
-    const absLastBottom = last
-      ? last.getBoundingClientRect().bottom + scrollY
-      : scrollY;
     cache = { blocks, absLastBottom };
   };
 
