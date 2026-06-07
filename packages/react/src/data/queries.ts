@@ -132,7 +132,9 @@ export const FORM_QUERY = `query PublicForm($formId: ID!) {
     description
     fields {
       id name fieldType label placeholder helpText
-      defaultValue options validation width order showIf
+      defaultValue width order showIf
+      options { value label disabled }
+      validation { required minLength maxLength minValue maxValue pattern customMessage }
     }
     settings {
       actionType submitButtonLabel successMessage errorMessage
