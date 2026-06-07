@@ -16,6 +16,7 @@ export interface CmssyEditorProps {
   page: CmssyPageData;
   locale: string;
   defaultLocale: string;
+  enabledLocales?: string[];
   edit: EditBridgeConfig;
 }
 
@@ -89,6 +90,7 @@ export function createCmssyPage(
           page={page}
           locale={locale}
           defaultLocale={defaultLocale}
+          enabledLocales={config.enabledLocales}
           edit={{ editorOrigin: bridgeOrigin }}
         />
       );
@@ -100,6 +102,7 @@ export function createCmssyPage(
         blocks={blocks}
         locale={locale}
         defaultLocale={defaultLocale}
+        enabledLocales={config.enabledLocales}
       />
     );
   };

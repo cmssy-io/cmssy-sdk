@@ -11,6 +11,7 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
+import { buildBlockContext } from "./block-context";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
@@ -18,6 +19,7 @@ export interface CmssyEditablePageProps {
   blocks: BlockDefinition[];
   locale?: string;
   defaultLocale?: string;
+  enabledLocales?: string[];
   edit: EditBridgeConfig;
   category?: string;
 }
@@ -27,6 +29,7 @@ export function CmssyEditablePage({
   blocks,
   locale = "en",
   defaultLocale = "en",
+  enabledLocales,
   edit,
   category,
 }: CmssyEditablePageProps) {
@@ -42,6 +45,7 @@ export function CmssyEditablePage({
       blocks={blocks}
       locale={locale}
       defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
       edit={edit}
       category={category}
     />
@@ -53,6 +57,7 @@ interface EditableBlocksProps {
   blocks: BlockDefinition[];
   locale: string;
   defaultLocale: string;
+  enabledLocales?: string[];
   edit: EditBridgeConfig;
   category?: string;
 }
@@ -62,10 +67,15 @@ function EditableBlocks({
   blocks,
   locale,
   defaultLocale,
+  enabledLocales,
   edit,
   category,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
+  const context = useMemo(
+    () => buildBlockContext(locale, defaultLocale, enabledLocales, true),
+    [locale, defaultLocale, enabledLocales],
+  );
 
   const bridgeConfig = useMemo<EditBridgeConfig>(
     () => ({
@@ -117,6 +127,7 @@ function EditableBlocks({
           patchedContent={patches[block.id]}
           blockMap={blockMap}
           editable
+          context={context}
         />
       ))}
       {dropY !== null && (

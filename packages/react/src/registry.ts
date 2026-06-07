@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { CmssyBlockContext } from "./components/block-context";
 import type {
   BlockMeta,
   BlockSchema,
@@ -12,7 +13,10 @@ export interface BlockDefinition {
   icon?: string;
   layoutPositions?: string[];
   props: Record<string, FieldDefinition>;
-  component: ComponentType<{ content: Record<string, unknown> }>;
+  component: ComponentType<{
+    content: Record<string, unknown>;
+    context?: CmssyBlockContext;
+  }>;
 }
 
 export function defineBlock<C extends Record<string, unknown>>(def: {
@@ -22,14 +26,17 @@ export function defineBlock<C extends Record<string, unknown>>(def: {
   icon?: string;
   layoutPositions?: string[];
   props: Record<string, FieldDefinition>;
-  component: ComponentType<{ content: C }>;
+  component: ComponentType<{ content: C; context?: CmssyBlockContext }>;
 }): BlockDefinition {
   return def as BlockDefinition;
 }
 
 export type BlockMap = Record<
   string,
-  ComponentType<{ content: Record<string, unknown> }>
+  ComponentType<{
+    content: Record<string, unknown>;
+    context?: CmssyBlockContext;
+  }>
 >;
 
 export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {

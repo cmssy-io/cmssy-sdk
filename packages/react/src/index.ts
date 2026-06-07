@@ -76,5 +76,10 @@ export type {
 
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
+export { buildBlockContext } from "./components/block-context";
+export type {
+  CmssyBlockContext,
+  CmssyLocaleContext,
+} from "./components/block-context";
 export { UnknownBlock } from "./components/unknown-block";
 export type { UnknownBlockProps } from "./components/unknown-block";
