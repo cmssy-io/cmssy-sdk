@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import {
   fetchPage,
   resolveForms,
+  resolveSiteLocales,
+  splitLocaleFromPath,
   CmssyServerPage,
   type BlockDefinition,
   type CmssyClientConfig,
@@ -59,8 +61,6 @@ export function createCmssyPage(
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
   };
-  const defaultLocale = config.defaultLocale ?? "en";
-
   return async function CmssyCatchAllPage({
     params,
     searchParams,
@@ -69,11 +69,26 @@ export function createCmssyPage(
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
-    const locale = config.resolveLocale
-      ? await config.resolveLocale()
-      : defaultLocale;
 
-    const page = await fetchPage(clientConfig, path, {
+    let locale: string;
+    let pagePath = path;
+    let defaultLocale: string;
+    let enabledLocales = config.enabledLocales;
+
+    if (config.resolveLocale) {
+      defaultLocale = config.defaultLocale ?? "en";
+      locale = await config.resolveLocale();
+    } else {
+      const siteLocales = await resolveSiteLocales(clientConfig);
+      defaultLocale = config.defaultLocale ?? siteLocales.defaultLocale;
+      const locales = config.enabledLocales ?? siteLocales.locales;
+      enabledLocales = locales;
+      const split = splitLocaleFromPath(path, { defaultLocale, locales });
+      locale = split.locale;
+      pagePath = split.path;
+    }
+
+    const page = await fetchPage(clientConfig, pagePath, {
       previewSecret: editMode ? config.draftSecret : undefined,
     });
 
@@ -103,7 +118,7 @@ export function createCmssyPage(
           page={page}
           locale={locale}
           defaultLocale={defaultLocale}
-          enabledLocales={config.enabledLocales}
+          enabledLocales={enabledLocales}
           edit={{ editorOrigin: bridgeOrigin }}
           forms={forms}
         />
@@ -116,7 +131,7 @@ export function createCmssyPage(
         blocks={blocks}
         locale={locale}
         defaultLocale={defaultLocale}
-        enabledLocales={config.enabledLocales}
+        enabledLocales={enabledLocales}
         forms={forms}
       />
     );
