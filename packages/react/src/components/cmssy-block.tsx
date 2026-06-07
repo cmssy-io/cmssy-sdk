@@ -2,6 +2,7 @@ import { createElement } from "react";
 import type { BlockMap } from "../registry";
 import { getBlockContentForLanguage } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
+import type { CmssyBlockContext } from "./block-context";
 import { UnknownBlock } from "./unknown-block";
 
 export interface CmssyBlockProps {
@@ -12,6 +13,7 @@ export interface CmssyBlockProps {
   patchedContent?: Record<string, unknown>;
   editable?: boolean;
   layoutPosition?: string;
+  context?: CmssyBlockContext;
 }
 
 export function CmssyBlock({
@@ -22,6 +24,7 @@ export function CmssyBlock({
   patchedContent,
   editable,
   layoutPosition,
+  context,
 }: CmssyBlockProps) {
   const Component = Object.hasOwn(blockMap, block.type)
     ? blockMap[block.type]
@@ -37,7 +40,7 @@ export function CmssyBlock({
       style={Component ? undefined : { display: "none" }}
     >
       {Component ? (
-        createElement(Component, { content })
+        createElement(Component, { content, context })
       ) : (
         <UnknownBlock type={block.type} />
       )}

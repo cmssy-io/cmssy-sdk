@@ -10,6 +10,7 @@ export interface CmssyLazyEditorProps {
   page: CmssyPageData | null;
   locale?: string;
   defaultLocale?: string;
+  enabledLocales?: string[];
   edit: EditBridgeConfig;
   load: () => Promise<{ blocks: BlockDefinition[]; category?: string }>;
 }
