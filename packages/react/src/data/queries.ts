@@ -1,3 +1,10 @@
+export interface CmssyBranding {
+  brandName: string | null;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  ogImageUrl: string | null;
+}
+
 export interface CmssySiteConfig {
   id: string;
   workspaceId: string;
@@ -7,6 +14,7 @@ export interface CmssySiteConfig {
   enabledFeatures: string[];
   notFoundPageId: string | null;
   previewUrl: string | null;
+  branding: CmssyBranding | null;
 }
 
 export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
@@ -19,6 +27,12 @@ export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!
     enabledFeatures
     notFoundPageId
     previewUrl
+    branding {
+      brandName
+      logoUrl
+      faviconUrl
+      ogImageUrl
+    }
   }
 }`;
 
