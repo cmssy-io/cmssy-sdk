@@ -1,6 +1,8 @@
+import { createElement } from "react";
 import { getBlockContentForLanguage } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
 import type { BlockMap } from "../registry";
+import type { CmssyBlockContext } from "./block-context";
 import { UnknownBlock } from "./unknown-block";
 
 export function renderResolvedBlock(
@@ -8,8 +10,11 @@ export function renderResolvedBlock(
   map: BlockMap,
   locale: string,
   defaultLocale: string,
+  context?: CmssyBlockContext,
 ) {
-  const Component = map[block.type];
+  const Component = Object.hasOwn(map, block.type)
+    ? map[block.type]
+    : undefined;
   const content = getBlockContentForLanguage(
     block.content,
     locale,
@@ -23,7 +28,7 @@ export function renderResolvedBlock(
       style={Component ? undefined : { display: "none" }}
     >
       {Component ? (
-        <Component content={content} />
+        createElement(Component, { content, context })
       ) : (
         <UnknownBlock type={block.type} />
       )}
