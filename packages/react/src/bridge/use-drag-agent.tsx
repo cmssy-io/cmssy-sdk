@@ -25,18 +25,54 @@ function blockElements(): HTMLElement[] {
   ).filter(visible);
 }
 
-function computeDropTarget(clientY: number): DropTarget {
-  const els = blockElements();
-  for (let i = 0; i < els.length; i++) {
-    const r = els[i]!.getBoundingClientRect();
-    if (clientY < r.top + r.height / 2) {
-      return { index: i, y: r.top };
-    }
-  }
-  const last = els[els.length - 1];
+interface CachedBlock {
+  index: number;
+  absTop: number;
+  absMid: number;
+}
+
+interface DropTargetResolver {
+  resolve(clientY: number): DropTarget;
+  invalidate(): void;
+}
+
+function createDropTargetResolver(): DropTargetResolver {
+  let cache: { blocks: CachedBlock[]; absLastBottom: number } | null = null;
+
+  const build = () => {
+    const els = blockElements();
+    const scrollY = window.scrollY;
+    let absLastBottom = scrollY;
+    const blocks = els.map((el, index) => {
+      const r = el.getBoundingClientRect();
+      absLastBottom = r.bottom + scrollY;
+      return {
+        index,
+        absTop: r.top + scrollY,
+        absMid: r.top + scrollY + r.height / 2,
+      };
+    });
+    cache = { blocks, absLastBottom };
+  };
+
   return {
-    index: els.length,
-    y: last ? last.getBoundingClientRect().bottom : 0,
+    resolve(clientY) {
+      if (!cache) build();
+      const scrollY = window.scrollY;
+      const pageY = clientY + scrollY;
+      for (const block of cache!.blocks) {
+        if (pageY < block.absMid) {
+          return { index: block.index, y: block.absTop - scrollY };
+        }
+      }
+      return {
+        index: cache!.blocks.length,
+        y: cache!.absLastBottom - scrollY,
+      };
+    },
+    invalidate() {
+      cache = null;
+    },
   };
 }
 
@@ -55,6 +91,7 @@ export function useDragAgent(config: DragAgentConfig): {
     }
     let movingId: string | null = null;
     let lastDropY: number | null = null;
+    const resolver = createDropTargetResolver();
     const updateDropY = (y: number | null) => {
       if (y === lastDropY) return;
       lastDropY = y;
@@ -73,6 +110,7 @@ export function useDragAgent(config: DragAgentConfig): {
       const id = blockEl?.getAttribute("data-block-id");
       if (!id || !event.dataTransfer) return;
       movingId = id;
+      resolver.invalidate();
       event.dataTransfer.setData(MOVE_MIME, id);
       event.dataTransfer.effectAllowed = "move";
     };
@@ -80,16 +118,17 @@ export function useDragAgent(config: DragAgentConfig): {
     const onDragOver = (event: DragEvent) => {
       if (!movingId) return;
       event.preventDefault();
-      updateDropY(computeDropTarget(event.clientY).y);
+      updateDropY(resolver.resolve(event.clientY).y);
     };
 
     const onDrop = (event: DragEvent) => {
       if (!movingId) return;
       event.preventDefault();
-      const { index } = computeDropTarget(event.clientY);
+      const { index } = resolver.resolve(event.clientY);
       const blockId = movingId;
       movingId = null;
       updateDropY(null);
+      resolver.invalidate();
       try {
         postToEditor(window.parent, editorOrigin, {
           type: "cmssy:move",
@@ -105,6 +144,7 @@ export function useDragAgent(config: DragAgentConfig): {
     const onDragEnd = () => {
       movingId = null;
       updateDropY(null);
+      resolver.invalidate();
     };
 
     const onMessage = (event: MessageEvent) => {
@@ -123,7 +163,7 @@ export function useDragAgent(config: DragAgentConfig): {
         } else if (message.y > window.innerHeight - edge) {
           window.scrollBy(0, step);
         }
-        const { index, y } = computeDropTarget(message.y);
+        const { index, y } = resolver.resolve(message.y);
         updateDropY(y);
         try {
           postToEditor(window.parent, editorOrigin, {
@@ -136,6 +176,7 @@ export function useDragAgent(config: DragAgentConfig): {
         }
       } else if (message.type === "cmssy:drag-end") {
         updateDropY(null);
+        resolver.invalidate();
       }
     };
 
