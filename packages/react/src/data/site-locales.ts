@@ -8,6 +8,7 @@ export interface CmssySiteLocales {
 }
 
 const TTL_MS = 60_000;
+const MAX_ENTRIES = 64;
 const cache = new Map<string, { value: CmssySiteLocales; expires: number }>();
 
 export async function resolveSiteLocales(
@@ -17,6 +18,7 @@ export async function resolveSiteLocales(
   const key = `${config.apiUrl}::${config.workspaceSlug}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
+  cache.delete(key);
 
   let value: CmssySiteLocales;
   try {
@@ -40,6 +42,7 @@ export async function resolveSiteLocales(
     value = { defaultLocale: "en", locales: ["en"] };
   }
 
+  if (cache.size >= MAX_ENTRIES) cache.clear();
   cache.set(key, { value, expires: Date.now() + TTL_MS });
   return value;
 }

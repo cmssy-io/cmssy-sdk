@@ -81,8 +81,9 @@ export function createCmssyPage(
     } else {
       const siteLocales = await resolveSiteLocales(clientConfig);
       defaultLocale = config.defaultLocale ?? siteLocales.defaultLocale;
-      enabledLocales = enabledLocales ?? siteLocales.locales;
-      const split = splitLocaleFromPath(path, siteLocales);
+      const locales = config.enabledLocales ?? siteLocales.locales;
+      enabledLocales = locales;
+      const split = splitLocaleFromPath(path, { defaultLocale, locales });
       locale = split.locale;
       pagePath = split.path;
     }
@@ -130,7 +131,7 @@ export function createCmssyPage(
         blocks={blocks}
         locale={locale}
         defaultLocale={defaultLocale}
-        enabledLocales={config.enabledLocales}
+        enabledLocales={enabledLocales}
         forms={forms}
       />
     );
