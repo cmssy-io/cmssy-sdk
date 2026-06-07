@@ -5,8 +5,8 @@ export interface CmssyLocaleContext {
 }
 
 export interface CmssyBlockContext {
-  locale?: CmssyLocaleContext;
-  isPreview?: boolean;
+  locale: CmssyLocaleContext;
+  isPreview: boolean;
 }
 
 export function buildBlockContext(
