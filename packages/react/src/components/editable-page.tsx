@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { CmssyPageData, RawBlock } from "../content/content-client";
+import type { CmssyFormDefinition } from "../data/queries";
 import {
   blocksToMeta,
   blocksToSchemas,
@@ -22,6 +23,7 @@ export interface CmssyEditablePageProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   category?: string;
+  forms?: Record<string, CmssyFormDefinition>;
 }
 
 export function CmssyEditablePage({
@@ -32,6 +34,7 @@ export function CmssyEditablePage({
   enabledLocales,
   edit,
   category,
+  forms,
 }: CmssyEditablePageProps) {
   if (!Array.isArray(blocks)) {
     throw new Error(
@@ -48,6 +51,7 @@ export function CmssyEditablePage({
       enabledLocales={enabledLocales}
       edit={edit}
       category={category}
+      forms={forms}
     />
   );
 }
@@ -60,6 +64,7 @@ interface EditableBlocksProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   category?: string;
+  forms?: Record<string, CmssyFormDefinition>;
 }
 
 function EditableBlocks({
@@ -70,11 +75,12 @@ function EditableBlocks({
   enabledLocales,
   edit,
   category,
+  forms,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
   const context = useMemo(
-    () => buildBlockContext(locale, defaultLocale, enabledLocales, true),
-    [locale, defaultLocale, enabledLocales],
+    () => buildBlockContext(locale, defaultLocale, enabledLocales, true, forms),
+    [locale, defaultLocale, enabledLocales, forms],
   );
 
   const bridgeConfig = useMemo<EditBridgeConfig>(
