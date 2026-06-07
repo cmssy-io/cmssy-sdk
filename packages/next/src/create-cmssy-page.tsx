@@ -3,9 +3,11 @@ import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   fetchPage,
+  resolveForms,
   CmssyServerPage,
   type BlockDefinition,
   type CmssyClientConfig,
+  type CmssyFormDefinition,
   type CmssyPageData,
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
@@ -18,6 +20,7 @@ export interface CmssyEditorProps {
   defaultLocale: string;
   enabledLocales?: string[];
   edit: EditBridgeConfig;
+  forms?: Record<string, CmssyFormDefinition>;
 }
 
 export interface CreateCmssyPageOptions {
@@ -78,12 +81,22 @@ export function createCmssyPage(
       notFound();
     }
 
-    if (editMode) {
-      if (!Editor) {
-        throw new Error(
-          'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
-        );
-      }
+    if (editMode && !Editor) {
+      throw new Error(
+        'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
+      );
+    }
+
+    const resolvedForms = await resolveForms(
+      clientConfig,
+      page.blocks,
+      locale,
+      defaultLocale,
+    );
+    const forms =
+      Object.keys(resolvedForms).length > 0 ? resolvedForms : undefined;
+
+    if (editMode && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       return (
         <Editor
@@ -92,6 +105,7 @@ export function createCmssyPage(
           defaultLocale={defaultLocale}
           enabledLocales={config.enabledLocales}
           edit={{ editorOrigin: bridgeOrigin }}
+          forms={forms}
         />
       );
     }
@@ -103,6 +117,7 @@ export function createCmssyPage(
         locale={locale}
         defaultLocale={defaultLocale}
         enabledLocales={config.enabledLocales}
+        forms={forms}
       />
     );
   };
