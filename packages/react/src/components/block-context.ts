@@ -1,3 +1,5 @@
+import type { CmssyFormDefinition } from "../data/queries";
+
 export interface CmssyLocaleContext {
   current: string;
   default: string;
@@ -7,6 +9,7 @@ export interface CmssyLocaleContext {
 export interface CmssyBlockContext {
   locale: CmssyLocaleContext;
   isPreview: boolean;
+  forms?: Record<string, CmssyFormDefinition>;
 }
 
 export function buildBlockContext(
@@ -14,6 +17,7 @@ export function buildBlockContext(
   defaultLocale: string,
   enabledLocales?: string[],
   isPreview?: boolean,
+  forms?: Record<string, CmssyFormDefinition>,
 ): CmssyBlockContext {
   return {
     locale: {
@@ -25,5 +29,6 @@ export function buildBlockContext(
           : Array.from(new Set([defaultLocale, locale])),
     },
     isPreview: isPreview ?? false,
+    forms,
   };
 }

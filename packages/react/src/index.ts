@@ -55,6 +55,7 @@ export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
 export { createCmssyClient } from "./data/client";
 export type { CmssyClient, QueryScopedOptions } from "./data/client";
+export { collectFormIds, resolveForms } from "./data/resolve-forms";
 export {
   SITE_CONFIG_QUERY,
   MODEL_DEFINITIONS_QUERY,
