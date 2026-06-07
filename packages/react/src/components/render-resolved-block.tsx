@@ -12,7 +12,9 @@ export function renderResolvedBlock(
   defaultLocale: string,
   context?: CmssyBlockContext,
 ) {
-  const Component = map[block.type];
+  const Component = Object.hasOwn(map, block.type)
+    ? map[block.type]
+    : undefined;
   const content = getBlockContentForLanguage(
     block.content,
     locale,
