@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CmssyPageData } from "../content/content-client";
+import type { CmssyFormDefinition } from "../data/queries";
 import type { BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { CmssyEditablePage } from "./editable-page";
@@ -12,6 +13,7 @@ export interface CmssyLazyEditorProps {
   defaultLocale?: string;
   enabledLocales?: string[];
   edit: EditBridgeConfig;
+  forms?: Record<string, CmssyFormDefinition>;
   load: () => Promise<{ blocks: BlockDefinition[]; category?: string }>;
 }
 
