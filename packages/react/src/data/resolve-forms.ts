@@ -39,7 +39,10 @@ export async function resolveForms(
           publicForm: CmssyFormDefinition | null;
         }>(FORM_QUERY, { formId: id }, options);
         return [id, data.publicForm] as const;
-      } catch {
+      } catch (err) {
+        if (typeof console !== "undefined") {
+          console.warn(`[cmssy] failed to resolve form ${id}`, err);
+        }
         return [id, null] as const;
       }
     }),
