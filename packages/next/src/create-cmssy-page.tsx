@@ -81,12 +81,14 @@ export function createCmssyPage(
       notFound();
     }
 
-    const forms = await resolveForms(
+    const resolvedForms = await resolveForms(
       clientConfig,
       page.blocks,
       locale,
       defaultLocale,
     );
+    const forms =
+      Object.keys(resolvedForms).length > 0 ? resolvedForms : undefined;
 
     if (editMode) {
       if (!Editor) {
