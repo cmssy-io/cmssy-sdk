@@ -64,6 +64,7 @@ export {
 } from "./data/queries";
 export type {
   CmssySiteConfig,
+  CmssyBranding,
   CmssyModelDefinition,
   CmssyModelRecord,
   CmssyRecordList,
