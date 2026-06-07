@@ -81,6 +81,12 @@ export function createCmssyPage(
       notFound();
     }
 
+    if (editMode && !Editor) {
+      throw new Error(
+        'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
+      );
+    }
+
     const resolvedForms = await resolveForms(
       clientConfig,
       page.blocks,
@@ -90,12 +96,7 @@ export function createCmssyPage(
     const forms =
       Object.keys(resolvedForms).length > 0 ? resolvedForms : undefined;
 
-    if (editMode) {
-      if (!Editor) {
-        throw new Error(
-          'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
-        );
-      }
+    if (editMode && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       return (
         <Editor
