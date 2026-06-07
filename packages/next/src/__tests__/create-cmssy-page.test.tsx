@@ -14,9 +14,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 const fetchPage = vi.hoisted(() => vi.fn());
+const resolveSiteLocales = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<typeof import("@cmssy/react")>();
-  return { ...actual, fetchPage };
+  return { ...actual, fetchPage, resolveSiteLocales };
 });
 
 import { createCmssyPage } from "../create-cmssy-page";
@@ -56,6 +57,42 @@ describe("createCmssyPage", () => {
   beforeEach(() => {
     draftEnabled = false;
     fetchPage.mockReset();
+    resolveSiteLocales.mockReset();
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en"],
+    });
+  });
+
+  it("strips a non-default locale prefix from the workspace site config", async () => {
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "pl",
+      locales: ["pl", "en"],
+    });
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = await Page({ params: params(["en", "about"]) });
+    expect(element.type).toBe(CmssyServerPage);
+    expect(element.props.locale).toBe("en");
+    expect(element.props.defaultLocale).toBe("pl");
+    expect(element.props.enabledLocales).toEqual(["pl", "en"]);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
+  });
+
+  it("renders the default locale at the root path", async () => {
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "pl",
+      locales: ["pl", "en"],
+    });
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = await Page({ params: params(["about"]) });
+    expect(element.props.locale).toBe("pl");
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
   });
 
   it("renders the RSC server page with the passed blocks for published content", async () => {

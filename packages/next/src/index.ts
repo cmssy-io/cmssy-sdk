@@ -13,3 +13,9 @@ export {
   isCmssyEditMode,
 } from "./edit-mode";
 export type { CmssyNextConfig } from "./config";
+export {
+  CMSSY_LOCALE_HEADER,
+  localeForPathname,
+  splitCmssyLocale,
+  getCmssyLocale,
+} from "./locale";
