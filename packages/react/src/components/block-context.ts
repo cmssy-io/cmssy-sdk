@@ -22,7 +22,7 @@ export function buildBlockContext(
       enabled:
         enabledLocales && enabledLocales.length > 0
           ? enabledLocales
-          : [defaultLocale],
+          : Array.from(new Set([defaultLocale, locale])),
     },
     isPreview: isPreview ?? false,
   };
