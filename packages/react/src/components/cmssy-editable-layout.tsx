@@ -8,6 +8,7 @@ import type {
 import { buildBlockMap, type BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
+import { buildBlockContext } from "./block-context";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditableLayoutProps {
@@ -16,6 +17,7 @@ export interface CmssyEditableLayoutProps {
   position: string;
   locale?: string;
   defaultLocale?: string;
+  enabledLocales?: string[];
   edit: EditBridgeConfig;
 }
 
@@ -25,6 +27,7 @@ export function CmssyEditableLayout({
   position,
   locale = "en",
   defaultLocale = "en",
+  enabledLocales,
   edit,
 }: CmssyEditableLayoutProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
@@ -38,6 +41,10 @@ export function CmssyEditableLayout({
       : [];
   }, [groups, position]);
   const patches = useLayoutPatchBridge(position, edit);
+  const context = useMemo(
+    () => buildBlockContext(locale, defaultLocale, enabledLocales, true),
+    [locale, defaultLocale, enabledLocales],
+  );
 
   if (layoutBlocks.length === 0) return null;
   return (
@@ -51,6 +58,7 @@ export function CmssyEditableLayout({
           blockMap={blockMap}
           patchedContent={patches[block.id]}
           layoutPosition={position}
+          context={context}
         />
       ))}
     </>
