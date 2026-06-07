@@ -65,6 +65,33 @@ function stubBlockRects() {
   }
 }
 
+function stubBlockRectsCounting(counter: { n: number }) {
+  for (const el of Array.from(
+    document.querySelectorAll<HTMLElement>("[data-block-id]"),
+  )) {
+    const id = el.getAttribute("data-block-id");
+    const top = id === "b1" ? 0 : 100;
+    el.getBoundingClientRect = () => {
+      counter.n++;
+      return {
+        top,
+        bottom: top + 100,
+        height: 100,
+        x: 0,
+        y: top,
+        left: 0,
+        right: 0,
+        width: 0,
+        toJSON() {},
+      } as DOMRect;
+    };
+    Object.defineProperty(el, "getClientRects", {
+      value: () => [{}],
+      configurable: true,
+    });
+  }
+}
+
 function dropEvent(clientY: number, data: string | null, moveTarget?: Element) {
   const dt = {
     types: data ? ["application/x-cmssy-block"] : ["application/x-cmssy-move"],
@@ -236,6 +263,83 @@ describe("drag agent", () => {
       }),
       editorOrigin,
     );
+  });
+
+  it("measures block rects once per drag and reuses them across drag-over messages", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const counter = { n: 0 };
+    stubBlockRectsCounting(counter);
+    for (let i = 0; i < 5; i++) window.dispatchEvent(dragOver(150));
+    expect(counter.n).toBe(3);
+    expect(mockParent.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "cmssy:drag-index", index: 2 }),
+      editorOrigin,
+    );
+  });
+
+  it("keeps the drop index correct after an auto-scroll without re-measuring", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const counter = { n: 0 };
+    stubBlockRectsCounting(counter);
+    const scrollBy = vi.spyOn(window, "scrollBy").mockImplementation(() => {});
+    window.dispatchEvent(dragOver(150));
+    expect(counter.n).toBe(3);
+    Object.defineProperty(window, "scrollY", {
+      value: 100,
+      configurable: true,
+    });
+    try {
+      window.dispatchEvent(dragOver(50));
+      expect(counter.n).toBe(3);
+      expect(mockParent.postMessage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "cmssy:drag-index", index: 2 }),
+        editorOrigin,
+      );
+    } finally {
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        configurable: true,
+      });
+      scrollBy.mockRestore();
+    }
+  });
+
+  it("re-measures block rects on a new drag after the previous one ends", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const counter = { n: 0 };
+    stubBlockRectsCounting(counter);
+    window.dispatchEvent(dragOver(150));
+    expect(counter.n).toBe(3);
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        origin: editorOrigin,
+        source: null,
+        data: { type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION },
+      }),
+    );
+    window.dispatchEvent(dragOver(150));
+    expect(counter.n).toBe(6);
   });
 
   it("ignores a native drop that is not a reorder (no drag started)", () => {
