@@ -73,16 +73,12 @@ export async function CmssyServerPage({
   return (
     <>
       {page.blocks.map((block, i) =>
-        renderResolvedBlock(
-          block,
-          map,
-          locale,
-          defaultLocale,
+        renderResolvedBlock(block, map, locale, defaultLocale, {
           context,
-          resolved[i]?.data,
-          resolved[i]?.content,
+          data: resolved[i]?.data,
+          resolvedContent: resolved[i]?.content,
           enabledLocales,
-        ),
+        }),
       )}
     </>
   );
