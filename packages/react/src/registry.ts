@@ -26,6 +26,10 @@ export interface BlockDefinition {
    * Optional server-side data loader. Run by CmssyServerPage during SSR; its
    * result is passed to the component as the `data` prop. Not run in the
    * editor (the component receives `data: undefined` there).
+   *
+   * The result crosses the server→client boundary when the block component is a
+   * Client Component, so it must be RSC-serializable (plain objects, arrays and
+   * primitives - no functions, class instances, etc.).
    */
   loader?: BlockLoader;
   component: ComponentType<{
