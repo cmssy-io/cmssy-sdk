@@ -56,7 +56,7 @@ export async function CmssyServerPage({
         return await loader({ content: resolved[i] ?? {}, context });
       } catch (err) {
         if (typeof console !== "undefined") {
-          console.warn(`cmssy: loader for block "${block.type}" failed`, err);
+          console.warn(`[cmssy] loader for block "${block.type}" failed`, err);
         }
         return undefined;
       }
