@@ -53,7 +53,7 @@ export async function CmssyServerPage({
       const loader = loaderMap[block.type];
       if (!loader) return undefined;
       try {
-        return await loader({ content: resolved[i], context });
+        return await loader({ content: resolved[i] ?? {}, context });
       } catch (err) {
         if (typeof console !== "undefined") {
           console.warn(`cmssy: loader for block "${block.type}" failed`, err);
