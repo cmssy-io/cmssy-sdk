@@ -70,7 +70,7 @@ export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {
   return map;
 }
 
-export type LoaderMap = Record<string, BlockLoader>;
+export type LoaderMap = Record<string, BlockLoader | undefined>;
 
 export function buildLoaderMap(blocks: BlockDefinition[]): LoaderMap {
   const map = Object.create(null) as LoaderMap;
