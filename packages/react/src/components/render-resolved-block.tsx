@@ -11,6 +11,7 @@ export function renderResolvedBlock(
   locale: string,
   defaultLocale: string,
   context?: CmssyBlockContext,
+  data?: unknown,
 ) {
   const Component = Object.hasOwn(map, block.type)
     ? map[block.type]
@@ -28,7 +29,7 @@ export function renderResolvedBlock(
       style={Component ? undefined : { display: "none" }}
     >
       {Component ? (
-        createElement(Component, { content, context })
+        createElement(Component, { content, context, data })
       ) : (
         <UnknownBlock type={block.type} />
       )}
