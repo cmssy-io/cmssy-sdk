@@ -1,6 +1,7 @@
 import type { CmssyPageData } from "../content/content-client";
 import type { CmssyFormDefinition } from "../data/queries";
-import { buildBlockMap, type BlockDefinition } from "../registry";
+import { getBlockContentForLanguage } from "../content/get-block-content";
+import { buildBlockMap, buildLoaderMap, type BlockDefinition } from "../registry";
 import { buildBlockContext } from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
 
@@ -15,7 +16,7 @@ export interface CmssyServerPageProps {
   forms?: Record<string, CmssyFormDefinition>;
 }
 
-export function CmssyServerPage({
+export async function CmssyServerPage({
   page,
   blocks,
   locale = "en",
@@ -25,6 +26,7 @@ export function CmssyServerPage({
 }: CmssyServerPageProps) {
   if (!page) return null;
   const map = buildBlockMap(blocks);
+  const loaderMap = buildLoaderMap(blocks);
   const context = buildBlockContext(
     locale,
     defaultLocale,
@@ -32,10 +34,30 @@ export function CmssyServerPage({
     false,
     forms,
   );
+
+  // Run each block's loader server-side (in parallel); the result is passed to
+  // the block as its `data` prop, enabling SSR of fetched data.
+  const data = await Promise.all(
+    page.blocks.map(async (block) => {
+      const loader = loaderMap[block.type];
+      if (!loader) return undefined;
+      try {
+        const content = getBlockContentForLanguage(
+          block.content,
+          locale,
+          defaultLocale,
+        );
+        return await loader({ content, context });
+      } catch {
+        return undefined;
+      }
+    }),
+  );
+
   return (
     <>
-      {page.blocks.map((block) =>
-        renderResolvedBlock(block, map, locale, defaultLocale, context),
+      {page.blocks.map((block, i) =>
+        renderResolvedBlock(block, map, locale, defaultLocale, context, data[i]),
       )}
     </>
   );

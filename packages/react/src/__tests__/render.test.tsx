@@ -48,27 +48,60 @@ describe("CmssyBlock blockMap proto-safety", () => {
 });
 
 describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => {
-  it("renders blocks from the passed array without any global registration", () => {
+  it("renders blocks from the passed array without any global registration", async () => {
     const html = renderToStaticMarkup(
-      <CmssyServerPage
-        page={{
+      await CmssyServerPage({
+        page: {
           id: "p",
           blocks: [
             { id: "b1", type: "hero", content: { en: { heading: "Hi" } } },
           ],
-        }}
-        blocks={[heroBlock]}
-        locale="en"
-      />,
+        },
+        blocks: [heroBlock],
+        locale: "en",
+      }),
     );
     expect(html).toContain('data-block-id="b1"');
     expect(html).toContain("Hi");
   });
 
-  it("renders locale-resolved content and a hidden placeholder for unknown types", () => {
+  it("runs a block loader and passes its result as the data prop", async () => {
+    const loadedBlock = defineBlock<Record<string, unknown>, { msg: string }>({
+      type: "loaded",
+      props: {},
+      loader: async () => ({ msg: "from-loader" }),
+      component: ({ data }) => <span>{data?.msg ?? "no-data"}</span>,
+    });
     const html = renderToStaticMarkup(
-      <CmssyServerPage
-        page={{
+      await CmssyServerPage({
+        page: { id: "p", blocks: [{ id: "b1", type: "loaded", content: {} }] },
+        blocks: [loadedBlock],
+        locale: "en",
+      }),
+    );
+    expect(html).toContain("from-loader");
+  });
+
+  it("passes undefined data to blocks without a loader", async () => {
+    const noLoaderBlock = defineBlock({
+      type: "noloader",
+      props: {},
+      component: ({ data }) => <span>{data === undefined ? "no-data" : "has-data"}</span>,
+    });
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: { id: "p", blocks: [{ id: "b1", type: "noloader", content: {} }] },
+        blocks: [noLoaderBlock],
+        locale: "en",
+      }),
+    );
+    expect(html).toContain("no-data");
+  });
+
+  it("renders locale-resolved content and a hidden placeholder for unknown types", async () => {
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: {
           id: "p",
           blocks: [
             {
@@ -78,31 +111,31 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
             },
             { id: "b2", type: "ghost", content: {} },
           ],
-        }}
-        blocks={[heroBlock]}
-        locale="pl"
-      />,
+        },
+        blocks: [heroBlock],
+        locale: "pl",
+      }),
     );
     expect(html).toContain("Cześć");
     expect(html).toContain('data-cmssy-unknown-block="ghost"');
     expect(html).toContain("display:none");
   });
 
-  it("renders nothing for a null page", () => {
+  it("renders nothing for a null page", async () => {
     expect(
       renderToStaticMarkup(
-        <CmssyServerPage page={null} blocks={[heroBlock]} />,
+        await CmssyServerPage({ page: null, blocks: [heroBlock] }),
       ),
     ).toBe("");
   });
 
-  it("falls back to UnknownBlock for prototype-chain block types (no crash)", () => {
+  it("falls back to UnknownBlock for prototype-chain block types (no crash)", async () => {
     const html = renderToStaticMarkup(
-      <CmssyServerPage
-        page={{ id: "p", blocks: [{ id: "x", type: "toString", content: {} }] }}
-        blocks={[heroBlock]}
-        locale="en"
-      />,
+      await CmssyServerPage({
+        page: { id: "p", blocks: [{ id: "x", type: "toString", content: {} }] },
+        blocks: [heroBlock],
+        locale: "en",
+      }),
     );
     expect(html).toContain('data-block-id="x"');
     expect(html).not.toContain("[native code]");
