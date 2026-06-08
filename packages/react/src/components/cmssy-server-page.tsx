@@ -41,25 +41,31 @@ export async function CmssyServerPage({
   );
 
   // Resolve each block's localized content once, reused for both the loader and
-  // the render below.
-  const resolved = page.blocks.map((block) =>
-    getBlockContentForLanguage(block.content, locale, defaultLocale),
-  );
-
-  // Run each block's loader server-side (in parallel); the result is passed to
-  // the block as its `data` prop, enabling SSR of fetched data.
-  const data = await Promise.all(
-    page.blocks.map(async (block, i) => {
+  // the render below. Each block's loader runs server-side (in parallel); its
+  // result is passed to the block as the `data` prop, enabling SSR of fetched
+  // data.
+  const resolved = await Promise.all(
+    page.blocks.map(async (block) => {
+      const content = getBlockContentForLanguage(
+        block.content,
+        locale,
+        defaultLocale,
+      );
       const loader = loaderMap[block.type];
-      if (!loader) return undefined;
-      try {
-        return await loader({ content: resolved[i] ?? {}, context });
-      } catch (err) {
-        if (typeof console !== "undefined") {
-          console.warn(`[cmssy] loader for block "${block.type}" failed`, err);
+      let data: unknown;
+      if (loader) {
+        try {
+          data = await loader({ content, context });
+        } catch (err) {
+          if (typeof console !== "undefined") {
+            console.warn(
+              `[cmssy] loader for block "${block.type}" failed`,
+              err,
+            );
+          }
         }
-        return undefined;
       }
+      return { content, data };
     }),
   );
 
@@ -72,8 +78,8 @@ export async function CmssyServerPage({
           locale,
           defaultLocale,
           context,
-          data[i],
-          resolved[i],
+          resolved[i]?.data,
+          resolved[i]?.content,
         ),
       )}
     </>
