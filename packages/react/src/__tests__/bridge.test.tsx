@@ -495,8 +495,8 @@ describe("edit bridge (blocks-driven)", () => {
     postSpy.mockRestore();
   });
 
-  it("the server page does not mount the bridge", () => {
-    render(<CmssyServerPage page={page} blocks={blocks} locale="en" />);
+  it("the server page does not mount the bridge", async () => {
+    render(await CmssyServerPage({ page, blocks, locale: "en" }));
     expect(mockParent.postMessage).not.toHaveBeenCalled();
   });
 
