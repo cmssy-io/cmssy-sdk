@@ -54,14 +54,14 @@ const page = {
 };
 
 describe("CmssyServerPage forms injection", () => {
-  it("exposes injected forms to blocks via context.forms", () => {
+  it("exposes injected forms to blocks via context.forms", async () => {
     const { container } = render(
-      <CmssyServerPage
-        page={page}
-        blocks={blocks}
-        locale="en"
-        defaultLocale="en"
-        forms={{
+      await CmssyServerPage({
+        page,
+        blocks,
+        locale: "en",
+        defaultLocale: "en",
+        forms: {
           f1: {
             id: "f1",
             name: "Contact form",
@@ -70,20 +70,20 @@ describe("CmssyServerPage forms injection", () => {
             fields: [],
             settings: null,
           },
-        }}
-      />,
+        },
+      }),
     );
     expect(container.textContent).toContain("Contact form");
   });
 
-  it("renders without forms (backward compatible)", () => {
+  it("renders without forms (backward compatible)", async () => {
     const { container } = render(
-      <CmssyServerPage
-        page={page}
-        blocks={blocks}
-        locale="en"
-        defaultLocale="en"
-      />,
+      await CmssyServerPage({
+        page,
+        blocks,
+        locale: "en",
+        defaultLocale: "en",
+      }),
     );
     expect(container.textContent).toContain("no-form");
   });
