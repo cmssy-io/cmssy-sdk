@@ -37,7 +37,10 @@ export function CmssyServerLayout({
   return (
     <>
       {layoutBlocks.map((block) =>
-        renderResolvedBlock(block, map, locale, defaultLocale, context),
+        renderResolvedBlock(block, map, locale, defaultLocale, {
+          context,
+          enabledLocales,
+        }),
       )}
     </>
   );

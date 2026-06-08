@@ -6,6 +6,15 @@ import type {
   FieldDefinition,
 } from "./bridge/protocol";
 
+export interface BlockLoaderArgs {
+  content: Record<string, unknown>;
+  context?: CmssyBlockContext;
+}
+
+export type BlockLoader = (
+  args: BlockLoaderArgs,
+) => Promise<unknown> | unknown;
+
 export interface BlockDefinition {
   type: string;
   label?: string;
@@ -13,20 +22,39 @@ export interface BlockDefinition {
   icon?: string;
   layoutPositions?: string[];
   props: Record<string, FieldDefinition>;
+  /**
+   * Optional server-side data loader. Run by CmssyServerPage during SSR; its
+   * result is passed to the component as the `data` prop. Not run in the
+   * editor (the component receives `data: undefined` there).
+   *
+   * The result crosses the server→client boundary when the block component is a
+   * Client Component, so it must be RSC-serializable (plain objects, arrays and
+   * primitives - no functions, class instances, etc.).
+   */
+  loader?: BlockLoader;
   component: ComponentType<{
     content: Record<string, unknown>;
     context?: CmssyBlockContext;
+    data?: unknown;
   }>;
 }
 
-export function defineBlock<C extends Record<string, unknown>>(def: {
+export function defineBlock<
+  C extends Record<string, unknown>,
+  D = unknown,
+>(def: {
   type: string;
   label?: string;
   category?: string;
   icon?: string;
   layoutPositions?: string[];
   props: Record<string, FieldDefinition>;
-  component: ComponentType<{ content: C; context?: CmssyBlockContext }>;
+  loader?: (args: { content: C; context?: CmssyBlockContext }) => Promise<D> | D;
+  component: ComponentType<{
+    content: C;
+    context?: CmssyBlockContext;
+    data?: D;
+  }>;
 }): BlockDefinition {
   return def as BlockDefinition;
 }
@@ -36,12 +64,23 @@ export type BlockMap = Record<
   ComponentType<{
     content: Record<string, unknown>;
     context?: CmssyBlockContext;
+    data?: unknown;
   }>
 >;
 
 export function buildBlockMap(blocks: BlockDefinition[]): BlockMap {
   const map = Object.create(null) as BlockMap;
   for (const block of blocks) map[block.type] = block.component;
+  return map;
+}
+
+export type LoaderMap = Record<string, BlockLoader | undefined>;
+
+export function buildLoaderMap(blocks: BlockDefinition[]): LoaderMap {
+  const map = Object.create(null) as LoaderMap;
+  for (const block of blocks) {
+    if (block.loader) map[block.type] = block.loader;
+  }
   return map;
 }
 
