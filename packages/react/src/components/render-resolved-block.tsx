@@ -13,7 +13,7 @@ export function renderResolvedBlock(
   context?: CmssyBlockContext,
   data?: unknown,
   resolvedContent?: Record<string, unknown>,
-  availableLocales?: string[],
+  enabledLocales?: string[],
 ) {
   const Component = Object.hasOwn(map, block.type)
     ? map[block.type]
@@ -24,7 +24,7 @@ export function renderResolvedBlock(
       block.content,
       locale,
       defaultLocale,
-      availableLocales,
+      enabledLocales,
     );
   return (
     <div

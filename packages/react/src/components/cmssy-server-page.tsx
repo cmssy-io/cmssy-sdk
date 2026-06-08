@@ -60,7 +60,7 @@ export async function CmssyServerPage({
         } catch (err) {
           if (typeof console !== "undefined") {
             console.warn(
-              `[cmssy] loader for block "${block.type}" failed`,
+              `[cmssy] loader for block "${block.type}" (${block.id}) failed`,
               err,
             );
           }
