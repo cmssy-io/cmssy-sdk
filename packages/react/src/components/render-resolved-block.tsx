@@ -31,7 +31,7 @@ export function renderResolvedBlock(
       block.content,
       locale,
       defaultLocale,
-      enabledLocales,
+      enabledLocales?.length ? enabledLocales : undefined,
     );
   return (
     <div

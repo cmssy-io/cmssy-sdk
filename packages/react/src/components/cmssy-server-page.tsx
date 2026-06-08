@@ -50,7 +50,7 @@ export async function CmssyServerPage({
         block.content,
         locale,
         defaultLocale,
-        enabledLocales,
+        enabledLocales?.length ? enabledLocales : undefined,
       );
       const loader = loaderMap[block.type];
       let data: unknown;
