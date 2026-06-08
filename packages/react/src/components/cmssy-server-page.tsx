@@ -81,6 +81,7 @@ export async function CmssyServerPage({
           context,
           resolved[i]?.data,
           resolved[i]?.content,
+          enabledLocales,
         ),
       )}
     </>
