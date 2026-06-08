@@ -16,6 +16,11 @@ export interface CmssyServerPageProps {
   forms?: Record<string, CmssyFormDefinition>;
 }
 
+/**
+ * Async React Server Component (Next.js App Router / RSC). It runs each block's
+ * loader server-side before rendering, so it must be rendered in a server
+ * component tree (as `createCmssyPage` does) - not in a client component.
+ */
 export async function CmssyServerPage({
   page,
   blocks,
@@ -35,20 +40,24 @@ export async function CmssyServerPage({
     forms,
   );
 
+  // Resolve each block's localized content once, reused for both the loader and
+  // the render below.
+  const resolved = page.blocks.map((block) =>
+    getBlockContentForLanguage(block.content, locale, defaultLocale),
+  );
+
   // Run each block's loader server-side (in parallel); the result is passed to
   // the block as its `data` prop, enabling SSR of fetched data.
   const data = await Promise.all(
-    page.blocks.map(async (block) => {
+    page.blocks.map(async (block, i) => {
       const loader = loaderMap[block.type];
       if (!loader) return undefined;
       try {
-        const content = getBlockContentForLanguage(
-          block.content,
-          locale,
-          defaultLocale,
-        );
-        return await loader({ content, context });
-      } catch {
+        return await loader({ content: resolved[i], context });
+      } catch (err) {
+        if (typeof console !== "undefined") {
+          console.warn(`cmssy: loader for block "${block.type}" failed`, err);
+        }
         return undefined;
       }
     }),
@@ -57,7 +66,15 @@ export async function CmssyServerPage({
   return (
     <>
       {page.blocks.map((block, i) =>
-        renderResolvedBlock(block, map, locale, defaultLocale, context, data[i]),
+        renderResolvedBlock(
+          block,
+          map,
+          locale,
+          defaultLocale,
+          context,
+          data[i],
+          resolved[i],
+        ),
       )}
     </>
   );

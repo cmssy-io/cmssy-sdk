@@ -12,15 +12,14 @@ export function renderResolvedBlock(
   defaultLocale: string,
   context?: CmssyBlockContext,
   data?: unknown,
+  resolvedContent?: Record<string, unknown>,
 ) {
   const Component = Object.hasOwn(map, block.type)
     ? map[block.type]
     : undefined;
-  const content = getBlockContentForLanguage(
-    block.content,
-    locale,
-    defaultLocale,
-  );
+  const content =
+    resolvedContent ??
+    getBlockContentForLanguage(block.content, locale, defaultLocale);
   return (
     <div
       key={block.id}
