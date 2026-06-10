@@ -52,6 +52,7 @@ export type {
 export { getBlockContentForLanguage } from "./content/get-block-content";
 
 export { graphqlRequest } from "./data/graphql-request";
+export { resolveWorkspaceId } from "./data/settings-client";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
 export { createCmssyClient } from "./data/client";
 export type { CmssyClient, QueryScopedOptions } from "./data/client";
