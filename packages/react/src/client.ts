@@ -14,3 +14,10 @@ export type {
   EditBridgeState,
   PatchMap,
 } from "./bridge/use-edit-bridge";
+export { CmssyAuthProvider, useCmssyUser } from "./auth/auth-provider";
+export type {
+  CmssyAuthProviderProps,
+  CmssyAuthState,
+  CmssyAuthUser,
+  CmssyAuthActionResult,
+} from "./auth/auth-provider";
