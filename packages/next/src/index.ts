@@ -12,10 +12,23 @@ export {
   isCmssyEditRequest,
   isCmssyEditMode,
 } from "./edit-mode";
-export type { CmssyNextConfig } from "./config";
+export type { CmssyNextConfig, CmssyAuthConfig } from "./config";
 export {
   CMSSY_LOCALE_HEADER,
   localeForPathname,
   splitCmssyLocale,
   getCmssyLocale,
 } from "./locale";
+export {
+  CMSSY_SESSION_COOKIE,
+  SESSION_MAX_AGE_SECONDS,
+  sealSession,
+  openSession,
+  isAccessExpired,
+  sessionCookieOptions,
+} from "./session";
+export type {
+  CmssySessionPayload,
+  CmssySessionUser,
+  SessionCookieOptions,
+} from "./session";
