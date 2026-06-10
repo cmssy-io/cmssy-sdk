@@ -80,7 +80,7 @@ Edge-safe (jose works on edge): decrypt → if access expired and refresh presen
 - `<CmssyAuthProvider basePath="/api/cmssy/auth">` — fetches `GET me` once, holds `{user, loading}`.
 - `useCmssyUser()` → `{ user, loading, signIn(identity,password), signOut(), register(...), refresh() }` — all hit the consumer's own `basePath` routes (first-party fetch, `credentials:"same-origin"`).
 - Naming: `Cmssy*` prefix everywhere (no generic `useUser` — collision-prone in consumer apps).
-- Goes into `packages/react/src/client.ts` ("use client" bundle), provider/hook pattern mirrors existing client exports.
+- Goes into `packages/react/src/client.ts` ("use client" bundle) and ships from **`@cmssy/react/client`** — the same subpath the editor client components already use. NOT re-exported through `@cmssy/next` (that's the server-graph bundle; forcing a `"use client"` module through it risks server-graph pollution). Consumer import split: provider/hook from `@cmssy/react/client`; routes (`createCmssyAuthRoute`) + server reads (`getCmssyUser`) + middleware from `@cmssy/next`.
 
 ### What stays out of scope
 
@@ -92,7 +92,7 @@ Edge-safe (jose works on edge): decrypt → if access expired and refresh presen
 
 - **Slice 1 — session core (packages/next):** `jose` dep; `session.ts` (seal/open JWE, key derivation, payload type, clock-skew guard); config `auth` field + validation; unit tests (round-trip, tamper, wrong key, expired access detection, short-secret rejection).
 - **Slice 2 — BFF routes + server read:** `auth-client.ts` (server-side GraphQL calls to the CMS-673 mutations incl. `x-workspace-id` resolution+cache); `createCmssyAuthRoute` (all actions, cookie set/clear, no-store); `getCmssyUser`/`getCmssyAccessToken` with lazy refresh; `createCmssyAuthMiddleware`. Tests: every action happy+failure, refresh rotation persisted, failed refresh clears cookie, tokens never in any response body.
-- **Slice 3 — client API + pilot:** `CmssyAuthProvider` + `useCmssyUser` (react/client.ts); `@cmssy/next` re-exports; bump both packages 0.1.9; wire into kancelaria pilot (sign-in page on the auth model) and verify e2e in the browser (cookie first-party HttpOnly, no token in devtools network/storage, SSR `getCmssyUser` renders the user, sign-out revokes); tag `v0.1.9`.
+- **Slice 3 — client API + pilot:** `CmssyAuthProvider` + `useCmssyUser` shipped from `@cmssy/react/client` (NOT re-exported through `@cmssy/next`, per the client/server split above); bump both packages 0.1.9; wire into kancelaria pilot (sign-in page on the auth model) and verify e2e in the browser (cookie first-party HttpOnly, no token in devtools network/storage, SSR `getCmssyUser` renders the user, sign-out revokes); tag `v0.1.9`.
 
 ## Done when
 
