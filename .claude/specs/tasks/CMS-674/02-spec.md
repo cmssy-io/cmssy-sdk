@@ -80,7 +80,7 @@ Edge-safe (jose works on edge): decrypt → if access expired and refresh presen
 - `<CmssyAuthProvider basePath="/api/cmssy/auth">` — fetches `GET me` once, holds `{user, loading}`.
 - `useCmssyUser()` → `{ user, loading, signIn(identity,password), signOut(), register(...), refresh() }` — all hit the consumer's own `basePath` routes (first-party fetch, `credentials:"same-origin"`).
 - Naming: `Cmssy*` prefix everywhere (no generic `useUser` — collision-prone in consumer apps).
-- Goes into `packages/react/src/client.ts` ("use client" bundle), provider/hook pattern mirrors existing client exports.
+- Goes into `packages/react/src/client.ts` ("use client" bundle) and ships from **`@cmssy/react/client`** — the same subpath the editor client components already use. NOT re-exported through `@cmssy/next` (that's the server-graph bundle; forcing a `"use client"` module through it risks server-graph pollution). Consumer import split: provider/hook from `@cmssy/react/client`; routes (`createCmssyAuthRoute`) + server reads (`getCmssyUser`) + middleware from `@cmssy/next`.
 
 ### What stays out of scope
 
