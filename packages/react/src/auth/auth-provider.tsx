@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -38,16 +39,25 @@ const CmssyAuthContext = createContext<CmssyAuthState | null>(null);
 export interface CmssyAuthProviderProps {
   children: ReactNode;
   basePath?: string;
+  initialUser?: CmssyAuthUser | null;
 }
 
 export function CmssyAuthProvider({
   children,
   basePath = "/api/cmssy/auth",
+  initialUser,
 }: CmssyAuthProviderProps) {
-  const [user, setUser] = useState<CmssyAuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const seeded = initialUser !== undefined;
+  const [user, setUser] = useState<CmssyAuthUser | null>(initialUser ?? null);
+  const [loading, setLoading] = useState(!seeded);
+  const generation = useRef(0);
 
   const base = useMemo(() => basePath.replace(/\/+$/, ""), [basePath]);
+
+  const commitUser = useCallback((next: CmssyAuthUser | null) => {
+    generation.current += 1;
+    setUser(next);
+  }, []);
 
   const fetchUser = useCallback(async (): Promise<CmssyAuthUser | null> => {
     try {
@@ -63,18 +73,16 @@ export function CmssyAuthProvider({
   }, [base]);
 
   useEffect(() => {
-    let active = true;
+    if (seeded) return;
+    const gen = generation.current;
     void (async () => {
       const next = await fetchUser();
-      if (active) {
+      if (gen === generation.current) {
         setUser(next);
         setLoading(false);
       }
     })();
-    return () => {
-      active = false;
-    };
-  }, [fetchUser]);
+  }, [fetchUser, seeded]);
 
   const postAction = useCallback(
     async (action: string, body: Record<string, unknown>) => {
@@ -96,10 +104,10 @@ export function CmssyAuthProvider({
   const signIn = useCallback(
     async (identity: string, password: string) => {
       const data = await postAction("sign-in", { identity, password });
-      if (data.ok && data.user) setUser(data.user);
+      if (data.ok && data.user) commitUser(data.user);
       return { ok: Boolean(data.ok), message: data.message };
     },
-    [postAction],
+    [postAction, commitUser],
   );
 
   const register = useCallback(
@@ -122,12 +130,14 @@ export function CmssyAuthProvider({
     try {
       await postAction("sign-out", {});
     } finally {
-      setUser(null);
+      commitUser(null);
     }
-  }, [postAction]);
+  }, [postAction, commitUser]);
 
   const refresh = useCallback(async () => {
-    setUser(await fetchUser());
+    const gen = generation.current;
+    const next = await fetchUser();
+    if (gen === generation.current) setUser(next);
   }, [fetchUser]);
 
   const value = useMemo<CmssyAuthState>(
