@@ -55,7 +55,14 @@ export function createCmssyAuthMiddleware(
       return NextResponse.next();
     }
 
-    if (!payload) return NextResponse.next();
+    if (!payload) {
+      const cleared = NextResponse.next();
+      cleared.cookies.set(CMSSY_SESSION_COOKIE, "", {
+        ...sessionCookieOptions(),
+        maxAge: 0,
+      });
+      return cleared;
+    }
 
     const sealed = await sealSession(
       payload,

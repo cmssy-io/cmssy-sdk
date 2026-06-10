@@ -131,7 +131,7 @@ describe("createCmssyAuthMiddleware", () => {
     expect(openedRequest?.refreshToken).toBe("refresh-2");
   });
 
-  it("passes through without clearing when the refresh is rejected (clearing is owned by explicit routes to avoid lost-race logouts)", async () => {
+  it("clears the cookie on a definitive backend rejection", async () => {
     gqlResponses.push({
       siteMemberRefresh: {
         success: false,
@@ -145,7 +145,7 @@ describe("createCmssyAuthMiddleware", () => {
     const response = await middleware(
       await requestWithSession({ accessExpiresAt: Date.now() - 1000 }),
     );
-    expect(response.cookies.get(CMSSY_SESSION_COOKIE)).toBeUndefined();
+    expect(response.cookies.get(CMSSY_SESSION_COOKIE)?.value).toBe("");
   });
 
   it("skips refresh for prefetch requests", async () => {
