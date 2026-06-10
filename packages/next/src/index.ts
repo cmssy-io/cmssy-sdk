@@ -32,3 +32,9 @@ export type {
   CmssySessionUser,
   SessionCookieOptions,
 } from "./session";
+export { createCmssyAuthRoute } from "./create-auth-route";
+export type { CmssyAuthRouteHandlers } from "./create-auth-route";
+export { assertAuthConfig } from "./config";
+export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
+export { createCmssyAuthMiddleware } from "./auth-middleware";
+export type { CmssyAuthMiddleware } from "./auth-middleware";
