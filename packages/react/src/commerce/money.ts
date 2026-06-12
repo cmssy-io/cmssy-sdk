@@ -38,6 +38,10 @@ export function fromMinorUnits(minor: number, currency: string): number {
   return minor / 10 ** fractionDigits(currency);
 }
 
+export function toMinorUnits(amount: number, currency: string): number {
+  return Math.round(amount * 10 ** fractionDigits(currency));
+}
+
 export function formatPrice(
   minor: number,
   currency: string | null | undefined,
