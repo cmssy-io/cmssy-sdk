@@ -40,3 +40,8 @@ export { assertAuthConfig } from "./config";
 export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
 export { createCmssyAuthMiddleware } from "./auth-middleware";
 export type { CmssyAuthMiddleware } from "./auth-middleware";
+export { fetchProducts, fetchProduct } from "./product-server";
+export type {
+  FetchProductsOptions,
+  FetchProductOptions,
+} from "./product-server";

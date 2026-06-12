@@ -15,6 +15,7 @@ interface ProductContent {
   nameField?: string;
   priceField?: string;
   imageField?: string;
+  product?: CmssyProduct;
 }
 
 function deriveAxes(
@@ -49,8 +50,9 @@ function matchVariant(
 function ProductComponent({ content }: { content: Record<string, unknown> }) {
   const c = content as ProductContent;
   const { fetchProduct, addToCart } = useCart();
-  const [product, setProduct] = useState<CmssyProduct | null>(null);
-  const [loading, setLoading] = useState(true);
+  const injected = c.product ?? null;
+  const [product, setProduct] = useState<CmssyProduct | null>(injected);
+  const [loading, setLoading] = useState(!injected && Boolean(c.slug));
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -61,13 +63,12 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
   const slug = c.slug ?? "";
 
   useEffect(() => {
+    if (injected || !slug) return;
     let active = true;
     setLoading(true);
     void (async () => {
       try {
-        const result = slug
-          ? await fetchProduct(modelSlug, { [slugField]: slug })
-          : null;
+        const result = await fetchProduct(modelSlug, { [slugField]: slug });
         if (active) setProduct(result);
       } finally {
         if (active) setLoading(false);
@@ -76,7 +77,7 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
     return () => {
       active = false;
     };
-  }, [fetchProduct, modelSlug, slugField, slug]);
+  }, [injected, fetchProduct, modelSlug, slugField, slug]);
 
   const axes = useMemo(
     () => (product ? deriveAxes(product.variants) : []),
