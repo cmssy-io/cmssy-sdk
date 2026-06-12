@@ -244,4 +244,29 @@ describe("productBlock", () => {
     expect(price?.textContent).toContain("999");
     expect(price?.textContent).not.toMatch(/129[.,]99/);
   });
+
+  it("renders an injected (server-fetched) product without a BFF product call", async () => {
+    mockBff(() => ({ payload: { cart: EMPTY_CART } }));
+
+    render(
+      <CmssyCommerceProvider>
+        <Product
+          content={{
+            modelSlug: "product",
+            slug: "macbook-pro-16",
+            product: {
+              id: "p1",
+              data: { name: "MacBook Pro 16", price: 12999, currency: "PLN" },
+              variants: [],
+            },
+          }}
+        />
+      </CmssyCommerceProvider>,
+    );
+
+    expect(screen.getByText("MacBook Pro 16")).toBeDefined();
+    expect(calls.some((c) => c.url.endsWith("/api/cmssy/cart/product"))).toBe(
+      false,
+    );
+  });
 });
