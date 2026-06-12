@@ -82,6 +82,9 @@ export function CmssyCommerceProvider({
   );
   const tokenRef = useRef<string | null>(null);
   const workspaceIdRef = useRef<string | null>(null);
+  const fetchRef = useRef<FetchLike | undefined>(customFetch);
+  fetchRef.current = customFetch;
+  const generation = useRef(0);
   const [cart, setCart] = useState<CmssyCart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,22 +93,23 @@ export function CmssyCommerceProvider({
     workspaceId: string;
     options: GraphqlRequestOptions;
   }> => {
+    const fetch = fetchRef.current;
     if (tokenRef.current === null) {
       tokenRef.current = loadCartSessionToken();
     }
     if (workspaceIdRef.current === null) {
       workspaceIdRef.current = await client.resolveWorkspaceId(
-        customFetch ? { fetch: customFetch } : undefined,
+        fetch ? { fetch } : undefined,
       );
     }
     return {
       workspaceId: workspaceIdRef.current,
       options: {
         headers: cartSessionHeaders(tokenRef.current),
-        ...(customFetch ? { fetch: customFetch } : {}),
+        ...(fetch ? { fetch } : {}),
       },
     };
-  }, [client, customFetch]);
+  }, [client]);
 
   const run = useCallback(
     async (
@@ -114,14 +118,18 @@ export function CmssyCommerceProvider({
         options: GraphqlRequestOptions;
       }) => Promise<CmssyCart | null>,
     ): Promise<void> => {
+      const gen = ++generation.current;
       setError(null);
       try {
         const ctx = await ensureContext();
-        setCart(await operation(ctx));
+        const result = await operation(ctx);
+        if (gen === generation.current) setCart(result);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Commerce request failed",
-        );
+        if (gen === generation.current) {
+          setError(
+            err instanceof Error ? err.message : "Commerce request failed",
+          );
+        }
         throw err;
       }
     },
@@ -140,7 +148,6 @@ export function CmssyCommerceProvider({
         return data.cart;
       });
     } catch {
-      setLoading(false);
       return;
     } finally {
       setLoading(false);
@@ -239,6 +246,7 @@ export function CmssyCommerceProvider({
 
   const checkout = useCallback(
     async (customerEmail: string): Promise<CmssyOrder> => {
+      const gen = ++generation.current;
       setError(null);
       try {
         const { workspaceId, options } = await ensureContext();
@@ -249,10 +257,12 @@ export function CmssyCommerceProvider({
         );
         clearCartSessionToken();
         tokenRef.current = loadCartSessionToken();
-        setCart(null);
+        if (gen === generation.current) setCart(null);
         return data.checkout;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Checkout failed");
+        if (gen === generation.current) {
+          setError(err instanceof Error ? err.message : "Checkout failed");
+        }
         throw err;
       }
     },
@@ -264,14 +274,15 @@ export function CmssyCommerceProvider({
       modelSlug: string,
       filter: Record<string, unknown>,
     ): Promise<CmssyProduct | null> => {
-      const reqOptions = customFetch ? { fetch: customFetch } : undefined;
+      const fetch = fetchRef.current;
+      const reqOptions = fetch ? { fetch } : undefined;
       const workspaceId = await client.resolveWorkspaceId(reqOptions);
       const data = await client.query<{
         publicModelRecords: { items: CmssyProduct[] };
       }>(PRODUCT_QUERY, { workspaceId, modelSlug, filter }, reqOptions);
       return data.publicModelRecords.items[0] ?? null;
     },
-    [client, customFetch],
+    [client],
   );
 
   const value = useMemo<CmssyCommerceState>(

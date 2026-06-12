@@ -54,6 +54,7 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const modelSlug = c.modelSlug ?? "products";
   const slugField = c.slugField ?? "slug";
@@ -97,19 +98,21 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
   const name = String(data[c.nameField ?? "name"] ?? "");
   const imageUrl = c.imageField ? (data[c.imageField] as string) : null;
   const hasVariants = product.variants.length > 0;
-  const currency = hasVariants
-    ? "USD"
-    : ((data.currency as string | undefined) ?? "USD");
+  const currency = (data.currency as string | undefined) ?? "USD";
   const priceMinor = hasVariants
     ? variant?.price
     : Number(data[c.priceField ?? "price"] ?? 0);
+  const showPrice = priceMinor != null && Number.isFinite(priceMinor);
   const allAxesSelected = axes.every((axis) => selections[axis.name]);
-  const canAdd = hasVariants ? Boolean(variant) : true;
+  const outOfStock =
+    variant != null && variant.inventory != null && variant.inventory <= 0;
+  const canAdd = hasVariants ? Boolean(variant) && !outOfStock : true;
 
   async function onAdd() {
     if (!product) return;
     setAdding(true);
     setAdded(false);
+    setAddError(null);
     try {
       await addToCart(
         product.id,
@@ -117,6 +120,8 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
         hasVariants ? { variantSelections: selections } : undefined,
       );
       setAdded(true);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Could not add to cart");
     } finally {
       setAdding(false);
     }
@@ -126,8 +131,8 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
     <div data-cmssy-product={product.id}>
       {imageUrl ? <img src={imageUrl} alt={name} /> : null}
       <h3 data-cmssy-product-name>{name}</h3>
-      {priceMinor != null ? (
-        <p data-cmssy-product-price>{formatPrice(priceMinor, currency)}</p>
+      {showPrice ? (
+        <p data-cmssy-product-price>{formatPrice(priceMinor!, currency)}</p>
       ) : null}
       {axes.map((axis) => (
         <label key={axis.name} data-cmssy-variant-axis={axis.name}>
@@ -156,8 +161,15 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
         disabled={adding || !canAdd || (hasVariants && !allAxesSelected)}
         data-cmssy-add-to-cart
       >
-        {adding ? "Adding…" : added ? "Added" : "Add to cart"}
+        {adding
+          ? "Adding…"
+          : outOfStock
+            ? "Out of stock"
+            : added
+              ? "Added"
+              : "Add to cart"}
       </button>
+      {addError ? <p data-cmssy-product-error>{addError}</p> : null}
     </div>
   );
 }
