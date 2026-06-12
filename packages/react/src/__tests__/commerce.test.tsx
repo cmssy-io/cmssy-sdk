@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor, act, cleanup } from "@testing-library/react";
 
 import {
@@ -7,20 +7,7 @@ import {
   useCart,
   type CmssyCommerceState,
 } from "../commerce/commerce-provider";
-import {
-  loadCartSessionToken,
-  mintCartSessionToken,
-  CART_SESSION_HEADER,
-  CART_SESSION_STORAGE_KEY,
-} from "../commerce/cart-session";
 import { formatPrice } from "../commerce/money";
-import type { FetchLike } from "../content/content-client";
-
-interface Call {
-  headers: Record<string, string>;
-  query: string;
-  variables: Record<string, unknown>;
-}
 
 const EMPTY_CART = {
   id: "c1",
@@ -67,46 +54,36 @@ const ORDER = {
   customerEmail: "buyer@example.com",
 };
 
-function makeFetch(): { fetch: FetchLike; calls: Call[] } {
-  const calls: Call[] = [];
-  const fetch: FetchLike = async (_url, init) => {
-    const parsed = JSON.parse(init.body) as {
-      query: string;
-      variables: Record<string, unknown>;
-    };
-    calls.push({ headers: init.headers, ...parsed });
-    const q = parsed.query;
-    let data: Record<string, unknown> = {};
-    if (q.includes("publicSiteConfig")) {
-      data = {
-        publicSiteConfig: {
-          id: "s",
-          workspaceId: "ws1",
-          siteName: null,
-          defaultLanguage: null,
-          enabledLanguages: [],
-          enabledFeatures: [],
-          notFoundPageId: null,
-          previewUrl: null,
-          branding: null,
-        },
-      };
-    } else if (q.includes("addToCart")) {
-      data = { addToCart: CART_WITH_ITEM };
-    } else if (q.includes("checkout")) {
-      data = { checkout: ORDER };
-    } else if (q.includes("publicModelRecords")) {
-      data = {
-        publicModelRecords: {
-          items: [{ id: "r1", data: { name: "Widget" }, variants: [] }],
-        },
-      };
-    } else if (q.includes("cart(")) {
-      data = { cart: EMPTY_CART };
-    }
-    return { ok: true, status: 200, json: async () => ({ data }) };
-  };
-  return { fetch, calls };
+interface Call {
+  url: string;
+  body: Record<string, unknown>;
+  credentials?: string;
+}
+
+let calls: Call[] = [];
+
+function mockBff(
+  responder: (
+    action: string,
+    body: Record<string, unknown>,
+  ) => {
+    status?: number;
+    payload: unknown;
+  },
+) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      calls.push({ url, body, credentials: init?.credentials });
+      const action = url.split("/").pop() ?? "";
+      const { status = 200, payload } = responder(action, body);
+      return new Response(JSON.stringify(payload), {
+        status,
+        headers: { "content-type": "application/json" },
+      });
+    }),
+  );
 }
 
 let captured: { current: CmssyCommerceState | null };
@@ -116,36 +93,21 @@ function Probe() {
   return <div data-testid="count">{captured.current.cart?.itemCount ?? 0}</div>;
 }
 
-function mount(fetch: FetchLike) {
+function mount() {
   captured = { current: null };
   render(
-    <CmssyCommerceProvider
-      apiUrl="https://api.test/graphql"
-      workspaceSlug="ws"
-      fetch={fetch}
-    >
+    <CmssyCommerceProvider>
       <Probe />
     </CmssyCommerceProvider>,
   );
 }
 
 beforeEach(() => {
-  window.localStorage.clear();
+  calls = [];
 });
-afterEach(() => cleanup());
-
-describe("cart-session", () => {
-  it("mints a base64url token of valid shape", () => {
-    const token = mintCartSessionToken();
-    expect(token).toMatch(/^[A-Za-z0-9_-]{40,128}$/);
-  });
-
-  it("persists the token across loads", () => {
-    const first = loadCartSessionToken();
-    const second = loadCartSessionToken();
-    expect(first).toBe(second);
-    expect(window.localStorage.getItem(CART_SESSION_STORAGE_KEY)).toBe(first);
-  });
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("money", () => {
@@ -162,37 +124,45 @@ describe("money", () => {
 });
 
 describe("CmssyCommerceProvider / useCart", () => {
-  it("resolves the workspace and loads the cart on mount", async () => {
-    const { fetch, calls } = makeFetch();
-    mount(fetch);
+  it("loads the cart from the same-origin BFF on mount", async () => {
+    mockBff(() => ({ payload: { cart: EMPTY_CART } }));
+    mount();
     await waitFor(() => expect(captured.current?.loading).toBe(false));
-    expect(calls.some((c) => c.query.includes("publicSiteConfig"))).toBe(true);
-    expect(calls.some((c) => c.query.includes("cart("))).toBe(true);
+    const cartCall = calls.find((c) => c.url.endsWith("/api/cmssy/cart/cart"));
+    expect(cartCall).toBeDefined();
+    expect(cartCall!.credentials).toBe("same-origin");
   });
 
-  it("addToCart sends the cart-session header + workspaceId and updates the cart", async () => {
-    const { fetch, calls } = makeFetch();
-    mount(fetch);
+  it("addToCart posts to the BFF and updates the cart", async () => {
+    mockBff((action) =>
+      action === "add"
+        ? { payload: { cart: CART_WITH_ITEM } }
+        : { payload: { cart: EMPTY_CART } },
+    );
+    mount();
     await waitFor(() => expect(captured.current?.loading).toBe(false));
 
     await act(async () => {
-      await captured.current!.addToCart("r1", 1);
+      await captured.current!.addToCart("r1", 2, {
+        variantSelections: { size: "M" },
+      });
     });
 
-    expect(captured.current!.cart?.itemCount).toBe(1);
     expect(screen.getByTestId("count").textContent).toBe("1");
-    const addCall = calls.find((c) => c.query.includes("addToCart"))!;
-    expect(addCall.headers[CART_SESSION_HEADER]).toMatch(
-      /^[A-Za-z0-9_-]{40,}$/,
-    );
-    const input = addCall.variables.input as Record<string, unknown>;
-    expect(input.workspaceId).toBe("ws1");
-    expect(input.recordId).toBe("r1");
+    const addCall = calls.find((c) => c.url.endsWith("/api/cmssy/cart/add"))!;
+    expect(addCall.body.recordId).toBe("r1");
+    expect(addCall.body.quantity).toBe(2);
+    expect(addCall.body.variantSelections).toEqual({ size: "M" });
+    expect(addCall.url).not.toContain("graphql");
   });
 
-  it("checkout returns the order and clears the cart", async () => {
-    const { fetch } = makeFetch();
-    mount(fetch);
+  it("checkout posts to the BFF, returns the order and clears the cart", async () => {
+    mockBff((action) => {
+      if (action === "checkout") return { payload: { order: ORDER } };
+      if (action === "add") return { payload: { cart: CART_WITH_ITEM } };
+      return { payload: { cart: EMPTY_CART } };
+    });
+    mount();
     await waitFor(() => expect(captured.current?.loading).toBe(false));
     await act(async () => {
       await captured.current!.addToCart("r1", 1);
@@ -207,43 +177,12 @@ describe("CmssyCommerceProvider / useCart", () => {
   });
 
   it("surfaces a failed cart op via error state", async () => {
-    const fetch: FetchLike = async (_url, init) => {
-      const { query } = JSON.parse(init.body) as { query: string };
-      if (query.includes("publicSiteConfig")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            data: {
-              publicSiteConfig: {
-                id: "s",
-                workspaceId: "ws1",
-                siteName: null,
-                defaultLanguage: null,
-                enabledLanguages: [],
-                enabledFeatures: [],
-                notFoundPageId: null,
-                previewUrl: null,
-                branding: null,
-              },
-            },
-          }),
-        };
-      }
-      if (query.includes("addToCart")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ errors: [{ message: "Out of stock" }] }),
-        };
-      }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ data: { cart: EMPTY_CART } }),
-      };
-    };
-    mount(fetch);
+    mockBff((action) =>
+      action === "add"
+        ? { status: 502, payload: { message: "Out of stock" } }
+        : { payload: { cart: EMPTY_CART } },
+    );
+    mount();
     await waitFor(() => expect(captured.current?.loading).toBe(false));
     let threw = false;
     await act(async () => {

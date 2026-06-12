@@ -34,6 +34,8 @@ export type {
 } from "./session";
 export { createCmssyAuthRoute } from "./create-auth-route";
 export type { CmssyAuthRouteHandlers } from "./create-auth-route";
+export { createCmssyCartRoute, CMSSY_CART_COOKIE } from "./create-cart-route";
+export type { CmssyCartRouteHandlers } from "./create-cart-route";
 export { assertAuthConfig } from "./config";
 export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
 export { createCmssyAuthMiddleware } from "./auth-middleware";
