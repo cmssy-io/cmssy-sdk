@@ -21,3 +21,30 @@ export type {
   CmssyAuthUser,
   CmssyAuthActionResult,
 } from "./auth/auth-provider";
+
+export { CmssyCommerceProvider, useCart } from "./commerce/commerce-provider";
+export type {
+  CmssyCommerceProviderProps,
+  CmssyCommerceState,
+  CmssyAddToCartOptions,
+} from "./commerce/commerce-provider";
+export { productBlock } from "./commerce/product-block";
+export { cartBlock } from "./commerce/cart-block";
+export { checkoutBlock } from "./commerce/checkout-block";
+export { formatPrice, fromMinorUnits, fractionDigits } from "./commerce/money";
+export {
+  loadCartSessionToken,
+  clearCartSessionToken,
+  mintCartSessionToken,
+  CART_SESSION_STORAGE_KEY,
+  CART_SESSION_HEADER,
+} from "./commerce/cart-session";
+export type {
+  CmssyCart,
+  CmssyCartItem,
+  CmssyCartItemSnapshot,
+  CmssyCartDiscount,
+  CmssyProduct,
+  CmssyProductVariant,
+  CmssyOrder,
+} from "./commerce/commerce-queries";
