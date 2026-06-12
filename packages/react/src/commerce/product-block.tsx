@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { defineBlock } from "../registry";
 import { fields } from "../fields";
 import { useCart } from "./commerce-provider";
-import { formatPrice } from "./money";
+import { formatPrice, toMinorUnits } from "./money";
 import type { CmssyProduct, CmssyProductVariant } from "./commerce-queries";
 
 interface ProductContent {
@@ -101,7 +101,7 @@ function ProductComponent({ content }: { content: Record<string, unknown> }) {
   const currency = (data.currency as string | undefined) ?? "USD";
   const priceMinor = hasVariants
     ? variant?.price
-    : Number(data[c.priceField ?? "price"] ?? 0);
+    : toMinorUnits(Number(data[c.priceField ?? "price"] ?? 0), currency);
   const showPrice = priceMinor != null && Number.isFinite(priceMinor);
   const allAxesSelected = axes.every((axis) => selections[axis.name]);
   const outOfStock =
