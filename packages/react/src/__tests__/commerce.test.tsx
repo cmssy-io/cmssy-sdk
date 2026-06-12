@@ -7,7 +7,8 @@ import {
   useCart,
   type CmssyCommerceState,
 } from "../commerce/commerce-provider";
-import { formatPrice } from "../commerce/money";
+import { formatPrice, toMinorUnits } from "../commerce/money";
+import { productBlock } from "../commerce/product-block";
 
 const EMPTY_CART = {
   id: "c1",
@@ -121,6 +122,12 @@ describe("money", () => {
     expect(formatPrice(NaN, "USD")).toBe("");
     expect(formatPrice(Infinity, "USD")).toBe("");
   });
+
+  it("converts major units to minor per currency", () => {
+    expect(toMinorUnits(12999, "PLN")).toBe(1299900);
+    expect(toMinorUnits(19.99, "USD")).toBe(1999);
+    expect(toMinorUnits(500, "JPY")).toBe(500);
+  });
 });
 
 describe("CmssyCommerceProvider / useCart", () => {
@@ -202,5 +209,39 @@ describe("CmssyCommerceProvider / useCart", () => {
       return null;
     }
     expect(() => render(<Bare />)).toThrow(/CmssyCommerceProvider/);
+  });
+});
+
+describe("productBlock", () => {
+  const Product = productBlock.component;
+
+  it("renders a raw major-unit price scaled to the currency", async () => {
+    mockBff((action) =>
+      action === "product"
+        ? {
+            payload: {
+              product: {
+                id: "p1",
+                data: { name: "MacBook Pro 16", price: 12999, currency: "PLN" },
+                variants: [],
+              },
+            },
+          }
+        : { payload: { cart: EMPTY_CART } },
+    );
+
+    render(
+      <CmssyCommerceProvider>
+        <Product content={{ modelSlug: "product", slug: "macbook-pro-16" }} />
+      </CmssyCommerceProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("MacBook Pro 16")).toBeDefined(),
+    );
+
+    const price = document.querySelector("[data-cmssy-product-price]");
+    expect(price?.textContent).toContain("999");
+    expect(price?.textContent).not.toMatch(/129[.,]99/);
   });
 });

@@ -31,7 +31,12 @@ export type {
 export { productBlock } from "./commerce/product-block";
 export { cartBlock } from "./commerce/cart-block";
 export { checkoutBlock } from "./commerce/checkout-block";
-export { formatPrice, fromMinorUnits, fractionDigits } from "./commerce/money";
+export {
+  formatPrice,
+  fromMinorUnits,
+  toMinorUnits,
+  fractionDigits,
+} from "./commerce/money";
 export type {
   CmssyCart,
   CmssyCartItem,
