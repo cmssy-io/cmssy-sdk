@@ -32,6 +32,8 @@ function CartComponent() {
     setBusy(true);
     try {
       await fn();
+    } catch {
+      setBusy(false);
     } finally {
       setBusy(false);
     }

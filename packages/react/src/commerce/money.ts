@@ -42,6 +42,7 @@ export function formatPrice(
   minor: number,
   currency: string | null | undefined,
 ): string {
+  if (!Number.isFinite(minor)) return "";
   const code = currency ?? "USD";
   const amount = fromMinorUnits(minor, code);
   try {

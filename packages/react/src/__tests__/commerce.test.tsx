@@ -156,6 +156,8 @@ describe("money", () => {
     const jpy = formatPrice(500, "JPY");
     expect(jpy).toContain("500");
     expect(jpy).not.toMatch(/5[.,]00/);
+    expect(formatPrice(NaN, "USD")).toBe("");
+    expect(formatPrice(Infinity, "USD")).toBe("");
   });
 });
 
@@ -202,6 +204,57 @@ describe("CmssyCommerceProvider / useCart", () => {
     });
     expect(order).toMatchObject({ id: "o1", status: "pending" });
     expect(captured.current!.cart).toBeNull();
+  });
+
+  it("surfaces a failed cart op via error state", async () => {
+    const fetch: FetchLike = async (_url, init) => {
+      const { query } = JSON.parse(init.body) as { query: string };
+      if (query.includes("publicSiteConfig")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: {
+              publicSiteConfig: {
+                id: "s",
+                workspaceId: "ws1",
+                siteName: null,
+                defaultLanguage: null,
+                enabledLanguages: [],
+                enabledFeatures: [],
+                notFoundPageId: null,
+                previewUrl: null,
+                branding: null,
+              },
+            },
+          }),
+        };
+      }
+      if (query.includes("addToCart")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ errors: [{ message: "Out of stock" }] }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { cart: EMPTY_CART } }),
+      };
+    };
+    mount(fetch);
+    await waitFor(() => expect(captured.current?.loading).toBe(false));
+    let threw = false;
+    await act(async () => {
+      try {
+        await captured.current!.addToCart("r1", 1);
+      } catch {
+        threw = true;
+      }
+    });
+    expect(threw).toBe(true);
+    expect(captured.current!.error).toContain("Out of stock");
   });
 
   it("throws when useCart is used outside the provider", () => {
