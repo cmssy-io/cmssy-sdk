@@ -79,6 +79,16 @@ export type {
   SubmitFormInput,
 } from "./data/queries";
 
+export type {
+  CmssyCart,
+  CmssyCartItem,
+  CmssyCartItemSnapshot,
+  CmssyCartDiscount,
+  CmssyProduct,
+  CmssyProductVariant,
+  CmssyOrder,
+} from "./commerce/commerce-queries";
+
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
 export { buildBlockContext } from "./components/block-context";
