@@ -86,11 +86,15 @@ function parseSignatureHeader(header: string): {
   return { timestamp, signature };
 }
 
-function timingSafeHexEqual(a: string, b: string): boolean {
-  // timingSafeEqual throws on length mismatch; a differing length is a
-  // mismatch anyway, so short-circuit without leaking via the throw.
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
+  // Decode first, then compare BUFFER lengths: an attacker-supplied v1
+  // with odd/invalid hex decodes to a shorter buffer, and timingSafeEqual
+  // throws on a length mismatch. Comparing decoded lengths (not hex string
+  // lengths) keeps the throw from escaping as a non-CmssyWebhookError.
+  const expected = Buffer.from(expectedHex, "hex");
+  const provided = Buffer.from(providedHex, "hex");
+  if (expected.length !== provided.length) return false;
+  return timingSafeEqual(expected, provided);
 }
 
 /**
