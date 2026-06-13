@@ -4,6 +4,9 @@ import type { CmssyNextConfig } from "./config";
 import { CMSSY_SESSION_COOKIE, isAccessExpired, openSession } from "./session";
 import { backendMyOrder, backendMyOrders } from "./orders-client";
 
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
 export interface CmssyOrdersRouteHandlers {
   GET(request: Request): Promise<Response>;
 }
@@ -47,10 +50,12 @@ export function createCmssyOrdersRoute(
         if (id) {
           return json({ order: await backendMyOrder(config, accessToken, id) });
         }
-        const skip = Number(url.searchParams.get("skip")) || 0;
+        const skip = Math.max(0, Number(url.searchParams.get("skip")) || 0);
         const limitParam = Number(url.searchParams.get("limit"));
         const limit =
-          Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
+          Number.isFinite(limitParam) && limitParam > 0
+            ? Math.min(limitParam, MAX_LIMIT)
+            : DEFAULT_LIMIT;
         const result = await backendMyOrders(config, accessToken, {
           skip,
           limit,

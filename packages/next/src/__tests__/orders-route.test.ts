@@ -130,6 +130,23 @@ describe("createCmssyOrdersRoute", () => {
     expect((call.body.variables as { limit: number }).limit).toBe(10);
   });
 
+  it("clamps a client-supplied limit and negative skip", async () => {
+    await signedInCookie();
+    mockFetch({
+      myOrders: { myOrders: { items: [], total: 0, hasMore: false } },
+    });
+
+    const route = createCmssyOrdersRoute(config);
+    await route.GET(get("?limit=99999&skip=-5"));
+
+    const call = fetchCalls.find((c) =>
+      String(c.body.query).includes("myOrders"),
+    )!;
+    const vars = call.body.variables as { limit: number; skip: number };
+    expect(vars.limit).toBe(100);
+    expect(vars.skip).toBe(0);
+  });
+
   it("fetches a single order by id", async () => {
     await signedInCookie();
     mockFetch({ myOrder: { myOrder: ORDER } });
