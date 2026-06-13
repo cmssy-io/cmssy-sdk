@@ -48,6 +48,14 @@ export interface CmssyProduct {
   variants: CmssyProductVariant[];
 }
 
+export interface CmssyOrderItem {
+  name: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  sku: string | null;
+}
+
 export interface CmssyOrder {
   id: string;
   status: string;
@@ -55,4 +63,11 @@ export interface CmssyOrder {
   total: number;
   currency: string;
   customerEmail: string;
+  tax?: number;
+  refundedAmount?: number;
+  items?: CmssyOrderItem[];
+  paymentProvider?: string | null;
+  paidAt?: string | null;
+  fulfilledAt?: string | null;
+  createdAt?: string;
 }
