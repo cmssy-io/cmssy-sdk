@@ -135,6 +135,19 @@ describe("verifyCmssyWebhook", () => {
     ).toThrow(/malformed/i);
   });
 
+  it("rejects an invalid-hex signature without throwing a RangeError", () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${"z".repeat(64)}`;
+    expect(() =>
+      verifyCmssyWebhook({
+        body,
+        signatureHeader: header,
+        secret: SECRET,
+        now,
+      }),
+    ).toThrow(CmssyWebhookError);
+  });
+
   it("rejects an empty secret", () => {
     const body = makeBody();
     const header = `t=${now},v1=${sign(SECRET, now, body)}`;
