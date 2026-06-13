@@ -31,6 +31,11 @@ export type {
 export { productBlock } from "./commerce/product-block";
 export { cartBlock } from "./commerce/cart-block";
 export { checkoutBlock } from "./commerce/checkout-block";
+export { useCmssyOrders } from "./commerce/use-orders";
+export type {
+  CmssyOrdersState,
+  UseCmssyOrdersOptions,
+} from "./commerce/use-orders";
 export {
   formatPrice,
   fromMinorUnits,
@@ -45,4 +50,5 @@ export type {
   CmssyProduct,
   CmssyProductVariant,
   CmssyOrder,
+  CmssyOrderItem,
 } from "./commerce/commerce-queries";
