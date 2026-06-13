@@ -50,8 +50,11 @@ export function createCmssyOrdersRoute(
         if (id) {
           return json({ order: await backendMyOrder(config, accessToken, id) });
         }
-        const skip = Math.max(0, Number(url.searchParams.get("skip")) || 0);
-        const limitParam = Number(url.searchParams.get("limit"));
+        const skip = Math.max(
+          0,
+          Math.floor(Number(url.searchParams.get("skip")) || 0),
+        );
+        const limitParam = Math.floor(Number(url.searchParams.get("limit")));
         const limit =
           Number.isFinite(limitParam) && limitParam > 0
             ? Math.min(limitParam, MAX_LIMIT)
