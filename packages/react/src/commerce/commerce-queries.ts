@@ -56,6 +56,13 @@ export interface CmssyOrderItem {
   sku: string | null;
 }
 
+export interface CmssyOrderPayment {
+  amount: number;
+  reference: string;
+  provider: string | null;
+  at: string;
+}
+
 export interface CmssyOrder {
   id: string;
   status: string;
@@ -67,6 +74,17 @@ export interface CmssyOrder {
   refundedAmount?: number;
   items?: CmssyOrderItem[];
   paymentProvider?: string | null;
+  paymentStatus?: string;
+  fulfillmentStatus?: string;
+  amountPaid?: number;
+  balanceDue?: number;
+  paymentReference?: string | null;
+  trackingNumber?: string | null;
+  trackingCarrier?: string | null;
+  invoiceNumber?: string | null;
+  invoiceUrl?: string | null;
+  invoiceProvider?: string | null;
+  payments?: CmssyOrderPayment[];
   paidAt?: string | null;
   fulfilledAt?: string | null;
   createdAt?: string;
