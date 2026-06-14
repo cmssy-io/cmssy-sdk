@@ -35,12 +35,30 @@ const ORDER = {
   currency: "PLN",
   customerEmail: "u@x.com",
   refundedAmount: 0,
-  paymentProvider: null,
+  paymentProvider: "stripe",
+  paymentStatus: "partially_paid",
+  fulfillmentStatus: "unfulfilled",
+  amountPaid: 600,
+  balanceDue: 400,
+  paymentReference: "pi_123",
+  trackingNumber: null,
+  trackingCarrier: null,
+  invoiceNumber: "INV-1",
+  invoiceUrl: "https://inv.test/INV-1.pdf",
+  invoiceProvider: "fakturownia",
   paidAt: null,
   fulfilledAt: null,
   createdAt: "2026-06-13T00:00:00.000Z",
   items: [
     { name: "Widget", price: 1000, currency: "PLN", quantity: 1, sku: null },
+  ],
+  payments: [
+    {
+      amount: 600,
+      reference: "pi_123",
+      provider: "stripe",
+      at: "2026-06-13T01:00:00.000Z",
+    },
   ],
 };
 
@@ -154,10 +172,26 @@ describe("createCmssyOrdersRoute", () => {
     const route = createCmssyOrdersRoute(config);
     const res = await route.GET(get("?id=o1"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ order: ORDER });
+    const json = (await res.json()) as { order: typeof ORDER };
+    expect(json).toEqual({ order: ORDER });
+    expect(json.order.paymentStatus).toBe("partially_paid");
+    expect(json.order.balanceDue).toBe(400);
+    expect(json.order.payments).toEqual([
+      {
+        amount: 600,
+        reference: "pi_123",
+        provider: "stripe",
+        at: "2026-06-13T01:00:00.000Z",
+      },
+    ]);
     const call = fetchCalls.find((c) =>
       String(c.body.query).includes("myOrder"),
     )!;
     expect((call.body.variables as { id: string }).id).toBe("o1");
+    expect(String(call.body.query)).toContain("paymentStatus");
+    expect(String(call.body.query)).toContain("balanceDue");
+    expect(String(call.body.query)).toContain(
+      "payments { amount reference provider at }",
+    );
   });
 });

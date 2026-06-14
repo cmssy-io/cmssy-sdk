@@ -15,10 +15,21 @@ const ORDER_FIELDS = `
   customerEmail
   refundedAmount
   paymentProvider
+  paymentStatus
+  fulfillmentStatus
+  amountPaid
+  balanceDue
+  paymentReference
+  trackingNumber
+  trackingCarrier
+  invoiceNumber
+  invoiceUrl
+  invoiceProvider
   paidAt
   fulfilledAt
   createdAt
   items { name price currency quantity sku }
+  payments { amount reference provider at }
 `;
 
 const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
