@@ -11,6 +11,8 @@ const ORDER_FIELDS = `
   subtotal
   tax
   total
+  pricesIncludeTax
+  taxSummary { rateId name rate base amount }
   currency
   customerEmail
   refundedAmount
