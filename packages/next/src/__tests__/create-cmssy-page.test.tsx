@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
+import { CmssyLocaleProvider } from "@cmssy/react/client";
+
+/** createCmssyPage wraps its output in CmssyLocaleProvider; assert on the child. */
+function unwrap(element: { type: unknown; props: { children: unknown } }) {
+  expect(element.type).toBe(CmssyLocaleProvider);
+  return element.props.children as {
+    type: unknown;
+    props: Record<string, unknown>;
+  };
+}
 
 let draftEnabled = false;
 
@@ -71,7 +81,7 @@ describe("createCmssyPage", () => {
     });
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS);
-    const element = await Page({ params: params(["en", "about"]) });
+    const element = unwrap(await Page({ params: params(["en", "about"]) }));
     expect(element.type).toBe(CmssyServerPage);
     expect(element.props.locale).toBe("en");
     expect(element.props.defaultLocale).toBe("pl");
@@ -88,7 +98,7 @@ describe("createCmssyPage", () => {
     });
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS);
-    const element = await Page({ params: params(["about"]) });
+    const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.props.locale).toBe("pl");
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
@@ -98,7 +108,7 @@ describe("createCmssyPage", () => {
   it("renders the RSC server page with the passed blocks for published content", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS);
-    const element = await Page({ params: params(["about"]) });
+    const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.type).toBe(CmssyServerPage);
     expect(element.props.blocks).toBe(BLOCKS);
     expect(fetchPage).toHaveBeenCalledWith(
@@ -112,7 +122,7 @@ describe("createCmssyPage", () => {
     draftEnabled = true;
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = await Page({ params: params([]) });
+    const element = unwrap(await Page({ params: params([]) }));
     expect(element.type).toBe(Editor);
     expect(element.props.page).toBe(PAGE);
     expect(element.props.edit).toEqual({
@@ -135,10 +145,12 @@ describe("createCmssyPage", () => {
   it("enters edit mode via the cmssyEdit query flag without draft mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = await Page({
-      params: params(["about"]),
-      searchParams: searchParams({ cmssyEdit: "1" }),
-    });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1" }),
+      }),
+    );
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
@@ -148,20 +160,24 @@ describe("createCmssyPage", () => {
   it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = await Page({
-      params: params(["about"]),
-      searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
-    });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
+      }),
+    );
     expect(element.type).toBe(Editor);
   });
 
   it("stays published when cmssyEdit is absent", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = await Page({
-      params: params(["about"]),
-      searchParams: searchParams({}),
-    });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({}),
+      }),
+    );
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
@@ -171,10 +187,12 @@ describe("createCmssyPage", () => {
   it("stays published when an array cmssyEdit contains no '1'", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = await Page({
-      params: params(["about"]),
-      searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
-    });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
+      }),
+    );
     expect(element.type).toBe(CmssyServerPage);
   });
 
@@ -192,7 +210,7 @@ describe("createCmssyPage", () => {
       { ...CONFIG, resolveLocale: () => "pl" },
       BLOCKS,
     );
-    const element = await Page({ params: params([]) });
+    const element = unwrap(await Page({ params: params([]) }));
     expect(element.props.locale).toBe("pl");
   });
 
@@ -212,7 +230,7 @@ describe("createCmssyPage", () => {
   it("does not require editorOrigin for a published render", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage({ ...CONFIG, editorOrigin: "" }, BLOCKS);
-    const element = await Page({ params: params(["about"]) });
+    const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.type).toBe(CmssyServerPage);
   });
 
@@ -237,7 +255,7 @@ describe("createCmssyPage", () => {
       BLOCKS,
       { editor: Editor },
     );
-    const element = await Page({ params: params([]) });
+    const element = unwrap(await Page({ params: params([]) }));
     expect(element.props.edit).toEqual({
       editorOrigin: "https://app.cmssy.io",
     });
