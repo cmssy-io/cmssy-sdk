@@ -8,9 +8,10 @@ const PROTOCOL_OR_RELATIVE = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
  * empty values.
  */
 export function isExternalHref(href: string): boolean {
-  if (!href) return true;
-  if (href.startsWith("#")) return true;
-  return PROTOCOL_OR_RELATIVE.test(href);
+  const value = href.trim();
+  if (!value) return true;
+  if (value.startsWith("#")) return true;
+  return PROTOCOL_OR_RELATIVE.test(value);
 }
 
 /**
@@ -45,10 +46,11 @@ function addLocalePrefix(
  * prefixed hrefs are normalized so the prefix never doubles.
  */
 export function localizeHref(href: string, locale: CmssyLocaleContext): string {
-  if (isExternalHref(href)) return href;
-  const boundary = href.search(/[?#]/);
-  const path = boundary === -1 ? href : href.slice(0, boundary);
-  const suffix = boundary === -1 ? "" : href.slice(boundary);
+  const value = href.trim();
+  if (isExternalHref(value)) return href;
+  const boundary = value.search(/[?#]/);
+  const path = boundary === -1 ? value : value.slice(0, boundary);
+  const suffix = boundary === -1 ? "" : value.slice(boundary);
   if (!path.startsWith("/")) return href;
   const bare = stripLeadingLocale(path, locale);
   return `${addLocalePrefix(bare, locale.current, locale)}${suffix}`;
@@ -68,7 +70,9 @@ export function buildLocaleSwitchHref(
   return addLocalePrefix(bare, target, locale);
 }
 
-const ANCHOR_HREF = /(<a\b[^>]*?\shref=)(["'])(.*?)\2/gi;
+// Attributes before href may be quoted and contain ">" — skip whole quoted
+// values so an embedded ">" doesn't truncate the match.
+const ANCHOR_HREF = /(<a\b(?:"[^"]*"|'[^']*'|[^>])*?\shref=)(["'])(.*?)\2/gi;
 
 /**
  * Rewrites every `<a href>` inside an HTML string with {@link localizeHref}.

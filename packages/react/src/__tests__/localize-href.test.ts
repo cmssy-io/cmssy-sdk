@@ -60,6 +60,10 @@ describe("localizeHref", () => {
   it("leaves a relative path untouched", () => {
     expect(localizeHref("about", en)).toBe("about");
   });
+
+  it("localizes a path with surrounding whitespace", () => {
+    expect(localizeHref("  /about  ", en)).toBe("/en/about");
+  });
 });
 
 describe("buildLocaleSwitchHref", () => {
@@ -82,6 +86,13 @@ describe("localizeHtmlLinks", () => {
     const html = '<p><a href="/about">a</a> <a href="https://x.com">b</a></p>';
     expect(localizeHtmlLinks(html, en)).toBe(
       '<p><a href="/en/about">a</a> <a href="https://x.com">b</a></p>',
+    );
+  });
+
+  it("rewrites an anchor whose earlier attribute contains '>'", () => {
+    const html = '<a title="a>b" href="/c">x</a>';
+    expect(localizeHtmlLinks(html, en)).toBe(
+      '<a title="a>b" href="/en/c">x</a>',
     );
   });
 });
