@@ -17,18 +17,21 @@ export async function resolveLocaleFromPathname(
   pathname: string,
 ): Promise<string> {
   const segments = pathname.split("/").filter(Boolean);
-  let siteLocales: CmssySiteLocales;
-  if (config.defaultLocale && config.enabledLocales?.length) {
-    siteLocales = {
-      defaultLocale: config.defaultLocale,
-      locales: config.enabledLocales,
-    };
-  } else {
-    siteLocales = await resolveSiteLocales({
-      apiUrl: config.apiUrl,
-      workspaceSlug: config.workspaceSlug,
-    });
-  }
+  const hasStaticLocales = !!config.enabledLocales?.length;
+  // Mirror createCmssyPage: config.defaultLocale / config.enabledLocales each
+  // override the fetched workspace value independently. Skip the fetch only when
+  // both are statically configured.
+  const fetched =
+    config.defaultLocale && hasStaticLocales
+      ? null
+      : await resolveSiteLocales({
+          apiUrl: config.apiUrl,
+          workspaceSlug: config.workspaceSlug,
+        });
+  const siteLocales: CmssySiteLocales = {
+    defaultLocale: config.defaultLocale ?? fetched!.defaultLocale,
+    locales: hasStaticLocales ? config.enabledLocales! : fetched!.locales,
+  };
   return splitLocaleFromPath(segments, siteLocales).locale;
 }
 

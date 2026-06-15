@@ -56,6 +56,13 @@ describe("resolveLocaleFromPathname", () => {
     expect(await resolveLocaleFromPathname(DYNAMIC, "/en/x")).toBe("en");
     expect(resolveSiteLocales).toHaveBeenCalledOnce();
   });
+
+  it("applies config.defaultLocale over the fetched default when enabledLocales is absent", async () => {
+    // fetched default is "pl"; config overrides it to "en"
+    const config = { ...DYNAMIC, defaultLocale: "en" };
+    expect(await resolveLocaleFromPathname(config, "/")).toBe("en");
+    expect(resolveSiteLocales).toHaveBeenCalledOnce();
+  });
 });
 
 describe("createCmssyLocaleMiddleware", () => {
