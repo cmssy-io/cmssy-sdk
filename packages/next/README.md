@@ -69,16 +69,20 @@ import { CmssyLink } from "@cmssy/next/client";
 ```
 
 Add middleware so the root layout (which can't read the path) resolves the right
-locale via `getCmssyLocale`:
+locale via `getCmssyLocale`. On Next.js 16 the file is `proxy.ts` (the renamed
+middleware convention); on Next.js 15 use `middleware.ts` with the same body.
 
 ```ts
-// middleware.ts
+// proxy.ts (Next.js 16) — or middleware.ts on Next.js 15
 import { createCmssyLocaleMiddleware } from "@cmssy/next";
 import { cmssy } from "@/cmssy/config";
 
-export const middleware = createCmssyLocaleMiddleware(cmssy);
-export const config = { matcher: ["/((?!_next|api|.*\\..*).*)"] };
+export const proxy = createCmssyLocaleMiddleware(cmssy);
+export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
 ```
+
+On Next.js 15, name the file `middleware.ts` and rename the export to
+`middleware` (`export const middleware = createCmssyLocaleMiddleware(cmssy)`).
 
 Language switcher and raw markup helpers live in `@cmssy/react`:
 `buildLocaleSwitchHref(target, pathname, locale)`, `localizeHref(href, locale)`,
