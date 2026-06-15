@@ -8,6 +8,11 @@ export { CmssyEditableLayout } from "./components/cmssy-editable-layout";
 export type { CmssyEditableLayoutProps } from "./components/cmssy-editable-layout";
 export { CmssyLazyLayout } from "./components/cmssy-lazy-layout";
 export type { CmssyLazyLayoutProps } from "./components/cmssy-lazy-layout";
+export {
+  CmssyLocaleProvider,
+  useCmssyLocale,
+} from "./components/locale-provider";
+export type { CmssyLocaleProviderProps } from "./components/locale-provider";
 export { useEditBridge } from "./bridge/use-edit-bridge";
 export type {
   EditBridgeConfig,
