@@ -13,6 +13,7 @@ import {
   type CmssyPageData,
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
+import { CmssyLocaleProvider } from "@cmssy/react/client";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
 
@@ -111,29 +112,42 @@ export function createCmssyPage(
     const forms =
       Object.keys(resolvedForms).length > 0 ? resolvedForms : undefined;
 
+    const localeContext = {
+      current: locale,
+      default: defaultLocale,
+      enabled:
+        enabledLocales && enabledLocales.length > 0
+          ? enabledLocales
+          : Array.from(new Set([defaultLocale, locale])),
+    };
+
     if (editMode && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       return (
-        <Editor
-          page={page}
-          locale={locale}
-          defaultLocale={defaultLocale}
-          enabledLocales={enabledLocales}
-          edit={{ editorOrigin: bridgeOrigin }}
-          forms={forms}
-        />
+        <CmssyLocaleProvider value={localeContext}>
+          <Editor
+            page={page}
+            locale={locale}
+            defaultLocale={defaultLocale}
+            enabledLocales={enabledLocales}
+            edit={{ editorOrigin: bridgeOrigin }}
+            forms={forms}
+          />
+        </CmssyLocaleProvider>
       );
     }
 
     return (
-      <CmssyServerPage
-        page={page}
-        blocks={blocks}
-        locale={locale}
-        defaultLocale={defaultLocale}
-        enabledLocales={enabledLocales}
-        forms={forms}
-      />
+      <CmssyLocaleProvider value={localeContext}>
+        <CmssyServerPage
+          page={page}
+          blocks={blocks}
+          locale={locale}
+          defaultLocale={defaultLocale}
+          enabledLocales={enabledLocales}
+          forms={forms}
+        />
+      </CmssyLocaleProvider>
     );
   };
 }
