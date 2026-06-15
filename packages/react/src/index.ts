@@ -60,6 +60,12 @@ export { collectFormIds, resolveForms } from "./data/resolve-forms";
 export { resolveSiteLocales, splitLocaleFromPath } from "./data/site-locales";
 export type { CmssySiteLocales } from "./data/site-locales";
 export {
+  localizeHref,
+  buildLocaleSwitchHref,
+  localizeHtmlLinks,
+  isExternalHref,
+} from "./data/localize-href";
+export {
   SITE_CONFIG_QUERY,
   MODEL_DEFINITIONS_QUERY,
   MODEL_RECORDS_QUERY,

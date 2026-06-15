@@ -20,6 +20,10 @@ export {
   getCmssyLocale,
 } from "./locale";
 export {
+  createCmssyLocaleMiddleware,
+  resolveLocaleFromPathname,
+} from "./locale-middleware";
+export {
   CMSSY_SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
   sealSession,
