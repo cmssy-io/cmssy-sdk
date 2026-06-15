@@ -63,6 +63,14 @@ export interface CmssyOrderPayment {
   at: string;
 }
 
+export interface CmssyOrderTaxSummaryLine {
+  rateId: string | null;
+  name: string | null;
+  rate: number;
+  base: number;
+  amount: number;
+}
+
 export interface CmssyOrder {
   id: string;
   status: string;
@@ -71,6 +79,8 @@ export interface CmssyOrder {
   currency: string;
   customerEmail: string;
   tax?: number;
+  pricesIncludeTax?: boolean;
+  taxSummary?: CmssyOrderTaxSummaryLine[];
   refundedAmount?: number;
   items?: CmssyOrderItem[];
   paymentProvider?: string | null;
