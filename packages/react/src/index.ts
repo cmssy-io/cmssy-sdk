@@ -63,7 +63,6 @@ export {
   localizeHref,
   buildLocaleSwitchHref,
   localizeHtmlLinks,
-  isExternalHref,
 } from "./data/localize-href";
 export {
   SITE_CONFIG_QUERY,
