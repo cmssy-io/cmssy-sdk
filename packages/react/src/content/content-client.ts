@@ -187,7 +187,20 @@ export async function fetchPageById(
   };
 
   if (!response.ok) {
-    throw new Error(`cmssy: page-by-id fetch failed (${response.status})`);
+    let detail = "";
+    try {
+      const body = (await response.json()) as PageByIdResponse;
+      if (body.errors && body.errors.length > 0) {
+        detail = ` - ${body.errors
+          .map((error) => error.message ?? "GraphQL error")
+          .join("; ")}`;
+      }
+    } catch {
+      detail = "";
+    }
+    throw new Error(
+      `cmssy: page-by-id fetch failed (${response.status})${detail}`,
+    );
   }
 
   let json: PageByIdResponse;

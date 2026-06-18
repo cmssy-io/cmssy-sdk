@@ -115,6 +115,25 @@ describe("createCmssyNotFound", () => {
     expect(element).toBe(fallback);
   });
 
+  it("degrades to the fallback when a fetch throws (no 500)", async () => {
+    fetchSiteConfig.mockRejectedValue(new Error("network down"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const NotFound = createCmssyNotFound(CONFIG, BLOCKS);
+    const element = (await NotFound()) as RenderedEl;
+    expect((element.type as { name?: string }).name).toBe("DefaultNotFound");
+    warn.mockRestore();
+  });
+
+  it("degrades to the fallback when the page fetch throws", async () => {
+    fetchSiteConfig.mockResolvedValue({ notFoundPageId: "nf-1" });
+    fetchPageById.mockRejectedValue(new Error("boom"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const NotFound = createCmssyNotFound(CONFIG, BLOCKS);
+    const element = (await NotFound()) as RenderedEl;
+    expect((element.type as { name?: string }).name).toBe("DefaultNotFound");
+    warn.mockRestore();
+  });
+
   it("threads the resolved locale", async () => {
     fetchSiteConfig.mockResolvedValue({ notFoundPageId: "nf-1" });
     fetchPageById.mockResolvedValue(NOT_FOUND_PAGE);
