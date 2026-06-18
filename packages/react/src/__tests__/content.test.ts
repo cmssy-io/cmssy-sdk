@@ -3,6 +3,7 @@ import { getBlockContentForLanguage } from "../content/get-block-content";
 import {
   normalizeSlug,
   fetchPage,
+  fetchPageById,
   fetchLayouts,
   type FetchLike,
 } from "../content/content-client";
@@ -214,6 +215,78 @@ describe("fetchPage", () => {
     const fetch = mockFetch({}, false);
     await expect(fetchPage(config, "/", { fetch })).rejects.toThrow(
       /page fetch failed/,
+    );
+  });
+});
+
+describe("fetchPageById", () => {
+  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+
+  function mockFetch(payload: unknown, ok = true): FetchLike {
+    return async () => ({
+      ok,
+      status: ok ? 200 : 500,
+      json: async () => payload,
+    });
+  }
+
+  it("returns publishedBlocks for the requested page id", async () => {
+    const fetch = mockFetch({
+      data: {
+        publicPageById: {
+          id: "nf1",
+          publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+        },
+      },
+    });
+    const page = await fetchPageById(config, "nf1", { fetch });
+    expect(page?.id).toBe("nf1");
+    expect(page?.blocks).toHaveLength(1);
+    expect(page?.blocks[0]?.type).toBe("hero");
+  });
+
+  it("sends workspaceSlug + pageId in the query variables", async () => {
+    let sent: { variables: Record<string, unknown> } | undefined;
+    const fetch: FetchLike = async (_url, init) => {
+      sent = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { publicPageById: null } }),
+      };
+    };
+    await fetchPageById(config, "nf1", { fetch });
+    expect(sent?.variables.workspaceSlug).toBe("ws");
+    expect(sent?.variables.pageId).toBe("nf1");
+  });
+
+  it("returns null when the page is missing or unpublished", async () => {
+    const fetch = mockFetch({ data: { publicPageById: null } });
+    expect(await fetchPageById(config, "missing", { fetch })).toBeNull();
+  });
+
+  it("defaults blocks to [] when publishedBlocks is null", async () => {
+    const fetch = mockFetch({
+      data: { publicPageById: { id: "nf1", publishedBlocks: null } },
+    });
+    const page = await fetchPageById(config, "nf1", { fetch });
+    expect(page?.blocks).toEqual([]);
+  });
+
+  it("throws on GraphQL errors", async () => {
+    const fetch = mockFetch({
+      data: null,
+      errors: [{ message: "boom" }],
+    });
+    await expect(fetchPageById(config, "nf1", { fetch })).rejects.toThrow(
+      /boom/,
+    );
+  });
+
+  it("throws on a non-ok response", async () => {
+    const fetch = mockFetch({}, false);
+    await expect(fetchPageById(config, "nf1", { fetch })).rejects.toThrow(
+      /page-by-id fetch failed/,
     );
   });
 });
