@@ -289,6 +289,17 @@ describe("fetchPageById", () => {
       /page-by-id fetch failed/,
     );
   });
+
+  it("includes GraphQL error detail on a non-ok response", async () => {
+    const fetch: FetchLike = async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ errors: [{ message: "Bad query" }] }),
+    });
+    await expect(fetchPageById(config, "nf1", { fetch })).rejects.toThrow(
+      /Bad query/,
+    );
+  });
 });
 
 describe("fetchLayouts", () => {
