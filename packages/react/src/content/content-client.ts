@@ -57,6 +57,13 @@ const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: Stri
   }
 }`;
 
+const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
+  publicPageById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
+    id
+    publishedBlocks { id type content }
+  }
+}`;
+
 const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
   publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
     position
@@ -145,6 +152,72 @@ export async function fetchPage(
   const draft = previewSecret !== null;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
   return { id: page.id, blocks };
+}
+
+export async function fetchPageById(
+  config: CmssyClientConfig,
+  pageId: string,
+  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+): Promise<CmssyPageData | null> {
+  const doFetch =
+    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
+  if (typeof doFetch !== "function") {
+    throw new Error(
+      "cmssy: no fetch implementation available - pass options.fetch",
+    );
+  }
+  const response = await doFetch(config.apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      query: PUBLIC_PAGE_BY_ID_QUERY,
+      variables: { workspaceSlug: config.workspaceSlug, pageId },
+    }),
+    signal: options.signal,
+  });
+
+  type PageByIdResponse = {
+    data?: {
+      publicPageById?: {
+        id: string;
+        publishedBlocks?: RawBlock[] | null;
+      } | null;
+    };
+    errors?: Array<{ message?: string }>;
+  };
+
+  if (!response.ok) {
+    let detail = "";
+    try {
+      const body = (await response.json()) as PageByIdResponse;
+      if (body.errors && body.errors.length > 0) {
+        detail = ` - ${body.errors
+          .map((error) => error.message ?? "GraphQL error")
+          .join("; ")}`;
+      }
+    } catch {
+      detail = "";
+    }
+    throw new Error(
+      `cmssy: page-by-id fetch failed (${response.status})${detail}`,
+    );
+  }
+
+  let json: PageByIdResponse;
+  try {
+    json = (await response.json()) as PageByIdResponse;
+  } catch {
+    throw new Error("cmssy: invalid JSON response from the page-by-id query");
+  }
+  if (json.errors && json.errors.length > 0) {
+    const message = json.errors
+      .map((error) => error.message ?? "GraphQL error")
+      .join("; ");
+    throw new Error(`cmssy: page-by-id fetch error - ${message}`);
+  }
+  const page = json.data?.publicPageById;
+  if (!page) return null;
+  return { id: page.id, blocks: page.publishedBlocks ?? [] };
 }
 
 export async function fetchLayouts(
