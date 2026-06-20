@@ -66,6 +66,7 @@ const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $
 
 const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
   publicPages(workspaceSlug: $workspaceSlug) {
+    id
     slug
     updatedAt
     publishedAt
@@ -229,6 +230,7 @@ export async function fetchPageById(
 }
 
 export interface CmssyPageSummary {
+  id: string;
   slug: string;
   updatedAt: string | null;
   publishedAt: string | null;
