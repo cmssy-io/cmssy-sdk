@@ -51,7 +51,7 @@ function stubGraphql(opts: {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("createCmssyRobots", () => {
-  it("allows crawling, disallows /api/, and references the sitemap", async () => {
+  it("allows crawling, disallows /api/, references the sitemap, no Host", async () => {
     const result = await createCmssyRobots(CONFIG)();
     expect(result.rules).toEqual({
       userAgent: "*",
@@ -59,6 +59,12 @@ describe("createCmssyRobots", () => {
       disallow: ["/api/"],
     });
     expect(result.sitemap).toBe("https://cmssy.com/sitemap.xml");
+    // Host is a Yandex-only directive Google warns on; off by default.
+    expect(result.host).toBeUndefined();
+  });
+
+  it("emits the Host directive only when opted in", async () => {
+    const result = await createCmssyRobots(CONFIG, { host: true })();
     expect(result.host).toBe("https://cmssy.com");
   });
 
