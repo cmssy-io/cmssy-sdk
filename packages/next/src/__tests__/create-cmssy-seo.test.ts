@@ -111,6 +111,19 @@ describe("createCmssySitemap", () => {
     expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
   });
 
+  it("excludes reserved slugs even without a leading slash", async () => {
+    stubFetch({
+      data: {
+        publicPages: [
+          { slug: "/", updatedAt: null, publishedAt: null },
+          { slug: "not-found", updatedAt: null, publishedAt: null },
+        ],
+      },
+    });
+    const result = await createCmssySitemap(CONFIG)();
+    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+  });
+
   it("honours a custom excludeSlugs list", async () => {
     stubFetch({
       data: {

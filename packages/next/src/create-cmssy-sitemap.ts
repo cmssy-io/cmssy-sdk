@@ -15,13 +15,18 @@ export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
 
 const DEFAULT_EXCLUDED_SLUGS = ["/not-found", "/404"];
 
+/** Ensure a leading slash so comparisons and URLs are stable. "/" stays "/". */
+function normalizeSlug(slug: string): string {
+  if (slug === "/" || slug === "") return "/";
+  return slug.startsWith("/") ? slug : `/${slug}`;
+}
+
 function localizedPath(
   slug: string,
   locale: string,
   defaultLocale: string,
 ): string {
-  const normalized =
-    slug === "/" ? "" : slug.startsWith("/") ? slug : `/${slug}`;
+  const normalized = slug === "/" ? "" : slug;
   return locale === defaultLocale
     ? normalized || "/"
     : `/${locale}${normalized}`;
@@ -61,8 +66,11 @@ export function createCmssySitemap(
         ? config.enabledLocales
         : [defaultLocale];
 
-    const excluded = new Set(options.excludeSlugs ?? DEFAULT_EXCLUDED_SLUGS);
+    const excluded = new Set(
+      (options.excludeSlugs ?? DEFAULT_EXCLUDED_SLUGS).map(normalizeSlug),
+    );
     const entries: MetadataRoute.Sitemap = pages
+      .map((page) => ({ ...page, slug: normalizeSlug(page.slug) }))
       .filter((page) => !excluded.has(page.slug))
       .map((page) => {
         const lastModified = page.updatedAt ?? page.publishedAt ?? undefined;
