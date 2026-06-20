@@ -120,6 +120,24 @@ export default createCmssySitemap(cmssy);
 workspace's configured 404 page (Settings → 404 page) is excluded
 automatically; pass `excludeSlugs` for any other paths you want omitted.
 
+### Page metadata (SEO + Open Graph)
+
+`buildCmssyMetadata` produces complete Next.js `Metadata` for a page from its
+SEO fields and the workspace branding - title/description/keywords, canonical +
+per-locale `hreflang` alternates, and Open Graph / Twitter cards (with the
+branding OG image). Use it in a route's `generateMetadata`:
+
+```ts
+// app/[[...path]]/page.tsx
+import { buildCmssyMetadata } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export async function generateMetadata({ params }) {
+  const { path } = await params;
+  return buildCmssyMetadata(cmssy, path); // pass locale-stripped segments
+}
+```
+
 ## Status
 
 Early — built against cmssy epic CMS-642 (headless pivot). Not yet published.
