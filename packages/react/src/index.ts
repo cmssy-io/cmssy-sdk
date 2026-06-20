@@ -38,6 +38,7 @@ export {
   fetchPage,
   fetchPageById,
   fetchPages,
+  fetchPageMeta,
   fetchLayouts,
   normalizeSlug,
 } from "./content/content-client";
@@ -49,6 +50,8 @@ export type {
   RawBlock,
   CmssyPageData,
   CmssyPageSummary,
+  CmssyPageMeta,
+  CmssyLocalizedValue,
   RawLayoutBlock,
   CmssyLayoutGroup,
 } from "./content/content-client";
