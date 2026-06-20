@@ -31,15 +31,24 @@ export async function resolveSeoBaseUrl(
 /** Local/dev hosts that should be addressed over http, not https. */
 function isLocalHost(host: string): boolean {
   const hostname = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
-  return (
+  if (
     hostname === "localhost" ||
     hostname.endsWith(".localhost") ||
     hostname.endsWith(".local") ||
-    hostname === "0.0.0.0" ||
-    hostname === "::1" ||
-    /^127\./.test(hostname) ||
-    /^10\./.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    hostname === "::1"
+  ) {
+    return true;
+  }
+  // Private/loopback IPv4 ranges — anchored to a full dotted-quad so a
+  // hostname like "10.example.com" is not mistaken for an IP.
+  const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(hostname);
+  if (!ipv4) return false;
+  const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+  return (
+    a === 127 ||
+    a === 0 ||
+    a === 10 ||
+    (a === 192 && b === 168) ||
+    (a === 172 && b >= 16 && b <= 31)
   );
 }
