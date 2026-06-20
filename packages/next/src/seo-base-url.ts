@@ -24,9 +24,22 @@ export async function resolveSeoBaseUrl(
   const h = await headers();
   const host = h.get("host");
   if (!host) return "";
-  const protocol =
-    host.startsWith("localhost") || host.startsWith("127.0.0.1")
-      ? "http"
-      : "https";
+  const protocol = isLocalHost(host) ? "http" : "https";
   return `${protocol}://${host}`;
+}
+
+/** Local/dev hosts that should be addressed over http, not https. */
+function isLocalHost(host: string): boolean {
+  const hostname = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
+  return (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    /^127\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+  );
 }
