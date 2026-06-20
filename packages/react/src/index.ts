@@ -37,6 +37,7 @@ export type { PostTarget } from "./bridge/messages";
 export {
   fetchPage,
   fetchPageById,
+  fetchPages,
   fetchLayouts,
   normalizeSlug,
 } from "./content/content-client";
@@ -47,6 +48,7 @@ export type {
   FetchLikeResponse,
   RawBlock,
   CmssyPageData,
+  CmssyPageSummary,
   RawLayoutBlock,
   CmssyLayoutGroup,
 } from "./content/content-client";

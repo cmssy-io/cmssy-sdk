@@ -4,6 +4,7 @@ import {
   normalizeSlug,
   fetchPage,
   fetchPageById,
+  fetchPages,
   fetchLayouts,
   type FetchLike,
 } from "../content/content-client";
@@ -363,5 +364,53 @@ describe("fetchLayouts", () => {
   it("returns [] when the query yields nothing", async () => {
     const fetch = mockFetch({ data: { publicPageLayouts: null } });
     expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
+  });
+});
+
+describe("fetchPages", () => {
+  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+
+  function mockFetch(payload: unknown, ok = true): FetchLike {
+    return async () => ({
+      ok,
+      status: ok ? 200 : 500,
+      json: async () => payload,
+    });
+  }
+
+  it("returns the published page summaries", async () => {
+    const fetch = mockFetch({
+      data: {
+        publicPages: [
+          { slug: "/", updatedAt: "2026-01-01T00:00:00Z", publishedAt: null },
+          {
+            slug: "/about",
+            updatedAt: null,
+            publishedAt: "2026-02-02T00:00:00Z",
+          },
+        ],
+      },
+    });
+    const pages = await fetchPages(config, { fetch });
+    expect(pages).toHaveLength(2);
+    expect(pages[0]?.slug).toBe("/");
+    expect(pages[1]?.publishedAt).toBe("2026-02-02T00:00:00Z");
+  });
+
+  it("returns [] when the query yields nothing", async () => {
+    const fetch = mockFetch({ data: { publicPages: null } });
+    expect(await fetchPages(config, { fetch })).toEqual([]);
+  });
+
+  it("throws on a non-ok response", async () => {
+    const fetch = mockFetch({}, false);
+    await expect(fetchPages(config, { fetch })).rejects.toThrow(
+      /pages fetch failed/,
+    );
+  });
+
+  it("throws on GraphQL errors", async () => {
+    const fetch = mockFetch({ errors: [{ message: "Boom" }] });
+    await expect(fetchPages(config, { fetch })).rejects.toThrow(/Boom/);
   });
 });

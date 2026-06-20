@@ -10,6 +10,12 @@ export interface CmssyNextConfig {
   workspaceSlug: string;
   draftSecret: string;
   editorOrigin: string | string[];
+  /**
+   * Canonical absolute site URL (e.g. https://cmssy.com), used by
+   * createCmssyRobots / createCmssySitemap. When omitted the helpers derive the
+   * origin from the request `host` header at render time (multi-domain safe).
+   */
+  siteUrl?: string;
   auth?: CmssyAuthConfig;
   defaultLocale?: string;
   /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
