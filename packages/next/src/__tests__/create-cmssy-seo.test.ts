@@ -277,6 +277,38 @@ describe("buildCmssyMetadata", () => {
     expect(md.openGraph?.images).toBeUndefined();
   });
 
+  it("uses siteConfig.defaultLanguage when config has no defaultLocale", async () => {
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: { pl: "Strona", en: "Page" },
+        seoDescription: null,
+        seoKeywords: null,
+        displayName: {},
+      },
+      siteConfig: { ...SITE_CONFIG, defaultLanguage: "pl" },
+    });
+    // No defaultLocale on config; resolveLocale returns the default (pl).
+    const md = await buildCmssyMetadata(
+      {
+        apiUrl: CONFIG.apiUrl,
+        workspaceSlug: CONFIG.workspaceSlug,
+        draftSecret: CONFIG.draftSecret,
+        editorOrigin: CONFIG.editorOrigin,
+        siteUrl: CONFIG.siteUrl,
+        resolveLocale: () => "pl",
+      },
+      ["o-nas"],
+    );
+    // pl is the default -> no prefix; en gets the /en prefix.
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/o-nas");
+    expect(md.alternates?.languages).toEqual({
+      pl: "https://cmssy.com/o-nas",
+      en: "https://cmssy.com/en/o-nas",
+    });
+    expect(md.title).toBe("Strona");
+  });
+
   it("degrades gracefully when the page meta fetch fails", async () => {
     const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
       const query = JSON.parse(init.body).query as string;
