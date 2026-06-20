@@ -96,4 +96,46 @@ describe("createCmssySitemap", () => {
     })();
     expect(result[0]?.alternates).toBeUndefined();
   });
+
+  it("excludes reserved 404 slugs by default", async () => {
+    stubFetch({
+      data: {
+        publicPages: [
+          { slug: "/", updatedAt: null, publishedAt: null },
+          { slug: "/not-found", updatedAt: null, publishedAt: null },
+          { slug: "/404", updatedAt: null, publishedAt: null },
+        ],
+      },
+    });
+    const result = await createCmssySitemap(CONFIG)();
+    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+  });
+
+  it("honours a custom excludeSlugs list", async () => {
+    stubFetch({
+      data: {
+        publicPages: [
+          { slug: "/", updatedAt: null, publishedAt: null },
+          { slug: "/draft", updatedAt: null, publishedAt: null },
+        ],
+      },
+    });
+    const result = await createCmssySitemap(CONFIG, {
+      excludeSlugs: ["/draft"],
+    })();
+    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+  });
+
+  it("normalizes slugs without a leading slash", async () => {
+    stubFetch({
+      data: {
+        publicPages: [{ slug: "about", updatedAt: null, publishedAt: null }],
+      },
+    });
+    const result = await createCmssySitemap(CONFIG)();
+    expect(result[0]?.url).toBe("https://cmssy.com/about");
+    expect(result[0]?.alternates?.languages?.pl).toBe(
+      "https://cmssy.com/pl/about",
+    );
+  });
 });
