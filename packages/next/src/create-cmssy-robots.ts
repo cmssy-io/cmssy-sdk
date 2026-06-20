@@ -9,11 +9,17 @@ export interface CreateCmssyRobotsOptions extends SeoBaseUrlOption {
   rules?: MetadataRoute.Robots["rules"];
   /** Reference `${baseUrl}/sitemap.xml`. Defaults to true. */
   sitemap?: boolean;
+  /**
+   * Emit the non-standard `Host:` directive (a Yandex extension). Google
+   * ignores it and reports a warning in Search Console, so it is off by
+   * default. Enable only when targeting Yandex.
+   */
+  host?: boolean;
 }
 
 /**
- * Builds the default export for Next's `app/robots.ts`. Allows crawling, points
- * to the sitemap, and reports the canonical host. Drop in as:
+ * Builds the default export for Next's `app/robots.ts`. Allows crawling and
+ * points to the sitemap. Drop in as:
  *
  *   export default createCmssyRobots(cmssy);
  */
@@ -35,7 +41,7 @@ export function createCmssyRobots(
     return {
       rules,
       ...(includeSitemap ? { sitemap: `${baseUrl}/sitemap.xml` } : {}),
-      ...(baseUrl ? { host: baseUrl } : {}),
+      ...(options.host && baseUrl ? { host: baseUrl } : {}),
     };
   };
 }
