@@ -45,8 +45,6 @@ export async function buildCmssyMetadata(
   path?: string | string[],
   options: BuildCmssyMetadataOptions = {},
 ): Promise<Metadata> {
-  const defaultLocale = config.defaultLocale ?? "en";
-  const locale = (await config.resolveLocale?.()) ?? defaultLocale;
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
@@ -57,6 +55,10 @@ export async function buildCmssyMetadata(
     fetchSiteConfig(clientConfig).catch(() => null),
     resolveSeoBaseUrl(config, options.baseUrl),
   ]);
+
+  const defaultLocale =
+    config.defaultLocale ?? siteConfig?.defaultLanguage ?? "en";
+  const locale = (await config.resolveLocale?.()) ?? defaultLocale;
 
   const siteName =
     pick(siteConfig?.siteName as CmssyLocalizedValue, locale, defaultLocale) ||
