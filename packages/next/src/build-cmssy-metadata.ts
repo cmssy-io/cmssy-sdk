@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import {
   fetchPageMeta,
   fetchSiteConfig,
+  normalizeSlug,
   type CmssyClientConfig,
   type CmssyLocalizedValue,
 } from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
-import { localizedPath } from "./seo-paths";
+import { localizedPath, resolveSeoLocales } from "./seo-paths";
 
 export interface BuildCmssyMetadataOptions extends SeoBaseUrlOption {
   /** Override the Open Graph / Twitter image (defaults to workspace branding). */
@@ -56,9 +57,12 @@ export async function buildCmssyMetadata(
     resolveSeoBaseUrl(config, options.baseUrl),
   ]);
 
-  const defaultLocale =
-    config.defaultLocale ?? siteConfig?.defaultLanguage ?? "en";
+  const { defaultLocale, locales: enabledLocales } = resolveSeoLocales(
+    config,
+    siteConfig,
+  );
   const locale = (await config.resolveLocale?.()) ?? defaultLocale;
+  const slug = normalizeSlug(path);
 
   const siteName =
     pick(siteConfig?.siteName as CmssyLocalizedValue, locale, defaultLocale) ||
@@ -74,20 +78,15 @@ export async function buildCmssyMetadata(
   const keywords = meta?.seoKeywords?.length ? meta.seoKeywords : undefined;
   const image = options.image ?? siteConfig?.branding?.ogImageUrl ?? undefined;
 
-  const enabledLocales =
-    config.enabledLocales && config.enabledLocales.length > 0
-      ? config.enabledLocales
-      : (siteConfig?.enabledLanguages ?? [defaultLocale]);
-
   const canonical = baseUrl
-    ? `${baseUrl}${localizedPath(slugOf(path), locale, defaultLocale)}`
+    ? `${baseUrl}${localizedPath(slug, locale, defaultLocale)}`
     : undefined;
   const languages =
     baseUrl && enabledLocales.length > 1
       ? Object.fromEntries(
           enabledLocales.map((l) => [
             l,
-            `${baseUrl}${localizedPath(slugOf(path), l, defaultLocale)}`,
+            `${baseUrl}${localizedPath(slug, l, defaultLocale)}`,
           ]),
         )
       : undefined;
@@ -121,12 +120,4 @@ export async function buildCmssyMetadata(
       ...(image ? { images: [image] } : {}),
     },
   };
-}
-
-function slugOf(path?: string | string[]): string {
-  if (Array.isArray(path)) {
-    const joined = path.filter(Boolean).join("/");
-    return joined ? `/${joined}` : "/";
-  }
-  return path && path !== "/" ? path : "/";
 }
