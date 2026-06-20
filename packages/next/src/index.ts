@@ -5,6 +5,10 @@ export type {
 } from "./create-cmssy-page";
 export { createCmssyNotFound } from "./create-cmssy-not-found";
 export type { CreateCmssyNotFoundOptions } from "./create-cmssy-not-found";
+export { createCmssyRobots } from "./create-cmssy-robots";
+export type { CreateCmssyRobotsOptions } from "./create-cmssy-robots";
+export { createCmssySitemap } from "./create-cmssy-sitemap";
+export type { CreateCmssySitemapOptions } from "./create-cmssy-sitemap";
 export { createDraftRoute } from "./create-draft-route";
 export type { CmssyDraftRouteConfig } from "./create-draft-route";
 export { cmssyCspHeaders, applyCmssyCsp } from "./csp";
