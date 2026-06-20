@@ -116,7 +116,9 @@ export default createCmssySitemap(cmssy);
 ```
 
 `createCmssySitemap` lists the workspace's published pages and emits per-locale
-`alternates` when `config.enabledLocales` has more than one entry.
+`alternates` when `config.enabledLocales` has more than one entry. The
+workspace's configured 404 page (Settings → 404 page) is excluded
+automatically; pass `excludeSlugs` for any other paths you want omitted.
 
 ## Status
 
