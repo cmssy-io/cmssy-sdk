@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
-import { fetchPages, type CmssyClientConfig } from "@cmssy/react";
+import {
+  fetchPages,
+  fetchSiteConfig,
+  type CmssyClientConfig,
+} from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
 
@@ -7,13 +11,12 @@ export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
   /** Extra static entries appended to the generated page list. */
   extra?: MetadataRoute.Sitemap;
   /**
-   * Page slugs to omit (e.g. the 404 content page). Defaults to the reserved
-   * not-found slugs so a published 404 page is never advertised as indexable.
+   * Additional page slugs to omit. The workspace's configured 404 page
+   * (Settings → 404 page) is excluded automatically via its id, so this is
+   * only for extra slugs you never want indexed.
    */
   excludeSlugs?: string[];
 }
-
-const DEFAULT_EXCLUDED_SLUGS = ["/not-found", "/404"];
 
 /** Ensure a leading slash so comparisons and URLs are stable. "/" stays "/". */
 function normalizeSlug(slug: string): string {
@@ -59,6 +62,16 @@ export function createCmssySitemap(
       pages = [];
     }
 
+    // The workspace's configured 404 page (Settings → 404 page) is a real
+    // published page; exclude it by id so it is never advertised as indexable.
+    let notFoundPageId: string | null = null;
+    try {
+      notFoundPageId =
+        (await fetchSiteConfig(clientConfig))?.notFoundPageId ?? null;
+    } catch {
+      notFoundPageId = null;
+    }
+
     const baseUrl = await resolveSeoBaseUrl(config, options.baseUrl);
     const defaultLocale = config.defaultLocale ?? "en";
     const locales =
@@ -66,12 +79,10 @@ export function createCmssySitemap(
         ? config.enabledLocales
         : [defaultLocale];
 
-    const excluded = new Set(
-      (options.excludeSlugs ?? DEFAULT_EXCLUDED_SLUGS).map(normalizeSlug),
-    );
+    const excluded = new Set((options.excludeSlugs ?? []).map(normalizeSlug));
     const entries: MetadataRoute.Sitemap = pages
       .map((page) => ({ ...page, slug: normalizeSlug(page.slug) }))
-      .filter((page) => !excluded.has(page.slug))
+      .filter((page) => page.id !== notFoundPageId && !excluded.has(page.slug))
       .map((page) => {
         const lastModified = page.updatedAt ?? page.publishedAt ?? undefined;
         const entry: MetadataRoute.Sitemap[number] = {

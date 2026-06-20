@@ -12,13 +12,38 @@ const CONFIG = {
   enabledLocales: ["en", "pl"],
 };
 
-/** A globalThis.fetch stub yielding the given GraphQL payload. */
-function stubFetch(payload: unknown, ok = true) {
-  const fetchStub = vi.fn(async () => ({
-    ok,
-    status: ok ? 200 : 500,
-    json: async () => payload,
-  }));
+interface StubPage {
+  id: string;
+  slug: string;
+  updatedAt: string | null;
+  publishedAt: string | null;
+}
+
+/**
+ * Routes the two GraphQL calls createCmssySitemap makes: publicPages and
+ * publicSiteConfig (for notFoundPageId).
+ */
+function stubGraphql(opts: {
+  pages?: StubPage[];
+  notFoundPageId?: string | null;
+  pagesOk?: boolean;
+}) {
+  const { pages = [], notFoundPageId = null, pagesOk = true } = opts;
+  const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
+    const query = JSON.parse(init.body).query as string;
+    if (query.includes("publicSiteConfig")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { publicSiteConfig: { notFoundPageId } } }),
+      };
+    }
+    return {
+      ok: pagesOk,
+      status: pagesOk ? 200 : 500,
+      json: async () => ({ data: { publicPages: pages } }),
+    };
+  });
   vi.stubGlobal("fetch", fetchStub);
   return fetchStub;
 }
@@ -49,17 +74,21 @@ describe("createCmssyRobots", () => {
 
 describe("createCmssySitemap", () => {
   it("maps published pages to localized entries with alternates", async () => {
-    stubFetch({
-      data: {
-        publicPages: [
-          { slug: "/", updatedAt: "2026-01-01T00:00:00Z", publishedAt: null },
-          {
-            slug: "/about",
-            updatedAt: null,
-            publishedAt: "2026-02-02T00:00:00Z",
-          },
-        ],
-      },
+    stubGraphql({
+      pages: [
+        {
+          id: "1",
+          slug: "/",
+          updatedAt: "2026-01-01T00:00:00Z",
+          publishedAt: null,
+        },
+        {
+          id: "2",
+          slug: "/about",
+          updatedAt: null,
+          publishedAt: "2026-02-02T00:00:00Z",
+        },
+      ],
     });
     const result = await createCmssySitemap(CONFIG)();
     expect(result).toHaveLength(2);
@@ -77,7 +106,7 @@ describe("createCmssySitemap", () => {
   });
 
   it("degrades to [] when the page fetch fails", async () => {
-    stubFetch({}, false);
+    stubGraphql({ pagesOk: false });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await createCmssySitemap(CONFIG)()).toEqual([]);
     expect(warn).toHaveBeenCalled();
@@ -85,10 +114,8 @@ describe("createCmssySitemap", () => {
   });
 
   it("omits alternates for a single-locale site", async () => {
-    stubFetch({
-      data: {
-        publicPages: [{ slug: "/", updatedAt: null, publishedAt: null }],
-      },
+    stubGraphql({
+      pages: [{ id: "1", slug: "/", updatedAt: null, publishedAt: null }],
     });
     const result = await createCmssySitemap({
       ...CONFIG,
@@ -97,41 +124,35 @@ describe("createCmssySitemap", () => {
     expect(result[0]?.alternates).toBeUndefined();
   });
 
-  it("excludes reserved 404 slugs by default", async () => {
-    stubFetch({
-      data: {
-        publicPages: [
-          { slug: "/", updatedAt: null, publishedAt: null },
-          { slug: "/not-found", updatedAt: null, publishedAt: null },
-          { slug: "/404", updatedAt: null, publishedAt: null },
-        ],
-      },
+  it("excludes the workspace's configured 404 page by id", async () => {
+    stubGraphql({
+      pages: [
+        { id: "home", slug: "/", updatedAt: null, publishedAt: null },
+        { id: "nf", slug: "/not-found", updatedAt: null, publishedAt: null },
+      ],
+      notFoundPageId: "nf",
     });
     const result = await createCmssySitemap(CONFIG)();
     expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
   });
 
-  it("excludes reserved slugs even without a leading slash", async () => {
-    stubFetch({
-      data: {
-        publicPages: [
-          { slug: "/", updatedAt: null, publishedAt: null },
-          { slug: "not-found", updatedAt: null, publishedAt: null },
-        ],
-      },
+  it("keeps a /not-found page that is NOT the configured 404 page", async () => {
+    stubGraphql({
+      pages: [
+        { id: "real", slug: "/not-found", updatedAt: null, publishedAt: null },
+      ],
+      notFoundPageId: "some-other-id",
     });
     const result = await createCmssySitemap(CONFIG)();
-    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/not-found"]);
   });
 
-  it("honours a custom excludeSlugs list", async () => {
-    stubFetch({
-      data: {
-        publicPages: [
-          { slug: "/", updatedAt: null, publishedAt: null },
-          { slug: "/draft", updatedAt: null, publishedAt: null },
-        ],
-      },
+  it("honours a custom excludeSlugs list (normalized)", async () => {
+    stubGraphql({
+      pages: [
+        { id: "1", slug: "/", updatedAt: null, publishedAt: null },
+        { id: "2", slug: "draft", updatedAt: null, publishedAt: null },
+      ],
     });
     const result = await createCmssySitemap(CONFIG, {
       excludeSlugs: ["/draft"],
@@ -140,10 +161,8 @@ describe("createCmssySitemap", () => {
   });
 
   it("normalizes slugs without a leading slash", async () => {
-    stubFetch({
-      data: {
-        publicPages: [{ slug: "about", updatedAt: null, publishedAt: null }],
-      },
+    stubGraphql({
+      pages: [{ id: "1", slug: "about", updatedAt: null, publishedAt: null }],
     });
     const result = await createCmssySitemap(CONFIG)();
     expect(result[0]?.url).toBe("https://cmssy.com/about");
