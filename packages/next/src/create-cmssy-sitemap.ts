@@ -6,6 +6,7 @@ import {
 } from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
+import { localizedPath, normalizeSlug } from "./seo-paths";
 
 export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
   /** Extra static entries appended to the generated page list. */
@@ -16,23 +17,6 @@ export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
    * only for extra slugs you never want indexed.
    */
   excludeSlugs?: string[];
-}
-
-/** Ensure a leading slash so comparisons and URLs are stable. "/" stays "/". */
-function normalizeSlug(slug: string): string {
-  if (slug === "/" || slug === "") return "/";
-  return slug.startsWith("/") ? slug : `/${slug}`;
-}
-
-function localizedPath(
-  slug: string,
-  locale: string,
-  defaultLocale: string,
-): string {
-  const normalized = slug === "/" ? "" : slug;
-  return locale === defaultLocale
-    ? normalized || "/"
-    : `/${locale}${normalized}`;
 }
 
 /**

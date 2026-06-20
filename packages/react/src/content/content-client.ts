@@ -73,6 +73,16 @@ const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
   }
 }`;
 
+const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
+  publicPage(workspaceSlug: $workspaceSlug, slug: $slug) {
+    id
+    seoTitle
+    seoDescription
+    seoKeywords
+    displayName
+  }
+}`;
+
 const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
   publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
     position
@@ -278,6 +288,62 @@ export async function fetchPages(
     throw new Error(`cmssy: pages fetch error - ${message}`);
   }
   return json.data?.publicPages ?? [];
+}
+
+export type CmssyLocalizedValue = Record<string, string> | string | null;
+
+export interface CmssyPageMeta {
+  id: string;
+  seoTitle: CmssyLocalizedValue;
+  seoDescription: CmssyLocalizedValue;
+  seoKeywords: string[] | null;
+  displayName: CmssyLocalizedValue;
+}
+
+export async function fetchPageMeta(
+  config: CmssyClientConfig,
+  path: string | string[] | undefined,
+  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+): Promise<CmssyPageMeta | null> {
+  const slug = normalizeSlug(path);
+  const doFetch =
+    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
+  if (typeof doFetch !== "function") {
+    throw new Error(
+      "cmssy: no fetch implementation available - pass options.fetch",
+    );
+  }
+  const response = await doFetch(config.apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      query: PUBLIC_PAGE_META_QUERY,
+      variables: { workspaceSlug: config.workspaceSlug, slug },
+    }),
+    signal: options.signal,
+  });
+
+  type MetaResponse = {
+    data?: { publicPage?: CmssyPageMeta | null };
+    errors?: Array<{ message?: string }>;
+  };
+
+  if (!response.ok) {
+    throw new Error(`cmssy: page meta fetch failed (${response.status})`);
+  }
+  let json: MetaResponse;
+  try {
+    json = (await response.json()) as MetaResponse;
+  } catch {
+    throw new Error("cmssy: invalid JSON response from the page meta query");
+  }
+  if (json.errors && json.errors.length > 0) {
+    const message = json.errors
+      .map((error) => error.message ?? "GraphQL error")
+      .join("; ");
+    throw new Error(`cmssy: page meta fetch error - ${message}`);
+  }
+  return json.data?.publicPage ?? null;
 }
 
 export async function fetchLayouts(
