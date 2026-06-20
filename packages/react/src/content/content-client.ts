@@ -64,6 +64,14 @@ const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $
   }
 }`;
 
+const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
+  publicPages(workspaceSlug: $workspaceSlug) {
+    slug
+    updatedAt
+    publishedAt
+  }
+}`;
+
 const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
   publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
     position
@@ -218,6 +226,56 @@ export async function fetchPageById(
   const page = json.data?.publicPageById;
   if (!page) return null;
   return { id: page.id, blocks: page.publishedBlocks ?? [] };
+}
+
+export interface CmssyPageSummary {
+  slug: string;
+  updatedAt: string | null;
+  publishedAt: string | null;
+}
+
+export async function fetchPages(
+  config: CmssyClientConfig,
+  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+): Promise<CmssyPageSummary[]> {
+  const doFetch =
+    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
+  if (typeof doFetch !== "function") {
+    throw new Error(
+      "cmssy: no fetch implementation available - pass options.fetch",
+    );
+  }
+  const response = await doFetch(config.apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      query: PUBLIC_PAGES_QUERY,
+      variables: { workspaceSlug: config.workspaceSlug },
+    }),
+    signal: options.signal,
+  });
+
+  type PagesResponse = {
+    data?: { publicPages?: CmssyPageSummary[] | null };
+    errors?: Array<{ message?: string }>;
+  };
+
+  if (!response.ok) {
+    throw new Error(`cmssy: pages fetch failed (${response.status})`);
+  }
+  let json: PagesResponse;
+  try {
+    json = (await response.json()) as PagesResponse;
+  } catch {
+    throw new Error("cmssy: invalid JSON response from the pages query");
+  }
+  if (json.errors && json.errors.length > 0) {
+    const message = json.errors
+      .map((error) => error.message ?? "GraphQL error")
+      .join("; ");
+    throw new Error(`cmssy: pages fetch error - ${message}`);
+  }
+  return json.data?.publicPages ?? [];
 }
 
 export async function fetchLayouts(

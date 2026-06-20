@@ -94,6 +94,30 @@ const groups = await fetchLayouts(client, "/", {
 > server-set capability (auth/session cookie or signed token) and scope this middleware
 > with `config.matcher` to editable routes only.
 
+### SEO: robots.txt + sitemap.xml
+
+Drop in Next's metadata routes. Both derive the canonical origin from the
+request `host` (multi-domain safe), or from `config.siteUrl` when set.
+
+```ts
+// app/robots.ts
+import { createCmssyRobots } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export default createCmssyRobots(cmssy);
+```
+
+```ts
+// app/sitemap.ts
+import { createCmssySitemap } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export default createCmssySitemap(cmssy);
+```
+
+`createCmssySitemap` lists the workspace's published pages and emits per-locale
+`alternates` when `config.enabledLocales` has more than one entry.
+
 ## Status
 
 Early — built against cmssy epic CMS-642 (headless pivot). Not yet published.
