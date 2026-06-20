@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCmssyRobots } from "../create-cmssy-robots";
 import { createCmssySitemap } from "../create-cmssy-sitemap";
+import { buildCmssyMetadata } from "../build-cmssy-metadata";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
@@ -175,5 +176,155 @@ describe("createCmssySitemap", () => {
     expect(result[0]?.alternates?.languages?.pl).toBe(
       "https://cmssy.com/pl/about",
     );
+  });
+});
+
+describe("buildCmssyMetadata", () => {
+  /** Routes publicPage (meta) and publicSiteConfig. */
+  function stubMeta(opts: {
+    page?: Record<string, unknown> | null;
+    siteConfig?: Record<string, unknown> | null;
+  }) {
+    const { page = null, siteConfig = null } = opts;
+    const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
+      const query = JSON.parse(init.body).query as string;
+      if (query.includes("publicSiteConfig")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { publicSiteConfig: siteConfig } }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { publicPage: page } }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchStub);
+    return fetchStub;
+  }
+
+  const SITE_CONFIG = {
+    siteName: { en: "Cmssy", pl: "Cmssy" },
+    enabledLanguages: ["en", "pl"],
+    branding: { brandName: "cmssy", ogImageUrl: "https://assets/og.png" },
+  };
+
+  const localeConfig = {
+    ...CONFIG,
+    resolveLocale: () => "en",
+  };
+
+  it("builds full metadata: title, description, canonical, hreflang, OG, twitter", async () => {
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: { en: "About Cmssy", pl: "O Cmssy" },
+        seoDescription: { en: "Learn about us", pl: "O nas" },
+        seoKeywords: ["cms", "headless"],
+        displayName: { en: "About", pl: "O nas" },
+      },
+      siteConfig: SITE_CONFIG,
+    });
+    const md = await buildCmssyMetadata(localeConfig, ["about"]);
+    expect(md.title).toBe("About Cmssy");
+    expect(md.description).toBe("Learn about us");
+    expect(md.keywords).toEqual(["cms", "headless"]);
+    expect(md.metadataBase?.toString()).toBe("https://cmssy.com/");
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/about");
+    expect(md.alternates?.languages).toEqual({
+      en: "https://cmssy.com/about",
+      pl: "https://cmssy.com/pl/about",
+    });
+    expect(md.openGraph?.url).toBe("https://cmssy.com/about");
+    expect((md.openGraph as { type?: string })?.type).toBe("website");
+    expect(md.openGraph?.images).toEqual([{ url: "https://assets/og.png" }]);
+    expect((md.openGraph as { siteName?: string })?.siteName).toBe("Cmssy");
+    expect((md.twitter as { card?: string })?.card).toBe("summary_large_image");
+    expect(md.twitter?.images).toEqual(["https://assets/og.png"]);
+  });
+
+  it("falls back to displayName then siteName for the title", async () => {
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: null,
+        seoDescription: null,
+        seoKeywords: null,
+        displayName: { en: "Home" },
+      },
+      siteConfig: SITE_CONFIG,
+    });
+    const md = await buildCmssyMetadata(localeConfig, undefined);
+    expect(md.title).toBe("Home");
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/");
+  });
+
+  it("uses summary card when there is no image", async () => {
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: { en: "T" },
+        seoDescription: { en: "D" },
+        seoKeywords: null,
+        displayName: {},
+      },
+      siteConfig: { ...SITE_CONFIG, branding: { ogImageUrl: null } },
+    });
+    const md = await buildCmssyMetadata(localeConfig, ["x"]);
+    expect((md.twitter as { card?: string })?.card).toBe("summary");
+    expect(md.openGraph?.images).toBeUndefined();
+  });
+
+  it("uses siteConfig.defaultLanguage when config has no defaultLocale", async () => {
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: { pl: "Strona", en: "Page" },
+        seoDescription: null,
+        seoKeywords: null,
+        displayName: {},
+      },
+      siteConfig: { ...SITE_CONFIG, defaultLanguage: "pl" },
+    });
+    // No defaultLocale on config; resolveLocale returns the default (pl).
+    const md = await buildCmssyMetadata(
+      {
+        apiUrl: CONFIG.apiUrl,
+        workspaceSlug: CONFIG.workspaceSlug,
+        draftSecret: CONFIG.draftSecret,
+        editorOrigin: CONFIG.editorOrigin,
+        siteUrl: CONFIG.siteUrl,
+        resolveLocale: () => "pl",
+      },
+      ["o-nas"],
+    );
+    // pl is the default -> no prefix; en gets the /en prefix.
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/o-nas");
+    expect(md.alternates?.languages).toEqual({
+      pl: "https://cmssy.com/o-nas",
+      en: "https://cmssy.com/en/o-nas",
+    });
+    expect(md.title).toBe("Strona");
+  });
+
+  it("degrades gracefully when the page meta fetch fails", async () => {
+    const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
+      const query = JSON.parse(init.body).query as string;
+      if (query.includes("publicSiteConfig")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { publicSiteConfig: SITE_CONFIG } }),
+        };
+      }
+      return { ok: false, status: 500, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", fetchStub);
+    const md = await buildCmssyMetadata(localeConfig, ["about"]);
+    // No page meta, but siteName still drives the title and canonical resolves.
+    expect(md.title).toBe("Cmssy");
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/about");
   });
 });

@@ -6,6 +6,7 @@ import {
 } from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
+import { localizedPath, normalizeSlug, resolveSeoLocales } from "./seo-paths";
 
 export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
   /** Extra static entries appended to the generated page list. */
@@ -16,23 +17,6 @@ export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
    * only for extra slugs you never want indexed.
    */
   excludeSlugs?: string[];
-}
-
-/** Ensure a leading slash so comparisons and URLs are stable. "/" stays "/". */
-function normalizeSlug(slug: string): string {
-  if (slug === "/" || slug === "") return "/";
-  return slug.startsWith("/") ? slug : `/${slug}`;
-}
-
-function localizedPath(
-  slug: string,
-  locale: string,
-  defaultLocale: string,
-): string {
-  const normalized = slug === "/" ? "" : slug;
-  return locale === defaultLocale
-    ? normalized || "/"
-    : `/${locale}${normalized}`;
 }
 
 /**
@@ -64,20 +48,16 @@ export function createCmssySitemap(
 
     // The workspace's configured 404 page (Settings → 404 page) is a real
     // published page; exclude it by id so it is never advertised as indexable.
-    let notFoundPageId: string | null = null;
+    let siteConfig: Awaited<ReturnType<typeof fetchSiteConfig>> = null;
     try {
-      notFoundPageId =
-        (await fetchSiteConfig(clientConfig))?.notFoundPageId ?? null;
+      siteConfig = await fetchSiteConfig(clientConfig);
     } catch {
-      notFoundPageId = null;
+      siteConfig = null;
     }
+    const notFoundPageId = siteConfig?.notFoundPageId ?? null;
 
     const baseUrl = await resolveSeoBaseUrl(config, options.baseUrl);
-    const defaultLocale = config.defaultLocale ?? "en";
-    const locales =
-      config.enabledLocales && config.enabledLocales.length > 0
-        ? config.enabledLocales
-        : [defaultLocale];
+    const { defaultLocale, locales } = resolveSeoLocales(config, siteConfig);
 
     const excluded = new Set((options.excludeSlugs ?? []).map(normalizeSlug));
     const entries: MetadataRoute.Sitemap = pages
