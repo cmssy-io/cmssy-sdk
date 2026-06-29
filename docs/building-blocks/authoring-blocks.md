@@ -162,11 +162,9 @@ test("renders nothing for an empty heading", () => {
 });
 ```
 
-The assertions above use only built-in matchers, so no `@testing-library/jest-dom`
-setup is needed.
-
-> TODO: the cmssy CLI (a separate package) ships a `cmssy test` runner for
-> blocks; link to its docs here once published.
+Run them with your project's test runner (Vitest or Jest) and a React testing
+environment. The assertions above use only built-in matchers, so no
+`@testing-library/jest-dom` setup is needed.
 
 ## Conventions
 
