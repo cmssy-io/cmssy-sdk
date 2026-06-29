@@ -7,14 +7,14 @@ editor; your app owns rendering and hosting.
 
 ## Packages
 
-| Package        | Description                                                                                                                                                    |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@cmssy/react` | Framework-agnostic core: component registry, field controls, `<CmssyPage>`, the editor bridge agent, content/data clients, the versioned postMessage protocol. |
-| `@cmssy/next`  | Next.js adapter: catch-all route helper, draft mode, framing CSP.                                                                                              |
+| Package        | Description                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@cmssy/react` | Framework-agnostic core: component registry, field controls, `CmssyServerPage`, the editor bridge agent, content/data clients, the versioned postMessage protocol. |
+| `@cmssy/next`  | Next.js adapter: catch-all route helper, draft mode, framing CSP.                                                                                                  |
 
 ## `@cmssy/next` quickstart
 
-Register your components once, then wire three files in your Next.js app.
+Collect your blocks in one array, then wire these files in your Next.js app.
 
 ```ts
 // cmssy.config.ts
@@ -32,9 +32,9 @@ export const cmssy: CmssyNextConfig = {
 // app/[[...path]]/page.tsx
 import { createCmssyPage } from "@cmssy/next";
 import { cmssy } from "@/cmssy.config";
-import "@/cmssy/blocks"; // runs registerComponent(...) side effects
+import { blocks } from "@/cmssy/blocks"; // array of defineBlock(...) results
 
-export default createCmssyPage(cmssy);
+export default createCmssyPage(cmssy, blocks);
 ```
 
 The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then mounts the edit bridge and serves draft content using your server-side `draftSecret` (no secret reaches the editor). Without the flag (or draft mode) it serves published content.
