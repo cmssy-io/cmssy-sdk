@@ -145,5 +145,4 @@ arrange your blocks visually through the cmssy editor.
 - SEO: `buildCmssyMetadata`, `createCmssyRobots`, `createCmssySitemap`.
 - i18n: locale middleware + `getCmssyLocale`.
 
-> TODO: a runnable companion project under `examples/quickstart`, and the
-> `cmssy init` CLI flow that scaffolds these files.
+> TODO: a runnable companion project under `examples/quickstart`.
