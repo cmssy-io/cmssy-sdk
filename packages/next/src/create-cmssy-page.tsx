@@ -2,10 +2,10 @@ import type { ComponentType } from "react";
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
 import {
+  createCmssyClient,
   fetchPage,
   resolveForms,
   resolveSiteLocales,
-  resolveWorkspaceId,
   splitLocaleFromPath,
   CmssyServerPage,
   type BlockDefinition,
@@ -66,6 +66,9 @@ export function createCmssyPage(
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
   };
+  // Hoisted so resolveWorkspaceId is memoized across requests (no per-render
+  // site-config fetch).
+  const client = createCmssyClient(clientConfig);
   return async function CmssyCatchAllPage({
     params,
     searchParams,
@@ -160,7 +163,7 @@ export function createCmssyPage(
     let workspace: CmssyBlockWorkspace | undefined;
     try {
       workspace = {
-        id: await resolveWorkspaceId(clientConfig),
+        id: await client.resolveWorkspaceId(),
         slug: config.workspaceSlug,
       };
     } catch {
@@ -176,7 +179,6 @@ export function createCmssyPage(
           defaultLocale={defaultLocale}
           enabledLocales={enabledLocales}
           forms={forms}
-          isDraftMode={isEnabled}
           auth={auth}
           workspace={workspace}
         />

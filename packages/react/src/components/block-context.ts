@@ -24,14 +24,12 @@ export interface CmssyBlockWorkspace {
 export interface CmssyBlockContext {
   locale: CmssyLocaleContext;
   isPreview: boolean;
-  isDraftMode?: boolean;
   forms?: Record<string, CmssyFormDefinition>;
   auth?: CmssyBlockAuthContext;
   workspace?: CmssyBlockWorkspace;
 }
 
 export interface BuildBlockContextExtra {
-  isDraftMode?: boolean;
   auth?: CmssyBlockAuthContext;
   workspace?: CmssyBlockWorkspace;
 }
@@ -55,9 +53,6 @@ export function buildBlockContext(
     },
     isPreview: isPreview ?? false,
     forms,
-    ...(extra?.isDraftMode !== undefined
-      ? { isDraftMode: extra.isDraftMode }
-      : {}),
     ...(extra?.auth ? { auth: extra.auth } : {}),
     ...(extra?.workspace ? { workspace: extra.workspace } : {}),
   };

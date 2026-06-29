@@ -22,8 +22,6 @@ export interface CmssyServerPageProps {
   enabledLocales?: string[];
   /** Form definitions referenced by page blocks, exposed via context.forms. */
   forms?: Record<string, CmssyFormDefinition>;
-  /** Whether the page is rendered in draft/preview mode, exposed via context.isDraftMode. */
-  isDraftMode?: boolean;
   /** Member auth state, exposed via context.auth. Resolved by createCmssyPage. */
   auth?: CmssyBlockAuthContext;
   /** Workspace identity, exposed via context.workspace. Resolved by createCmssyPage. */
@@ -42,7 +40,6 @@ export async function CmssyServerPage({
   defaultLocale = "en",
   enabledLocales,
   forms,
-  isDraftMode,
   auth,
   workspace,
 }: CmssyServerPageProps) {
@@ -55,7 +52,7 @@ export async function CmssyServerPage({
     enabledLocales,
     false,
     forms,
-    { isDraftMode, auth, workspace },
+    { auth, workspace },
   );
 
   // Resolve each block's localized content once, reused for both the loader and

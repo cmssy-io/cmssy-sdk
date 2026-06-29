@@ -26,23 +26,20 @@ describe("buildBlockContext", () => {
     expect(buildBlockContext("en", "en", undefined, true).isPreview).toBe(true);
   });
 
-  it("omits auth, workspace and isDraftMode when no extra is provided", () => {
+  it("omits auth and workspace when no extra is provided", () => {
     const ctx = buildBlockContext("en", "en");
     expect("auth" in ctx).toBe(false);
     expect("workspace" in ctx).toBe(false);
-    expect("isDraftMode" in ctx).toBe(false);
   });
 
-  it("injects auth, workspace and isDraftMode from the extra argument", () => {
+  it("injects auth and workspace from the extra argument", () => {
     const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
-      isDraftMode: true,
       auth: {
         isAuthenticated: true,
         member: { recordId: "rec_1", email: "a@b.com" },
       },
       workspace: { id: "ws_1", slug: "acme" },
     });
-    expect(ctx.isDraftMode).toBe(true);
     expect(ctx.auth).toEqual({
       isAuthenticated: true,
       member: { recordId: "rec_1", email: "a@b.com" },
