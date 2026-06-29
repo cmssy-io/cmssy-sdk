@@ -48,7 +48,12 @@ export { createCmssyAuthRoute } from "./create-auth-route";
 export type { CmssyAuthRouteHandlers } from "./create-auth-route";
 export { createCmssyCartRoute, CMSSY_CART_COOKIE } from "./create-cart-route";
 export type { CmssyCartRouteHandlers } from "./create-cart-route";
-export { assertAuthConfig } from "./config";
+export {
+  assertAuthConfig,
+  resolveEditorOrigin,
+  DEFAULT_CMSSY_EDITOR_ORIGIN,
+} from "./config";
+export { resolveApiUrl, DEFAULT_CMSSY_API_URL } from "@cmssy/react";
 export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
 export { createCmssyAuthMiddleware } from "./auth-middleware";
 export type { CmssyAuthMiddleware } from "./auth-middleware";

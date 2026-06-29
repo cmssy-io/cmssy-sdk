@@ -1,4 +1,7 @@
-import type { CmssyClientConfig } from "../content/content-client";
+import {
+  resolveApiUrl,
+  type CmssyClientConfig,
+} from "../content/content-client";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { resolveWorkspaceId as resolveWorkspaceIdFromConfig } from "./settings-client";
 
@@ -21,7 +24,14 @@ export interface CmssyClient {
   resolveWorkspaceId(options?: GraphqlRequestOptions): Promise<string>;
 }
 
-export function createCmssyClient(config: CmssyClientConfig): CmssyClient {
+export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
+  // Fill the platform default for apiUrl so the client, its cache keys, and the
+  // workspace-id resolver all see a concrete endpoint - consumers on cmssy cloud
+  // never set it.
+  const config: CmssyClientConfig = {
+    ...input,
+    apiUrl: resolveApiUrl(input.apiUrl),
+  };
   let cachedWorkspaceId: string | undefined;
   let inFlight: Promise<string> | undefined;
 

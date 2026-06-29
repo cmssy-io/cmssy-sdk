@@ -1,4 +1,8 @@
-import type { CmssyClientConfig, FetchLike } from "../content/content-client";
+import {
+  resolveApiUrl,
+  type CmssyClientConfig,
+  type FetchLike,
+} from "../content/content-client";
 
 export interface GraphqlRequestOptions {
   fetch?: FetchLike;
@@ -21,7 +25,7 @@ export async function graphqlRequest<T>(
     );
   }
 
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json", ...options.headers },
     body: JSON.stringify({ query, variables }),

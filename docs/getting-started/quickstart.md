@@ -22,21 +22,33 @@ npm i @cmssy/next @cmssy/react
 import type { CmssyNextConfig } from "@cmssy/next";
 
 export const cmssy: CmssyNextConfig = {
-  apiUrl: process.env.CMSSY_API_URL!, // full GraphQL endpoint, e.g. https://api.cmssy.io/graphql
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
-  editorOrigin: process.env.CMSSY_EDITOR_ORIGIN!,
   defaultLocale: "en",
   enabledLocales: ["en"],
 };
 ```
 
-| Env var                | What it is                                           |
-| ---------------------- | ---------------------------------------------------- |
-| `CMSSY_API_URL`        | The workspace's GraphQL delivery endpoint.           |
-| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).      |
-| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview content. |
-| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor.      |
+On cmssy cloud you only set the two per-workspace values. `apiUrl` and
+`editorOrigin` are fixed platform values and **default automatically** -
+override them only for self-hosted or staging deployments.
+
+| Env var                | What it is                                                                   | Required       |
+| ---------------------- | ---------------------------------------------------------------------------- | -------------- |
+| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).                              | yes            |
+| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview content.                         | yes            |
+| `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.             | no (self-host) |
+| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin. | no (self-host) |
+
+```ts
+// self-host / staging only:
+export const cmssy: CmssyNextConfig = {
+  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
+  draftSecret: process.env.CMSSY_DRAFT_SECRET!,
+  apiUrl: process.env.CMSSY_API_URL!, // e.g. http://localhost:4000/graphql
+  editorOrigin: process.env.CMSSY_EDITOR_ORIGIN!, // your admin origin
+};
+```
 
 ## 3. Register your blocks
 
