@@ -42,7 +42,7 @@ export const heroBlock = defineBlock({
 A block component receives:
 
 - `content` - the resolved field values for the current locale.
-- `context` - [`CmssyBlockContext`](#context): `locale`, `isPreview`, `forms`.
+- `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`.
 - `data` - the [server loader](./server-loaders.md) result, or `undefined` in the editor.
 
 ### Content defaults: render, don't fabricate
@@ -53,9 +53,7 @@ and boolean/config defaults (`variant = "default"`) are fine.
 
 ```tsx
 // good - empty content renders nothing
-{
-  heading && <h1>{heading}</h1>;
-}
+return <>{heading && <h1>{heading}</h1>}</>;
 ```
 
 The CMS is the single source of truth for content; a component that invents

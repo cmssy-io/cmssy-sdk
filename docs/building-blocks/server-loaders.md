@@ -25,8 +25,8 @@ import { defineBlock } from "@cmssy/react";
 defineBlock({
   type: "my-block",
   loader: async ({ content, context }) => {
-    // runs on the server, during SSR only
-    return {/* RSC-serializable data */};
+    // runs on the server, during SSR only; returns RSC-serializable data
+    return { html: "" };
   },
   component: MyBlock, // receives { content, context, data }
 });
@@ -41,7 +41,7 @@ Rules:
   **RSC-serializable**: plain objects, arrays, and primitives. No functions or
   class instances.
 - `content` is the block's resolved content; `context` is the
-  [`CmssyBlockContext`](#context) (`locale`, `isPreview`, `forms`).
+  `CmssyBlockContext` (`locale`, `isPreview`, `forms`).
 
 The component types `data` as optional and degrades when it is missing:
 
