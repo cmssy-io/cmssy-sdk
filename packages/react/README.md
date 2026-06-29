@@ -39,10 +39,7 @@ the CMS at runtime.
 ```tsx
 import { fetchPage, CmssyServerPage } from "@cmssy/react";
 
-const page = await fetchPage(
-  { apiUrl: "https://api.cmssy.io/graphql", workspaceSlug: "acme" },
-  pathSegments,
-);
+const page = await fetchPage({ workspaceSlug: "acme" }, pathSegments);
 
 return <CmssyServerPage page={page} blocks={blocks} locale="en" />;
 ```
@@ -59,10 +56,7 @@ the exported documents):
 ```ts
 import { createCmssyClient, MODEL_RECORDS_QUERY } from "@cmssy/react";
 
-const cmssy = createCmssyClient({
-  apiUrl: "https://api.cmssy.io/graphql",
-  workspaceSlug: "acme",
-});
+const cmssy = createCmssyClient({ workspaceSlug: "acme" });
 
 // raw query (you own scoping)
 await cmssy.query(MY_QUERY, vars);
