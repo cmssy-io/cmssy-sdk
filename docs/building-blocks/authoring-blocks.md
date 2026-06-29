@@ -152,7 +152,8 @@ import Hero from "./Hero";
 
 test("renders the heading when set", () => {
   render(<Hero content={{ heading: "Hello" }} />);
-  expect(screen.getByText("Hello")).toBeInTheDocument();
+  // getByRole throws if absent, so this asserts the heading rendered
+  expect(screen.getByRole("heading", { name: "Hello" })).toBeTruthy();
 });
 
 test("renders nothing for an empty heading", () => {
@@ -161,7 +162,11 @@ test("renders nothing for an empty heading", () => {
 });
 ```
 
-Run blocks through the cmssy CLI test runner with `cmssy test`.
+The assertions above use only built-in matchers, so no `@testing-library/jest-dom`
+setup is needed.
+
+> TODO: the cmssy CLI (a separate package) ships a `cmssy test` runner for
+> blocks; link to its docs here once published.
 
 ## Conventions
 

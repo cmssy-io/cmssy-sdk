@@ -5,8 +5,9 @@ description: Build a working headless cmssy site in a Next.js app - config, the 
 
 # Quickstart
 
-Build a headless site on cmssy in four files. You need a cmssy workspace and its
-API URL, workspace slug, and a draft secret.
+Build a headless site on cmssy: a config, a blocks registry, and a few Next.js
+route files. You need a cmssy workspace and its API URL, workspace slug, and a
+draft secret.
 
 ## 1. Install
 
@@ -53,15 +54,31 @@ export const blocks = [heroBlock];
 
 `createCmssyPage(config, blocks, options?)` returns a Next.js page handler for a
 catch-all route. **`blocks` is required** - it is how the renderer maps each
-stored block to your component.
+stored block to your component. Pass an `editor` so the page can be edited
+visually; **edit mode throws without it**.
+
+The editor is a small `"use client"` component that lazy-loads your blocks:
+
+```tsx
+// cmssy/editor.tsx
+"use client";
+
+import { CmssyLazyEditor } from "@cmssy/react/client";
+import type { CmssyEditorProps } from "@cmssy/next";
+
+export function CmssyEditor(props: CmssyEditorProps) {
+  return <CmssyLazyEditor {...props} load={() => import("./blocks")} />;
+}
+```
 
 ```tsx
 // app/[[...path]]/page.tsx
 import { createCmssyPage } from "@cmssy/next";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
+import { CmssyEditor } from "@/cmssy/editor";
 
-export default createCmssyPage(cmssy, blocks);
+export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 ```
 
 The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then
@@ -84,15 +101,38 @@ export const GET = createDraftRoute(cmssy);
 ```ts
 // middleware.ts
 import { NextResponse, type NextRequest } from "next/server";
-import { applyCmssyCsp, isCmssyEditRequest } from "@cmssy/next";
+import {
+  applyCmssyCsp,
+  isCmssyEditRequest,
+  CMSSY_EDIT_HEADER,
+} from "@cmssy/next";
 import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
-  const res = NextResponse.next();
-  if (isCmssyEditRequest(request)) applyCmssyCsp(res, cmssy);
-  return res;
+  const editMode = isCmssyEditRequest(request);
+
+  // Strip any inbound value so a client can't forge edit mode, then set it
+  // ourselves so server components (e.g. the root layout) can read it.
+  const headers = new Headers(request.headers);
+  headers.delete(CMSSY_EDIT_HEADER);
+  if (editMode) headers.set(CMSSY_EDIT_HEADER, "1");
+
+  const response = NextResponse.next({ request: { headers } });
+  if (editMode) applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
+  return response;
 }
 ```
+
+In a server component (e.g. the root `layout.tsx`), read `isCmssyEditMode()` to
+fetch draft vs published data on the same signal.
+
+> **Security.** `?cmssyEdit=1` is a developer-controllable flag - any request can
+> opt into edit mode. This is not an escalation: draft **content** is still gated
+> by the server-held `draftSecret`, and `frame-ancestors` only restricts framing
+> to your `editorOrigin` (set it to a concrete origin, never `*`). For
+> production, gate the edit path behind a server-set capability (auth/session
+> cookie or signed token) and scope this middleware with `config.matcher` to
+> editable routes only.
 
 That is a working headless site: published pages render server-side, and editors
 arrange your blocks visually through the cmssy editor.
