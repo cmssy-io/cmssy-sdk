@@ -27,7 +27,11 @@ GraphQL delivery API; your app fetches and renders it.
 - **Building Blocks**
   - [Authoring a block](./building-blocks/authoring-blocks.md) - `defineBlock`, `fields`, the component contract.
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.
+  - [Block recipes](./building-blocks/recipes.md) - rich text, listing child pages, forms, SEO.
 - **Auth** - [Member auth](./auth/member-auth.md): secure httpOnly-cookie sign-in/register/sessions.
+- **Reference**
+  - [API reference](./reference/sdk-api.md) - every export of `@cmssy/react` + `@cmssy/next`.
+  - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.
 
 > Each guide is backed by a real, compiling example. If something here disagrees
 > with the SDK's behaviour, the SDK is right - please open an issue.
