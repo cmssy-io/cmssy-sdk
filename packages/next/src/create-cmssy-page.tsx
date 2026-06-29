@@ -2,18 +2,22 @@ import type { ComponentType } from "react";
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
 import {
+  createCmssyClient,
   fetchPage,
   resolveForms,
   resolveSiteLocales,
   splitLocaleFromPath,
   CmssyServerPage,
   type BlockDefinition,
+  type CmssyBlockAuthContext,
+  type CmssyBlockWorkspace,
   type CmssyClientConfig,
   type CmssyFormDefinition,
   type CmssyPageData,
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/client";
+import { getCmssyUser } from "./auth-server";
 import type { CmssyNextConfig } from "./config";
 import { toCspOrigin } from "./csp";
 
@@ -62,6 +66,9 @@ export function createCmssyPage(
     apiUrl: config.apiUrl,
     workspaceSlug: config.workspaceSlug,
   };
+  // Hoisted so resolveWorkspaceId is memoized across requests (no per-render
+  // site-config fetch).
+  const client = createCmssyClient(clientConfig);
   return async function CmssyCatchAllPage({
     params,
     searchParams,
@@ -137,6 +144,32 @@ export function createCmssyPage(
       );
     }
 
+    // Resolve member auth (only when auth is configured) and workspace
+    // identity server-side, so blocks read them from context instead of
+    // refetching client-side. Both degrade to undefined on failure.
+    let auth: CmssyBlockAuthContext | undefined;
+    if (config.auth) {
+      try {
+        const user = await getCmssyUser(config);
+        auth = {
+          isAuthenticated: !!user,
+          member: user ? { recordId: user.recordId, email: user.email } : null,
+        };
+      } catch {
+        auth = undefined;
+      }
+    }
+
+    let workspace: CmssyBlockWorkspace | undefined;
+    try {
+      workspace = {
+        id: await client.resolveWorkspaceId(),
+        slug: config.workspaceSlug,
+      };
+    } catch {
+      workspace = undefined;
+    }
+
     return (
       <CmssyLocaleProvider value={localeContext}>
         <CmssyServerPage
@@ -146,6 +179,8 @@ export function createCmssyPage(
           defaultLocale={defaultLocale}
           enabledLocales={enabledLocales}
           forms={forms}
+          auth={auth}
+          workspace={workspace}
         />
       </CmssyLocaleProvider>
     );
