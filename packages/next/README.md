@@ -26,11 +26,10 @@ export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 import type { CmssyNextConfig } from "@cmssy/next";
 
 export const cmssy: CmssyNextConfig = {
-  apiUrl: process.env.CMSSY_API_URL ?? "", // public GraphQL delivery endpoint
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG ?? "",
   draftSecret: process.env.CMSSY_DRAFT_SECRET ?? "", // edit-mode preview handshake
-  editorOrigin: process.env.CMSSY_EDITOR_ORIGIN ?? "", // only needed in edit mode
   defaultLocale: "en",
+  // apiUrl + editorOrigin default to cmssy cloud; set them only for self-host/staging.
 };
 ```
 
