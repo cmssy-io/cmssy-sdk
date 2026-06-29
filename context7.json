@@ -1,12 +1,14 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/cmssy-io/cmssy-sdk",
+  "public_key": "pk_dn8mCBCoFKGcWyPFzluwi",
   "projectTitle": "cmssy SDK",
   "description": "Headless CMS SDK: register your own React components as blocks, render cmssy pages in your own Next.js app, and edit them visually. cmssy keeps content, commerce, auth, forms and data; your app owns rendering and hosting.",
-  "folders": ["docs"],
   "excludeFolders": [
-    "node_modules",
-    "examples/*/node_modules",
-    "packages/*/dist"
+    "**/node_modules",
+    "**/dist",
+    "packages/*/src",
+    "examples/*/src"
   ],
   "rules": [
     "cmssy is headless-only and multi-tenant: every workspace is isolated by workspace_id. Always scope data queries by workspace; never assume a single workspace or hardcode a site URL.",
@@ -14,6 +16,7 @@
     "Block components must not substitute default values for empty text/copy/media content props - render conditionally. Empty-array and boolean/config defaults are fine.",
     "A block's server `loader` runs only during SSR (CmssyServerPage), never in the editor; the component receives `data: undefined` in the editor and must degrade gracefully.",
     "Use queryScoped (or graphqlRequest) from @cmssy/react for delivery-API calls; queryScoped auto-injects workspaceId and the x-workspace-id header.",
-    "Member auth uses httpOnly cookies via createCmssyAuthRoute - never store member tokens in localStorage."
+    "Member auth uses httpOnly cookies via createCmssyAuthRoute - never store member tokens in localStorage.",
+    "createCmssyPage(config, blocks, options?) requires the blocks array as the second argument; pass options.editor or edit mode throws."
   ]
 }
