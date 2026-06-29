@@ -39,10 +39,16 @@ describe("cmssyCspHeaders", () => {
     ).toThrow(/invalid editorOrigin/);
   });
 
-  it("rejects an empty origin list", () => {
-    expect(() => cmssyCspHeaders({ editorOrigin: [] })).toThrow(
-      /at least one valid origin/,
-    );
+  it("falls back to the cmssy cloud admin origin when unset", () => {
+    expect(cmssyCspHeaders({})).toEqual({
+      "Content-Security-Policy": "frame-ancestors https://www.cmssy.io",
+    });
+  });
+
+  it("falls back to the default for an empty origin list", () => {
+    expect(cmssyCspHeaders({ editorOrigin: [] })).toEqual({
+      "Content-Security-Policy": "frame-ancestors https://www.cmssy.io",
+    });
   });
 
   it("trims surrounding whitespace before validating", () => {

@@ -1,5 +1,18 @@
+/**
+ * The cmssy cloud GraphQL delivery endpoint. It is the same for every workspace,
+ * so consumers never need to set it - `apiUrl` defaults to this. Self-hosted /
+ * staging deployments override it via config.
+ */
+export const DEFAULT_CMSSY_API_URL = "https://api.cmssy.io/graphql";
+
+/** Resolves `apiUrl`, falling back to the cmssy cloud endpoint when unset. */
+export function resolveApiUrl(apiUrl: string | undefined): string {
+  return apiUrl && apiUrl.length > 0 ? apiUrl : DEFAULT_CMSSY_API_URL;
+}
+
 export interface CmssyClientConfig {
-  apiUrl: string;
+  /** Full GraphQL delivery endpoint. Defaults to {@link DEFAULT_CMSSY_API_URL}. */
+  apiUrl?: string;
   workspaceSlug: string;
 }
 
@@ -114,7 +127,7 @@ export async function fetchPage(
   }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -185,7 +198,7 @@ export async function fetchPageById(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -257,7 +270,7 @@ export async function fetchPages(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -313,7 +326,7 @@ export async function fetchPageMeta(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -361,7 +374,7 @@ export async function fetchLayouts(
   }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
-  const response = await doFetch(config.apiUrl, {
+  const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

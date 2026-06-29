@@ -1,4 +1,7 @@
-import type { CmssyClientConfig } from "../content/content-client";
+import {
+  resolveApiUrl,
+  type CmssyClientConfig,
+} from "../content/content-client";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 
@@ -15,7 +18,7 @@ export async function resolveSiteLocales(
   config: CmssyClientConfig,
   options?: GraphqlRequestOptions,
 ): Promise<CmssySiteLocales> {
-  const key = `${config.apiUrl}::${config.workspaceSlug}`;
+  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
   cache.delete(key);

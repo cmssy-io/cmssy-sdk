@@ -1,5 +1,8 @@
+import { resolveEditorOrigin } from "./config";
+
 export interface CmssyCspOptions {
-  editorOrigin: string | string[];
+  /** Defaults to the cmssy cloud admin origin when unset. */
+  editorOrigin?: string | string[];
 }
 
 interface MutableHeaders {
@@ -24,8 +27,9 @@ export function toCspOrigin(origin: string): string {
   return parsed.origin;
 }
 
-function frameAncestors(editorOrigin: string | string[]): string {
-  const origins = Array.isArray(editorOrigin) ? editorOrigin : [editorOrigin];
+function frameAncestors(editorOrigin: string | string[] | undefined): string {
+  const resolved = resolveEditorOrigin(editorOrigin);
+  const origins = Array.isArray(resolved) ? resolved : [resolved];
   if (origins.length === 0) {
     throw new Error(
       "cmssy: editorOrigin must contain at least one valid origin",
