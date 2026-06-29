@@ -1,5 +1,6 @@
 import {
   graphqlRequest,
+  resolveApiUrl,
   resolveWorkspaceId,
   type CmssyCart,
   type CmssyOrder,
@@ -50,7 +51,7 @@ export interface CartRequestContext {
 const workspaceIdCache = new Map<string, Promise<string>>();
 
 function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${config.apiUrl}::${config.workspaceSlug}`;
+  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
   const existing = workspaceIdCache.get(key);
   if (existing) return existing;
   const fresh = resolveWorkspaceId(config).catch((err: unknown) => {

@@ -41,6 +41,8 @@ export {
   fetchPageMeta,
   fetchLayouts,
   normalizeSlug,
+  resolveApiUrl,
+  DEFAULT_CMSSY_API_URL,
 } from "./content/content-client";
 export type {
   CmssyClientConfig,
