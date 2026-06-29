@@ -5,10 +5,8 @@ description: Build a working headless cmssy site in a Next.js app - config, the 
 
 # Quickstart
 
-> Status: outline (CMS-771). The steps and APIs below are accurate; prose and a
-> runnable example repo are still being filled in.
-
-Build a headless site on cmssy in four files.
+Build a headless site on cmssy in four files. You need a cmssy workspace and its
+API URL, workspace slug, and a draft secret.
 
 ## 1. Install
 
@@ -32,17 +30,30 @@ export const cmssy: CmssyNextConfig = {
 };
 ```
 
+| Env var                | What it is                                           |
+| ---------------------- | ---------------------------------------------------- |
+| `CMSSY_API_URL`        | The workspace's GraphQL delivery endpoint.           |
+| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).      |
+| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview content. |
+| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor.      |
+
 ## 3. Register your blocks
+
+Define blocks with `defineBlock` (see [Authoring a block](../building-blocks/authoring-blocks.md))
+and collect them in one array:
 
 ```ts
 // cmssy/blocks.ts
-import { myHeroBlock } from "@/blocks/hero/block";
-export const blocks = [myHeroBlock /* ... */];
+import { heroBlock } from "@/blocks/hero/block";
+
+export const blocks = [heroBlock];
 ```
 
-See [Authoring a block](../building-blocks/authoring-blocks.md).
+## 4. Render pages
 
-## 4. Render pages + draft mode
+`createCmssyPage(config, blocks, options?)` returns a Next.js page handler for a
+catch-all route. **`blocks` is required** - it is how the renderer maps each
+stored block to your component.
 
 ```tsx
 // app/[[...path]]/page.tsx
@@ -53,6 +64,13 @@ import { blocks } from "@/cmssy/blocks";
 export default createCmssyPage(cmssy, blocks);
 ```
 
+The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then
+mounts the edit bridge and serves draft content using the server-side
+`draftSecret` (no secret reaches the editor). Without the flag it serves
+published content.
+
+## 5. Enable draft mode
+
 ```ts
 // app/api/draft/route.ts
 import { createDraftRoute } from "@cmssy/next";
@@ -61,11 +79,31 @@ import { cmssy } from "@/cmssy.config";
 export const GET = createDraftRoute(cmssy);
 ```
 
+## 6. Let the editor frame your app
+
+```ts
+// middleware.ts
+import { NextResponse, type NextRequest } from "next/server";
+import { applyCmssyCsp, isCmssyEditRequest } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export function middleware(request: NextRequest) {
+  const res = NextResponse.next();
+  if (isCmssyEditRequest(request)) applyCmssyCsp(res, cmssy);
+  return res;
+}
+```
+
+That is a working headless site: published pages render server-side, and editors
+arrange your blocks visually through the cmssy editor.
+
 ## Next steps
 
+- [Authoring a block](../building-blocks/authoring-blocks.md) - build your own components.
+- [Server loaders](../building-blocks/server-loaders.md) - fetch block data during SSR.
+- [Member auth](../auth/member-auth.md) - sign-in, register, sessions.
 - SEO: `buildCmssyMetadata`, `createCmssyRobots`, `createCmssySitemap`.
 - i18n: locale middleware + `getCmssyLocale`.
-- Editor framing: `applyCmssyCsp` / `isCmssyEditRequest` in `middleware.ts`.
 
-> TODO: companion example under `examples/quickstart`; `cmssy init` CLI flow;
-> environment-variable reference.
+> TODO: a runnable companion project under `examples/quickstart`, and the
+> `cmssy init` CLI flow that scaffolds these files.
