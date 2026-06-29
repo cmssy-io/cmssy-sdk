@@ -1,15 +1,44 @@
 import { MIN_SESSION_SECRET_LENGTH } from "./session";
 
+/**
+ * Origin of the cmssy admin/editor that frames your site (postMessage source +
+ * CSP `frame-ancestors`). Identical for every workspace on cmssy cloud, so
+ * `editorOrigin` defaults to this. Self-hosted admins override it via config.
+ */
+export const DEFAULT_CMSSY_EDITOR_ORIGIN = "https://www.cmssy.io";
+
+/** Resolves `editorOrigin`, falling back to the cmssy cloud admin when unset. */
+export function resolveEditorOrigin(
+  editorOrigin: string | string[] | undefined,
+): string | string[] {
+  if (editorOrigin === undefined) return DEFAULT_CMSSY_EDITOR_ORIGIN;
+  if (Array.isArray(editorOrigin)) {
+    const cleaned = editorOrigin.filter((o) => o && o.trim().length > 0);
+    return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGIN;
+  }
+  return editorOrigin.trim().length > 0
+    ? editorOrigin
+    : DEFAULT_CMSSY_EDITOR_ORIGIN;
+}
+
 export interface CmssyAuthConfig {
   modelSlug: string;
   sessionSecret: string;
 }
 
 export interface CmssyNextConfig {
-  apiUrl: string;
+  /**
+   * Full GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint
+   * (`https://api.cmssy.io/graphql`); set it only for self-hosted / staging.
+   */
+  apiUrl?: string;
   workspaceSlug: string;
   draftSecret: string;
-  editorOrigin: string | string[];
+  /**
+   * Origin allowed to frame your app in the editor. Defaults to
+   * {@link DEFAULT_CMSSY_EDITOR_ORIGIN}; set it only for self-hosted admins.
+   */
+  editorOrigin?: string | string[];
   /**
    * Canonical absolute site URL (e.g. https://cmssy.com), used by
    * createCmssyRobots / createCmssySitemap. When omitted the helpers derive the

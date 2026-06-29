@@ -21,10 +21,9 @@ Collect your blocks in one array, then wire these files in your Next.js app.
 import type { CmssyNextConfig } from "@cmssy/next";
 
 export const cmssy: CmssyNextConfig = {
-  apiUrl: process.env.CMSSY_API_URL!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
-  editorOrigin: process.env.CMSSY_EDITOR_ORIGIN!,
+  // apiUrl + editorOrigin default to cmssy cloud; set them only for self-host/staging.
 };
 ```
 

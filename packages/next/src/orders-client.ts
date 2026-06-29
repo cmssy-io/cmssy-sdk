@@ -1,5 +1,6 @@
 import {
   graphqlRequest,
+  resolveApiUrl,
   resolveWorkspaceId,
   type CmssyOrder,
 } from "@cmssy/react";
@@ -49,7 +50,7 @@ const MY_ORDER = `query MyOrder($workspaceId: ID!, $id: ID!) {
 const workspaceIdCache = new Map<string, Promise<string>>();
 
 function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${config.apiUrl}::${config.workspaceSlug}`;
+  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
   const existing = workspaceIdCache.get(key);
   if (existing) return existing;
   const fresh = resolveWorkspaceId(config).catch((err: unknown) => {

@@ -1,4 +1,8 @@
-import { graphqlRequest, resolveWorkspaceId } from "@cmssy/react";
+import {
+  graphqlRequest,
+  resolveApiUrl,
+  resolveWorkspaceId,
+} from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 import type { CmssySessionPayload, CmssySessionUser } from "./session";
 
@@ -52,7 +56,7 @@ const VERIFY_MUTATION = `mutation SiteMemberVerifyEmail($token: String!) {
 const workspaceIdCache = new Map<string, Promise<string>>();
 
 function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${config.apiUrl}::${config.workspaceSlug}`;
+  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
   const existing = workspaceIdCache.get(key);
   if (existing) return existing;
   const fresh = resolveWorkspaceId(config).catch((err: unknown) => {
