@@ -1,8 +1,16 @@
 import type { CmssyPageData } from "../content/content-client";
 import type { CmssyFormDefinition } from "../data/queries";
 import { getBlockContentForLanguage } from "../content/get-block-content";
-import { buildBlockMap, buildLoaderMap, type BlockDefinition } from "../registry";
-import { buildBlockContext } from "./block-context";
+import {
+  buildBlockMap,
+  buildLoaderMap,
+  type BlockDefinition,
+} from "../registry";
+import {
+  buildBlockContext,
+  type CmssyBlockAuthContext,
+  type CmssyBlockWorkspace,
+} from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
 
 export interface CmssyServerPageProps {
@@ -14,6 +22,12 @@ export interface CmssyServerPageProps {
   enabledLocales?: string[];
   /** Form definitions referenced by page blocks, exposed via context.forms. */
   forms?: Record<string, CmssyFormDefinition>;
+  /** Whether the page is rendered in draft/preview mode, exposed via context.isDraftMode. */
+  isDraftMode?: boolean;
+  /** Member auth state, exposed via context.auth. Resolved by createCmssyPage. */
+  auth?: CmssyBlockAuthContext;
+  /** Workspace identity, exposed via context.workspace. Resolved by createCmssyPage. */
+  workspace?: CmssyBlockWorkspace;
 }
 
 /**
@@ -28,6 +42,9 @@ export async function CmssyServerPage({
   defaultLocale = "en",
   enabledLocales,
   forms,
+  isDraftMode,
+  auth,
+  workspace,
 }: CmssyServerPageProps) {
   if (!page) return null;
   const map = buildBlockMap(blocks);
@@ -38,6 +55,7 @@ export async function CmssyServerPage({
     enabledLocales,
     false,
     forms,
+    { isDraftMode, auth, workspace },
   );
 
   // Resolve each block's localized content once, reused for both the loader and
