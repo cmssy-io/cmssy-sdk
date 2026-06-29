@@ -81,7 +81,7 @@ props: {
 A block component receives three props:
 
 - `content` - the resolved field values for the current locale.
-- `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`.
+- `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`, and (when configured) `auth` and `workspace`. See [Member auth](../auth/member-auth.md) for `context.auth`.
 - `data` - the [server loader](./server-loaders.md) result, or `undefined` in the editor.
 
 ```tsx

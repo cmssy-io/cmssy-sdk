@@ -1,19 +1,16 @@
 ---
 title: Member auth
-description: Authenticate site members with secure httpOnly-cookie sessions - sign-in, register, password reset, and reading the current member server-side.
+description: Authenticate site members with secure httpOnly-cookie sessions - sign-in, register, password reset, reading the current member, and using auth from a block.
 ---
 
 # Member auth
 
-> Status: outline (CMS-773). APIs below are accurate. Blocked on the block-context
-> auth gap (CMS-775) before the client-block half is final.
+cmssy issues member sessions as **httpOnly cookies** (`cmssy_session`, a sealed
+JWE). Never store member tokens in `localStorage` - they are readable by any XSS.
+The SDK handles sealing, refresh, and the `Authorization: Bearer` exchange
+server-side; your client code never touches a token.
 
-cmssy issues member sessions as **httpOnly cookies** (`cmssy_session`, sealed
-JWE). Never store member tokens in `localStorage` - they would be readable by
-any XSS. The SDK handles sealing, refresh, and the `Authorization: Bearer`
-exchange server-side.
-
-## Configure
+## 1. Configure
 
 ```ts
 // cmssy.config.ts
@@ -26,7 +23,10 @@ export const cmssy: CmssyNextConfig = {
 };
 ```
 
-## Mount the auth route
+`auth` is optional - omit it and member auth is simply off (`context.auth` is
+`undefined`, blocks render logged-out).
+
+## 2. Mount the auth route
 
 ```ts
 // app/api/auth/[action]/route.ts
@@ -35,8 +35,6 @@ import { cmssy } from "@/cmssy.config";
 
 export const { POST, GET } = createCmssyAuthRoute(cmssy);
 ```
-
-Actions:
 
 | Method + action                      | Body                             | Effect                                  |
 | ------------------------------------ | -------------------------------- | --------------------------------------- |
@@ -50,10 +48,22 @@ Actions:
 | `POST /api/auth/verify-email`        | `{ token }`                      | Verifies an email.                      |
 | `GET  /api/auth/me`                  | -                                | Returns `{ user }` or `{ user: null }`. |
 
-A client sign-in form `POST`s credentials to `/api/auth/sign-in`; the cookie is
-set by the route. No token touches client JavaScript.
+Every action returns JSON `{ ok: boolean, message?, user? }`. The route is the
+only place credentials/tokens are handled - clients just POST.
 
-## Read the current member (server-side)
+## 3. Refresh sessions in middleware
+
+```ts
+// middleware.ts
+import { createCmssyAuthMiddleware } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export const middleware = createCmssyAuthMiddleware(cmssy);
+```
+
+This transparently refreshes an expiring session cookie on navigation.
+
+## 4. Read the current member (server-side)
 
 ```ts
 import { getCmssyUser, getCmssyAccessToken } from "@cmssy/next";
@@ -62,20 +72,70 @@ import { cmssy } from "@/cmssy.config";
 const user = await getCmssyUser(cmssy); // { recordId, email } | null
 ```
 
-Use `createCmssyAuthMiddleware(cmssy)` to refresh sessions transparently.
+## 5. Read auth inside a block
 
-## Reading auth inside a block
-
-> TODO (blocked by CMS-775): blocks currently read `context.auth`, but the
-> injected `CmssyBlockContext` has no `auth` field, so member state is always
-> undefined in blocks. The supported pattern - extend the block context from
-> `getCmssyUser`, or fetch `/api/auth/me` client-side - is being decided.
-
-## Anti-pattern (do not do this)
+When `config.auth` is set, `createCmssyPage` resolves the member server-side and
+injects it into the block context as `context.auth` (data only):
 
 ```ts
-// ❌ token readable by any XSS, and bypasses the secure cookie flow
+context.auth; // { isAuthenticated: boolean; member: { recordId, email } | null } | undefined
+```
+
+```tsx
+function AccountBadge({
+  context,
+}: {
+  context?: { auth?: CmssyBlockAuthContext };
+}) {
+  if (!context?.auth?.isAuthenticated) return <a href="/login">Sign in</a>;
+  return <span>{context.auth.member?.email}</span>;
+}
+```
+
+`context.auth` is **data only** - there are no `login`/`logout` functions on it
+(functions can't cross the server→client boundary into a client block). Sign in,
+out, register etc. are client POSTs to `/api/auth/*`:
+
+```tsx
+// sign-in form
+await fetch("/api/auth/sign-in", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ identity: email, password }),
+});
+// the cookie is set by the route - then redirect
+
+// logout
+await fetch("/api/auth/sign-out", { method: "POST" });
+```
+
+## 6. Authenticated member requests
+
+A member-scoped GraphQL mutation (e.g. updating a profile) needs the access
+token, which lives in the httpOnly cookie - **unreadable from client JS by
+design**. Don't try to attach it client-side. Instead call it from a server
+action / route handler that reads the token:
+
+```ts
+// app/actions/update-profile.ts
+"use server";
+import { getCmssyAccessToken } from "@cmssy/next";
+import { cmssy } from "@/cmssy.config";
+
+export async function updateProfile(input: ProfileInput) {
+  const token = await getCmssyAccessToken(cmssy);
+  if (!token) throw new Error("not authenticated");
+  // forward to the delivery API with `Authorization: Bearer ${token}`
+}
+```
+
+## Anti-pattern
+
+```ts
+// ❌ XSS-readable, and bypasses the secure cookie flow entirely
 localStorage.setItem("site_customer_token", accessToken);
 ```
 
-Always go through `createCmssyAuthRoute`.
+Always go through `createCmssyAuthRoute` + the httpOnly cookie. See the cmssy-web
+auth blocks (`login-form`, `register-form`, `forgot-password-form`,
+`customer-profile`) for the full client pattern.
