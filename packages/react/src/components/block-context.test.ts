@@ -25,4 +25,25 @@ describe("buildBlockContext", () => {
     expect(buildBlockContext("en", "en").isPreview).toBe(false);
     expect(buildBlockContext("en", "en", undefined, true).isPreview).toBe(true);
   });
+
+  it("omits auth and workspace when no extra is provided", () => {
+    const ctx = buildBlockContext("en", "en");
+    expect("auth" in ctx).toBe(false);
+    expect("workspace" in ctx).toBe(false);
+  });
+
+  it("injects auth and workspace from the extra argument", () => {
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      auth: {
+        isAuthenticated: true,
+        member: { recordId: "rec_1", email: "a@b.com" },
+      },
+      workspace: { id: "ws_1", slug: "acme" },
+    });
+    expect(ctx.auth).toEqual({
+      isAuthenticated: true,
+      member: { recordId: "rec_1", email: "a@b.com" },
+    });
+    expect(ctx.workspace).toEqual({ id: "ws_1", slug: "acme" });
+  });
 });
