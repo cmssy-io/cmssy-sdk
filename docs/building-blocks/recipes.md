@@ -7,8 +7,8 @@ description: Copy-paste patterns for the blocks every cmssy site needs - renderi
 
 Concrete, working patterns for the things most cmssy projects need. Each recipe
 uses only what the SDK actually exports; where the SDK has no helper (rich-text
-sanitizing, listing child pages), the recipe shows the canonical consumer-side
-pattern from the [cmssy-web](https://github.com/cmssy-io/cmssy-web) reference repo.
+sanitizing, listing child pages), the recipe gives the canonical consumer-side
+pattern you implement in your own app.
 
 ## Render rich text safely
 

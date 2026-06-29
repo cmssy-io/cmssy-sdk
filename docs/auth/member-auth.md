@@ -136,6 +136,7 @@ export async function updateProfile(input: ProfileInput) {
 localStorage.setItem("site_customer_token", accessToken);
 ```
 
-Always go through `createCmssyAuthRoute` + the httpOnly cookie. See the cmssy-web
-auth blocks (`login-form`, `register-form`, `forgot-password-form`,
-`customer-profile`) for the full client pattern.
+Always go through `createCmssyAuthRoute` + the httpOnly cookie. Build the client
+flow as plain pages that POST to `/api/auth/*` (sign-in, register,
+forgot-password) and read the member with `context.auth` - the full pattern is in
+the steps above.
