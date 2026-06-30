@@ -157,4 +157,8 @@ arrange your blocks visually through the cmssy editor.
 - SEO: `buildCmssyMetadata`, `createCmssyRobots`, `createCmssySitemap`.
 - i18n: locale middleware + `getCmssyLocale`.
 
-> TODO: a runnable companion project under `examples/quickstart`.
+## Runnable example
+
+[cmssy-next-starter](https://github.com/cmssy-io/cmssy-next-starter) is a complete, deployable
+Next.js app wired with this SDK (catch-all page, draft route, edit-mode proxy, block registry) plus
+example blocks. Clone it or use the 1-click Vercel deploy as a starting point.
