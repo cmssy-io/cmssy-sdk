@@ -33,12 +33,12 @@ On cmssy cloud you only set the two per-workspace values. `apiUrl` and
 `editorOrigin` are fixed platform values and **default automatically** -
 override them only for self-hosted or staging deployments.
 
-| Env var                | What it is                                                                   | Required       |
-| ---------------------- | ---------------------------------------------------------------------------- | -------------- |
-| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).                              | yes            |
-| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview content.                         | yes            |
-| `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.             | no (self-host) |
-| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin. | no (self-host) |
+| Env var                | What it is                                                                                                                                                                                                    | Required       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).                                                                                                                                                               | yes            |
+| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work. | yes            |
+| `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                              | no (self-host) |
+| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin.                                                                                                                                  | no (self-host) |
 
 ```ts
 // self-host / staging only:
