@@ -163,7 +163,7 @@ advanced use.
 ```ts
 interface CmssyNextConfig {
   workspaceSlug: string;
-  draftSecret: string;
+  draftSecret: string; // generated per workspace: Settings → Headless (copy exact value)
   apiUrl?: string; // default https://api.cmssy.io/graphql
   editorOrigin?: string | string[]; // default https://www.cmssy.io
   siteUrl?: string;
