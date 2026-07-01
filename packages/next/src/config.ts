@@ -1,24 +1,44 @@
 import { MIN_SESSION_SECRET_LENGTH } from "./session";
 
-/**
- * Origin of the cmssy admin/editor that frames your site (postMessage source +
- * CSP `frame-ancestors`). Identical for every workspace on cmssy cloud, so
- * `editorOrigin` defaults to this. Self-hosted admins override it via config.
- */
-export const DEFAULT_CMSSY_EDITOR_ORIGIN = "https://www.cmssy.io";
+export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
+  "https://cmssy.io",
+  "https://www.cmssy.io",
+];
 
-/** Resolves `editorOrigin`, falling back to the cmssy cloud admin when unset. */
+function parseEditorOriginEnv(
+  raw: string | undefined,
+): string | string[] | undefined {
+  if (!raw) return undefined;
+  const parts = raw
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+  if (parts.length === 0) return undefined;
+  return parts.length === 1 ? parts[0] : parts;
+}
+
+export function isDevelopment(): boolean {
+  return (
+    typeof process !== "undefined" && process.env.NODE_ENV === "development"
+  );
+}
+
 export function resolveEditorOrigin(
   editorOrigin: string | string[] | undefined,
 ): string | string[] {
-  if (editorOrigin === undefined) return DEFAULT_CMSSY_EDITOR_ORIGIN;
-  if (Array.isArray(editorOrigin)) {
-    const cleaned = editorOrigin.filter((o) => o && o.trim().length > 0);
-    return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGIN;
+  const value =
+    editorOrigin ??
+    (typeof process !== "undefined"
+      ? parseEditorOriginEnv(process.env.CMSSY_EDITOR_ORIGIN)
+      : undefined);
+  if (value === undefined) {
+    return isDevelopment() ? "*" : DEFAULT_CMSSY_EDITOR_ORIGINS;
   }
-  return editorOrigin.trim().length > 0
-    ? editorOrigin
-    : DEFAULT_CMSSY_EDITOR_ORIGIN;
+  if (Array.isArray(value)) {
+    const cleaned = value.filter((o) => o && o.trim().length > 0);
+    return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGINS;
+  }
+  return value.trim().length > 0 ? value : DEFAULT_CMSSY_EDITOR_ORIGINS;
 }
 
 export interface CmssyAuthConfig {
@@ -36,7 +56,7 @@ export interface CmssyNextConfig {
   draftSecret: string;
   /**
    * Origin allowed to frame your app in the editor. Defaults to
-   * {@link DEFAULT_CMSSY_EDITOR_ORIGIN}; set it only for self-hosted admins.
+   * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.
    */
   editorOrigin?: string | string[];
   /**

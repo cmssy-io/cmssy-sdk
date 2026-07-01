@@ -5,9 +5,14 @@
  */
 export const DEFAULT_CMSSY_API_URL = "https://api.cmssy.io/graphql";
 
-/** Resolves `apiUrl`, falling back to the cmssy cloud endpoint when unset. */
 export function resolveApiUrl(apiUrl: string | undefined): string {
-  return apiUrl && apiUrl.length > 0 ? apiUrl : DEFAULT_CMSSY_API_URL;
+  const explicit = apiUrl?.trim();
+  if (explicit) return explicit;
+  const env = (
+    globalThis as { process?: { env?: Record<string, string | undefined> } }
+  ).process?.env;
+  const fromEnv = env?.CMSSY_API_URL?.trim() ?? "";
+  return fromEnv.length > 0 ? fromEnv : DEFAULT_CMSSY_API_URL;
 }
 
 export interface CmssyClientConfig {

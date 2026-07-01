@@ -234,7 +234,7 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
   });
 
-  it("rejects a wildcard editorOrigin only when entering edit mode", async () => {
+  it("rejects a wildcard editorOrigin in production when entering edit mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
       editor: Editor,
@@ -244,7 +244,7 @@ describe("createCmssyPage", () => {
         params: params(["about"]),
         searchParams: searchParams({ cmssyEdit: "1" }),
       }),
-    ).rejects.toThrow(/not allowed for the live-edit bridge/);
+    ).rejects.toThrow(/only allowed in development/);
   });
 
   it("does not require editorOrigin for a published render", async () => {
