@@ -1,12 +1,5 @@
 import { MIN_SESSION_SECRET_LENGTH } from "./session";
 
-/**
- * Origin of the cmssy admin/editor that frames your site (postMessage source +
- * CSP `frame-ancestors`). Identical for every workspace on cmssy cloud, so
- * `editorOrigin` defaults to this. Self-hosted admins override it via config.
- */
-export const DEFAULT_CMSSY_EDITOR_ORIGIN = "https://www.cmssy.io";
-
 export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://cmssy.io",
   "https://www.cmssy.io",
@@ -63,7 +56,7 @@ export interface CmssyNextConfig {
   draftSecret: string;
   /**
    * Origin allowed to frame your app in the editor. Defaults to
-   * {@link DEFAULT_CMSSY_EDITOR_ORIGIN}; set it only for self-hosted admins.
+   * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.
    */
   editorOrigin?: string | string[];
   /**
