@@ -51,7 +51,7 @@ export type { CmssyCartRouteHandlers } from "./create-cart-route";
 export {
   assertAuthConfig,
   resolveEditorOrigin,
-  DEFAULT_CMSSY_EDITOR_ORIGIN,
+  DEFAULT_CMSSY_EDITOR_ORIGINS,
 } from "./config";
 export { resolveApiUrl, DEFAULT_CMSSY_API_URL } from "@cmssy/react";
 export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
