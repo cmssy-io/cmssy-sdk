@@ -41,13 +41,15 @@ describe("cmssyCspHeaders", () => {
 
   it("falls back to the cmssy cloud admin origin when unset", () => {
     expect(cmssyCspHeaders({})).toEqual({
-      "Content-Security-Policy": "frame-ancestors https://www.cmssy.io",
+      "Content-Security-Policy":
+        "frame-ancestors https://cmssy.io https://www.cmssy.io",
     });
   });
 
   it("falls back to the default for an empty origin list", () => {
     expect(cmssyCspHeaders({ editorOrigin: [] })).toEqual({
-      "Content-Security-Policy": "frame-ancestors https://www.cmssy.io",
+      "Content-Security-Policy":
+        "frame-ancestors https://cmssy.io https://www.cmssy.io",
     });
   });
 
