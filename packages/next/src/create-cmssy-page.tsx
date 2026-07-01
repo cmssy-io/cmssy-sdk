@@ -18,7 +18,11 @@ import {
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/client";
 import { getCmssyUser } from "./auth-server";
-import { resolveEditorOrigin, type CmssyNextConfig } from "./config";
+import {
+  isDevelopment,
+  resolveEditorOrigin,
+  type CmssyNextConfig,
+} from "./config";
 import { toCspOrigin } from "./csp";
 
 export interface CmssyEditorProps {
@@ -201,9 +205,9 @@ function resolveBridgeOrigin(
     );
   }
   const origin = toCspOrigin(origins[0]!.trim());
-  if (origin === "*") {
+  if (origin === "*" && !isDevelopment()) {
     throw new Error(
-      "cmssy: editorOrigin '*' is not allowed for the live-edit bridge; set the concrete editor origin (e.g. https://www.cmssy.io)",
+      "cmssy: editorOrigin '*' is only allowed in development; set a concrete editor origin (e.g. https://cmssy.io) for production",
     );
   }
   return origin;
