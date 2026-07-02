@@ -84,7 +84,7 @@ export function createCmssyPage(
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
     const devMode =
       isDevelopment() &&
-      Boolean(config.devToken) &&
+      Boolean(config.devToken?.trim()) &&
       hasEditFlag(query[DEV_QUERY_PARAM]);
     const editorActive = editMode || devMode;
 
