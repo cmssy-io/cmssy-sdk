@@ -70,7 +70,15 @@ export interface CmssyLayoutGroup {
   blocks: RawLayoutBlock[];
 }
 
-const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
+const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
+  publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
+    id
+    blocks { id type content }
+    publishedBlocks { id type content }
+  }
+}`;
+
+const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
   publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
     id
     blocks { id type content }
@@ -150,12 +158,12 @@ export async function fetchPage(
     method: "POST",
     headers,
     body: JSON.stringify({
-      query: PUBLIC_PAGE_QUERY,
+      query: devPreview ? PUBLIC_PAGE_DEV_QUERY : PUBLIC_PAGE_QUERY,
       variables: {
         workspaceSlug: config.workspaceSlug,
         slug,
         previewSecret,
-        devPreview: devPreview ? true : null,
+        ...(devPreview ? { devPreview: true } : {}),
       },
     }),
     signal: options.signal,
