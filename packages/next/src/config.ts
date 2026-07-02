@@ -54,6 +54,7 @@ export interface CmssyNextConfig {
   apiUrl?: string;
   workspaceSlug: string;
   draftSecret: string;
+  devToken?: string;
   /**
    * Origin allowed to frame your app in the editor. Defaults to
    * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.

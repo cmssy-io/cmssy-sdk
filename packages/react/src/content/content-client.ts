@@ -39,6 +39,9 @@ export type FetchLike = (
 
 export interface FetchPageOptions {
   previewSecret?: string;
+  devPreview?: boolean;
+  devToken?: string;
+  workspaceId?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
 }
@@ -67,8 +70,8 @@ export interface CmssyLayoutGroup {
   blocks: RawLayoutBlock[];
 }
 
-const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
-  publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
+const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
+  publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
     id
     blocks { id type content }
     publishedBlocks { id type content }
@@ -132,15 +135,27 @@ export async function fetchPage(
   }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
+  const devToken = options.devToken?.trim();
+  const devPreview = Boolean(options.devPreview && devToken);
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (devPreview && devToken) {
+    headers["authorization"] = `Bearer ${devToken}`;
+    if (options.workspaceId) {
+      headers["x-workspace-id"] = options.workspaceId;
+    }
+  }
   const response = await doFetch(resolveApiUrl(config.apiUrl), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers,
     body: JSON.stringify({
       query: PUBLIC_PAGE_QUERY,
       variables: {
         workspaceSlug: config.workspaceSlug,
         slug,
         previewSecret,
+        devPreview: devPreview ? true : null,
       },
     }),
     signal: options.signal,
@@ -186,7 +201,7 @@ export async function fetchPage(
   }
   const page = json.data?.publicPage;
   if (!page) return null;
-  const draft = previewSecret !== null;
+  const draft = previewSecret !== null || devPreview;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
   return { id: page.id, blocks };
 }
