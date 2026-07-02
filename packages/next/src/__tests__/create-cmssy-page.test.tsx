@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
 import { CmssyLocaleProvider } from "@cmssy/react/client";
 
@@ -92,6 +92,10 @@ describe("createCmssyPage", () => {
     resolveWorkspaceId.mockReset();
     resolveWorkspaceId.mockResolvedValue("ws_123");
     getCmssyUser.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("strips a non-default locale prefix from the workspace site config", async () => {
@@ -200,7 +204,6 @@ describe("createCmssyPage", () => {
       devToken: "cs_devtoken",
       workspaceId: "ws_123",
     });
-    vi.unstubAllEnvs();
   });
 
   it("ignores cmssyDev without a dev token", async () => {
@@ -214,7 +217,6 @@ describe("createCmssyPage", () => {
       }),
     );
     expect(element.type).not.toBe(Editor);
-    vi.unstubAllEnvs();
   });
 
   it("ignores cmssyDev outside development even with a dev token", async () => {
@@ -234,7 +236,6 @@ describe("createCmssyPage", () => {
       }),
     );
     expect(element.type).not.toBe(Editor);
-    vi.unstubAllEnvs();
   });
 
   it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
