@@ -83,7 +83,9 @@ export function createCmssyPage(
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
     const devMode =
-      Boolean(config.devToken) && hasEditFlag(query[DEV_QUERY_PARAM]);
+      isDevelopment() &&
+      Boolean(config.devToken) &&
+      hasEditFlag(query[DEV_QUERY_PARAM]);
     const editorActive = editMode || devMode;
 
     let locale: string;
@@ -121,7 +123,7 @@ export function createCmssyPage(
 
     if (editorActive && !Editor) {
       throw new Error(
-        'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
+        'cmssy: edit/dev mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
       );
     }
 

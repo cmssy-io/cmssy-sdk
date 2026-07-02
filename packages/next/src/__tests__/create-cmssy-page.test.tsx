@@ -158,7 +158,7 @@ describe("createCmssyPage", () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS);
     await expect(Page({ params: params([]) })).rejects.toThrow(
-      /edit mode requires options\.editor/,
+      /edit\/dev mode requires options\.editor/,
     );
   });
 
@@ -175,6 +175,66 @@ describe("createCmssyPage", () => {
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
     });
+  });
+
+  it("enters dev mode via cmssyDev with a dev token and reads the overlay", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken" },
+      BLOCKS,
+      {
+        editor: Editor,
+      },
+    );
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyDev: "1" }),
+      }),
+    );
+    expect(element.type).toBe(Editor);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      devPreview: true,
+      devToken: "cs_devtoken",
+      workspaceId: "ws_123",
+    });
+    vi.unstubAllEnvs();
+  });
+
+  it("ignores cmssyDev without a dev token", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyDev: "1" }),
+      }),
+    );
+    expect(element.type).not.toBe(Editor);
+    vi.unstubAllEnvs();
+  });
+
+  it("ignores cmssyDev outside development even with a dev token", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken" },
+      BLOCKS,
+      {
+        editor: Editor,
+      },
+    );
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyDev: "1" }),
+      }),
+    );
+    expect(element.type).not.toBe(Editor);
+    vi.unstubAllEnvs();
   });
 
   it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
