@@ -124,7 +124,10 @@ describe("fetchPage", () => {
   it("sends dev auth headers + devPreview and selects dev blocks", async () => {
     let sentHeaders: Record<string, string> | undefined;
     let sentBody:
-      | { variables: { devPreview: unknown; previewSecret: unknown } }
+      | {
+          query: string;
+          variables: { devPreview: unknown; previewSecret: unknown };
+        }
       | undefined;
     const fetchImpl: FetchLike = async (_url, init) => {
       sentHeaders = init.headers;
@@ -153,11 +156,13 @@ describe("fetchPage", () => {
     expect(sentHeaders?.authorization).toBe("Bearer cs_devtoken");
     expect(sentHeaders?.["x-workspace-id"]).toBe("ws-object-id");
     expect(sentBody?.variables.devPreview).toBe(true);
+    expect(sentBody?.query).toContain("$devPreview");
   });
 
   it("ignores devPreview without a devToken (no auth header, published read)", async () => {
     let sentHeaders: Record<string, string> | undefined;
-    let sentBody: { variables: { devPreview: unknown } } | undefined;
+    let sentBody:
+      { query: string; variables: { devPreview: unknown } } | undefined;
     const fetchImpl: FetchLike = async (_url, init) => {
       sentHeaders = init.headers;
       sentBody = JSON.parse(init.body);
@@ -181,7 +186,33 @@ describe("fetchPage", () => {
     });
     expect(page?.blocks[0]?.id).toBe("b1");
     expect(sentHeaders?.authorization).toBeUndefined();
-    expect(sentBody?.variables.devPreview).toBeNull();
+    expect(sentBody?.variables.devPreview).toBeUndefined();
+    expect(sentBody?.query).not.toContain("$devPreview");
+  });
+
+  it("omits the devPreview argument from the default page query", async () => {
+    let sentBody:
+      { query: string; variables: Record<string, unknown> } | undefined;
+    const fetchImpl: FetchLike = async (_url, init) => {
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            publicPage: {
+              id: "p1",
+              blocks: [{ id: "b1", type: "hero", content: {} }],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        }),
+      };
+    };
+    await fetchPage(config, "/", { fetch: fetchImpl });
+    expect(sentBody?.query).not.toContain("$devPreview");
+    expect(sentBody?.query).not.toContain("devPreview:");
+    expect("devPreview" in (sentBody?.variables ?? {})).toBe(false);
   });
 
   it("treats an empty previewSecret as published (sends null, no draft)", async () => {
