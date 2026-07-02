@@ -50,6 +50,7 @@ interface CatchAllProps {
 }
 
 const EDIT_QUERY_PARAM = "cmssyEdit";
+const DEV_QUERY_PARAM = "cmssyDev";
 
 function hasEditFlag(value: string | string[] | undefined): boolean {
   return Array.isArray(value) ? value.includes("1") : value === "1";
@@ -81,6 +82,11 @@ export function createCmssyPage(
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
+    const devMode =
+      isDevelopment() &&
+      Boolean(config.devToken?.trim()) &&
+      hasEditFlag(query[DEV_QUERY_PARAM]);
+    const editorActive = editMode || devMode;
 
     let locale: string;
     let pagePath = path;
@@ -100,17 +106,24 @@ export function createCmssyPage(
       pagePath = split.path;
     }
 
+    const devWorkspaceId = devMode
+      ? await client.resolveWorkspaceId()
+      : undefined;
+
     const page = await fetchPage(clientConfig, pagePath, {
       previewSecret: editMode ? config.draftSecret : undefined,
+      devPreview: devMode || undefined,
+      devToken: devMode ? config.devToken : undefined,
+      workspaceId: devWorkspaceId,
     });
 
     if (!page) {
       notFound();
     }
 
-    if (editMode && !Editor) {
+    if (editorActive && !Editor) {
       throw new Error(
-        'cmssy: edit mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
+        'cmssy: edit/dev mode requires options.editor — pass a "use client" editor that imports your blocks and renders <CmssyEditablePage blocks={blocks} … />',
       );
     }
 
@@ -132,7 +145,7 @@ export function createCmssyPage(
           : Array.from(new Set([defaultLocale, locale])),
     };
 
-    if (editMode && Editor) {
+    if (editorActive && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       return (
         <CmssyLocaleProvider value={localeContext}>

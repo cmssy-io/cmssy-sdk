@@ -121,6 +121,69 @@ describe("fetchPage", () => {
     expect(page?.blocks[0]?.id).toBe("d1");
   });
 
+  it("sends dev auth headers + devPreview and selects dev blocks", async () => {
+    let sentHeaders: Record<string, string> | undefined;
+    let sentBody:
+      | { variables: { devPreview: unknown; previewSecret: unknown } }
+      | undefined;
+    const fetchImpl: FetchLike = async (_url, init) => {
+      sentHeaders = init.headers;
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            publicPage: {
+              id: "p1",
+              blocks: [{ id: "dev1", type: "hero", content: {} }],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        }),
+      };
+    };
+    const page = await fetchPage(config, "/", {
+      fetch: fetchImpl,
+      devPreview: true,
+      devToken: "cs_devtoken",
+      workspaceId: "ws-object-id",
+    });
+    expect(page?.blocks[0]?.id).toBe("dev1");
+    expect(sentHeaders?.authorization).toBe("Bearer cs_devtoken");
+    expect(sentHeaders?.["x-workspace-id"]).toBe("ws-object-id");
+    expect(sentBody?.variables.devPreview).toBe(true);
+  });
+
+  it("ignores devPreview without a devToken (no auth header, published read)", async () => {
+    let sentHeaders: Record<string, string> | undefined;
+    let sentBody: { variables: { devPreview: unknown } } | undefined;
+    const fetchImpl: FetchLike = async (_url, init) => {
+      sentHeaders = init.headers;
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            publicPage: {
+              id: "p1",
+              blocks: [{ id: "dev1", type: "hero", content: {} }],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        }),
+      };
+    };
+    const page = await fetchPage(config, "/", {
+      fetch: fetchImpl,
+      devPreview: true,
+    });
+    expect(page?.blocks[0]?.id).toBe("b1");
+    expect(sentHeaders?.authorization).toBeUndefined();
+    expect(sentBody?.variables.devPreview).toBeNull();
+  });
+
   it("treats an empty previewSecret as published (sends null, no draft)", async () => {
     let sentBody: { variables: { previewSecret: unknown } } | undefined;
     const fetchImpl: FetchLike = async (_url, init) => {
