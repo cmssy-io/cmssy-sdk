@@ -39,6 +39,7 @@ override them only for self-hosted or staging deployments.
 | `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work. | yes            |
 | `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                              | no (self-host) |
 | `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin.                                                                                                                                  | no (self-host) |
+| `CMSSY_API_TOKEN`      | A `cs_…` API token used only in development to preview in-progress editor edits (dev drafts) on your local site. See [Dev preview](#7-dev-preview-optional). Server-only; ignored in production.              | no (dev only)  |
 
 ```ts
 // self-host / staging only:
@@ -148,6 +149,42 @@ fetch draft vs published data on the same signal.
 
 That is a working headless site: published pages render server-side, and editors
 arrange your blocks visually through the cmssy editor.
+
+## 7. Dev preview (optional)
+
+While building blocks locally you often want to see **in-progress** editor edits
+on your own running site before they are published. The editor's **dev-mode**
+toggle controls this, and your local app opts in with a `devToken`:
+
+```ts
+// cmssy.config.ts - development only
+export const cmssy: CmssyNextConfig = {
+  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
+  draftSecret: process.env.CMSSY_DRAFT_SECRET!,
+  devToken: process.env.CMSSY_API_TOKEN, // a cs_… token from Settings → API tokens
+};
+```
+
+How it works: when `NODE_ENV === "development"` **and** a `devToken` is set, the
+SDK sends the token on every page fetch. The backend resolves it to that user and
+checks the user's dev-preview flag - the switch on the editor's dev-mode control.
+Content is chosen **server-side**:
+
+| Editor dev-mode | Dev draft saved? | Your local site renders |
+| --------------- | ---------------- | ----------------------- |
+| off             | -                | published               |
+| on              | no               | published               |
+| on              | yes              | the dev-draft overlay   |
+
+Toggle dev-mode in the editor, then refresh your local site to see the change.
+There is no URL flag - the editor is the single control, per user.
+
+> **Scope.** The token is read only in development and never reaches the browser
+> (it is sent server-to-server on the delivery fetch). A production build ignores
+> `devToken` entirely, so leaving `CMSSY_API_TOKEN` in a deploy env is inert - but
+> prefer scoping it to local `.env` files. The overlay a viewer sees is their own,
+> resolved from the token's user; it does not affect published content or other
+> visitors.
 
 ## Next steps
 
