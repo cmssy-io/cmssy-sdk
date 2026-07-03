@@ -37,6 +37,8 @@ export interface BlockMeta {
   category?: string;
   icon?: string;
   layoutPositions?: string[];
+  /** One-line block description; surfaced to the AI page composer. */
+  description?: string;
 }
 
 export interface BlockRect {
@@ -86,11 +88,7 @@ export interface DragIndexMessage {
 }
 
 export type AppToEditorMessage =
-  | ReadyMessage
-  | BoundsMessage
-  | ClickMessage
-  | MoveMessage
-  | DragIndexMessage;
+  ReadyMessage | BoundsMessage | ClickMessage | MoveMessage | DragIndexMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";
