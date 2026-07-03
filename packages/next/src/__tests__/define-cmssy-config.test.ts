@@ -8,7 +8,6 @@ describe("defineCmssyConfig", () => {
       workspaceSlug: "acme",
       draftSecret: "shhh",
       devToken: undefined,
-      preview: undefined,
     });
     expect(config.workspaceSlug).toBe("acme");
     expect(config.draftSecret).toBe("shhh");
