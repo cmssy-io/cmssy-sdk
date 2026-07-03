@@ -82,6 +82,54 @@ export interface CmssyNextConfig {
   resolveLocale?: () => string | Promise<string>;
 }
 
+/**
+ * Env-shaped input for {@link defineCmssyConfig}: the required string fields are
+ * widened to `string | undefined` so a config can pass `process.env.*` straight
+ * through without a `?? ""` fallback (which would mask a missing value as an
+ * empty string) or a cast.
+ */
+export type CmssyEnvConfig = Omit<
+  CmssyNextConfig,
+  "workspaceSlug" | "draftSecret"
+> & {
+  workspaceSlug?: string;
+  draftSecret?: string;
+};
+
+const REQUIRED_CONFIG_ENV = [
+  ["workspaceSlug", "CMSSY_WORKSPACE_SLUG"],
+  ["draftSecret", "CMSSY_DRAFT_SECRET"],
+] as const;
+
+/**
+ * Validates an env-sourced config and returns a strictly-typed
+ * {@link CmssyNextConfig}. Pass raw `process.env.*` values; this throws a clear,
+ * actionable error listing any missing required variables (rendered by the
+ * Next.js error overlay / boundary), so the app fails fast instead of running
+ * with silently-empty config.
+ */
+export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
+  const resolved: CmssyEnvConfig = { ...config };
+  const missing: string[] = [];
+  for (const [key, env] of REQUIRED_CONFIG_ENV) {
+    const value = config[key];
+    const trimmed = typeof value === "string" ? value.trim() : "";
+    if (trimmed) {
+      resolved[key] = trimmed;
+    } else {
+      missing.push(`${env} (config.${key})`);
+    }
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `cmssy: missing required configuration:\n  - ${missing.join(
+        "\n  - ",
+      )}\nSet the listed environment variables (e.g. in .env.local) and restart the dev server.`,
+    );
+  }
+  return resolved as CmssyNextConfig;
+}
+
 export function assertAuthConfig(config: CmssyNextConfig): CmssyAuthConfig {
   const auth = config.auth;
   if (!auth || typeof auth.modelSlug !== "string" || !auth.modelSlug) {
