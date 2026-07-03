@@ -38,6 +38,8 @@ export default createCmssyPage(cmssy, blocks);
 
 The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then mounts the edit bridge and serves draft content using your server-side `draftSecret` (no secret reaches the editor). Without the flag (or draft mode) it serves published content.
 
+To preview in-progress editor edits on your **own** local site during development, set a `devToken` and toggle dev-mode in the editor - see [Dev preview](docs/getting-started/quickstart.md#7-dev-preview-optional).
+
 ```ts
 // app/api/draft/route.ts (Node.js runtime)
 import { createDraftRoute } from "@cmssy/next";
