@@ -56,6 +56,12 @@ export interface CmssyNextConfig {
   draftSecret: string;
   devToken?: string;
   /**
+   * When true (and NODE_ENV=development with a devToken), the app serves the
+   * caller's dev-draft overlay on every request without the `?cmssyDev` flag -
+   * for local development against your own dev drafts. Ignored in production.
+   */
+  devPreview?: boolean;
+  /**
    * Origin allowed to frame your app in the editor. Defaults to
    * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.
    */

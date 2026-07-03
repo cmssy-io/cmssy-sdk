@@ -82,11 +82,10 @@ export function createCmssyPage(
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
-    const devMode =
-      isDevelopment() &&
-      Boolean(config.devToken?.trim()) &&
-      hasEditFlag(query[DEV_QUERY_PARAM]);
-    const editorActive = editMode || devMode;
+    const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
+    const devFlagged = hasEditFlag(query[DEV_QUERY_PARAM]);
+    const devPreview = devAllowed && (devFlagged || Boolean(config.devPreview));
+    const editorActive = editMode || (devAllowed && devFlagged);
 
     let locale: string;
     let pagePath = path;
@@ -106,14 +105,14 @@ export function createCmssyPage(
       pagePath = split.path;
     }
 
-    const devWorkspaceId = devMode
+    const devWorkspaceId = devPreview
       ? await client.resolveWorkspaceId()
       : undefined;
 
     const page = await fetchPage(clientConfig, pagePath, {
       previewSecret: editMode ? config.draftSecret : undefined,
-      devPreview: devMode || undefined,
-      devToken: devMode ? config.devToken : undefined,
+      devPreview: devPreview || undefined,
+      devToken: devPreview ? config.devToken : undefined,
       workspaceId: devWorkspaceId,
     });
 

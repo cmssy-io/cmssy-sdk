@@ -238,6 +238,46 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
   });
 
+  it("serves the dev overlay via config.devPreview without the flag or editor shell", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken", devPreview: true },
+      BLOCKS,
+      { editor: Editor },
+    );
+    const element = unwrap(
+      await Page({ params: params(["about"]), searchParams: searchParams({}) }),
+    );
+    expect(element.type).not.toBe(Editor);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      devPreview: true,
+      devToken: "cs_devtoken",
+      workspaceId: "ws_123",
+    });
+  });
+
+  it("ignores config.devPreview outside development", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken", devPreview: true },
+      BLOCKS,
+      { editor: Editor },
+    );
+    const element = unwrap(
+      await Page({ params: params(["about"]), searchParams: searchParams({}) }),
+    );
+    expect(element.type).not.toBe(Editor);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      devPreview: undefined,
+      devToken: undefined,
+      workspaceId: undefined,
+    });
+  });
+
   it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
