@@ -118,6 +118,22 @@ describe("blocksToMeta", () => {
     expect(meta.special).toEqual({ label: "special", category: "custom" });
   });
 
+  it("emits description when the block defines it", () => {
+    const meta = blocksToMeta([
+      defineBlock({
+        type: "hero",
+        label: "Hero",
+        description: "Full-width banner; first block on a page.",
+        component: Dummy,
+        props: {},
+      }),
+    ]);
+    expect(meta.hero).toEqual({
+      label: "Hero",
+      description: "Full-width banner; first block on a page.",
+    });
+  });
+
   it("is null-prototype", () => {
     const meta = blocksToMeta([
       defineBlock({ type: "hero", component: Dummy, props: {} }),

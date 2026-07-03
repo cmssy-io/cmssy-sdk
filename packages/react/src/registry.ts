@@ -11,9 +11,7 @@ export interface BlockLoaderArgs {
   context?: CmssyBlockContext;
 }
 
-export type BlockLoader = (
-  args: BlockLoaderArgs,
-) => Promise<unknown> | unknown;
+export type BlockLoader = (args: BlockLoaderArgs) => Promise<unknown> | unknown;
 
 export interface BlockDefinition {
   type: string;
@@ -21,6 +19,11 @@ export interface BlockDefinition {
   category?: string;
   icon?: string;
   layoutPositions?: string[];
+  /**
+   * One-line semantic description of what the block is and when it belongs on a
+   * page. Surfaced to the AI page composer to guide block selection and order.
+   */
+  description?: string;
   props: Record<string, FieldDefinition>;
   /**
    * Optional server-side data loader. Run by CmssyServerPage during SSR; its
@@ -48,8 +51,12 @@ export function defineBlock<
   category?: string;
   icon?: string;
   layoutPositions?: string[];
+  description?: string;
   props: Record<string, FieldDefinition>;
-  loader?: (args: { content: C; context?: CmssyBlockContext }) => Promise<D> | D;
+  loader?: (args: {
+    content: C;
+    context?: CmssyBlockContext;
+  }) => Promise<D> | D;
   component: ComponentType<{
     content: C;
     context?: CmssyBlockContext;
@@ -112,6 +119,7 @@ export function blocksToMeta(
       ...(block.layoutPositions
         ? { layoutPositions: block.layoutPositions }
         : {}),
+      ...(block.description ? { description: block.description } : {}),
     };
   }
   return out;

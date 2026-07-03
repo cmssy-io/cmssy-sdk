@@ -14,13 +14,13 @@ The core: block authoring, the delivery client, and the server renderers.
 
 ### Block authoring
 
-| Export            | Signature                                 | Notes                                                                                                                               |
-| ----------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `defineBlock`     | `(definition) => BlockDefinition`         | Declares a block; optional async `loader`.                                                                                          |
-| `fields`          | object of field builders                  | `singleLine`, `multiLine`, `richText`, `numeric`, `date`, `media`, `link`, `select`, `multiselect`, `boolean`, `color`, `repeater`. |
-| `buildBlockMap`   | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                                             |
-| `blocksToSchemas` | `(blocks) => BlockSchema[]`               | Editor schema metadata.                                                                                                             |
-| `blocksToMeta`    | `(blocks) => BlockMeta[]`                 | Editor block-picker metadata.                                                                                                       |
+| Export            | Signature                                 | Notes                                                                                                                                            |
+| ----------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `defineBlock`     | `(definition) => BlockDefinition`         | Declares a block; optional async `loader`. Optional `description` (one-line) is surfaced to the AI page composer to guide block selection/order. |
+| `fields`          | object of field builders                  | `singleLine`, `multiLine`, `richText`, `numeric`, `date`, `media`, `link`, `select`, `multiselect`, `boolean`, `color`, `repeater`.              |
+| `buildBlockMap`   | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                                                          |
+| `blocksToSchemas` | `(blocks) => BlockSchema[]`               | Editor schema metadata.                                                                                                                          |
+| `blocksToMeta`    | `(blocks) => BlockMeta[]`                 | Editor block-picker metadata.                                                                                                                    |
 
 See [Authoring a block](../building-blocks/authoring-blocks.md). There is **no**
 rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/recipes.md).
