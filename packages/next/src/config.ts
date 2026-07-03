@@ -46,6 +46,8 @@ export interface CmssyAuthConfig {
   sessionSecret: string;
 }
 
+export type CmssyPreviewMode = "dev" | "live";
+
 export interface CmssyNextConfig {
   /**
    * Full GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint
@@ -56,11 +58,12 @@ export interface CmssyNextConfig {
   draftSecret: string;
   devToken?: string;
   /**
-   * When true (and NODE_ENV=development with a devToken), the app serves the
-   * caller's dev-draft overlay on every request without the `?cmssyDev` flag -
-   * for local development against your own dev drafts. Ignored in production.
+   * Local content-source mode. `"dev"` (with NODE_ENV=development + a devToken)
+   * serves the caller's dev-draft overlay on every request without the
+   * `?cmssyDev` flag; `"live"` (or unset) serves published content. Ignored in
+   * production. Pass the raw env value through - the SDK owns the semantics.
    */
-  devPreview?: boolean;
+  preview?: CmssyPreviewMode | (string & {});
   /**
    * Origin allowed to frame your app in the editor. Defaults to
    * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.

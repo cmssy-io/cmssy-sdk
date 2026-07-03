@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/next",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Next.js App Router bindings for cmssy headless sites (createCmssyPage + draft preview)",
   "keywords": [
     "cmssy",
@@ -46,7 +46,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@cmssy/react": "^0.7.2",
+    "@cmssy/react": "^0.7.3",
     "next": ">=15",
     "react": "^18.2.0 || ^19.0.0",
     "react-dom": "^18.2.0 || ^19.0.0"
