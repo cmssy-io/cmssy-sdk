@@ -50,7 +50,6 @@ interface CatchAllProps {
 }
 
 const EDIT_QUERY_PARAM = "cmssyEdit";
-const DEV_QUERY_PARAM = "cmssyDev";
 
 function hasEditFlag(value: string | string[] | undefined): boolean {
   return Array.isArray(value) ? value.includes("1") : value === "1";
@@ -83,9 +82,7 @@ export function createCmssyPage(
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
-    const devFlagged = hasEditFlag(query[DEV_QUERY_PARAM]);
-    const devPreview = devAllowed && devFlagged;
-    const editorActive = editMode || (devAllowed && devFlagged);
+    const editorActive = editMode;
 
     let locale: string;
     let pagePath = path;
@@ -105,14 +102,14 @@ export function createCmssyPage(
       pagePath = split.path;
     }
 
-    const devWorkspaceId = devPreview
+    const devWorkspaceId = devAllowed
       ? await client.resolveWorkspaceId()
       : undefined;
 
     const page = await fetchPage(clientConfig, pagePath, {
       previewSecret: editMode ? config.draftSecret : undefined,
-      devPreview: devPreview || undefined,
-      devToken: devPreview ? config.devToken : undefined,
+      devPreview: devAllowed || undefined,
+      devToken: devAllowed ? config.devToken : undefined,
       workspaceId: devWorkspaceId,
     });
 
