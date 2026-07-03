@@ -20,7 +20,12 @@ export {
   isCmssyEditRequest,
   isCmssyEditMode,
 } from "./edit-mode";
-export type { CmssyNextConfig, CmssyAuthConfig } from "./config";
+export { defineCmssyConfig } from "./config";
+export type {
+  CmssyNextConfig,
+  CmssyEnvConfig,
+  CmssyAuthConfig,
+} from "./config";
 export {
   CMSSY_LOCALE_HEADER,
   localeForPathname,
