@@ -54,6 +54,15 @@ export interface CmssyNextConfig {
   apiUrl?: string;
   workspaceSlug: string;
   draftSecret: string;
+  /**
+   * A cmssy API token (`cs_…`) that opts this app into the editor-controlled dev
+   * preview. In development only, the SDK sends it on every page fetch so the
+   * backend can resolve the token's user and honour that user's dev-preview flag
+   * (toggled from the editor's dev-mode switch): flag on + a saved dev draft ⇒
+   * the draft overlay renders, otherwise published content. Server-only (never
+   * reaches the client); ignored outside development. See the Quickstart
+   * "Dev preview" section.
+   */
   devToken?: string;
   /**
    * Origin allowed to frame your app in the editor. Defaults to

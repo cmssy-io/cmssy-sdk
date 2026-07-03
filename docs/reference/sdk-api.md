@@ -166,6 +166,7 @@ interface CmssyNextConfig {
   draftSecret: string; // generated per workspace: Settings → Headless (copy exact value)
   apiUrl?: string; // default https://api.cmssy.io/graphql
   editorOrigin?: string | string[]; // default https://www.cmssy.io
+  devToken?: string; // cs_… API token; opts into editor-controlled dev preview (development only)
   siteUrl?: string;
   auth?: { modelSlug: string; sessionSecret: string };
   defaultLocale?: string;
