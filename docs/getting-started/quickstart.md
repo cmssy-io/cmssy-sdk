@@ -161,9 +161,14 @@ toggle controls this, and your local app opts in with a `devToken`:
 export const cmssy: CmssyNextConfig = {
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
-  devToken: process.env.CMSSY_API_TOKEN, // a cs_… token from Settings → API tokens
+  devToken: process.env.CMSSY_API_TOKEN, // a cs_… token from the dashboard's API Tokens page
 };
 ```
+
+Create the token on the **API Tokens** page in the cmssy dashboard. It must
+belong to a user with dev-preview access - the workspace **owner**, or a member
+whose role grants the dev-preview permission. A token from any other user
+authenticates but silently falls back to published content.
 
 How it works: when `NODE_ENV === "development"` **and** a `devToken` is set, the
 SDK sends the token on every page fetch. The backend resolves it to that user and
@@ -182,9 +187,9 @@ There is no URL flag - the editor is the single control, per user.
 > **Scope.** The token is read only in development and never reaches the browser
 > (it is sent server-to-server on the delivery fetch). A production build ignores
 > `devToken` entirely, so leaving `CMSSY_API_TOKEN` in a deploy env is inert - but
-> prefer scoping it to local `.env` files. The overlay a viewer sees is their own,
-> resolved from the token's user; it does not affect published content or other
-> visitors.
+> prefer scoping it to local `.env` files. The overlay reflects the **token
+> user's** saved dev draft (shown to whoever loads that dev server); it never
+> changes published content.
 
 ## Next steps
 
