@@ -238,11 +238,11 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
   });
 
-  it("serves the dev overlay via config.devPreview without the flag or editor shell", async () => {
+  it("serves the dev overlay via config.preview=dev without the flag or editor shell", async () => {
     vi.stubEnv("NODE_ENV", "development");
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(
-      { ...CONFIG, devToken: "cs_devtoken", devPreview: true },
+      { ...CONFIG, devToken: "cs_devtoken", preview: "dev" },
       BLOCKS,
       { editor: Editor },
     );
@@ -258,11 +258,31 @@ describe("createCmssyPage", () => {
     });
   });
 
-  it("ignores config.devPreview outside development", async () => {
+  it("ignores config.preview=dev outside development", async () => {
     vi.stubEnv("NODE_ENV", "production");
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(
-      { ...CONFIG, devToken: "cs_devtoken", devPreview: true },
+      { ...CONFIG, devToken: "cs_devtoken", preview: "dev" },
+      BLOCKS,
+      { editor: Editor },
+    );
+    const element = unwrap(
+      await Page({ params: params(["about"]), searchParams: searchParams({}) }),
+    );
+    expect(element.type).not.toBe(Editor);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      devPreview: undefined,
+      devToken: undefined,
+      workspaceId: undefined,
+    });
+  });
+
+  it("serves published content when config.preview is live", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken", preview: "live" },
       BLOCKS,
       { editor: Editor },
     );
