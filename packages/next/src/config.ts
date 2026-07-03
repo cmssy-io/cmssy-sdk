@@ -109,9 +109,17 @@ const REQUIRED_CONFIG_ENV = [
  * with silently-empty config.
  */
 export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
-  const missing = REQUIRED_CONFIG_ENV.filter(
-    ([key]) => !config[key]?.trim(),
-  ).map(([key, env]) => `${env} (config.${key})`);
+  const resolved: CmssyEnvConfig = { ...config };
+  const missing: string[] = [];
+  for (const [key, env] of REQUIRED_CONFIG_ENV) {
+    const value = config[key];
+    const trimmed = typeof value === "string" ? value.trim() : "";
+    if (trimmed) {
+      resolved[key] = trimmed;
+    } else {
+      missing.push(`${env} (config.${key})`);
+    }
+  }
   if (missing.length > 0) {
     throw new Error(
       `cmssy: missing required configuration:\n  - ${missing.join(
@@ -119,7 +127,7 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
       )}\nSet the listed environment variables (e.g. in .env.local) and restart the dev server.`,
     );
   }
-  return config as CmssyNextConfig;
+  return resolved as CmssyNextConfig;
 }
 
 export function assertAuthConfig(config: CmssyNextConfig): CmssyAuthConfig {

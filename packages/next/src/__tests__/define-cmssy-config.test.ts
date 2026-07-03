@@ -31,4 +31,23 @@ describe("defineCmssyConfig", () => {
       defineCmssyConfig({ workspaceSlug: "acme", draftSecret: "shhh" }),
     ).not.toThrow();
   });
+
+  it("trims surrounding whitespace on required fields", () => {
+    const config = defineCmssyConfig({
+      workspaceSlug: "  acme  ",
+      draftSecret: "\tshhh\n",
+    });
+    expect(config.workspaceSlug).toBe("acme");
+    expect(config.draftSecret).toBe("shhh");
+  });
+
+  it("treats a non-string required value as missing (JS callers)", () => {
+    expect(() =>
+      defineCmssyConfig({
+        // @ts-expect-error simulate a JS caller passing a non-string
+        workspaceSlug: 123,
+        draftSecret: "shhh",
+      }),
+    ).toThrowError(/CMSSY_WORKSPACE_SLUG/);
+  });
 });
