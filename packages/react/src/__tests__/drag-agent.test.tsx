@@ -16,7 +16,7 @@ const blocks = [
   defineBlock({
     type: "hero",
     component: Hero,
-    props: { heading: fields.singleLine() },
+    props: { heading: fields.text() },
   }),
 ];
 
