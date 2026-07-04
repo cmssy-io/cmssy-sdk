@@ -59,6 +59,12 @@ export {
   DEFAULT_CMSSY_EDITOR_ORIGINS,
 } from "./config";
 export { resolveApiUrl, DEFAULT_CMSSY_API_URL } from "@cmssy/react";
+export { evaluateFieldConditionGroup } from "@cmssy/react";
+export type {
+  FieldCondition,
+  FieldConditionGroup,
+  FieldConditionLogic,
+} from "@cmssy/react";
 export { getCmssyUser, getCmssyAccessToken } from "./auth-server";
 export { createCmssyAuthMiddleware } from "./auth-middleware";
 export type { CmssyAuthMiddleware } from "./auth-middleware";
