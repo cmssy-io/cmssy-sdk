@@ -91,7 +91,7 @@ export const checkoutBlock = defineBlock({
   label: "Checkout",
   category: "Commerce",
   props: {
-    successMessage: fields.singleLine({ label: "Success message" }),
+    successMessage: fields.text({ label: "Success message" }),
   },
   component: CheckoutComponent,
 });

@@ -14,7 +14,7 @@ const heroBlock = defineBlock({
   type: "hero",
   label: "Hero",
   component: Hero,
-  props: { heading: fields.singleLine() },
+  props: { heading: fields.text() },
 });
 
 describe("CmssyBlock blockMap proto-safety", () => {

@@ -18,7 +18,7 @@ const blocks = [
     label: "Header",
     component: Header,
     layoutPositions: ["header"],
-    props: { brand: fields.singleLine() },
+    props: { brand: fields.text() },
   }),
 ];
 

@@ -16,7 +16,7 @@ const blocks = [
     type: "hero",
     label: "Hero",
     component: Hero,
-    props: { heading: fields.singleLine() },
+    props: { heading: fields.text() },
   }),
 ];
 
