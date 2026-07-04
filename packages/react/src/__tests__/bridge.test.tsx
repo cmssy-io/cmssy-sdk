@@ -19,7 +19,7 @@ const heroBlock = defineBlock({
   type: "hero",
   label: "Hero",
   component: Hero,
-  props: { heading: fields.singleLine(), sub: fields.singleLine() },
+  props: { heading: fields.text(), sub: fields.text() },
 });
 const blocks = [heroBlock];
 
@@ -131,7 +131,7 @@ describe("edit bridge (blocks-driven)", () => {
         locale="en"
         edit={{
           editorOrigin,
-          schemas: { custom: { x: { type: "singleLine", label: "X" } } },
+          schemas: { custom: { x: { type: "text", label: "X" } } },
           blockMeta: { custom: { label: "Custom" } },
         }}
         blocks={blocks}

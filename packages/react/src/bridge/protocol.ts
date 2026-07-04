@@ -1,18 +1,8 @@
+import type { FieldType } from "@cmssy/types";
+
 export const PROTOCOL_VERSION = 1;
 
-export type FieldType =
-  | "singleLine"
-  | "multiLine"
-  | "richText"
-  | "numeric"
-  | "date"
-  | "media"
-  | "link"
-  | "select"
-  | "multiselect"
-  | "boolean"
-  | "color"
-  | "repeater";
+export type { FieldType };
 
 export interface FieldDefinition {
   type: FieldType;
@@ -21,6 +11,7 @@ export interface FieldDefinition {
   helperText?: string;
   required?: boolean;
   placeholder?: string;
+  tab?: string;
   options?: string[];
   itemSchema?: Record<string, FieldDefinition>;
   itemLabel?: string;

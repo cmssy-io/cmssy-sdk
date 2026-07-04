@@ -13,16 +13,20 @@ function control(type: FieldType) {
 }
 
 export const fields = {
-  singleLine: control("singleLine"),
-  multiLine: control("multiLine"),
+  text: control("text"),
+  textarea: control("textarea"),
   richText: control("richText"),
-  numeric: control("numeric"),
+  number: control("number"),
   date: control("date"),
-  media: control("media"),
-  link: control("link"),
-  select: control("select"),
-  multiselect: control("multiselect"),
+  datetime: control("datetime"),
   boolean: control("boolean"),
   color: control("color"),
+  media: control("media"),
+  link: control("link"),
+  url: control("url"),
+  email: control("email"),
+  select: control("select"),
+  multiselect: control("multiselect"),
+  radio: control("radio"),
   repeater: control("repeater"),
 };

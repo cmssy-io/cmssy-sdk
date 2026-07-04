@@ -180,12 +180,12 @@ export const productBlock = defineBlock({
   label: "Product",
   category: "Commerce",
   props: {
-    modelSlug: fields.singleLine({ label: "Model slug" }),
-    slugField: fields.singleLine({ label: "Slug field" }),
-    slug: fields.singleLine({ label: "Product slug" }),
-    nameField: fields.singleLine({ label: "Name field" }),
-    priceField: fields.singleLine({ label: "Price field" }),
-    imageField: fields.singleLine({ label: "Image field" }),
+    modelSlug: fields.text({ label: "Model slug" }),
+    slugField: fields.text({ label: "Slug field" }),
+    slug: fields.text({ label: "Product slug" }),
+    nameField: fields.text({ label: "Name field" }),
+    priceField: fields.text({ label: "Price field" }),
+    imageField: fields.text({ label: "Image field" }),
   },
   component: ProductComponent,
 });

@@ -44,7 +44,7 @@ const blocks = [
   defineBlock({
     type: "contact",
     component: Contact,
-    props: { formId: fields.singleLine() },
+    props: { formId: fields.text() },
   }),
 ];
 

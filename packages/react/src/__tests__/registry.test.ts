@@ -18,7 +18,7 @@ describe("defineBlock", () => {
       type: "typed",
       label: "Typed",
       component: Typed,
-      props: { heading: fields.singleLine() },
+      props: { heading: fields.text() },
     });
     expect(block.type).toBe("typed");
     expect(block.label).toBe("Typed");
@@ -52,12 +52,12 @@ describe("blocksToSchemas", () => {
         type: "editorial-intro",
         component: Dummy,
         props: {
-          kicker: fields.singleLine({ defaultValue: "Nasze usługi" }),
+          kicker: fields.text({ defaultValue: "Nasze usługi" }),
           body: fields.richText({ label: "Treść" }),
         },
       }),
     ]);
-    expect(schemas["editorial-intro"]!.kicker?.type).toBe("singleLine");
+    expect(schemas["editorial-intro"]!.kicker?.type).toBe("text");
     expect(schemas["editorial-intro"]!.kicker?.defaultValue).toBe(
       "Nasze usługi",
     );
