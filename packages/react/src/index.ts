@@ -12,6 +12,12 @@ export type { CmssyServerPageProps } from "./components/cmssy-server-page";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";
+export { evaluateFieldConditionGroup } from "@cmssy/types";
+export type {
+  FieldCondition,
+  FieldConditionGroup,
+  FieldConditionLogic,
+} from "@cmssy/types";
 export type {
   FieldType,
   FieldDefinition,
