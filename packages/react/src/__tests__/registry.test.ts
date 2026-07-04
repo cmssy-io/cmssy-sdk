@@ -18,7 +18,7 @@ describe("defineBlock", () => {
       type: "typed",
       label: "Typed",
       component: Typed,
-      props: { heading: fields.singleLine() },
+      props: { heading: fields.text() },
     });
     expect(block.type).toBe("typed");
     expect(block.label).toBe("Typed");
@@ -52,12 +52,12 @@ describe("blocksToSchemas", () => {
         type: "editorial-intro",
         component: Dummy,
         props: {
-          kicker: fields.singleLine({ defaultValue: "Nasze usługi" }),
+          kicker: fields.text({ defaultValue: "Nasze usługi" }),
           body: fields.richText({ label: "Treść" }),
         },
       }),
     ]);
-    expect(schemas["editorial-intro"]!.kicker?.type).toBe("singleLine");
+    expect(schemas["editorial-intro"]!.kicker?.type).toBe("text");
     expect(schemas["editorial-intro"]!.kicker?.defaultValue).toBe(
       "Nasze usługi",
     );
@@ -143,9 +143,9 @@ describe("blocksToMeta", () => {
 });
 
 describe("protocol", () => {
-  it("is version 1 and compatibility-checked", () => {
-    expect(PROTOCOL_VERSION).toBe(1);
-    expect(isProtocolCompatible(1)).toBe(true);
-    expect(isProtocolCompatible(2)).toBe(false);
+  it("is version 2 and compatibility-checked", () => {
+    expect(PROTOCOL_VERSION).toBe(2);
+    expect(isProtocolCompatible(2)).toBe(true);
+    expect(isProtocolCompatible(1)).toBe(false);
   });
 });
