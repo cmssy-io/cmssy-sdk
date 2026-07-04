@@ -60,6 +60,6 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@cmssy/types": "0.17.0"
+    "@cmssy/types": "^0.17.0"
   }
 }

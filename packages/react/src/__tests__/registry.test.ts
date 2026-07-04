@@ -143,9 +143,9 @@ describe("blocksToMeta", () => {
 });
 
 describe("protocol", () => {
-  it("is version 1 and compatibility-checked", () => {
-    expect(PROTOCOL_VERSION).toBe(1);
-    expect(isProtocolCompatible(1)).toBe(true);
-    expect(isProtocolCompatible(2)).toBe(false);
+  it("is version 2 and compatibility-checked", () => {
+    expect(PROTOCOL_VERSION).toBe(2);
+    expect(isProtocolCompatible(2)).toBe(true);
+    expect(isProtocolCompatible(1)).toBe(false);
   });
 });

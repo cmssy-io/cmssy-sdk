@@ -49,7 +49,7 @@ importers:
   packages/react:
     dependencies:
       '@cmssy/types':
-        specifier: 0.17.0
+        specifier: ^0.17.0
         version: 0.17.0
     devDependencies:
       '@testing-library/react':
