@@ -16,6 +16,7 @@ export const fields = {
   text: control("text"),
   textarea: control("textarea"),
   richText: control("richText"),
+  markdown: control("markdown"),
   number: control("number"),
   date: control("date"),
   datetime: control("datetime"),
