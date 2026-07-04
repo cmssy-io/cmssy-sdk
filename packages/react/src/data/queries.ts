@@ -1,3 +1,5 @@
+import type { ShowWhenCondition } from "@cmssy/types";
+
 export interface CmssyBranding {
   brandName: string | null;
   logoUrl: string | null;
@@ -88,7 +90,7 @@ export interface CmssyFormField {
   validation: unknown;
   width: string | null;
   order: number | null;
-  showIf: unknown;
+  showWhen: ShowWhenCondition | null;
 }
 
 export interface CmssyFormSettings {
@@ -132,7 +134,7 @@ export const FORM_QUERY = `query PublicForm($formId: ID!) {
     description
     fields {
       id name fieldType label placeholder helpText
-      defaultValue width order showIf
+      defaultValue width order showWhen
       options { value label disabled }
       validation { required minLength maxLength minValue maxValue pattern customMessage }
     }
