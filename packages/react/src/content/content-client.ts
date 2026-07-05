@@ -70,7 +70,7 @@ export interface CmssyLayoutGroup {
   blocks: RawLayoutBlock[];
 }
 
-const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
+export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
   publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
     id
     blocks { id type content }
@@ -78,7 +78,7 @@ const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: Stri
   }
 }`;
 
-const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
+export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
   publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
     id
     blocks { id type content }
@@ -86,14 +86,14 @@ const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: 
   }
 }`;
 
-const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
+export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
   publicPageById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
     id
     publishedBlocks { id type content }
   }
 }`;
 
-const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
+export const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
   publicPages(workspaceSlug: $workspaceSlug) {
     id
     slug
@@ -102,7 +102,7 @@ const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
   }
 }`;
 
-const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
+export const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
   publicPage(workspaceSlug: $workspaceSlug, slug: $slug) {
     id
     seoTitle
@@ -112,7 +112,7 @@ const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $s
   }
 }`;
 
-const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
+export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
   publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
     position
     blocks { id type content order isActive }
