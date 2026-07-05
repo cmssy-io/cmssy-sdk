@@ -47,6 +47,54 @@ describe("CmssyBlock blockMap proto-safety", () => {
   });
 });
 
+describe("CmssyBlock style/advanced buckets", () => {
+  const map = buildBlockMap([heroBlock]);
+
+  it("applies Style/Advanced buckets to the wrapper", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{
+          id: "b1",
+          type: "hero",
+          content: { en: { heading: "Hi" } },
+          style: { padding: "md", background: "#eee" },
+          advanced: {
+            anchorId: "hero",
+            className: "featured",
+            customCss: "border:1px solid red;",
+          },
+        }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={map}
+      />,
+    );
+
+    expect(html).toContain('id="hero"');
+    expect(html).toContain('class="featured"');
+    expect(html).toContain("padding-top:1rem");
+    expect(html).toContain("background:#eee");
+    expect(html).toContain('[data-block-id="b1"]{border:1px solid red;}');
+  });
+
+  it("renders nothing for a block hidden via visible:false", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{
+          id: "b1",
+          type: "hero",
+          content: { en: { heading: "Hi" } },
+          advanced: { visible: false },
+        }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={map}
+      />,
+    );
+    expect(html).toBe("");
+  });
+});
+
 describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => {
   it("renders blocks from the passed array without any global registration", async () => {
     const html = renderToStaticMarkup(
@@ -86,11 +134,16 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     const noLoaderBlock = defineBlock({
       type: "noloader",
       props: {},
-      component: ({ data }) => <span>{data === undefined ? "no-data" : "has-data"}</span>,
+      component: ({ data }) => (
+        <span>{data === undefined ? "no-data" : "has-data"}</span>
+      ),
     });
     const html = renderToStaticMarkup(
       await CmssyServerPage({
-        page: { id: "p", blocks: [{ id: "b1", type: "noloader", content: {} }] },
+        page: {
+          id: "p",
+          blocks: [{ id: "b1", type: "noloader", content: {} }],
+        },
         blocks: [noLoaderBlock],
         locale: "en",
       }),
