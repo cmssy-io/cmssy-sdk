@@ -121,14 +121,16 @@ describe("createCmssyOrdersRoute", () => {
     const res = await route.GET(get());
     expect(res.status).toBe(401);
     expect(
-      fetchCalls.find((c) => String(c.body.query).includes("myOrders")),
+      fetchCalls.find((c) => String(c.body.query).includes("orders(")),
     ).toBeUndefined();
   });
 
   it("forwards the member Bearer + workspace id and returns the order list", async () => {
     await signedInCookie();
     mockFetch({
-      myOrders: { myOrders: { items: [ORDER], total: 1, hasMore: false } },
+      "orders(": {
+        account: { orders: { items: [ORDER], total: 1, hasMore: false } },
+      },
     });
 
     const route = createCmssyOrdersRoute(config);
@@ -141,7 +143,7 @@ describe("createCmssyOrdersRoute", () => {
     });
 
     const call = fetchCalls.find((c) =>
-      String(c.body.query).includes("myOrders"),
+      String(c.body.query).includes("orders("),
     )!;
     expect(call.headers.get("authorization")).toBe("Bearer member-token");
     expect(call.headers.get("x-workspace-id")).toBe("ws-id-1");
@@ -151,14 +153,16 @@ describe("createCmssyOrdersRoute", () => {
   it("clamps a client-supplied limit and negative skip", async () => {
     await signedInCookie();
     mockFetch({
-      myOrders: { myOrders: { items: [], total: 0, hasMore: false } },
+      "orders(": {
+        account: { orders: { items: [], total: 0, hasMore: false } },
+      },
     });
 
     const route = createCmssyOrdersRoute(config);
     await route.GET(get("?limit=99999&skip=-5"));
 
     const call = fetchCalls.find((c) =>
-      String(c.body.query).includes("myOrders"),
+      String(c.body.query).includes("orders("),
     )!;
     const vars = call.body.variables as { limit: number; skip: number };
     expect(vars.limit).toBe(100);
@@ -167,7 +171,7 @@ describe("createCmssyOrdersRoute", () => {
 
   it("fetches a single order by id", async () => {
     await signedInCookie();
-    mockFetch({ myOrder: { myOrder: ORDER } });
+    mockFetch({ "order(": { account: { order: ORDER } } });
 
     const route = createCmssyOrdersRoute(config);
     const res = await route.GET(get("?id=o1"));
@@ -185,7 +189,7 @@ describe("createCmssyOrdersRoute", () => {
       },
     ]);
     const call = fetchCalls.find((c) =>
-      String(c.body.query).includes("myOrder"),
+      String(c.body.query).includes("order("),
     )!;
     expect((call.body.variables as { id: string }).id).toBe("o1");
     expect(String(call.body.query)).toContain("paymentStatus");

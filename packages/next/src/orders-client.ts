@@ -36,15 +36,19 @@ const ORDER_FIELDS = `
 `;
 
 export const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
-  myOrders(workspaceId: $workspaceId, skip: $skip, limit: $limit) {
-    total
-    hasMore
-    items { ${ORDER_FIELDS} }
+  account {
+    orders(workspaceId: $workspaceId, skip: $skip, limit: $limit) {
+      total
+      hasMore
+      items { ${ORDER_FIELDS} }
+    }
   }
 }`;
 
 export const MY_ORDER = `query MyOrder($workspaceId: ID!, $id: ID!) {
-  myOrder(workspaceId: $workspaceId, id: $id) { ${ORDER_FIELDS} }
+  account {
+    order(workspaceId: $workspaceId, id: $id) { ${ORDER_FIELDS} }
+  }
 }`;
 
 const workspaceIdCache = new Map<string, Promise<string>>();
@@ -84,14 +88,14 @@ export async function backendMyOrders(
   options: { skip?: number; limit?: number },
 ): Promise<MyOrdersResult> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await graphqlRequest<{ myOrders: MyOrdersResult }>(
+  const data = await graphqlRequest<{ account: { orders: MyOrdersResult } }>(
     config,
     MY_ORDERS,
     { workspaceId, skip: options.skip, limit: options.limit },
     { headers: headers(workspaceId, accessToken) },
     "my orders",
   );
-  return data.myOrders;
+  return data.account.orders;
 }
 
 export async function backendMyOrder(
@@ -100,12 +104,12 @@ export async function backendMyOrder(
   id: string,
 ): Promise<CmssyOrder | null> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await graphqlRequest<{ myOrder: CmssyOrder | null }>(
+  const data = await graphqlRequest<{ account: { order: CmssyOrder | null } }>(
     config,
     MY_ORDER,
     { workspaceId, id },
     { headers: headers(workspaceId, accessToken) },
     "my order",
   );
-  return data.myOrder;
+  return data.account.order;
 }
