@@ -30,6 +30,9 @@ importers:
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.15
+      graphql:
+        specifier: ^16.10.0
+        version: 16.14.2
       next:
         specifier: ^16.0.0
         version: 16.2.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -61,6 +64,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.15)
+      graphql:
+        specifier: ^16.10.0
+        version: 16.14.2
       jsdom:
         specifier: ^25.0.0
         version: 25.0.1
@@ -1022,6 +1028,10 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
+
+  graphql@16.14.2:
+    resolution: {integrity: sha512-Chq1s4CY7jmh8gO2qvLIJyfCDIN+EHLFW/9iShnp1z8FjBQMoodWP1kDC36VAMXXIvAjj4ARa7ntfAV2BrjsbA==}
+    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -2194,6 +2204,8 @@ snapshots:
       es-object-atoms: 1.1.2
 
   gopd@1.2.0: {}
+
+  graphql@16.14.2: {}
 
   has-symbols@1.1.0: {}
 

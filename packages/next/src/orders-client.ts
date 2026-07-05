@@ -35,7 +35,7 @@ const ORDER_FIELDS = `
   payments { amount reference provider at }
 `;
 
-const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
+export const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
   myOrders(workspaceId: $workspaceId, skip: $skip, limit: $limit) {
     total
     hasMore
@@ -43,7 +43,7 @@ const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
   }
 }`;
 
-const MY_ORDER = `query MyOrder($workspaceId: ID!, $id: ID!) {
+export const MY_ORDER = `query MyOrder($workspaceId: ID!, $id: ID!) {
   myOrder(workspaceId: $workspaceId, id: $id) { ${ORDER_FIELDS} }
 }`;
 

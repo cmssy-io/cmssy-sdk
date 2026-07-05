@@ -5,7 +5,7 @@ import {
 } from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 
-const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug: String!, $filter: JSON, $limit: Int) {
+export const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug: String!, $filter: JSON, $limit: Int) {
   publicModelRecords(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: $limit) {
     items { id data variants { id sku price inventory selectedOptions { name value } } }
   }
