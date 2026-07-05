@@ -42,7 +42,7 @@ function stubGraphql(opts: {
     return {
       ok: pagesOk,
       status: pagesOk ? 200 : 500,
-      json: async () => ({ data: { publicPages: pages } }),
+      json: async () => ({ data: { public: { page: { list: pages  } }} }),
     };
   });
   vi.stubGlobal("fetch", fetchStub);
@@ -198,7 +198,7 @@ describe("buildCmssyMetadata", () => {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { publicPage: page } }),
+        json: async () => ({ data: { public: { page: { get: page  } }} }),
       };
     });
     vi.stubGlobal("fetch", fetchStub);
