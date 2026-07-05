@@ -31,6 +31,7 @@ export const fields = {
   radio: control("radio"),
   repeater: control("repeater"),
   table: control("table"),
+  json: control("json"),
   form: control("form"),
   pageSelector: control("pageSelector"),
 };
