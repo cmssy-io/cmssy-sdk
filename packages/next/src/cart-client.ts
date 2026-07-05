@@ -27,15 +27,15 @@ const CART_FIELDS = `
   }
 `;
 
-export const CART_QUERY = `query Cart($workspaceId: ID!) { cart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
-export const ADD_TO_CART = `mutation AddToCart($input: AddToCartInput!) { addToCart(input: $input) { ${CART_FIELDS} } }`;
-export const UPDATE_ITEM = `mutation UpdateCartItem($input: UpdateCartItemInput!) { updateCartItem(input: $input) { ${CART_FIELDS} } }`;
-export const REMOVE_ITEM = `mutation RemoveCartItem($workspaceId: ID!, $itemId: ID!) { removeCartItem(workspaceId: $workspaceId, itemId: $itemId) { ${CART_FIELDS} } }`;
-export const CLEAR_CART = `mutation ClearCart($workspaceId: ID!) { clearCart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
-export const APPLY_DISCOUNT = `mutation ApplyDiscount($workspaceId: ID!, $code: String!) { applyDiscount(workspaceId: $workspaceId, code: $code) { ${CART_FIELDS} } }`;
-export const REMOVE_DISCOUNT = `mutation RemoveDiscount($workspaceId: ID!) { removeDiscount(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
+export const CART_QUERY = `query Cart($workspaceId: ID!) { cart { get(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
+export const ADD_TO_CART = `mutation AddToCart($input: AddToCartInput!) { cart { addItem(input: $input) { ${CART_FIELDS} } } }`;
+export const UPDATE_ITEM = `mutation UpdateCartItem($input: UpdateCartItemInput!) { cart { updateItem(input: $input) { ${CART_FIELDS} } } }`;
+export const REMOVE_ITEM = `mutation RemoveCartItem($workspaceId: ID!, $itemId: ID!) { cart { removeItem(workspaceId: $workspaceId, itemId: $itemId) { ${CART_FIELDS} } } }`;
+export const CLEAR_CART = `mutation ClearCart($workspaceId: ID!) { cart { clear(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
+export const APPLY_DISCOUNT = `mutation ApplyDiscount($workspaceId: ID!, $code: String!) { cart { applyDiscount(workspaceId: $workspaceId, code: $code) { ${CART_FIELDS} } } }`;
+export const REMOVE_DISCOUNT = `mutation RemoveDiscount($workspaceId: ID!) { cart { removeDiscount(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
 export const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
-  checkout(input: $input) { id status subtotal total currency customerEmail }
+  cart { checkout(input: $input) { id status subtotal total currency customerEmail } }
 }`;
 export const PRODUCT = `query Product($workspaceId: String!, $modelSlug: String!, $filter: JSON) {
   publicModelRecords(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: 1) {
@@ -96,7 +96,7 @@ export async function backendGetCart(
   ctx: CartRequestContext,
 ): Promise<CmssyCart | null> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ cart: CmssyCart | null }>(
+  const data = await request<{ cart: { get: CmssyCart | null } }>(
     config,
     ctx,
     workspaceId,
@@ -104,7 +104,7 @@ export async function backendGetCart(
     { workspaceId },
     "cart query",
   );
-  return data.cart;
+  return data.cart.get;
 }
 
 export async function backendAddToCart(
@@ -118,7 +118,7 @@ export async function backendAddToCart(
   },
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ addToCart: CmssyCart }>(
+  const data = await request<{ cart: { addItem: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -126,7 +126,7 @@ export async function backendAddToCart(
     { input: { workspaceId, ...input } },
     "add to cart",
   );
-  return data.addToCart;
+  return data.cart.addItem;
 }
 
 export async function backendUpdateItem(
@@ -135,7 +135,7 @@ export async function backendUpdateItem(
   input: { itemId: string; quantity: number },
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ updateCartItem: CmssyCart }>(
+  const data = await request<{ cart: { updateItem: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -143,7 +143,7 @@ export async function backendUpdateItem(
     { input: { workspaceId, ...input } },
     "update cart item",
   );
-  return data.updateCartItem;
+  return data.cart.updateItem;
 }
 
 export async function backendRemoveItem(
@@ -152,7 +152,7 @@ export async function backendRemoveItem(
   itemId: string,
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ removeCartItem: CmssyCart }>(
+  const data = await request<{ cart: { removeItem: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -160,7 +160,7 @@ export async function backendRemoveItem(
     { workspaceId, itemId },
     "remove cart item",
   );
-  return data.removeCartItem;
+  return data.cart.removeItem;
 }
 
 export async function backendClearCart(
@@ -168,7 +168,7 @@ export async function backendClearCart(
   ctx: CartRequestContext,
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ clearCart: CmssyCart }>(
+  const data = await request<{ cart: { clear: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -176,7 +176,7 @@ export async function backendClearCart(
     { workspaceId },
     "clear cart",
   );
-  return data.clearCart;
+  return data.cart.clear;
 }
 
 export async function backendApplyDiscount(
@@ -185,7 +185,7 @@ export async function backendApplyDiscount(
   code: string,
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ applyDiscount: CmssyCart }>(
+  const data = await request<{ cart: { applyDiscount: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -193,7 +193,7 @@ export async function backendApplyDiscount(
     { workspaceId, code },
     "apply discount",
   );
-  return data.applyDiscount;
+  return data.cart.applyDiscount;
 }
 
 export async function backendRemoveDiscount(
@@ -201,7 +201,7 @@ export async function backendRemoveDiscount(
   ctx: CartRequestContext,
 ): Promise<CmssyCart> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ removeDiscount: CmssyCart }>(
+  const data = await request<{ cart: { removeDiscount: CmssyCart } }>(
     config,
     ctx,
     workspaceId,
@@ -209,7 +209,7 @@ export async function backendRemoveDiscount(
     { workspaceId },
     "remove discount",
   );
-  return data.removeDiscount;
+  return data.cart.removeDiscount;
 }
 
 export async function backendCheckout(
@@ -218,7 +218,7 @@ export async function backendCheckout(
   customerEmail: string,
 ): Promise<CmssyOrder> {
   const workspaceId = await workspaceIdFor(config);
-  const data = await request<{ checkout: CmssyOrder }>(
+  const data = await request<{ cart: { checkout: CmssyOrder } }>(
     config,
     ctx,
     workspaceId,
@@ -226,7 +226,7 @@ export async function backendCheckout(
     { input: { workspaceId, customerEmail } },
     "checkout",
   );
-  return data.checkout;
+  return data.cart.checkout;
 }
 
 export async function backendProduct(

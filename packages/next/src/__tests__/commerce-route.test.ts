@@ -87,7 +87,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("createCmssyCartRoute", () => {
   it("mints a cart-session cookie and forwards the token to cmssy", async () => {
-    mockFetch({ "cart(": { cart: EMPTY_CART } });
+    mockFetch({ "get(": { cart: { get: EMPTY_CART } } });
     const route = createCmssyCartRoute(config);
     const res = await route.POST(...post("cart"));
     expect(res.status).toBe(200);
@@ -99,7 +99,7 @@ describe("createCmssyCartRoute", () => {
     expect(cookie!.options).toMatchObject({ httpOnly: true, sameSite: "lax" });
 
     const cartFetch = fetchCalls.find((c) =>
-      String(c.body.query).includes("cart("),
+      String(c.body.query).includes("get("),
     )!;
     expect(cartFetch.headers.get("x-cart-session")).toBe(cookie!.value);
     expect(cartFetch.headers.get("x-workspace-id")).toBe("ws-id-1");
@@ -108,11 +108,11 @@ describe("createCmssyCartRoute", () => {
 
   it("reuses an existing cart-session cookie", async () => {
     cookieStore.set(CMSSY_CART_COOKIE, { value: "x".repeat(43) });
-    mockFetch({ "cart(": { cart: EMPTY_CART } });
+    mockFetch({ "get(": { cart: { get: EMPTY_CART } } });
     const route = createCmssyCartRoute(config);
     await route.POST(...post("cart"));
     const cartFetch = fetchCalls.find((c) =>
-      String(c.body.query).includes("cart("),
+      String(c.body.query).includes("get("),
     )!;
     expect(cartFetch.headers.get("x-cart-session")).toBe("x".repeat(43));
   });
@@ -129,7 +129,7 @@ describe("createCmssyCartRoute", () => {
       config.workspaceSlug,
     );
     cookieStore.set(CMSSY_SESSION_COOKIE, { value: sealed });
-    mockFetch({ addToCart: { addToCart: EMPTY_CART } });
+    mockFetch({ addItem: { cart: { addItem: EMPTY_CART } } });
 
     const route = createCmssyCartRoute(config);
     const res = await route.POST(
@@ -137,7 +137,7 @@ describe("createCmssyCartRoute", () => {
     );
     expect(res.status).toBe(200);
     const addFetch = fetchCalls.find((c) =>
-      String(c.body.query).includes("addToCart"),
+      String(c.body.query).includes("addItem"),
     )!;
     expect(addFetch.headers.get("authorization")).toBe(
       "Bearer member-access-token",
@@ -150,7 +150,9 @@ describe("createCmssyCartRoute", () => {
   it("clears the cart cookie after checkout", async () => {
     cookieStore.set(CMSSY_CART_COOKIE, { value: "y".repeat(43) });
     mockFetch({
-      checkout: { checkout: { id: "o1", status: "pending", total: 0 } },
+      checkout: {
+        cart: { checkout: { id: "o1", status: "pending", total: 0 } },
+      },
     });
     const route = createCmssyCartRoute(config);
     const res = await route.POST(
