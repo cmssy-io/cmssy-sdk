@@ -38,3 +38,15 @@ export function getBlockContentForLanguage(
 
   return { ...nonTranslatable, ...chosen };
 }
+
+export function mergeBlockValues(
+  content: Record<string, unknown>,
+  style: unknown,
+  advanced: unknown,
+): Record<string, unknown> {
+  return {
+    ...content,
+    ...(isPlainObject(style) ? style : {}),
+    ...(isPlainObject(advanced) ? advanced : {}),
+  };
+}
