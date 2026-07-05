@@ -48,105 +48,80 @@ describe("CmssyBlock blockMap proto-safety", () => {
   });
 });
 
-describe("CmssyBlock style/advanced buckets", () => {
-  const map = buildBlockMap([heroBlock]);
-
-  it("applies Style/Advanced buckets to the wrapper", () => {
-    const html = renderToStaticMarkup(
-      <CmssyBlock
-        block={{
-          id: "b1",
-          type: "hero",
-          content: { en: { heading: "Hi" } },
-          style: { padding: "md", background: "#eee" },
-          advanced: {
-            anchorId: "hero",
-            className: "featured",
-            customCss: "border:1px solid red;",
-          },
-        }}
-        locale="en"
-        defaultLocale="en"
-        blockMap={map}
-      />,
-    );
-
-    expect(html).toContain('id="hero"');
-    expect(html).toContain('class="featured"');
-    expect(html).toContain("padding-top:1rem");
-    expect(html).toContain("background:#eee");
-    expect(html).toContain('[data-block-id="b1"]{border:1px solid red;}');
+describe("CmssyBlock style/advanced field values", () => {
+  const Panel = ({ content }: { content: Record<string, unknown> }) => (
+    <div>
+      <span>{String(content.heading ?? "")}</span>
+      <span>{String(content.bg ?? "")}</span>
+      <span>{String(content.secret ?? "")}</span>
+    </div>
+  );
+  const panelBlock = defineBlock({
+    type: "panel",
+    label: "Panel",
+    component: Panel,
+    props: { heading: fields.text() },
   });
+  const map = buildBlockMap([panelBlock]);
 
-  it("renders nothing for a block hidden via visible:false", () => {
+  it("merges content + style + advanced field values into the component (client path)", () => {
     const html = renderToStaticMarkup(
       <CmssyBlock
         block={{
           id: "b1",
-          type: "hero",
+          type: "panel",
           content: { en: { heading: "Hi" } },
-          advanced: { visible: false },
+          style: { bg: "navy" },
+          advanced: { secret: "s3cr3t" },
         }}
         locale="en"
         defaultLocale="en"
         blockMap={map}
       />,
     );
-    expect(html).toBe("");
-  });
-
-  it("keeps a visible:false block rendered in editable mode", () => {
-    const html = renderToStaticMarkup(
-      <CmssyBlock
-        block={{
-          id: "b1",
-          type: "hero",
-          content: { en: { heading: "Hi" } },
-          advanced: { visible: false },
-        }}
-        locale="en"
-        defaultLocale="en"
-        blockMap={map}
-        editable
-      />,
-    );
-    expect(html).toContain('data-block-id="b1"');
     expect(html).toContain("Hi");
+    expect(html).toContain("navy");
+    expect(html).toContain("s3cr3t");
   });
 
-  it("applies buckets and hidden semantics on the SSR path", () => {
+  it("merges the buckets on the SSR path too", () => {
     const html = renderToStaticMarkup(
       renderResolvedBlock(
         {
           id: "s1",
-          type: "hero",
+          type: "panel",
           content: { en: { heading: "Yo" } },
-          style: { maxWidth: "lg" },
-          advanced: { anchorId: "sec", className: "wide" },
+          style: { bg: "teal" },
+          advanced: { secret: "k3y" },
         },
         map,
         "en",
         "en",
       ),
     );
-    expect(html).toContain('id="sec"');
-    expect(html).toContain('class="wide"');
-    expect(html).toContain("max-width:1024px");
+    expect(html).toContain("Yo");
+    expect(html).toContain("teal");
+    expect(html).toContain("k3y");
+  });
 
-    const hidden = renderToStaticMarkup(
-      renderResolvedBlock(
-        {
-          id: "s2",
-          type: "hero",
-          content: { en: { heading: "Yo" } },
-          advanced: { visible: false },
-        },
-        map,
-        "en",
-        "en",
-      ),
+  it("does not apply bucket styling to the wrapper", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{
+          id: "b1",
+          type: "panel",
+          content: { en: { heading: "Hi" } },
+          style: { bg: "navy" },
+          advanced: { anchorId: "x", className: "y", customCss: "z" },
+        }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={map}
+      />,
     );
-    expect(hidden).toBe("");
+    expect(html).not.toContain("<style");
+    expect(html).not.toContain('id="x"');
+    expect(html).not.toContain('class="y"');
   });
 });
 

@@ -1,8 +1,10 @@
 import { createElement } from "react";
 import type { BlockMap } from "../registry";
-import { getBlockContentForLanguage } from "../content/get-block-content";
+import {
+  getBlockContentForLanguage,
+  mergeBlockValues,
+} from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
-import { resolveBlockAttrs } from "./block-attrs";
 import type { CmssyBlockContext } from "./block-context";
 import { UnknownBlock } from "./unknown-block";
 
@@ -30,23 +32,17 @@ export function CmssyBlock({
   const Component = Object.hasOwn(blockMap, block.type)
     ? blockMap[block.type]
     : undefined;
-  const attrs = resolveBlockAttrs(block.id, block.style, block.advanced);
-  if (attrs.hidden && !editable) return null;
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
-  const content = patchedContent ? { ...base, ...patchedContent } : base;
+  const resolved = patchedContent ? { ...base, ...patchedContent } : base;
+  const content = mergeBlockValues(resolved, block.style, block.advanced);
   return (
     <div
       data-block-id={block.id}
       data-block-type={block.type}
       data-layout-position={layoutPosition}
       draggable={editable || undefined}
-      id={attrs.id}
-      className={attrs.className}
-      style={Component ? attrs.style : { ...attrs.style, display: "none" }}
+      style={Component ? undefined : { display: "none" }}
     >
-      {attrs.css ? (
-        <style dangerouslySetInnerHTML={{ __html: attrs.css }} />
-      ) : null}
       {Component ? (
         createElement(Component, { content, context })
       ) : (
