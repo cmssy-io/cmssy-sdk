@@ -71,51 +71,75 @@ export interface CmssyLayoutGroup {
 }
 
 export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
-  publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
-    id
-    blocks { id type content }
-    publishedBlocks { id type content }
+  public {
+    page {
+      get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
+        id
+        blocks { id type content }
+        publishedBlocks { id type content }
+      }
+    }
   }
 }`;
 
 export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
-  publicPage(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
-    id
-    blocks { id type content }
-    publishedBlocks { id type content }
+  public {
+    page {
+      get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
+        id
+        blocks { id type content }
+        publishedBlocks { id type content }
+      }
+    }
   }
 }`;
 
 export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
-  publicPageById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
-    id
-    publishedBlocks { id type content }
+  public {
+    page {
+      getById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
+        id
+        publishedBlocks { id type content }
+      }
+    }
   }
 }`;
 
 export const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
-  publicPages(workspaceSlug: $workspaceSlug) {
-    id
-    slug
-    updatedAt
-    publishedAt
+  public {
+    page {
+      list(workspaceSlug: $workspaceSlug) {
+        id
+        slug
+        updatedAt
+        publishedAt
+      }
+    }
   }
 }`;
 
 export const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
-  publicPage(workspaceSlug: $workspaceSlug, slug: $slug) {
-    id
-    seoTitle
-    seoDescription
-    seoKeywords
-    displayName
+  public {
+    page {
+      get(workspaceSlug: $workspaceSlug, slug: $slug) {
+        id
+        seoTitle
+        seoDescription
+        seoKeywords
+        displayName
+      }
+    }
   }
 }`;
 
 export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
-  publicPageLayouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
-    position
-    blocks { id type content order isActive }
+  public {
+    page {
+      layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
+        position
+        blocks { id type content order isActive }
+      }
+    }
   }
 }`;
 
@@ -171,10 +195,14 @@ export async function fetchPage(
 
   type PageResponse = {
     data?: {
-      publicPage?: {
-        id: string;
-        blocks?: RawBlock[] | null;
-        publishedBlocks?: RawBlock[] | null;
+      public?: {
+        page?: {
+          get?: {
+            id: string;
+            blocks?: RawBlock[] | null;
+            publishedBlocks?: RawBlock[] | null;
+          } | null;
+        } | null;
       } | null;
     };
     errors?: Array<{ message?: string }>;
@@ -207,7 +235,7 @@ export async function fetchPage(
       .join("; ");
     throw new Error(`cmssy: page fetch error - ${message}`);
   }
-  const page = json.data?.publicPage;
+  const page = json.data?.public?.page?.get;
   if (!page) return null;
   const draft = previewSecret !== null || devPreview;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
@@ -238,9 +266,13 @@ export async function fetchPageById(
 
   type PageByIdResponse = {
     data?: {
-      publicPageById?: {
-        id: string;
-        publishedBlocks?: RawBlock[] | null;
+      public?: {
+        page?: {
+          getById?: {
+            id: string;
+            publishedBlocks?: RawBlock[] | null;
+          } | null;
+        } | null;
       } | null;
     };
     errors?: Array<{ message?: string }>;
@@ -275,7 +307,7 @@ export async function fetchPageById(
       .join("; ");
     throw new Error(`cmssy: page-by-id fetch error - ${message}`);
   }
-  const page = json.data?.publicPageById;
+  const page = json.data?.public?.page?.getById;
   if (!page) return null;
   return { id: page.id, blocks: page.publishedBlocks ?? [] };
 }
@@ -309,7 +341,11 @@ export async function fetchPages(
   });
 
   type PagesResponse = {
-    data?: { publicPages?: CmssyPageSummary[] | null };
+    data?: {
+      public?: {
+        page?: { list?: CmssyPageSummary[] | null } | null;
+      } | null;
+    };
     errors?: Array<{ message?: string }>;
   };
 
@@ -328,7 +364,7 @@ export async function fetchPages(
       .join("; ");
     throw new Error(`cmssy: pages fetch error - ${message}`);
   }
-  return json.data?.publicPages ?? [];
+  return json.data?.public?.page?.list ?? [];
 }
 
 export type CmssyLocalizedValue = Record<string, string> | string | null;
@@ -365,7 +401,11 @@ export async function fetchPageMeta(
   });
 
   type MetaResponse = {
-    data?: { publicPage?: CmssyPageMeta | null };
+    data?: {
+      public?: {
+        page?: { get?: CmssyPageMeta | null } | null;
+      } | null;
+    };
     errors?: Array<{ message?: string }>;
   };
 
@@ -384,7 +424,7 @@ export async function fetchPageMeta(
       .join("; ");
     throw new Error(`cmssy: page meta fetch error - ${message}`);
   }
-  return json.data?.publicPage ?? null;
+  return json.data?.public?.page?.get ?? null;
 }
 
 export async function fetchLayouts(
@@ -417,7 +457,11 @@ export async function fetchLayouts(
   });
 
   type LayoutsResponse = {
-    data?: { publicPageLayouts?: CmssyLayoutGroup[] | null };
+    data?: {
+      public?: {
+        page?: { layouts?: CmssyLayoutGroup[] | null } | null;
+      } | null;
+    };
     errors?: Array<{ message?: string }>;
   };
 
@@ -436,5 +480,5 @@ export async function fetchLayouts(
       .join("; ");
     throw new Error(`cmssy: layouts fetch error - ${message}`);
   }
-  return json.data?.publicPageLayouts ?? [];
+  return json.data?.public?.page?.layouts ?? [];
 }
