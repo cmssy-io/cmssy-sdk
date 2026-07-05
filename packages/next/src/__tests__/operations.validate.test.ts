@@ -1,0 +1,44 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { describe, it, expect } from "vitest";
+import { buildSchema, parse, validate } from "graphql";
+import * as authClient from "../auth-client.js";
+import * as cartClient from "../cart-client.js";
+import * as ordersClient from "../orders-client.js";
+import * as productServer from "../product-server.js";
+
+// schema.graphql is a committed copy of the backend's canonical SDL
+// (`pnpm --filter backend print-schema` in the cmssy repo). Refresh it whenever
+// the backend schema changes so this harness validates against the live surface.
+const SDL_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "..",
+  "..",
+  "schema.graphql",
+);
+const schema = buildSchema(readFileSync(SDL_PATH, "utf8"));
+
+const ops = Object.entries({
+  ...authClient,
+  ...cartClient,
+  ...ordersClient,
+  ...productServer,
+}).flatMap(([name, value]) =>
+  typeof value === "string" && /^\s*(query|mutation)\b/.test(value)
+    ? [[name, value] as [string, string]]
+    : [],
+);
+
+describe("@cmssy/next operations validate against the backend SDL", () => {
+  it("collects operations from the client modules", () => {
+    expect(ops.length).toBeGreaterThan(0);
+  });
+
+  it.each(ops)("%s is valid", (_name, op) => {
+    const errors = validate(schema, parse(op));
+    expect(errors.map((e) => e.message)).toEqual([]);
+  });
+});

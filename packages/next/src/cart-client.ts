@@ -27,17 +27,17 @@ const CART_FIELDS = `
   }
 `;
 
-const CART_QUERY = `query Cart($workspaceId: ID!) { cart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
-const ADD_TO_CART = `mutation AddToCart($input: AddToCartInput!) { addToCart(input: $input) { ${CART_FIELDS} } }`;
-const UPDATE_ITEM = `mutation UpdateCartItem($input: UpdateCartItemInput!) { updateCartItem(input: $input) { ${CART_FIELDS} } }`;
-const REMOVE_ITEM = `mutation RemoveCartItem($workspaceId: ID!, $itemId: ID!) { removeCartItem(workspaceId: $workspaceId, itemId: $itemId) { ${CART_FIELDS} } }`;
-const CLEAR_CART = `mutation ClearCart($workspaceId: ID!) { clearCart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
-const APPLY_DISCOUNT = `mutation ApplyDiscount($workspaceId: ID!, $code: String!) { applyDiscount(workspaceId: $workspaceId, code: $code) { ${CART_FIELDS} } }`;
-const REMOVE_DISCOUNT = `mutation RemoveDiscount($workspaceId: ID!) { removeDiscount(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
-const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
+export const CART_QUERY = `query Cart($workspaceId: ID!) { cart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
+export const ADD_TO_CART = `mutation AddToCart($input: AddToCartInput!) { addToCart(input: $input) { ${CART_FIELDS} } }`;
+export const UPDATE_ITEM = `mutation UpdateCartItem($input: UpdateCartItemInput!) { updateCartItem(input: $input) { ${CART_FIELDS} } }`;
+export const REMOVE_ITEM = `mutation RemoveCartItem($workspaceId: ID!, $itemId: ID!) { removeCartItem(workspaceId: $workspaceId, itemId: $itemId) { ${CART_FIELDS} } }`;
+export const CLEAR_CART = `mutation ClearCart($workspaceId: ID!) { clearCart(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
+export const APPLY_DISCOUNT = `mutation ApplyDiscount($workspaceId: ID!, $code: String!) { applyDiscount(workspaceId: $workspaceId, code: $code) { ${CART_FIELDS} } }`;
+export const REMOVE_DISCOUNT = `mutation RemoveDiscount($workspaceId: ID!) { removeDiscount(workspaceId: $workspaceId) { ${CART_FIELDS} } }`;
+export const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
   checkout(input: $input) { id status subtotal total currency customerEmail }
 }`;
-const PRODUCT = `query Product($workspaceId: String!, $modelSlug: String!, $filter: JSON) {
+export const PRODUCT = `query Product($workspaceId: String!, $modelSlug: String!, $filter: JSON) {
   publicModelRecords(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: 1) {
     items { id data variants { id sku price inventory selectedOptions { name value } } }
   }
