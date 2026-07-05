@@ -50,6 +50,8 @@ export interface RawBlock {
   id: string;
   type: string;
   content: unknown;
+  style?: unknown;
+  advanced?: unknown;
 }
 
 export interface CmssyPageData {
@@ -61,6 +63,8 @@ export interface RawLayoutBlock {
   id: string;
   type: string;
   content: unknown;
+  style?: unknown;
+  advanced?: unknown;
   order: number;
   isActive: boolean;
 }
@@ -75,8 +79,8 @@ export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slu
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
         id
-        blocks { id type content }
-        publishedBlocks { id type content }
+        blocks { id type content style advanced }
+        publishedBlocks { id type content style advanced }
       }
     }
   }
@@ -87,8 +91,8 @@ export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, 
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
         id
-        blocks { id type content }
-        publishedBlocks { id type content }
+        blocks { id type content style advanced }
+        publishedBlocks { id type content style advanced }
       }
     }
   }
@@ -99,7 +103,7 @@ export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: Str
     page {
       getById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
         id
-        publishedBlocks { id type content }
+        publishedBlocks { id type content style advanced }
       }
     }
   }
@@ -137,7 +141,7 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug
     page {
       layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
         position
-        blocks { id type content order isActive }
+        blocks { id type content style advanced order isActive }
       }
     }
   }

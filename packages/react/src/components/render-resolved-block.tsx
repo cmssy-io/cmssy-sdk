@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { getBlockContentForLanguage } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
 import type { BlockMap } from "../registry";
+import { resolveBlockAttrs } from "./block-attrs";
 import type { CmssyBlockContext } from "./block-context";
 import { UnknownBlock } from "./unknown-block";
 
@@ -25,6 +26,8 @@ export function renderResolvedBlock(
   const Component = Object.hasOwn(map, block.type)
     ? map[block.type]
     : undefined;
+  const attrs = resolveBlockAttrs(block.id, block.style, block.advanced);
+  if (attrs.hidden) return null;
   const content =
     resolvedContent ??
     getBlockContentForLanguage(
@@ -38,8 +41,13 @@ export function renderResolvedBlock(
       key={block.id}
       data-block-id={block.id}
       data-block-type={block.type}
-      style={Component ? undefined : { display: "none" }}
+      id={attrs.id}
+      className={attrs.className}
+      style={Component ? attrs.style : { ...attrs.style, display: "none" }}
     >
+      {attrs.css ? (
+        <style dangerouslySetInnerHTML={{ __html: attrs.css }} />
+      ) : null}
       {Component ? (
         createElement(Component, { content, context, data })
       ) : (
