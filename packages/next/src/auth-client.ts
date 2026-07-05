@@ -17,39 +17,39 @@ export interface AuthTokenResult extends AuthMutationResult {
   accessTokenExpiresIn: number | null;
 }
 
-const LOGIN_MUTATION = `mutation SiteMemberLogin($input: SiteMemberLoginInput!) {
+export const LOGIN_MUTATION = `mutation SiteMemberLogin($input: SiteMemberLoginInput!) {
   siteMemberLogin(input: $input) {
     success message accessToken refreshToken accessTokenExpiresIn
   }
 }`;
 
-const REGISTER_MUTATION = `mutation SiteMemberRegister($input: SiteMemberRegisterInput!) {
+export const REGISTER_MUTATION = `mutation SiteMemberRegister($input: SiteMemberRegisterInput!) {
   siteMemberRegister(input: $input) { success message }
 }`;
 
-const REFRESH_MUTATION = `mutation SiteMemberRefresh($refreshToken: String!) {
+export const REFRESH_MUTATION = `mutation SiteMemberRefresh($refreshToken: String!) {
   siteMemberRefresh(refreshToken: $refreshToken) {
     success message accessToken refreshToken accessTokenExpiresIn
   }
 }`;
 
-const LOGOUT_MUTATION = `mutation SiteMemberLogout($refreshToken: String!) {
+export const LOGOUT_MUTATION = `mutation SiteMemberLogout($refreshToken: String!) {
   siteMemberLogout(refreshToken: $refreshToken) { success message }
 }`;
 
-const LOGOUT_EVERYWHERE_MUTATION = `mutation SiteMemberLogoutEverywhere {
+export const LOGOUT_EVERYWHERE_MUTATION = `mutation SiteMemberLogoutEverywhere {
   siteMemberLogoutEverywhere { success message }
 }`;
 
-const FORGOT_MUTATION = `mutation SiteMemberForgotPassword($modelSlug: String!, $identity: String!) {
+export const FORGOT_MUTATION = `mutation SiteMemberForgotPassword($modelSlug: String!, $identity: String!) {
   siteMemberForgotPassword(modelSlug: $modelSlug, identity: $identity) { success message }
 }`;
 
-const RESET_MUTATION = `mutation SiteMemberResetPassword($token: String!, $newPassword: String!) {
+export const RESET_MUTATION = `mutation SiteMemberResetPassword($token: String!, $newPassword: String!) {
   siteMemberResetPassword(token: $token, newPassword: $newPassword) { success message }
 }`;
 
-const VERIFY_MUTATION = `mutation SiteMemberVerifyEmail($token: String!) {
+export const VERIFY_MUTATION = `mutation SiteMemberVerifyEmail($token: String!) {
   siteMemberVerifyEmail(token: $token) { success message }
 }`;
 
