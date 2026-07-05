@@ -10,7 +10,7 @@ type AccountQueries {
   orders(limit: Int, skip: Int, workspaceId: ID!): OrderListResult!
 }
 
-"""Input for addToCart mutation"""
+"""Input for adding an item to a cart"""
 input AddToCartInput {
   notes: String
   quantity: Int!
@@ -2786,7 +2786,7 @@ input UpdateApiTokenInput {
   name: String
 }
 
-"""Input for updateCartItem mutation"""
+"""Input for updating a cart item"""
 input UpdateCartItemInput {
   itemId: ID!
   notes: String
