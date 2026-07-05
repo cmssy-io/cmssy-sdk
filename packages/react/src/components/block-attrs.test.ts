@@ -23,10 +23,30 @@ describe("resolveBlockAttrs", () => {
   it("ignores unknown/empty tokens", () => {
     const attrs = resolveBlockAttrs(
       "b1",
-      { padding: "none", align: "justify", maxWidth: "" },
+      { padding: "xxl", align: "justify", maxWidth: "" },
       {},
     );
     expect(attrs.style).toBeUndefined();
+  });
+
+  it("maps padding 'none' to explicit zero", () => {
+    const attrs = resolveBlockAttrs("b1", { padding: "none" }, {});
+    expect(attrs.style).toEqual({ paddingTop: "0", paddingBottom: "0" });
+  });
+
+  it("strips braces from customCss so it cannot escape the scoped rule", () => {
+    const attrs = resolveBlockAttrs(
+      "abc",
+      {},
+      { customCss: "color:red} body{display:none" },
+    );
+    expect(attrs.css).toBe('[data-block-id="abc"]{color:red bodydisplay:none}');
+    expect(attrs.css).not.toMatch(/[{}].*[{}].*[{}]/);
+  });
+
+  it("escapes quotes in the block id used for the scoped selector", () => {
+    const attrs = resolveBlockAttrs('a"b', {}, { customCss: "color:red;" });
+    expect(attrs.css).toBe('[data-block-id="a\\"b"]{color:red;}');
   });
 
   it("maps the Advanced bucket to id and className", () => {

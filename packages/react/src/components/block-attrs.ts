@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 const PADDING_SCALE: Record<string, string> = {
+  none: "0",
   sm: "0.5rem",
   md: "1rem",
   lg: "2rem",
@@ -65,12 +66,13 @@ export function resolveBlockAttrs(
     style.marginRight = "auto";
   }
 
-  const selector = `[data-block-id="${blockId}"]`;
+  const selector = `[data-block-id="${blockId.replace(/["\\]/g, "\\$&")}"]`;
   const rules: string[] = [];
 
   const customCss = text(a.customCss);
   if (customCss) {
-    rules.push(`${selector}{${customCss.replace(/<\/style/gi, "")}}`);
+    const safe = customCss.replace(/[{}]/g, "").replace(/<\/style/gi, "");
+    rules.push(`${selector}{${safe}}`);
   }
   if (a.hideOnMobile === true) {
     rules.push(
