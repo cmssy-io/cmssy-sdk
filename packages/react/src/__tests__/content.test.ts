@@ -95,11 +95,11 @@ describe("fetchPage", () => {
   it("returns publishedBlocks on an open read", async () => {
     const fetch = mockFetch({
       data: {
-        publicPage: {
+        public: { page: { get: {
           id: "p1",
           blocks: [],
           publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-        },
+        } } },
       },
     });
     const page = await fetchPage(config, ["home"], { fetch });
@@ -110,11 +110,11 @@ describe("fetchPage", () => {
   it("returns draft blocks when previewSecret is set", async () => {
     const fetch = mockFetch({
       data: {
-        publicPage: {
+        public: { page: { get: {
           id: "p1",
           blocks: [{ id: "d1", type: "hero", content: {} }],
           publishedBlocks: [],
-        },
+        } } },
       },
     });
     const page = await fetchPage(config, "/", { fetch, previewSecret: "s" });
@@ -137,11 +137,11 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            publicPage: {
+            public: { page: { get: {
               id: "p1",
               blocks: [{ id: "dev1", type: "hero", content: {} }],
               publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            },
+            } } },
           },
         }),
       };
@@ -171,11 +171,11 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            publicPage: {
+            public: { page: { get: {
               id: "p1",
               blocks: [{ id: "dev1", type: "hero", content: {} }],
               publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            },
+            } } },
           },
         }),
       };
@@ -200,11 +200,11 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            publicPage: {
+            public: { page: { get: {
               id: "p1",
               blocks: [{ id: "b1", type: "hero", content: {} }],
               publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            },
+            } } },
           },
         }),
       };
@@ -224,11 +224,11 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            publicPage: {
+            public: { page: { get: {
               id: "p1",
               blocks: [{ id: "d1", type: "hero", content: {} }],
               publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            },
+            } } },
           },
         }),
       };
@@ -242,7 +242,7 @@ describe("fetchPage", () => {
   });
 
   it("returns null for a genuinely missing page", async () => {
-    const fetch = mockFetch({ data: { publicPage: null } });
+    const fetch = mockFetch({ data: { public: { page: { get: null  } }} });
     expect(await fetchPage(config, "/missing", { fetch })).toBeNull();
   });
 
@@ -289,11 +289,11 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            publicPage: {
+            public: { page: { get: {
               id: "p",
               blocks: [{ id: "d", type: "h", content: {} }],
               publishedBlocks: [{ id: "b", type: "h", content: {} }],
-            },
+            } } },
           },
         }),
       };
@@ -328,10 +328,10 @@ describe("fetchPageById", () => {
   it("returns publishedBlocks for the requested page id", async () => {
     const fetch = mockFetch({
       data: {
-        publicPageById: {
+        public: { page: { getById: {
           id: "nf1",
           publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-        },
+        } } },
       },
     });
     const page = await fetchPageById(config, "nf1", { fetch });
@@ -347,7 +347,7 @@ describe("fetchPageById", () => {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { publicPageById: null } }),
+        json: async () => ({ data: { public: { page: { getById: null  } }} }),
       };
     };
     await fetchPageById(config, "nf1", { fetch });
@@ -356,13 +356,13 @@ describe("fetchPageById", () => {
   });
 
   it("returns null when the page is missing or unpublished", async () => {
-    const fetch = mockFetch({ data: { publicPageById: null } });
+    const fetch = mockFetch({ data: { public: { page: { getById: null  } }} });
     expect(await fetchPageById(config, "missing", { fetch })).toBeNull();
   });
 
   it("defaults blocks to [] when publishedBlocks is null", async () => {
     const fetch = mockFetch({
-      data: { publicPageById: { id: "nf1", publishedBlocks: null } },
+      data: { public: { page: { getById: { id: "nf1", publishedBlocks: null } } } },
     });
     const page = await fetchPageById(config, "nf1", { fetch });
     expect(page?.blocks).toEqual([]);
@@ -411,7 +411,7 @@ describe("fetchLayouts", () => {
   it("returns the resolved layout groups", async () => {
     const fetch = mockFetch({
       data: {
-        publicPageLayouts: [
+        public: { page: { layouts: [
           {
             position: "header",
             blocks: [
@@ -425,7 +425,7 @@ describe("fetchLayouts", () => {
             ],
           },
           { position: "footer", blocks: [] },
-        ],
+        ] } },
       },
     });
     const groups = await fetchLayouts(config, "/", { fetch });
@@ -456,7 +456,7 @@ describe("fetchLayouts", () => {
   });
 
   it("returns [] when the query yields nothing", async () => {
-    const fetch = mockFetch({ data: { publicPageLayouts: null } });
+    const fetch = mockFetch({ data: { public: { page: { layouts: null  } }} });
     expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
   });
 });
@@ -475,14 +475,14 @@ describe("fetchPages", () => {
   it("returns the published page summaries", async () => {
     const fetch = mockFetch({
       data: {
-        publicPages: [
+        public: { page: { list: [
           { slug: "/", updatedAt: "2026-01-01T00:00:00Z", publishedAt: null },
           {
             slug: "/about",
             updatedAt: null,
             publishedAt: "2026-02-02T00:00:00Z",
           },
-        ],
+        ] } },
       },
     });
     const pages = await fetchPages(config, { fetch });
@@ -492,7 +492,7 @@ describe("fetchPages", () => {
   });
 
   it("returns [] when the query yields nothing", async () => {
-    const fetch = mockFetch({ data: { publicPages: null } });
+    const fetch = mockFetch({ data: { public: { page: { list: null  } }} });
     expect(await fetchPages(config, { fetch })).toEqual([]);
   });
 
