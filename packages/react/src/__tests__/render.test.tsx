@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyServerLayout } from "../components/cmssy-server-layout";
 import { CmssyBlock } from "../components/cmssy-block";
+import { renderResolvedBlock } from "../components/render-resolved-block";
 import { defineBlock, buildBlockMap } from "../registry";
 import { fields } from "../fields";
 
@@ -92,6 +93,60 @@ describe("CmssyBlock style/advanced buckets", () => {
       />,
     );
     expect(html).toBe("");
+  });
+
+  it("keeps a visible:false block rendered in editable mode", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{
+          id: "b1",
+          type: "hero",
+          content: { en: { heading: "Hi" } },
+          advanced: { visible: false },
+        }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={map}
+        editable
+      />,
+    );
+    expect(html).toContain('data-block-id="b1"');
+    expect(html).toContain("Hi");
+  });
+
+  it("applies buckets and hidden semantics on the SSR path", () => {
+    const html = renderToStaticMarkup(
+      renderResolvedBlock(
+        {
+          id: "s1",
+          type: "hero",
+          content: { en: { heading: "Yo" } },
+          style: { maxWidth: "lg" },
+          advanced: { anchorId: "sec", className: "wide" },
+        },
+        map,
+        "en",
+        "en",
+      ),
+    );
+    expect(html).toContain('id="sec"');
+    expect(html).toContain('class="wide"');
+    expect(html).toContain("max-width:1024px");
+
+    const hidden = renderToStaticMarkup(
+      renderResolvedBlock(
+        {
+          id: "s2",
+          type: "hero",
+          content: { en: { heading: "Yo" } },
+          advanced: { visible: false },
+        },
+        map,
+        "en",
+        "en",
+      ),
+    );
+    expect(hidden).toBe("");
   });
 });
 
