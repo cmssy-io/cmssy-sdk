@@ -30,6 +30,7 @@ export const fields = {
   multiselect: control("multiselect"),
   radio: control("radio"),
   repeater: control("repeater"),
+  table: control("table"),
   form: control("form"),
   pageSelector: control("pageSelector"),
 };
