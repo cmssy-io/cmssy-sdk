@@ -9,11 +9,12 @@ export interface PostTarget {
 }
 
 export function normalizeOrigin(origin: string): string {
-  if (origin === "*") return "*";
+  const trimmed = origin.trim();
+  if (trimmed === "*") return "*";
   try {
-    return new URL(origin).origin;
+    return new URL(trimmed).origin;
   } catch {
-    return origin;
+    return trimmed;
   }
 }
 

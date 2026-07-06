@@ -20,6 +20,10 @@ describe("resolveInitialTarget", () => {
     expect(resolveInitialTarget(["https://cmssy.io", "*"])).toBe("*");
   });
 
+  it("treats a whitespace-padded wildcard as the wildcard", () => {
+    expect(resolveInitialTarget([" * ", "https://cmssy.io"])).toBe("*");
+  });
+
   it("normalizes the returned origin (strips path/whitespace)", () => {
     expect(resolveInitialTarget(" https://cmssy.io/editor ")).toBe(
       "https://cmssy.io",
