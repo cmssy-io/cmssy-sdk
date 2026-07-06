@@ -92,6 +92,8 @@ export interface PatchMessage {
   protocolVersion: number;
   blockId: string;
   content: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  advanced?: Record<string, unknown>;
   layoutPosition?: string;
 }
 
@@ -106,6 +108,8 @@ export interface InsertMessage {
   blockId: string;
   blockType: string;
   content: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  advanced?: Record<string, unknown>;
   index: number;
 }
 
