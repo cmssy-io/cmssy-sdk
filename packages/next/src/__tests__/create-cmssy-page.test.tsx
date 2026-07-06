@@ -351,7 +351,7 @@ describe("createCmssyPage", () => {
     });
   });
 
-  it("warns and uses the first origin for the bridge when several are configured", async () => {
+  it("passes every configured origin to the bridge so any of them can frame the editor", async () => {
     draftEnabled = true;
     fetchPage.mockResolvedValue(PAGE);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -365,9 +365,9 @@ describe("createCmssyPage", () => {
     );
     const element = unwrap(await Page({ params: params([]) }));
     expect(element.props.edit).toEqual({
-      editorOrigin: "https://app.cmssy.io",
+      editorOrigin: ["https://app.cmssy.io", "https://staging.cmssy.io"],
     });
-    expect(warn).toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 

@@ -25,6 +25,32 @@ export function postToEditor(
   target.postMessage(message, normalizeOrigin(editorOrigin));
 }
 
+export function isOriginAllowed(
+  origin: string,
+  allowed: string | string[],
+): boolean {
+  const list = Array.isArray(allowed) ? allowed : [allowed];
+  const actual = normalizeOrigin(origin);
+  return list.some((candidate) => {
+    const expected = normalizeOrigin(candidate);
+    return expected === "*" || expected === actual;
+  });
+}
+
+export function resolveInitialTarget(editorOrigin: string | string[]): string {
+  const list = Array.isArray(editorOrigin) ? editorOrigin : [editorOrigin];
+  if (list.includes("*")) return "*";
+  if (list.length === 1) return list[0]!;
+  const referrerOrigin =
+    typeof document !== "undefined" && document.referrer
+      ? normalizeOrigin(document.referrer)
+      : "";
+  const match = list.find(
+    (origin) => normalizeOrigin(origin) === referrerOrigin,
+  );
+  return match ?? list[0]!;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -32,10 +58,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export function parseEditorMessage(
   data: unknown,
   origin: string,
-  expectedOrigin: string,
+  expectedOrigin: string | string[],
 ): EditorToAppMessage | null {
-  const expected = normalizeOrigin(expectedOrigin);
-  if (expected !== "*" && origin !== expected) return null;
+  if (!isOriginAllowed(origin, expectedOrigin)) return null;
   if (!isObject(data)) return null;
 
   switch (data.type) {

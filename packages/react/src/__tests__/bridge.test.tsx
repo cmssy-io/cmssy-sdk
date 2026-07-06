@@ -244,6 +244,41 @@ describe("edit bridge (blocks-driven)", () => {
     expect(container.textContent).not.toContain("Hacked");
   });
 
+  it("accepts a patch from any configured origin when several are allowed", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin: ["https://cmssy.io", "https://www.cmssy.io"] }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent("https://www.cmssy.io", { heading: "Edited" }),
+      );
+    });
+    expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("still rejects an origin outside the configured allow-list", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin: ["https://cmssy.io", "https://www.cmssy.io"] }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        patchEvent("https://evil.com", { heading: "Hacked" }),
+      );
+    });
+    expect(container.textContent).toContain("Hello|World");
+    expect(container.textContent).not.toContain("Hacked");
+  });
+
   it("inserts a block at the given index, before the base block", async () => {
     const { container } = render(
       <CmssyEditablePage

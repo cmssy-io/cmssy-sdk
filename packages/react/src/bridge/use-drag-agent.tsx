@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { PROTOCOL_VERSION } from "./protocol";
-import { parseEditorMessage, postToEditor } from "./messages";
+import {
+  parseEditorMessage,
+  postToEditor,
+  resolveInitialTarget,
+} from "./messages";
 
 export interface DragAgentConfig {
-  editorOrigin: string;
+  editorOrigin: string | string[];
 }
 
 const MOVE_MIME = "application/x-cmssy-move";
@@ -84,7 +88,11 @@ export function useDragAgent(config: DragAgentConfig): {
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) return;
     const { editorOrigin } = config;
-    if (editorOrigin === "*" && typeof console !== "undefined") {
+    let postTarget = resolveInitialTarget(editorOrigin);
+    const isWildcard = Array.isArray(editorOrigin)
+      ? editorOrigin.includes("*")
+      : editorOrigin === "*";
+    if (isWildcard && typeof console !== "undefined") {
       console.warn(
         "[cmssy] editorOrigin '*' disables origin checks - dev only, do not use in production",
       );
@@ -130,7 +138,7 @@ export function useDragAgent(config: DragAgentConfig): {
       updateDropY(null);
       resolver.invalidate();
       try {
-        postToEditor(window.parent, editorOrigin, {
+        postToEditor(window.parent, postTarget, {
           type: "cmssy:move",
           protocolVersion: PROTOCOL_VERSION,
           blockId,
@@ -155,6 +163,7 @@ export function useDragAgent(config: DragAgentConfig): {
         editorOrigin,
       );
       if (!message) return;
+      postTarget = event.origin;
       if (message.type === "cmssy:drag-over") {
         const edge = 64;
         const step = 20;
@@ -166,7 +175,7 @@ export function useDragAgent(config: DragAgentConfig): {
         const { index, y } = resolver.resolve(message.y);
         updateDropY(y);
         try {
-          postToEditor(window.parent, editorOrigin, {
+          postToEditor(window.parent, postTarget, {
             type: "cmssy:drag-index",
             protocolVersion: PROTOCOL_VERSION,
             index,
