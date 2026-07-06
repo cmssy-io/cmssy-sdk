@@ -22,6 +22,7 @@ npm i @cmssy/next @cmssy/react
 import type { CmssyNextConfig } from "@cmssy/next";
 
 export const cmssy: CmssyNextConfig = {
+  org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
   defaultLocale: "en",
@@ -35,7 +36,8 @@ override them only for self-hosted or staging deployments.
 
 | Env var                | What it is                                                                                                                                                                                                    | Required       |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `CMSSY_WORKSPACE_SLUG` | The workspace slug (resolves the workspace id).                                                                                                                                                               | yes            |
+| `CMSSY_ORG_SLUG`       | The organization slug (part of the org-scoped delivery path).                                                                                                                                                 | yes            |
+| `CMSSY_WORKSPACE_SLUG` | The workspace slug (unique within the organization).                                                                                                                                                          | yes            |
 | `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work. | yes            |
 | `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                              | no (self-host) |
 | `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin.                                                                                                                                  | no (self-host) |
@@ -44,6 +46,7 @@ override them only for self-hosted or staging deployments.
 ```ts
 // self-host / staging only:
 export const cmssy: CmssyNextConfig = {
+  org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
   apiUrl: process.env.CMSSY_API_URL!, // e.g. http://localhost:4000/graphql
@@ -159,6 +162,7 @@ toggle controls this, and your local app opts in with a `devToken`:
 ```ts
 // cmssy.config.ts - development only
 export const cmssy: CmssyNextConfig = {
+  org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
   devToken: process.env.CMSSY_API_TOKEN, // a cs_… token from the dashboard's API Tokens page

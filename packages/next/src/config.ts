@@ -52,6 +52,8 @@ export interface CmssyNextConfig {
    * (`https://api.cmssy.io/graphql`); set it only for self-hosted / staging.
    */
   apiUrl?: string;
+  /** Organization slug - part of the org-scoped delivery path. */
+  org: string;
   workspaceSlug: string;
   draftSecret: string;
   /**
@@ -90,13 +92,15 @@ export interface CmssyNextConfig {
  */
 export type CmssyEnvConfig = Omit<
   CmssyNextConfig,
-  "workspaceSlug" | "draftSecret"
+  "org" | "workspaceSlug" | "draftSecret"
 > & {
+  org?: string;
   workspaceSlug?: string;
   draftSecret?: string;
 };
 
 const REQUIRED_CONFIG_ENV = [
+  ["org", "CMSSY_ORG_SLUG"],
   ["workspaceSlug", "CMSSY_WORKSPACE_SLUG"],
   ["draftSecret", "CMSSY_DRAFT_SECRET"],
 ] as const;

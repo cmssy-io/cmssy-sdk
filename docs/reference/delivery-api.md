@@ -12,8 +12,20 @@ custom models, records, listing child pages - you send your own query through th
 
 ## Endpoint & scoping
 
-The endpoint defaults to `https://api.cmssy.io/graphql` (override `apiUrl` only
-for self-host). Every operation is **workspace-scoped**, in one of two ways:
+Public content reads are delivered over the **org-scoped path**
+`{apiBase}/public/{orgSlug}/{workspaceSlug}/graphql`, where `apiBase` is your
+`apiUrl` with its trailing `/graphql` stripped (default `https://api.cmssy.io`,
+so requests go to `https://api.cmssy.io/public/{org}/{ws}/graphql`; override
+`apiUrl` only for self-host). `org` and `workspaceSlug` come from your config.
+Because the org is in the path, a workspace slug only needs to be unique **within
+its organization**.
+
+> **Breaking change (SDK 0.15.0).** Delivery moved from a single `/graphql`
+> endpoint (with `workspaceSlug` as a global lookup) to the org-scoped path above.
+> Add a required **`org`** (org slug) to your config / set `CMSSY_ORG_SLUG`. No
+> other code changes are needed - the fetch helpers build the path for you.
+
+Every operation is **workspace-scoped**, in one of two ways:
 
 - **`workspaceSlug` (String!)** - the page/layout/config/form reads. The SDK
   fetch helpers pass it from your config automatically.

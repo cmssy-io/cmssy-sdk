@@ -5,18 +5,24 @@ describe("defineCmssyConfig", () => {
   it("passes env-shaped values through when required fields are present", () => {
     const config = defineCmssyConfig({
       apiUrl: process.env.CMSSY_API_URL,
+      org: "acme-org",
       workspaceSlug: "acme",
       draftSecret: "shhh",
       devToken: undefined,
     });
+    expect(config.org).toBe("acme-org");
     expect(config.workspaceSlug).toBe("acme");
     expect(config.draftSecret).toBe("shhh");
   });
 
   it("throws listing missing required env vars", () => {
     expect(() =>
-      defineCmssyConfig({ workspaceSlug: undefined, draftSecret: undefined }),
-    ).toThrowError(/CMSSY_WORKSPACE_SLUG.*CMSSY_DRAFT_SECRET/s);
+      defineCmssyConfig({
+        org: undefined,
+        workspaceSlug: undefined,
+        draftSecret: undefined,
+      }),
+    ).toThrowError(/CMSSY_ORG_SLUG.*CMSSY_WORKSPACE_SLUG.*CMSSY_DRAFT_SECRET/s);
   });
 
   it("treats blank/whitespace values as missing", () => {
@@ -25,17 +31,29 @@ describe("defineCmssyConfig", () => {
     ).toThrowError(/CMSSY_DRAFT_SECRET/);
   });
 
-  it("does not require the optional apiUrl", () => {
+  it("requires the org slug", () => {
     expect(() =>
       defineCmssyConfig({ workspaceSlug: "acme", draftSecret: "shhh" }),
+    ).toThrowError(/CMSSY_ORG_SLUG/);
+  });
+
+  it("does not require the optional apiUrl", () => {
+    expect(() =>
+      defineCmssyConfig({
+        org: "acme-org",
+        workspaceSlug: "acme",
+        draftSecret: "shhh",
+      }),
     ).not.toThrow();
   });
 
   it("trims surrounding whitespace on required fields", () => {
     const config = defineCmssyConfig({
+      org: "  acme-org  ",
       workspaceSlug: "  acme  ",
       draftSecret: "\tshhh\n",
     });
+    expect(config.org).toBe("acme-org");
     expect(config.workspaceSlug).toBe("acme");
     expect(config.draftSecret).toBe("shhh");
   });

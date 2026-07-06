@@ -26,6 +26,7 @@ export async function resolveLocaleFromPathname(
       ? null
       : await resolveSiteLocales({
           apiUrl: config.apiUrl,
+          org: config.org,
           workspaceSlug: config.workspaceSlug,
         });
   const siteLocales: CmssySiteLocales = {

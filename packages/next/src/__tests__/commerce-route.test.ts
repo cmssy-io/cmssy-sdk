@@ -23,7 +23,7 @@ const SECRET = "s".repeat(32);
 
 const config: CmssyNextConfig = {
   apiUrl: "https://api.test/graphql",
-  workspaceSlug: "test-ws",
+  org: "acme", workspaceSlug: "test-ws",
   draftSecret: "d".repeat(16),
   editorOrigin: "https://app.test",
   auth: { modelSlug: "members", sessionSecret: SECRET },
