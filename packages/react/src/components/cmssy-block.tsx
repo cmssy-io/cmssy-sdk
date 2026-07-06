@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import type { BlockMap } from "../registry";
 import {
+  asBucket,
   getBlockContentForLanguage,
-  mergeBlockValues,
 } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
 import type { CmssyBlockContext } from "./block-context";
@@ -33,8 +33,7 @@ export function CmssyBlock({
     ? blockMap[block.type]
     : undefined;
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
-  const resolved = patchedContent ? { ...base, ...patchedContent } : base;
-  const content = mergeBlockValues(resolved, block.style, block.advanced);
+  const content = patchedContent ? { ...base, ...patchedContent } : base;
   return (
     <div
       data-block-id={block.id}
@@ -44,7 +43,12 @@ export function CmssyBlock({
       style={Component ? undefined : { display: "none" }}
     >
       {Component ? (
-        createElement(Component, { content, context })
+        createElement(Component, {
+          content,
+          style: asBucket(block.style),
+          advanced: asBucket(block.advanced),
+          context,
+        })
       ) : (
         <UnknownBlock type={block.type} />
       )}
