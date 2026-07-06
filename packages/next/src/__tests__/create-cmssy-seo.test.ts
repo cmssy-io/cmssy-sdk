@@ -22,7 +22,7 @@ interface StubPage {
 
 /**
  * Routes the two GraphQL calls createCmssySitemap makes: publicPages and
- * publicSiteConfig (for notFoundPageId).
+ * public.siteConfig (for notFoundPageId).
  */
 function stubGraphql(opts: {
   pages?: StubPage[];
@@ -32,11 +32,11 @@ function stubGraphql(opts: {
   const { pages = [], notFoundPageId = null, pagesOk = true } = opts;
   const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
     const query = JSON.parse(init.body).query as string;
-    if (query.includes("publicSiteConfig")) {
+    if (query.includes("PublicSiteConfig")) {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { publicSiteConfig: { notFoundPageId } } }),
+        json: async () => ({ data: { public: { siteConfig: { notFoundPageId } } } }),
       };
     }
     return {
@@ -180,7 +180,7 @@ describe("createCmssySitemap", () => {
 });
 
 describe("buildCmssyMetadata", () => {
-  /** Routes publicPage (meta) and publicSiteConfig. */
+  /** Routes publicPage (meta) and public.siteConfig. */
   function stubMeta(opts: {
     page?: Record<string, unknown> | null;
     siteConfig?: Record<string, unknown> | null;
@@ -188,11 +188,11 @@ describe("buildCmssyMetadata", () => {
     const { page = null, siteConfig = null } = opts;
     const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
       const query = JSON.parse(init.body).query as string;
-      if (query.includes("publicSiteConfig")) {
+      if (query.includes("PublicSiteConfig")) {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ data: { publicSiteConfig: siteConfig } }),
+          json: async () => ({ data: { public: { siteConfig: siteConfig } } }),
         };
       }
       return {
@@ -312,11 +312,11 @@ describe("buildCmssyMetadata", () => {
   it("degrades gracefully when the page meta fetch fails", async () => {
     const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
       const query = JSON.parse(init.body).query as string;
-      if (query.includes("publicSiteConfig")) {
+      if (query.includes("PublicSiteConfig")) {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ data: { publicSiteConfig: SITE_CONFIG } }),
+          json: async () => ({ data: { public: { siteConfig: SITE_CONFIG } } }),
         };
       }
       return { ok: false, status: 500, json: async () => ({}) };

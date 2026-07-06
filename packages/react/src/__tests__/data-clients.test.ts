@@ -137,7 +137,7 @@ describe("createCmssyClient().queryScoped", () => {
         status: 200,
         json: async () =>
           call === 1
-            ? { data: { publicSiteConfig: { id: "sc", workspaceId: "w7" } } }
+            ? { data: { public: { siteConfig: { id: "sc", workspaceId: "w7" } } } }
             : (expect(init.headers["x-workspace-id"]).toBe("w7"),
               { data: { publicForm: null } }),
       };
@@ -151,14 +151,14 @@ describe("createCmssyClient().queryScoped", () => {
     let siteConfigCalls = 0;
     const fetch: FetchLike = async (_url, init) => {
       const body = JSON.parse(init.body);
-      const isSiteConfig = body.query.includes("publicSiteConfig");
+      const isSiteConfig = body.query.includes("PublicSiteConfig");
       if (isSiteConfig) siteConfigCalls += 1;
       return {
         ok: true,
         status: 200,
         json: async () =>
           isSiteConfig
-            ? { data: { publicSiteConfig: { id: "sc", workspaceId: "w7" } } }
+            ? { data: { public: { siteConfig: { id: "sc", workspaceId: "w7" } } } }
             : { data: { publicForm: null } },
       };
     };
@@ -178,7 +178,7 @@ describe("createCmssyClient().resolveWorkspaceId", () => {
         ok: true,
         status: 200,
         json: async () => ({
-          data: { publicSiteConfig: { id: "sc", workspaceId: "w1" } },
+          data: { public: { siteConfig: { id: "sc", workspaceId: "w1" } } },
         }),
       };
     };
@@ -189,7 +189,7 @@ describe("createCmssyClient().resolveWorkspaceId", () => {
   });
 
   it("throws when the workspace id can't be resolved", async () => {
-    const fetch = mockFetch({ data: { publicSiteConfig: null } });
+    const fetch = mockFetch({ data: { public: { siteConfig: null } } });
     const client = createCmssyClient(config);
     await expect(client.resolveWorkspaceId({ fetch })).rejects.toThrow(
       /could not resolve workspaceId/,

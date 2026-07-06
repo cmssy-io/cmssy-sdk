@@ -72,10 +72,10 @@ function mockFetch(payloads: Record<string, unknown>) {
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       fetchCalls.push({ body, headers: new Headers(init?.headers) });
       const q = String(body.query);
-      if (q.includes("publicSiteConfig")) {
+      if (q.includes("PublicSiteConfig")) {
         return new Response(
           JSON.stringify({
-            data: { publicSiteConfig: { workspaceId: "ws-id-1" } },
+            data: { public: { siteConfig: { workspaceId: "ws-id-1" } } },
           }),
           { status: 200, headers: { "content-type": "application/json" } },
         );

@@ -45,14 +45,16 @@ describe("splitLocaleFromPath", () => {
 });
 
 describe("resolveSiteLocales", () => {
-  it("reads defaultLanguage + enabledLanguages from publicSiteConfig", async () => {
+  it("reads defaultLanguage + enabledLanguages from public.siteConfig", async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
         data: {
-          publicSiteConfig: {
-            defaultLanguage: "pl",
-            enabledLanguages: ["pl", "en"],
+          public: {
+            siteConfig: {
+              defaultLanguage: "pl",
+              enabledLanguages: ["pl", "en"],
+            },
           },
         },
       }),
