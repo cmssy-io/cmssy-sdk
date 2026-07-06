@@ -60,7 +60,7 @@ describe("resolveSiteLocales", () => {
       }),
     }));
     const res = await resolveSiteLocales(
-      { apiUrl: "https://api.test/graphql", workspaceSlug: "ws-a" },
+      { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws-a" },
       { fetch: fetchMock as never },
     );
     expect(res).toEqual({ defaultLocale: "pl", locales: ["pl", "en"] });
@@ -71,7 +71,7 @@ describe("resolveSiteLocales", () => {
       throw new Error("boom");
     });
     const res = await resolveSiteLocales(
-      { apiUrl: "https://api.test/graphql", workspaceSlug: "ws-b" },
+      { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws-b" },
       { fetch: fetchMock as never },
     );
     expect(res).toEqual({ defaultLocale: "en", locales: ["en"] });

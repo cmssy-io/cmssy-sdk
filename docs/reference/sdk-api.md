@@ -31,8 +31,12 @@ rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/
 createCmssyClient(config: CmssyClientConfig): CmssyClient;
 ```
 
-`CmssyClientConfig` is `{ apiUrl?: string; workspaceSlug: string }` - `apiUrl`
-[defaults to cmssy cloud](./delivery-api.md). The client has exactly three members:
+`CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string }` -
+`apiUrl` [defaults to cmssy cloud](./delivery-api.md); `org` + `workspaceSlug`
+form the org-scoped delivery path `{apiBase}/public/{org}/{workspaceSlug}/graphql`,
+where `apiBase` is `apiUrl` with its trailing `/graphql` stripped (default
+`https://api.cmssy.io`). A workspace slug only needs to be unique within its
+organization. The client has exactly three members:
 
 ```ts
 interface CmssyClient {
@@ -162,6 +166,7 @@ advanced use.
 
 ```ts
 interface CmssyNextConfig {
+  org: string; // organization slug (org-scoped delivery path)
   workspaceSlug: string;
   draftSecret: string; // generated per workspace: Settings → Headless (copy exact value)
   apiUrl?: string; // default https://api.cmssy.io/graphql

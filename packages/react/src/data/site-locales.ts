@@ -18,7 +18,7 @@ export async function resolveSiteLocales(
   config: CmssyClientConfig,
   options?: GraphqlRequestOptions,
 ): Promise<CmssySiteLocales> {
-  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
+  const key = `${resolveApiUrl(config.apiUrl)}::${config.org}::${config.workspaceSlug}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
   cache.delete(key);
@@ -31,7 +31,7 @@ export async function resolveSiteLocales(
       config,
       SITE_CONFIG_QUERY,
       { workspaceSlug: config.workspaceSlug },
-      options,
+      { ...options, public: true },
       "site config",
     );
     const siteConfig = data.public?.siteConfig ?? null;

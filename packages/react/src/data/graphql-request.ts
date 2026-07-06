@@ -1,5 +1,6 @@
 import {
   resolveApiUrl,
+  resolvePublicUrl,
   type CmssyClientConfig,
   type FetchLike,
 } from "../content/content-client";
@@ -8,6 +9,12 @@ export interface GraphqlRequestOptions {
   fetch?: FetchLike;
   signal?: AbortSignal;
   headers?: Record<string, string>;
+  /**
+   * Route through the org-scoped public delivery path instead of the base
+   * `/graphql` endpoint. Set for unauthenticated public queries so the backend
+   * resolves the workspace from the URL rather than a global slug lookup.
+   */
+  public?: boolean;
 }
 
 export async function graphqlRequest<T>(
@@ -25,7 +32,10 @@ export async function graphqlRequest<T>(
     );
   }
 
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const url = options.public
+    ? resolvePublicUrl(config)
+    : resolveApiUrl(config.apiUrl);
+  const response = await doFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", ...options.headers },
     body: JSON.stringify({ query, variables }),

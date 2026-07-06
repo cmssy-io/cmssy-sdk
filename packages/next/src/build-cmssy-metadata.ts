@@ -48,6 +48,7 @@ export async function buildCmssyMetadata(
 ): Promise<Metadata> {
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
+    org: config.org,
     workspaceSlug: config.workspaceSlug,
   };
 

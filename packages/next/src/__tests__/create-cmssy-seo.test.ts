@@ -5,6 +5,7 @@ import { buildCmssyMetadata } from "../build-cmssy-metadata";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
+  org: "acme",
   workspaceSlug: "cmssy",
   draftSecret: "draft-secret-1234",
   editorOrigin: "https://app.cmssy.io",
@@ -42,7 +43,7 @@ function stubGraphql(opts: {
     return {
       ok: pagesOk,
       status: pagesOk ? 200 : 500,
-      json: async () => ({ data: { public: { page: { list: pages  } }} }),
+      json: async () => ({ data: { public: { page: { list: pages } } } }),
     };
   });
   vi.stubGlobal("fetch", fetchStub);
@@ -198,7 +199,7 @@ describe("buildCmssyMetadata", () => {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { public: { page: { get: page  } }} }),
+        json: async () => ({ data: { public: { page: { get: page } } } }),
       };
     });
     vi.stubGlobal("fetch", fetchStub);
@@ -292,6 +293,7 @@ describe("buildCmssyMetadata", () => {
     const md = await buildCmssyMetadata(
       {
         apiUrl: CONFIG.apiUrl,
+        org: CONFIG.org,
         workspaceSlug: CONFIG.workspaceSlug,
         draftSecret: CONFIG.draftSecret,
         editorOrigin: CONFIG.editorOrigin,

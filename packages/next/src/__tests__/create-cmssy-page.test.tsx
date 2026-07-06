@@ -51,6 +51,7 @@ const AUTH_CONFIG = {
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
+  org: "acme",
   workspaceSlug: "pilot",
   draftSecret: "draft-secret-1234",
   editorOrigin: "https://app.cmssy.io",
@@ -136,7 +137,11 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(element.props.blocks).toBe(BLOCKS);
     expect(fetchPage).toHaveBeenCalledWith(
-      { apiUrl: CONFIG.apiUrl, workspaceSlug: CONFIG.workspaceSlug },
+      {
+        apiUrl: CONFIG.apiUrl,
+        org: CONFIG.org,
+        workspaceSlug: CONFIG.workspaceSlug,
+      },
       ["about"],
       { previewSecret: undefined },
     );

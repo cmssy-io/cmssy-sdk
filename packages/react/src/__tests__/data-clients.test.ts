@@ -7,7 +7,7 @@ import {
   SUBMIT_FORM_MUTATION,
 } from "../data/queries";
 
-const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+const config = { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws" };
 
 function mockFetch(payload: unknown, ok = true): FetchLike {
   return async () => ({
