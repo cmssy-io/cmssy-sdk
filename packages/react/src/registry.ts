@@ -37,6 +37,8 @@ export interface BlockDefinition {
   loader?: BlockLoader;
   component: ComponentType<{
     content: Record<string, unknown>;
+    style?: Record<string, unknown>;
+    advanced?: Record<string, unknown>;
     context?: CmssyBlockContext;
     data?: unknown;
   }>;
@@ -45,6 +47,8 @@ export interface BlockDefinition {
 export function defineBlock<
   C extends Record<string, unknown>,
   D = unknown,
+  S extends Record<string, unknown> = Record<string, unknown>,
+  A extends Record<string, unknown> = Record<string, unknown>,
 >(def: {
   type: string;
   label?: string;
@@ -59,6 +63,8 @@ export function defineBlock<
   }) => Promise<D> | D;
   component: ComponentType<{
     content: C;
+    style?: S;
+    advanced?: A;
     context?: CmssyBlockContext;
     data?: D;
   }>;
@@ -70,6 +76,8 @@ export type BlockMap = Record<
   string,
   ComponentType<{
     content: Record<string, unknown>;
+    style?: Record<string, unknown>;
+    advanced?: Record<string, unknown>;
     context?: CmssyBlockContext;
     data?: unknown;
   }>

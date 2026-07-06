@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import {
+  asBucket,
   getBlockContentForLanguage,
-  mergeBlockValues,
 } from "../content/get-block-content";
 import type { RawBlock } from "../content/content-client";
 import type { BlockMap } from "../registry";
@@ -28,7 +28,7 @@ export function renderResolvedBlock(
   const Component = Object.hasOwn(map, block.type)
     ? map[block.type]
     : undefined;
-  const resolved =
+  const content =
     resolvedContent ??
     getBlockContentForLanguage(
       block.content,
@@ -36,7 +36,6 @@ export function renderResolvedBlock(
       defaultLocale,
       enabledLocales?.length ? enabledLocales : undefined,
     );
-  const content = mergeBlockValues(resolved, block.style, block.advanced);
   return (
     <div
       key={block.id}
@@ -45,7 +44,13 @@ export function renderResolvedBlock(
       style={Component ? undefined : { display: "none" }}
     >
       {Component ? (
-        createElement(Component, { content, context, data })
+        createElement(Component, {
+          content,
+          style: asBucket(block.style),
+          advanced: asBucket(block.advanced),
+          context,
+          data,
+        })
       ) : (
         <UnknownBlock type={block.type} />
       )}
