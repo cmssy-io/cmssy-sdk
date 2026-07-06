@@ -14,6 +14,8 @@ export interface CmssyBlockProps {
   defaultLocale: string;
   blockMap: BlockMap;
   patchedContent?: Record<string, unknown>;
+  patchedStyle?: Record<string, unknown>;
+  patchedAdvanced?: Record<string, unknown>;
   editable?: boolean;
   layoutPosition?: string;
   context?: CmssyBlockContext;
@@ -25,6 +27,8 @@ export function CmssyBlock({
   defaultLocale,
   blockMap,
   patchedContent,
+  patchedStyle,
+  patchedAdvanced,
   editable,
   layoutPosition,
   context,
@@ -34,6 +38,12 @@ export function CmssyBlock({
     : undefined;
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
+  const style = patchedStyle
+    ? { ...asBucket(block.style), ...patchedStyle }
+    : asBucket(block.style);
+  const advanced = patchedAdvanced
+    ? { ...asBucket(block.advanced), ...patchedAdvanced }
+    : asBucket(block.advanced);
   return (
     <div
       data-block-id={block.id}
@@ -45,8 +55,8 @@ export function CmssyBlock({
       {Component ? (
         createElement(Component, {
           content,
-          style: asBucket(block.style),
-          advanced: asBucket(block.advanced),
+          style,
+          advanced,
           context,
         })
       ) : (

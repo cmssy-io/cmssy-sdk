@@ -92,10 +92,8 @@ function EditableBlocks({
     [edit, blocks, category],
   );
 
-  const { patches, inserted, order, removed } = useEditBridge(
-    page,
-    bridgeConfig,
-  );
+  const { patches, patchesStyle, patchesAdvanced, inserted, order, removed } =
+    useEditBridge(page, bridgeConfig);
   const { dropY } = useDragAgent(bridgeConfig);
 
   const renderBlocks = useMemo<RawBlock[]>(() => {
@@ -110,6 +108,8 @@ function EditableBlocks({
         id: ins.blockId,
         type: ins.blockType,
         content: ins.content,
+        style: ins.style,
+        advanced: ins.advanced,
       });
     }
     if (order) {
@@ -131,6 +131,8 @@ function EditableBlocks({
           locale={locale}
           defaultLocale={defaultLocale}
           patchedContent={patches[block.id]}
+          patchedStyle={patchesStyle[block.id]}
+          patchedAdvanced={patchesAdvanced[block.id]}
           blockMap={blockMap}
           editable
           context={context}

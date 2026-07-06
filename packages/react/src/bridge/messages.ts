@@ -57,6 +57,8 @@ export function parseEditorMessage(
             blockId: data.blockId,
             content: data.content,
             protocolVersion: PROTOCOL_VERSION,
+            ...(isObject(data.style) ? { style: data.style } : {}),
+            ...(isObject(data.advanced) ? { advanced: data.advanced } : {}),
             ...(typeof data.layoutPosition === "string"
               ? { layoutPosition: data.layoutPosition }
               : {}),
@@ -78,6 +80,8 @@ export function parseEditorMessage(
             blockId: data.blockId,
             blockType: data.blockType,
             content: data.content,
+            ...(isObject(data.style) ? { style: data.style } : {}),
+            ...(isObject(data.advanced) ? { advanced: data.advanced } : {}),
             index: data.index,
           }
         : null;
