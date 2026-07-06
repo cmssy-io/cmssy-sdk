@@ -58,6 +58,7 @@ export function createCmssyNotFound(
   }
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
+    org: config.org,
     workspaceSlug: config.workspaceSlug,
   };
   const fallback = options?.fallback ?? <DefaultNotFound />;

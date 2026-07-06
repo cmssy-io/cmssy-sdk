@@ -20,7 +20,7 @@ import {
   CMSSY_LOCALE_HEADER,
 } from "../locale";
 
-const CONFIG = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+const CONFIG = { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws" };
 
 beforeEach(() => {
   resolveSiteLocales.mockReset();

@@ -32,6 +32,7 @@ export function createCmssySitemap(
 ) {
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
+    org: config.org,
     workspaceSlug: config.workspaceSlug,
   };
 
