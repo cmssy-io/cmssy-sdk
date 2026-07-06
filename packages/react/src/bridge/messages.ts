@@ -38,17 +38,16 @@ export function isOriginAllowed(
 }
 
 export function resolveInitialTarget(editorOrigin: string | string[]): string {
-  const list = Array.isArray(editorOrigin) ? editorOrigin : [editorOrigin];
+  const list = (
+    Array.isArray(editorOrigin) ? editorOrigin : [editorOrigin]
+  ).map((origin) => normalizeOrigin(origin));
   if (list.includes("*")) return "*";
   if (list.length === 1) return list[0]!;
   const referrerOrigin =
     typeof document !== "undefined" && document.referrer
       ? normalizeOrigin(document.referrer)
       : "";
-  const match = list.find(
-    (origin) => normalizeOrigin(origin) === referrerOrigin,
-  );
-  return match ?? list[0]!;
+  return list.find((origin) => origin === referrerOrigin) ?? list[0]!;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
