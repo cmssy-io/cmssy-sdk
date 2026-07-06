@@ -55,10 +55,10 @@ function mockFetch() {
   return vi.fn(async (_url: unknown, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
     fetchCalls.push({ body, headers: new Headers(init?.headers) });
-    if (String(body.query).includes("publicSiteConfig")) {
+    if (String(body.query).includes("PublicSiteConfig")) {
       return new Response(
         JSON.stringify({
-          data: { publicSiteConfig: { workspaceId: "ws-id-1" } },
+          data: { public: { siteConfig: { workspaceId: "ws-id-1" } } },
         }),
         { status: 200, headers: { "content-type": "application/json" } },
       );

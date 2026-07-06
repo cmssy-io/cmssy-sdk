@@ -20,20 +20,22 @@ export interface CmssySiteConfig {
 }
 
 export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
-  publicSiteConfig(workspaceSlug: $workspaceSlug) {
-    id
-    workspaceId
-    siteName
-    defaultLanguage
-    enabledLanguages
-    enabledFeatures
-    notFoundPageId
-    previewUrl
-    branding {
-      brandName
-      logoUrl
-      faviconUrl
-      ogImageUrl
+  public {
+    siteConfig(workspaceSlug: $workspaceSlug) {
+      id
+      workspaceId
+      siteName
+      defaultLanguage
+      enabledLanguages
+      enabledFeatures
+      notFoundPageId
+      previewUrl
+      branding {
+        brandName
+        logoUrl
+        faviconUrl
+        ogImageUrl
+      }
     }
   }
 }`;

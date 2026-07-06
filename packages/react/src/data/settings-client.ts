@@ -7,7 +7,7 @@ export async function fetchSiteConfig(
   options: GraphqlRequestOptions = {},
 ): Promise<CmssySiteConfig | null> {
   const data = await graphqlRequest<{
-    publicSiteConfig?: CmssySiteConfig | null;
+    public?: { siteConfig?: CmssySiteConfig | null } | null;
   }>(
     config,
     SITE_CONFIG_QUERY,
@@ -15,7 +15,7 @@ export async function fetchSiteConfig(
     options,
     "site config query",
   );
-  return data.publicSiteConfig ?? null;
+  return data.public?.siteConfig ?? null;
 }
 
 export async function resolveWorkspaceId(

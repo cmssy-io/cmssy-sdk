@@ -26,7 +26,7 @@ export async function resolveSiteLocales(
   let value: CmssySiteLocales;
   try {
     const data = await graphqlRequest<{
-      publicSiteConfig: CmssySiteConfig | null;
+      public: { siteConfig: CmssySiteConfig | null } | null;
     }>(
       config,
       SITE_CONFIG_QUERY,
@@ -34,7 +34,7 @@ export async function resolveSiteLocales(
       options,
       "site config",
     );
-    const siteConfig = data.publicSiteConfig;
+    const siteConfig = data.public?.siteConfig ?? null;
     const defaultLocale = siteConfig?.defaultLanguage || "en";
     const enabled = siteConfig?.enabledLanguages ?? [];
     value = {
