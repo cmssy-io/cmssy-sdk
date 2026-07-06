@@ -49,11 +49,19 @@ describe("CmssyBlock blockMap proto-safety", () => {
 });
 
 describe("CmssyBlock style/advanced field values", () => {
-  const Panel = ({ content }: { content: Record<string, unknown> }) => (
+  const Panel = ({
+    content,
+    style,
+    advanced,
+  }: {
+    content: Record<string, unknown>;
+    style?: Record<string, unknown>;
+    advanced?: Record<string, unknown>;
+  }) => (
     <div>
       <span>{String(content.heading ?? "")}</span>
-      <span>{String(content.bg ?? "")}</span>
-      <span>{String(content.secret ?? "")}</span>
+      <span>{String(style?.bg ?? "")}</span>
+      <span>{String(advanced?.secret ?? "")}</span>
     </div>
   );
   const panelBlock = defineBlock({
@@ -64,7 +72,7 @@ describe("CmssyBlock style/advanced field values", () => {
   });
   const map = buildBlockMap([panelBlock]);
 
-  it("merges content + style + advanced field values into the component (client path)", () => {
+  it("passes content, style and advanced as separate props (client path)", () => {
     const html = renderToStaticMarkup(
       <CmssyBlock
         block={{
@@ -84,7 +92,7 @@ describe("CmssyBlock style/advanced field values", () => {
     expect(html).toContain("s3cr3t");
   });
 
-  it("merges the buckets on the SSR path too", () => {
+  it("passes the buckets as separate props on the SSR path too", () => {
     const html = renderToStaticMarkup(
       renderResolvedBlock(
         {

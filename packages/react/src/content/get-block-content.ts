@@ -39,14 +39,11 @@ export function getBlockContentForLanguage(
   return { ...nonTranslatable, ...chosen };
 }
 
-export function mergeBlockValues(
-  content: Record<string, unknown>,
-  style: unknown,
-  advanced: unknown,
-): Record<string, unknown> {
-  return {
-    ...content,
-    ...(isPlainObject(style) ? style : {}),
-    ...(isPlainObject(advanced) ? advanced : {}),
-  };
+/**
+ * Coerce a block bucket (`style` / `advanced`) to a plain object. These buckets
+ * are flat (not locale-keyed) and free-form; a missing/invalid bucket becomes
+ * an empty object so components can destructure it safely.
+ */
+export function asBucket(value: unknown): Record<string, unknown> {
+  return isPlainObject(value) ? value : {};
 }
