@@ -19,7 +19,7 @@ import { CMSSY_LOCALE_HEADER } from "../locale";
 
 const STATIC = {
   apiUrl: "https://api.test/graphql",
-  workspaceSlug: "ws",
+  org: "acme", workspaceSlug: "ws",
   draftSecret: "x",
   editorOrigin: "https://cmssy.io",
   defaultLocale: "pl",
@@ -28,7 +28,7 @@ const STATIC = {
 
 const DYNAMIC = {
   apiUrl: "https://api.test/graphql",
-  workspaceSlug: "ws",
+  org: "acme", workspaceSlug: "ws",
   draftSecret: "x",
   editorOrigin: "https://cmssy.io",
 };

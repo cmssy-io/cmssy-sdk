@@ -68,6 +68,7 @@ export function createCmssyPage(
   const Editor = options?.editor;
   const clientConfig: CmssyClientConfig = {
     apiUrl: config.apiUrl,
+    org: config.org,
     workspaceSlug: config.workspaceSlug,
   };
   // Hoisted so resolveWorkspaceId is memoized across requests (no per-render

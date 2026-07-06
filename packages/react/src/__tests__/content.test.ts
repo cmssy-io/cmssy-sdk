@@ -82,7 +82,11 @@ describe("normalizeSlug", () => {
 });
 
 describe("fetchPage", () => {
-  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+  const config = {
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug: "ws",
+  };
 
   function mockFetch(payload: unknown, ok = true): FetchLike {
     return async () => ({
@@ -95,11 +99,15 @@ describe("fetchPage", () => {
   it("returns publishedBlocks on an open read", async () => {
     const fetch = mockFetch({
       data: {
-        public: { page: { get: {
-          id: "p1",
-          blocks: [],
-          publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-        } } },
+        public: {
+          page: {
+            get: {
+              id: "p1",
+              blocks: [],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        },
       },
     });
     const page = await fetchPage(config, ["home"], { fetch });
@@ -107,14 +115,32 @@ describe("fetchPage", () => {
     expect(page?.blocks[0]?.type).toBe("hero");
   });
 
+  it("posts to the org-scoped public delivery path", async () => {
+    let sentUrl: string | undefined;
+    const fetch: FetchLike = async (url) => {
+      sentUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { public: { page: { get: null } } } }),
+      };
+    };
+    await fetchPage(config, ["home"], { fetch });
+    expect(sentUrl).toBe("https://api.test/public/acme/ws/graphql");
+  });
+
   it("returns draft blocks when previewSecret is set", async () => {
     const fetch = mockFetch({
       data: {
-        public: { page: { get: {
-          id: "p1",
-          blocks: [{ id: "d1", type: "hero", content: {} }],
-          publishedBlocks: [],
-        } } },
+        public: {
+          page: {
+            get: {
+              id: "p1",
+              blocks: [{ id: "d1", type: "hero", content: {} }],
+              publishedBlocks: [],
+            },
+          },
+        },
       },
     });
     const page = await fetchPage(config, "/", { fetch, previewSecret: "s" });
@@ -137,11 +163,15 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            public: { page: { get: {
-              id: "p1",
-              blocks: [{ id: "dev1", type: "hero", content: {} }],
-              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            } } },
+            public: {
+              page: {
+                get: {
+                  id: "p1",
+                  blocks: [{ id: "dev1", type: "hero", content: {} }],
+                  publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+                },
+              },
+            },
           },
         }),
       };
@@ -171,11 +201,15 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            public: { page: { get: {
-              id: "p1",
-              blocks: [{ id: "dev1", type: "hero", content: {} }],
-              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            } } },
+            public: {
+              page: {
+                get: {
+                  id: "p1",
+                  blocks: [{ id: "dev1", type: "hero", content: {} }],
+                  publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+                },
+              },
+            },
           },
         }),
       };
@@ -200,11 +234,15 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            public: { page: { get: {
-              id: "p1",
-              blocks: [{ id: "b1", type: "hero", content: {} }],
-              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            } } },
+            public: {
+              page: {
+                get: {
+                  id: "p1",
+                  blocks: [{ id: "b1", type: "hero", content: {} }],
+                  publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+                },
+              },
+            },
           },
         }),
       };
@@ -224,11 +262,15 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            public: { page: { get: {
-              id: "p1",
-              blocks: [{ id: "d1", type: "hero", content: {} }],
-              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-            } } },
+            public: {
+              page: {
+                get: {
+                  id: "p1",
+                  blocks: [{ id: "d1", type: "hero", content: {} }],
+                  publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+                },
+              },
+            },
           },
         }),
       };
@@ -242,7 +284,7 @@ describe("fetchPage", () => {
   });
 
   it("returns null for a genuinely missing page", async () => {
-    const fetch = mockFetch({ data: { public: { page: { get: null  } }} });
+    const fetch = mockFetch({ data: { public: { page: { get: null } } } });
     expect(await fetchPage(config, "/missing", { fetch })).toBeNull();
   });
 
@@ -289,11 +331,15 @@ describe("fetchPage", () => {
         status: 200,
         json: async () => ({
           data: {
-            public: { page: { get: {
-              id: "p",
-              blocks: [{ id: "d", type: "h", content: {} }],
-              publishedBlocks: [{ id: "b", type: "h", content: {} }],
-            } } },
+            public: {
+              page: {
+                get: {
+                  id: "p",
+                  blocks: [{ id: "d", type: "h", content: {} }],
+                  publishedBlocks: [{ id: "b", type: "h", content: {} }],
+                },
+              },
+            },
           },
         }),
       };
@@ -315,7 +361,11 @@ describe("fetchPage", () => {
 });
 
 describe("fetchPageById", () => {
-  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+  const config = {
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug: "ws",
+  };
 
   function mockFetch(payload: unknown, ok = true): FetchLike {
     return async () => ({
@@ -328,10 +378,14 @@ describe("fetchPageById", () => {
   it("returns publishedBlocks for the requested page id", async () => {
     const fetch = mockFetch({
       data: {
-        public: { page: { getById: {
-          id: "nf1",
-          publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
-        } } },
+        public: {
+          page: {
+            getById: {
+              id: "nf1",
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        },
       },
     });
     const page = await fetchPageById(config, "nf1", { fetch });
@@ -347,7 +401,7 @@ describe("fetchPageById", () => {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { public: { page: { getById: null  } }} }),
+        json: async () => ({ data: { public: { page: { getById: null } } } }),
       };
     };
     await fetchPageById(config, "nf1", { fetch });
@@ -356,13 +410,15 @@ describe("fetchPageById", () => {
   });
 
   it("returns null when the page is missing or unpublished", async () => {
-    const fetch = mockFetch({ data: { public: { page: { getById: null  } }} });
+    const fetch = mockFetch({ data: { public: { page: { getById: null } } } });
     expect(await fetchPageById(config, "missing", { fetch })).toBeNull();
   });
 
   it("defaults blocks to [] when publishedBlocks is null", async () => {
     const fetch = mockFetch({
-      data: { public: { page: { getById: { id: "nf1", publishedBlocks: null } } } },
+      data: {
+        public: { page: { getById: { id: "nf1", publishedBlocks: null } } },
+      },
     });
     const page = await fetchPageById(config, "nf1", { fetch });
     expect(page?.blocks).toEqual([]);
@@ -398,7 +454,11 @@ describe("fetchPageById", () => {
 });
 
 describe("fetchLayouts", () => {
-  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+  const config = {
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug: "ws",
+  };
 
   function mockFetch(payload: unknown, ok = true): FetchLike {
     return async () => ({
@@ -411,21 +471,25 @@ describe("fetchLayouts", () => {
   it("returns the resolved layout groups", async () => {
     const fetch = mockFetch({
       data: {
-        public: { page: { layouts: [
-          {
-            position: "header",
-            blocks: [
+        public: {
+          page: {
+            layouts: [
               {
-                id: "h1",
-                type: "header",
-                content: {},
-                order: 0,
-                isActive: true,
+                position: "header",
+                blocks: [
+                  {
+                    id: "h1",
+                    type: "header",
+                    content: {},
+                    order: 0,
+                    isActive: true,
+                  },
+                ],
               },
+              { position: "footer", blocks: [] },
             ],
           },
-          { position: "footer", blocks: [] },
-        ] } },
+        },
       },
     });
     const groups = await fetchLayouts(config, "/", { fetch });
@@ -456,13 +520,17 @@ describe("fetchLayouts", () => {
   });
 
   it("returns [] when the query yields nothing", async () => {
-    const fetch = mockFetch({ data: { public: { page: { layouts: null  } }} });
+    const fetch = mockFetch({ data: { public: { page: { layouts: null } } } });
     expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
   });
 });
 
 describe("fetchPages", () => {
-  const config = { apiUrl: "https://api.test/graphql", workspaceSlug: "ws" };
+  const config = {
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug: "ws",
+  };
 
   function mockFetch(payload: unknown, ok = true): FetchLike {
     return async () => ({
@@ -475,14 +543,22 @@ describe("fetchPages", () => {
   it("returns the published page summaries", async () => {
     const fetch = mockFetch({
       data: {
-        public: { page: { list: [
-          { slug: "/", updatedAt: "2026-01-01T00:00:00Z", publishedAt: null },
-          {
-            slug: "/about",
-            updatedAt: null,
-            publishedAt: "2026-02-02T00:00:00Z",
+        public: {
+          page: {
+            list: [
+              {
+                slug: "/",
+                updatedAt: "2026-01-01T00:00:00Z",
+                publishedAt: null,
+              },
+              {
+                slug: "/about",
+                updatedAt: null,
+                publishedAt: "2026-02-02T00:00:00Z",
+              },
+            ],
           },
-        ] } },
+        },
       },
     });
     const pages = await fetchPages(config, { fetch });
@@ -492,7 +568,7 @@ describe("fetchPages", () => {
   });
 
   it("returns [] when the query yields nothing", async () => {
-    const fetch = mockFetch({ data: { public: { page: { list: null  } }} });
+    const fetch = mockFetch({ data: { public: { page: { list: null } } } });
     expect(await fetchPages(config, { fetch })).toEqual([]);
   });
 

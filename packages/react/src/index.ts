@@ -48,6 +48,7 @@ export {
   fetchLayouts,
   normalizeSlug,
   resolveApiUrl,
+  resolvePublicUrl,
   DEFAULT_CMSSY_API_URL,
 } from "./content/content-client";
 export type {

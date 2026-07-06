@@ -23,14 +23,18 @@ export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 
 ```ts
 // cmssy/config.ts
-import type { CmssyNextConfig } from "@cmssy/next";
+import { defineCmssyConfig } from "@cmssy/next";
 
-export const cmssy: CmssyNextConfig = {
-  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG ?? "",
-  draftSecret: process.env.CMSSY_DRAFT_SECRET ?? "", // edit-mode preview handshake
+// defineCmssyConfig validates the required env vars and throws a clear error if
+// any is missing - never mask them with `?? ""` (an empty org/slug builds a
+// broken delivery URL like `/public//graphql`).
+export const cmssy = defineCmssyConfig({
+  org: process.env.CMSSY_ORG_SLUG,
+  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
+  draftSecret: process.env.CMSSY_DRAFT_SECRET, // edit-mode preview handshake
   defaultLocale: "en",
   // apiUrl + editorOrigin default to cmssy cloud; set them only for self-host/staging.
-};
+});
 ```
 
 `createCmssyPage` fetches the page for the request path and renders it. In edit

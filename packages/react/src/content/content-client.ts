@@ -15,9 +15,26 @@ export function resolveApiUrl(apiUrl: string | undefined): string {
   return fromEnv.length > 0 ? fromEnv : DEFAULT_CMSSY_API_URL;
 }
 
+/**
+ * Public delivery endpoint for a workspace: the org-scoped path
+ * `{base}/public/{orgSlug}/{workspaceSlug}/graphql`. `apiUrl` is the GraphQL
+ * base (its trailing `/graphql` is stripped); the org path is what tells the
+ * backend which workspace to serve, so slugs only need to be unique per org.
+ */
+export function resolvePublicUrl(config: CmssyClientConfig): string {
+  const base = resolveApiUrl(config.apiUrl).replace(/\/graphql\/?$/, "");
+  return `${base}/public/${config.org}/${config.workspaceSlug}/graphql`;
+}
+
 export interface CmssyClientConfig {
-  /** Full GraphQL delivery endpoint. Defaults to {@link DEFAULT_CMSSY_API_URL}. */
+  /**
+   * Full GraphQL endpoint (used as-is for authenticated requests). Defaults to
+   * {@link DEFAULT_CMSSY_API_URL}. Public reads strip its trailing `/graphql`
+   * and append the org-scoped path (see {@link resolvePublicUrl}).
+   */
   apiUrl?: string;
+  /** Organization slug - part of the org-scoped delivery path. */
+  org: string;
   workspaceSlug: string;
 }
 
@@ -182,7 +199,7 @@ export async function fetchPage(
       headers["x-workspace-id"] = options.workspaceId;
     }
   }
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const response = await doFetch(resolvePublicUrl(config), {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -258,7 +275,7 @@ export async function fetchPageById(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const response = await doFetch(resolvePublicUrl(config), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -334,7 +351,7 @@ export async function fetchPages(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const response = await doFetch(resolvePublicUrl(config), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -394,7 +411,7 @@ export async function fetchPageMeta(
       "cmssy: no fetch implementation available - pass options.fetch",
     );
   }
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const response = await doFetch(resolvePublicUrl(config), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -446,7 +463,7 @@ export async function fetchLayouts(
   }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
-  const response = await doFetch(resolveApiUrl(config.apiUrl), {
+  const response = await doFetch(resolvePublicUrl(config), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

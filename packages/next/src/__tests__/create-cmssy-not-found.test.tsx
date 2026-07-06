@@ -30,6 +30,7 @@ import { createCmssyNotFound } from "../create-cmssy-not-found";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
+  org: "acme",
   workspaceSlug: "pilot",
   draftSecret: "draft-secret-1234",
   editorOrigin: "https://app.cmssy.io",
@@ -71,7 +72,11 @@ describe("createCmssyNotFound", () => {
     expect(element.props.page).toBe(NOT_FOUND_PAGE);
     expect(element.props.blocks).toBe(BLOCKS);
     expect(fetchPageById).toHaveBeenCalledWith(
-      { apiUrl: CONFIG.apiUrl, workspaceSlug: CONFIG.workspaceSlug },
+      {
+        apiUrl: CONFIG.apiUrl,
+        org: CONFIG.org,
+        workspaceSlug: CONFIG.workspaceSlug,
+      },
       "nf-1",
     );
   });
