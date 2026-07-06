@@ -63,7 +63,6 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "jose": "^6.2.3",
-    "@cmssy/react": "^0.16.0"
+    "jose": "^6.2.3"
   }
 }
