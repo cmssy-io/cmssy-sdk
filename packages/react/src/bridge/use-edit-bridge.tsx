@@ -19,11 +19,15 @@ export interface InsertedBlock {
   blockId: string;
   blockType: string;
   content: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  advanced?: Record<string, unknown>;
   index: number;
 }
 
 export interface EditBridgeState {
   patches: PatchMap;
+  patchesStyle: PatchMap;
+  patchesAdvanced: PatchMap;
   selected: string | null;
   inserted: InsertedBlock[];
   order: string[] | null;
@@ -92,6 +96,8 @@ export function useEditBridge(
   config: EditBridgeConfig,
 ): EditBridgeState {
   const [patches, setPatches] = useState<PatchMap>({});
+  const [patchesStyle, setPatchesStyle] = useState<PatchMap>({});
+  const [patchesAdvanced, setPatchesAdvanced] = useState<PatchMap>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [inserted, setInserted] = useState<InsertedBlock[]>([]);
   const [order, setOrder] = useState<string[] | null>(null);
@@ -103,6 +109,8 @@ export function useEditBridge(
 
   useEffect(() => {
     setPatches({});
+    setPatchesStyle({});
+    setPatchesAdvanced({});
     setSelected(null);
     setInserted([]);
     setOrder(null);
@@ -161,6 +169,21 @@ export function useEditBridge(
           ...prev,
           [message.blockId]: { ...prev[message.blockId], ...message.content },
         }));
+        if (message.style) {
+          setPatchesStyle((prev) => ({
+            ...prev,
+            [message.blockId]: { ...prev[message.blockId], ...message.style },
+          }));
+        }
+        if (message.advanced) {
+          setPatchesAdvanced((prev) => ({
+            ...prev,
+            [message.blockId]: {
+              ...prev[message.blockId],
+              ...message.advanced,
+            },
+          }));
+        }
       } else if (message.type === "cmssy:select") {
         setSelected(message.blockId);
         selectedIdRef.current = message.blockId;
@@ -171,6 +194,8 @@ export function useEditBridge(
             blockId: message.blockId,
             blockType: message.blockType,
             content: message.content,
+            style: message.style,
+            advanced: message.advanced,
             index: message.index,
           });
           return next;
@@ -253,5 +278,13 @@ export function useEditBridge(
     };
   }, [config.editorOrigin, pageId, blocksKey]);
 
-  return { patches, selected, inserted, order, removed };
+  return {
+    patches,
+    patchesStyle,
+    patchesAdvanced,
+    selected,
+    inserted,
+    order,
+    removed,
+  };
 }

@@ -52,6 +52,52 @@ function patchEvent(
   });
 }
 
+function bucketPatchEvent(
+  origin: string,
+  buckets: {
+    style?: Record<string, unknown>;
+    advanced?: Record<string, unknown>;
+  },
+  blockId = "b1",
+) {
+  return new MessageEvent("message", {
+    origin,
+    source: null,
+    data: {
+      type: "cmssy:patch",
+      blockId,
+      content: {},
+      ...buckets,
+      protocolVersion: PROTOCOL_VERSION,
+    },
+  });
+}
+
+const Styled = ({
+  content,
+  style,
+  advanced,
+}: {
+  content: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  advanced?: Record<string, unknown>;
+}) => (
+  <div>
+    {String(content.heading ?? "")}|{String(style?.bg ?? "none")}|
+    {String(advanced?.anchor ?? "none")}
+  </div>
+);
+const styledBlock = defineBlock({
+  type: "styled",
+  label: "Styled",
+  component: Styled,
+  props: { heading: fields.text() },
+});
+const styledPage = {
+  id: "sp",
+  blocks: [{ id: "b1", type: "styled", content: { en: { heading: "Hi" } } }],
+};
+
 let mockParent: { postMessage: ReturnType<typeof vi.fn> };
 
 function setParent(value: unknown) {
@@ -157,6 +203,27 @@ describe("edit bridge (blocks-driven)", () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
     expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("live-patches the style and advanced buckets independently of content", async () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={styledPage}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={[styledBlock]}
+      />,
+    );
+    expect(container.textContent).toContain("Hi|none|none");
+    await act(async () => {
+      window.dispatchEvent(
+        bucketPatchEvent(editorOrigin, {
+          style: { bg: "navy" },
+          advanced: { anchor: "top" },
+        }),
+      );
+    });
+    expect(container.textContent).toContain("Hi|navy|top");
   });
 
   it("ignores a patch from a wrong origin", async () => {
