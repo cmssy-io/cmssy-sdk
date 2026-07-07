@@ -5,10 +5,14 @@ import {
   type BlockRect,
   type BlockSchema,
 } from "./protocol";
-import { parseEditorMessage, postToEditor } from "./messages";
+import {
+  parseEditorMessage,
+  postToEditor,
+  resolveInitialTarget,
+} from "./messages";
 
 export interface EditBridgeConfig {
-  editorOrigin: string;
+  editorOrigin: string | string[];
   schemas?: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
 }
@@ -121,7 +125,11 @@ export function useEditBridge(
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) return;
     const { editorOrigin } = config;
-    if (editorOrigin === "*" && typeof console !== "undefined") {
+    let postTarget = resolveInitialTarget(editorOrigin);
+    const isWildcard = Array.isArray(editorOrigin)
+      ? editorOrigin.includes("*")
+      : editorOrigin === "*";
+    if (isWildcard && typeof console !== "undefined") {
       console.warn(
         "[cmssy] editorOrigin '*' disables origin checks - dev only, do not use in production",
       );
@@ -130,7 +138,7 @@ export function useEditBridge(
       try {
         const rects = collectRects();
         const pageIds = new Set(blocks.map((b) => b.id));
-        postToEditor(window.parent, editorOrigin, {
+        postToEditor(window.parent, postTarget, {
           type: "cmssy:ready",
           protocolVersion: PROTOCOL_VERSION,
           blocks: [
@@ -163,6 +171,7 @@ export function useEditBridge(
         editorOrigin,
       );
       if (!message) return;
+      postTarget = event.origin;
       if (message.type === "cmssy:patch") {
         if (message.layoutPosition !== undefined) return;
         setPatches((prev) => ({
@@ -221,7 +230,7 @@ export function useEditBridge(
       const r = el.getBoundingClientRect();
       const layoutPosition = el.getAttribute("data-layout-position");
       try {
-        postToEditor(window.parent, editorOrigin, {
+        postToEditor(window.parent, postTarget, {
           type: "cmssy:click",
           blockId: id,
           rect: { x: r.x, y: r.y, width: r.width, height: r.height },
@@ -248,7 +257,7 @@ export function useEditBridge(
         if (!el) return;
         const r = el.getBoundingClientRect();
         try {
-          postToEditor(window.parent, editorOrigin, {
+          postToEditor(window.parent, postTarget, {
             type: "cmssy:bounds",
             blockId: id,
             rect: { x: r.x, y: r.y, width: r.width, height: r.height },
