@@ -1,8 +1,24 @@
 import { describe, it, expect, vi } from "vitest";
-import { parseEditorMessage, postToEditor } from "../bridge/messages";
+import {
+  isOriginAllowed,
+  parseEditorMessage,
+  postToEditor,
+} from "../bridge/messages";
 import { PROTOCOL_VERSION } from "../bridge/protocol";
 
 const ORIGIN = "https://editor.cmssy.io";
+
+describe("isOriginAllowed", () => {
+  it("matches an origin against any entry in the allow-list", () => {
+    const allowed = ["https://cmssy.io", "https://www.cmssy.io"];
+    expect(isOriginAllowed("https://www.cmssy.io", allowed)).toBe(true);
+    expect(isOriginAllowed("https://evil.com", allowed)).toBe(false);
+  });
+
+  it("treats a whitespace-padded wildcard as allow-all", () => {
+    expect(isOriginAllowed("https://anything.dev", " * ")).toBe(true);
+  });
+});
 
 describe("parseEditorMessage", () => {
   it("rejects an otherwise-valid message from the wrong origin", () => {

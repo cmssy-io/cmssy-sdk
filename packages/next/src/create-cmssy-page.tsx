@@ -203,22 +203,18 @@ export function createCmssyPage(
 
 function resolveBridgeOrigin(
   editorOrigin: string | string[] | undefined,
-): string {
+): string | string[] {
   const resolved = resolveEditorOrigin(editorOrigin);
-  const origins = Array.isArray(resolved) ? resolved : [resolved];
+  const origins = (Array.isArray(resolved) ? resolved : [resolved]).map(
+    (origin) => toCspOrigin(origin.trim()),
+  );
   if (origins.length === 0) {
     throw new Error("cmssy: editorOrigin must be set to frame the editor");
   }
-  if (origins.length > 1 && typeof console !== "undefined") {
-    console.warn(
-      "[cmssy] multiple editorOrigins configured; the live-edit bridge uses only the first",
-    );
-  }
-  const origin = toCspOrigin(origins[0]!.trim());
-  if (origin === "*" && !isDevelopment()) {
+  if (origins.includes("*") && !isDevelopment()) {
     throw new Error(
       "cmssy: editorOrigin '*' is only allowed in development; set a concrete editor origin (e.g. https://cmssy.io) for production",
     );
   }
-  return origin;
+  return origins.length === 1 ? origins[0]! : origins;
 }
