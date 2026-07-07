@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildSchema, Kind, parse, validate, type DocumentNode } from "graphql";
+import {
+  buildSchema,
+  Kind,
+  parse,
+  validate,
+  type DocumentNode,
+  type OperationDefinitionNode,
+} from "graphql";
 import { describe, expect, it } from "vitest";
 
 // Anti-drift guard for the SDK's raw GraphQL operation strings. The SDK talks
@@ -36,6 +43,7 @@ type EmbeddedOp = { id: string; doc: DocumentNode };
 
 const operations: EmbeddedOp[] = [];
 const parseFailures: string[] = [];
+const unnamedOperations: string[] = [];
 
 for (const [path, mod] of Object.entries(modules)) {
   for (const [name, value] of Object.entries(mod)) {
@@ -49,10 +57,16 @@ for (const [path, mod] of Object.entries(modules)) {
       }
       continue;
     }
-    const hasNamedOperation = doc.definitions.some(
-      (d) => d.kind === Kind.OPERATION_DEFINITION && d.name != null,
+    const operationDefs = doc.definitions.filter(
+      (d): d is OperationDefinitionNode => d.kind === Kind.OPERATION_DEFINITION,
     );
-    if (hasNamedOperation) operations.push({ id: `${path}:${name}`, doc });
+    if (operationDefs.length === 0) continue; // fragment-only / non-operation
+    // Validate every operation doc, named or not, and separately require names
+    // so an unnamed op can't slip past the drift guard.
+    if (operationDefs.some((d) => d.name == null)) {
+      unnamedOperations.push(`${path}:${name}`);
+    }
+    operations.push({ id: `${path}:${name}`, doc });
   }
 }
 
@@ -63,6 +77,10 @@ describe("SDK operations validate against the backend SDL", () => {
 
   it("every operation-looking string parses", () => {
     expect(parseFailures).toEqual([]);
+  });
+
+  it("every operation is named", () => {
+    expect(unnamedOperations).toEqual([]);
   });
 
   it.each(operations.map((op) => [op.id, op] as const))(
