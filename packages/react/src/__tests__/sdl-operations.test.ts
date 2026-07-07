@@ -18,35 +18,51 @@ const schema = buildSchema(
 );
 
 // Eagerly import every source module so a newly-added operation file is covered
-// without editing this test. Test files are excluded to avoid re-running them.
-// `import.meta.glob` is a Vite/Vitest static macro - it must stay a literal
+// without editing this test. Test files and declaration files are excluded -
+// `import.meta.glob` is a Vite/Vitest static macro that must stay a literal
 // call here; ImportMeta.glob is typed in import-meta-glob.d.ts.
-const modules = import.meta.glob(["../**/*.ts", "!../**/*.test.ts"], {
-  eager: true,
-});
+const modules = import.meta.glob(
+  ["../**/*.ts", "!../**/*.test.ts", "!../**/*.d.ts"],
+  { eager: true },
+);
+
+// A string is treated as an operation we must be able to parse iff it opens with
+// a GraphQL operation keyword; anything else (URLs, plain config strings) is
+// legitimately skipped. This stops a syntactically-broken op from being silently
+// dropped and passing the guard.
+const OPERATION_START = /^\s*(query|mutation|subscription)\b/;
 
 type EmbeddedOp = { id: string; doc: DocumentNode };
 
-const operations: EmbeddedOp[] = Object.entries(modules).flatMap(
-  ([path, mod]) =>
-    Object.entries(mod).flatMap(([name, value]) => {
-      if (typeof value !== "string") return [];
-      let doc: DocumentNode;
-      try {
-        doc = parse(value);
-      } catch {
-        return [];
+const operations: EmbeddedOp[] = [];
+const parseFailures: string[] = [];
+
+for (const [path, mod] of Object.entries(modules)) {
+  for (const [name, value] of Object.entries(mod)) {
+    if (typeof value !== "string") continue;
+    let doc: DocumentNode;
+    try {
+      doc = parse(value);
+    } catch (err) {
+      if (OPERATION_START.test(value)) {
+        parseFailures.push(`${path}:${name}: ${(err as Error).message}`);
       }
-      const hasNamedOperation = doc.definitions.some(
-        (d) => d.kind === Kind.OPERATION_DEFINITION && d.name != null,
-      );
-      return hasNamedOperation ? [{ id: `${path}:${name}`, doc }] : [];
-    }),
-);
+      continue;
+    }
+    const hasNamedOperation = doc.definitions.some(
+      (d) => d.kind === Kind.OPERATION_DEFINITION && d.name != null,
+    );
+    if (hasNamedOperation) operations.push({ id: `${path}:${name}`, doc });
+  }
+}
 
 describe("SDK operations validate against the backend SDL", () => {
   it("discovers embedded operations", () => {
     expect(operations.length).toBeGreaterThan(0);
+  });
+
+  it("every operation-looking string parses", () => {
+    expect(parseFailures).toEqual([]);
   });
 
   it.each(operations.map((op) => [op.id, op] as const))(
