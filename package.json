@@ -5,7 +5,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "sync-schema": "node scripts/sync-schema.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
