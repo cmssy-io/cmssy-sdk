@@ -33,11 +33,14 @@ const modules = import.meta.glob(
   { eager: true },
 );
 
-// A string is treated as an operation we must be able to parse iff it opens with
-// a GraphQL operation keyword; anything else (URLs, plain config strings) is
-// legitimately skipped. This stops a syntactically-broken op from being silently
-// dropped and passing the guard.
-const OPERATION_START = /^\s*(query|mutation|subscription)\b/;
+// A string must be parseable iff, after any leading comment lines, it opens with
+// a GraphQL operation or fragment keyword; anything else (URLs, plain config
+// strings) is legitimately skipped. This stops a syntactically-broken op from
+// being silently dropped - including one that starts with a comment or fragment.
+function looksLikeGraphQL(value: string): boolean {
+  const body = value.replace(/^(?:\s*#[^\n]*\n)*/, "").trimStart();
+  return /^(query|mutation|subscription|fragment)\b/.test(body);
+}
 
 type EmbeddedOp = { id: string; doc: DocumentNode };
 
@@ -52,7 +55,7 @@ for (const [path, mod] of Object.entries(modules)) {
     try {
       doc = parse(value);
     } catch (err) {
-      if (OPERATION_START.test(value)) {
+      if (looksLikeGraphQL(value)) {
         parseFailures.push(`${path}:${name}: ${(err as Error).message}`);
       }
       continue;
