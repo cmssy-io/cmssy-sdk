@@ -29,7 +29,7 @@ const schema = buildSchema(
 // `import.meta.glob` is a Vite/Vitest static macro that must stay a literal
 // call here; ImportMeta.glob is typed in import-meta-glob.d.ts.
 const modules = import.meta.glob(
-  ["../**/*.ts", "!../**/*.test.ts", "!../**/*.d.ts"],
+  ["../**/*.{ts,tsx}", "!../**/*.test.{ts,tsx}", "!../**/*.d.ts"],
   { eager: true },
 );
 
