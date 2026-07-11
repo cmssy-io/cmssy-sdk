@@ -73,6 +73,14 @@ function bucketPatchEvent(
   });
 }
 
+function selectEvent(origin: string, blockId = "b1") {
+  return new MessageEvent("message", {
+    origin,
+    source: null,
+    data: { type: "cmssy:select", blockId, protocolVersion: PROTOCOL_VERSION },
+  });
+}
+
 const Styled = ({
   content,
   style,
@@ -203,6 +211,31 @@ describe("edit bridge (blocks-driven)", () => {
       window.dispatchEvent(patchEvent(editorOrigin, { heading: "Edited" }));
     });
     expect(container.textContent).toContain("Edited|World");
+  });
+
+  it("scrolls the selected block into view on cmssy:select", async () => {
+    const scrollSpy = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollSpy;
+    try {
+      const { container } = render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      expect(container.querySelector('[data-block-id="b1"]')).not.toBeNull();
+      await act(async () => {
+        window.dispatchEvent(selectEvent(editorOrigin, "b1"));
+      });
+      expect(scrollSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ block: "nearest" }),
+      );
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 
   it("live-patches the style and advanced buckets independently of content", async () => {
