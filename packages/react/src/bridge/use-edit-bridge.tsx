@@ -196,6 +196,11 @@ export function useEditBridge(
       } else if (message.type === "cmssy:select") {
         setSelected(message.blockId);
         selectedIdRef.current = message.blockId;
+        document
+          .querySelector(
+            `[data-block-id="${message.blockId.replace(/["\\]/g, "\\$&")}"]`,
+          )
+          ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       } else if (message.type === "cmssy:insert") {
         setInserted((prev) => {
           const next = prev.filter((b) => b.blockId !== message.blockId);
