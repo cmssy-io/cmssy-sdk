@@ -18,39 +18,55 @@ export interface AuthTokenResult extends AuthMutationResult {
 }
 
 export const LOGIN_MUTATION = `mutation SiteMemberLogin($input: SiteMemberLoginInput!) {
-  siteMemberLogin(input: $input) {
-    success message accessToken refreshToken accessTokenExpiresIn
+  siteMember {
+    login(input: $input) {
+      success message accessToken refreshToken accessTokenExpiresIn
+    }
   }
 }`;
 
 export const REGISTER_MUTATION = `mutation SiteMemberRegister($input: SiteMemberRegisterInput!) {
-  siteMemberRegister(input: $input) { success message }
+  siteMember {
+    register(input: $input) { success message }
+  }
 }`;
 
 export const REFRESH_MUTATION = `mutation SiteMemberRefresh($refreshToken: String!) {
-  siteMemberRefresh(refreshToken: $refreshToken) {
-    success message accessToken refreshToken accessTokenExpiresIn
+  siteMember {
+    refresh(refreshToken: $refreshToken) {
+      success message accessToken refreshToken accessTokenExpiresIn
+    }
   }
 }`;
 
 export const LOGOUT_MUTATION = `mutation SiteMemberLogout($refreshToken: String!) {
-  siteMemberLogout(refreshToken: $refreshToken) { success message }
+  siteMember {
+    logout(refreshToken: $refreshToken) { success message }
+  }
 }`;
 
 export const LOGOUT_EVERYWHERE_MUTATION = `mutation SiteMemberLogoutEverywhere {
-  siteMemberLogoutEverywhere { success message }
+  siteMember {
+    logoutEverywhere { success message }
+  }
 }`;
 
 export const FORGOT_MUTATION = `mutation SiteMemberForgotPassword($modelSlug: String!, $identity: String!) {
-  siteMemberForgotPassword(modelSlug: $modelSlug, identity: $identity) { success message }
+  siteMember {
+    forgotPassword(modelSlug: $modelSlug, identity: $identity) { success message }
+  }
 }`;
 
 export const RESET_MUTATION = `mutation SiteMemberResetPassword($token: String!, $newPassword: String!) {
-  siteMemberResetPassword(token: $token, newPassword: $newPassword) { success message }
+  siteMember {
+    resetPassword(token: $token, newPassword: $newPassword) { success message }
+  }
 }`;
 
 export const VERIFY_MUTATION = `mutation SiteMemberVerifyEmail($token: String!) {
-  siteMemberVerifyEmail(token: $token) { success message }
+  siteMember {
+    verifyEmail(token: $token) { success message }
+  }
 }`;
 
 const workspaceIdCache = new Map<string, Promise<string>>();
@@ -145,7 +161,7 @@ export async function backendSignIn(
   identity: string,
   password: string,
 ): Promise<AuthTokenResult> {
-  const data = await authRequest<{ siteMemberLogin: AuthTokenResult }>(
+  const data = await authRequest<{ siteMember: { login: AuthTokenResult } }>(
     config,
     LOGIN_MUTATION,
     {
@@ -153,7 +169,7 @@ export async function backendSignIn(
     },
     "site member login",
   );
-  return data.siteMemberLogin;
+  return data.siteMember.login;
 }
 
 export async function backendRegister(
@@ -163,7 +179,7 @@ export async function backendRegister(
   password: string,
   fields: Record<string, unknown>,
 ): Promise<AuthMutationResult> {
-  const data = await authRequest<{ siteMemberRegister: AuthMutationResult }>(
+  const data = await authRequest<{ siteMember: { register: AuthMutationResult } }>(
     config,
     REGISTER_MUTATION,
     {
@@ -171,20 +187,20 @@ export async function backendRegister(
     },
     "site member register",
   );
-  return data.siteMemberRegister;
+  return data.siteMember.register;
 }
 
 export async function backendRefresh(
   config: CmssyNextConfig,
   refreshToken: string,
 ): Promise<AuthTokenResult> {
-  const data = await authRequest<{ siteMemberRefresh: AuthTokenResult }>(
+  const data = await authRequest<{ siteMember: { refresh: AuthTokenResult } }>(
     config,
     REFRESH_MUTATION,
     { refreshToken },
     "site member refresh",
   );
-  return data.siteMemberRefresh;
+  return data.siteMember.refresh;
 }
 
 export async function backendSignOut(
@@ -226,14 +242,14 @@ export async function backendForgotPassword(
   identity: string,
 ): Promise<AuthMutationResult> {
   const data = await authRequest<{
-    siteMemberForgotPassword: AuthMutationResult;
+    siteMember: { forgotPassword: AuthMutationResult };
   }>(
     config,
     FORGOT_MUTATION,
     { modelSlug, identity },
     "site member forgot password",
   );
-  return data.siteMemberForgotPassword;
+  return data.siteMember.forgotPassword;
 }
 
 export async function backendResetPassword(
@@ -242,25 +258,25 @@ export async function backendResetPassword(
   newPassword: string,
 ): Promise<AuthMutationResult> {
   const data = await authRequest<{
-    siteMemberResetPassword: AuthMutationResult;
+    siteMember: { resetPassword: AuthMutationResult };
   }>(
     config,
     RESET_MUTATION,
     { token, newPassword },
     "site member reset password",
   );
-  return data.siteMemberResetPassword;
+  return data.siteMember.resetPassword;
 }
 
 export async function backendVerifyEmail(
   config: CmssyNextConfig,
   token: string,
 ): Promise<AuthMutationResult> {
-  const data = await authRequest<{ siteMemberVerifyEmail: AuthMutationResult }>(
+  const data = await authRequest<{ siteMember: { verifyEmail: AuthMutationResult } }>(
     config,
     VERIFY_MUTATION,
     { token },
     "site member verify email",
   );
-  return data.siteMemberVerifyEmail;
+  return data.siteMember.verifyEmail;
 }

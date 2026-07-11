@@ -38,8 +38,12 @@ export const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
   cart { checkout(input: $input) { id status subtotal total currency customerEmail } }
 }`;
 export const PRODUCT = `query Product($workspaceId: String!, $modelSlug: String!, $filter: JSON) {
-  publicModelRecords(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: 1) {
-    items { id data variants { id sku price inventory selectedOptions { name value } } }
+  public {
+    model {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: 1) {
+        items { id data variants { id sku price inventory selectedOptions { name value } } }
+      }
+    }
   }
 }`;
 
@@ -237,7 +241,7 @@ export async function backendProduct(
 ): Promise<CmssyProduct | null> {
   const workspaceId = await workspaceIdFor(config);
   const data = await request<{
-    publicModelRecords: { items: CmssyProduct[] };
+    public: { model: { records: { items: CmssyProduct[] } } };
   }>(
     config,
     ctx,
@@ -246,5 +250,5 @@ export async function backendProduct(
     { workspaceId, modelSlug, filter },
     "product query",
   );
-  return data.publicModelRecords.items[0] ?? null;
+  return data.public.model.records.items[0] ?? null;
 }
