@@ -58,6 +58,27 @@ function collectRects(): Map<string, BlockRect> {
   return rects;
 }
 
+function findBlockEl(blockId: string): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  const escaped =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(blockId)
+      : blockId.replace(/["\\]/g, "\\$&");
+  try {
+    return document.querySelector<HTMLElement>(`[data-block-id="${escaped}"]`);
+  } catch {
+    return null;
+  }
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 interface ReadyBlock {
   id: string;
   type: string;
@@ -196,6 +217,10 @@ export function useEditBridge(
       } else if (message.type === "cmssy:select") {
         setSelected(message.blockId);
         selectedIdRef.current = message.blockId;
+        findBlockEl(message.blockId)?.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "nearest",
+        });
       } else if (message.type === "cmssy:insert") {
         setInserted((prev) => {
           const next = prev.filter((b) => b.blockId !== message.blockId);
@@ -251,9 +276,7 @@ export function useEditBridge(
         boundsRaf = 0;
         const id = selectedIdRef.current;
         if (!id) return;
-        const el = document.querySelector(
-          `[data-block-id="${id.replace(/["\\]/g, "\\$&")}"]`,
-        );
+        const el = findBlockEl(id);
         if (!el) return;
         const r = el.getBoundingClientRect();
         try {
