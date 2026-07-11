@@ -39,7 +39,10 @@ the CMS at runtime.
 ```tsx
 import { fetchPage, CmssyServerPage } from "@cmssy/react";
 
-const page = await fetchPage({ org: "acme-org", workspaceSlug: "acme" }, pathSegments);
+const page = await fetchPage(
+  { org: "acme-org", workspaceSlug: "acme" },
+  pathSegments,
+);
 
 return <CmssyServerPage page={page} blocks={blocks} locale="en" />;
 ```
@@ -62,7 +65,11 @@ const cmssy = createCmssyClient({ org: "acme-org", workspaceSlug: "acme" });
 await cmssy.query(MY_QUERY, vars);
 
 // workspace-scoped (auto x-workspace-id header + $workspaceId var)
-const { publicModelRecords } = await cmssy.queryScoped(MODEL_RECORDS_QUERY, {
+const {
+  public: {
+    model: { records },
+  },
+} = await cmssy.queryScoped(MODEL_RECORDS_QUERY, {
   modelSlug: "posts",
 });
 ```

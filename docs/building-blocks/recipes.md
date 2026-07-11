@@ -190,11 +190,10 @@ import { cmssy } from "@/cmssy.config";
 const client = createCmssyClient(cmssy);
 
 export async function submitForm(formId: string, data: Record<string, string>) {
-  const res = await client.queryScoped<{ submitForm: CmssyFormSubmitResponse }>(
-    SUBMIT_FORM_MUTATION,
-    { formId, input: { data } },
-  );
-  return res.submitForm; // { success, message, submissionId, ... }
+  const res = await client.queryScoped<{
+    public: { form: { submit: CmssyFormSubmitResponse } };
+  }>(SUBMIT_FORM_MUTATION, { formId, input: { data } });
+  return res.public.form.submit; // { success, message, submissionId, ... }
 }
 ```
 
