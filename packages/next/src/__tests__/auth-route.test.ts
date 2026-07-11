@@ -30,7 +30,8 @@ const SECRET = "s".repeat(32);
 
 const config: CmssyNextConfig = {
   apiUrl: "https://api.test/graphql",
-  org: "acme", workspaceSlug: "test-ws",
+  org: "acme",
+  workspaceSlug: "test-ws",
   draftSecret: "d".repeat(16),
   editorOrigin: "https://app.test",
   auth: { modelSlug: "members", sessionSecret: SECRET },
@@ -129,12 +130,14 @@ describe("assertAuthConfig", () => {
 describe("sign-in", () => {
   it("sets the session cookie and returns only the user", async () => {
     gqlResponses.push({
-      siteMemberLogin: {
-        success: true,
-        message: "ok",
-        accessToken: ACCESS,
-        refreshToken: "refresh-1",
-        accessTokenExpiresIn: 900,
+      siteMember: {
+        login: {
+          success: true,
+          message: "ok",
+          accessToken: ACCESS,
+          refreshToken: "refresh-1",
+          accessTokenExpiresIn: 900,
+        },
       },
     });
     const { POST } = createCmssyAuthRoute(config);
@@ -158,19 +161,21 @@ describe("sign-in", () => {
     expect(opened?.refreshToken).toBe("refresh-1");
 
     const loginCall = fetchCalls.find((c) =>
-      String(c.body.query).includes("siteMemberLogin"),
+      String(c.body.query).includes("SiteMemberLogin"),
     );
     expect(loginCall?.headers.get("x-workspace-id")).toBe("ws-id-1");
   });
 
   it("returns 401 without a cookie on failed credentials", async () => {
     gqlResponses.push({
-      siteMemberLogin: {
-        success: false,
-        message: "Invalid credentials.",
-        accessToken: null,
-        refreshToken: null,
-        accessTokenExpiresIn: null,
+      siteMember: {
+        login: {
+          success: false,
+          message: "Invalid credentials.",
+          accessToken: null,
+          refreshToken: null,
+          accessTokenExpiresIn: null,
+        },
       },
     });
     const { POST } = createCmssyAuthRoute(config);
@@ -198,12 +203,14 @@ describe("refresh", () => {
       email: "u@x.com",
     });
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: true,
-        message: "ok",
-        accessToken: newAccess,
-        refreshToken: "refresh-2",
-        accessTokenExpiresIn: 900,
+      siteMember: {
+        refresh: {
+          success: true,
+          message: "ok",
+          accessToken: newAccess,
+          refreshToken: "refresh-2",
+          accessTokenExpiresIn: 900,
+        },
       },
     });
     const { POST } = createCmssyAuthRoute(config);
@@ -223,12 +230,14 @@ describe("refresh", () => {
   it("clears the cookie and 401s when the backend rejects", async () => {
     await seedSession();
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: false,
-        message: "Invalid credentials.",
-        accessToken: null,
-        refreshToken: null,
-        accessTokenExpiresIn: null,
+      siteMember: {
+        refresh: {
+          success: false,
+          message: "Invalid credentials.",
+          accessToken: null,
+          refreshToken: null,
+          accessTokenExpiresIn: null,
+        },
       },
     });
     const { POST } = createCmssyAuthRoute(config);
@@ -247,13 +256,17 @@ describe("refresh", () => {
 describe("sign-out", () => {
   it("clears the cookie and awaits the backend logout", async () => {
     await seedSession();
-    gqlResponses.push({ siteMemberLogout: { success: true, message: "ok" } });
+    gqlResponses.push({
+      siteMember: { logout: { success: true, message: "ok" } },
+    });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(...post("sign-out", {}));
     expect((await res.json()).ok).toBe(true);
     expect(cookieStore.get(CMSSY_SESSION_COOKIE)?.value).toBe("");
     expect(
-      fetchCalls.some((c) => String(c.body.query).includes("siteMemberLogout")),
+      fetchCalls.some((c) =>
+        String(c.body.query).includes("mutation SiteMemberLogout("),
+      ),
     ).toBe(true);
   });
 
@@ -277,12 +290,14 @@ describe("me", () => {
   it("refreshes an expired session then returns the user", async () => {
     await seedSession({ accessExpiresAt: Date.now() - 1000 });
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: true,
-        message: "ok",
-        accessToken: ACCESS,
-        refreshToken: "refresh-2",
-        accessTokenExpiresIn: 900,
+      siteMember: {
+        refresh: {
+          success: true,
+          message: "ok",
+          accessToken: ACCESS,
+          refreshToken: "refresh-2",
+          accessTokenExpiresIn: 900,
+        },
       },
     });
     const { GET } = createCmssyAuthRoute(config);
@@ -332,7 +347,7 @@ describe("getCmssyUser / getCmssyAccessToken (RSC, no rotation)", () => {
     expect(await getCmssyUser(config)).toBeNull();
     expect(
       fetchCalls.filter((c) =>
-        String(c.body.query).includes("siteMemberRefresh"),
+        String(c.body.query).includes("SiteMemberRefresh"),
       ),
     ).toHaveLength(0);
   });
@@ -364,7 +379,9 @@ describe("decodeAccessClaims", () => {
 describe("token-based handlers relay backend results", () => {
   it("register relays success + message without auto-login", async () => {
     gqlResponses.push({
-      siteMemberRegister: { success: true, message: "Check your email." },
+      siteMember: {
+        register: { success: true, message: "Check your email." },
+      },
     });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(
@@ -386,13 +403,15 @@ describe("token-based handlers relay backend results", () => {
 
   it("forgot-password relays generic success", async () => {
     gqlResponses.push({
-      siteMemberForgotPassword: { success: true, message: "If an account…" },
+      siteMember: {
+        forgotPassword: { success: true, message: "If an account…" },
+      },
     });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(...post("forgot-password", { identity: "n@x.com" }));
     expect((await res.json()).ok).toBe(true);
     const call = fetchCalls.find((c) =>
-      String(c.body.query).includes("siteMemberForgotPassword"),
+      String(c.body.query).includes("SiteMemberForgotPassword"),
     );
     expect((call?.body.variables as Record<string, unknown>).modelSlug).toBe(
       "members",
@@ -401,11 +420,16 @@ describe("token-based handlers relay backend results", () => {
 
   it("reset-password relays the backend verdict", async () => {
     gqlResponses.push({
-      siteMemberResetPassword: { success: true, message: "Password updated." },
+      siteMember: {
+        resetPassword: { success: true, message: "Password updated." },
+      },
     });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(
-      ...post("reset-password", { token: "t".repeat(64), newPassword: "New1pass" }),
+      ...post("reset-password", {
+        token: "t".repeat(64),
+        newPassword: "New1pass",
+      }),
     );
     expect((await res.json()).ok).toBe(true);
   });
@@ -418,7 +442,9 @@ describe("token-based handlers relay backend results", () => {
 
   it("verify-email relays the backend verdict", async () => {
     gqlResponses.push({
-      siteMemberVerifyEmail: { success: true, message: "Verified." },
+      siteMember: {
+        verifyEmail: { success: true, message: "Verified." },
+      },
     });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(...post("verify-email", { token: "t".repeat(64) }));
@@ -430,14 +456,16 @@ describe("sign-out-everywhere", () => {
   it("sends the access token and clears the cookie", async () => {
     await seedSession();
     gqlResponses.push({
-      siteMemberLogoutEverywhere: { success: true, message: "ok" },
+      siteMember: {
+        logoutEverywhere: { success: true, message: "ok" },
+      },
     });
     const { POST } = createCmssyAuthRoute(config);
     const res = await POST(...post("sign-out-everywhere", {}));
     expect((await res.json()).ok).toBe(true);
     expect(cookieStore.get(CMSSY_SESSION_COOKIE)?.value).toBe("");
     const call = fetchCalls.find((c) =>
-      String(c.body.query).includes("siteMemberLogoutEverywhere"),
+      String(c.body.query).includes("SiteMemberLogoutEverywhere"),
     );
     expect(call?.headers.get("authorization")).toBe(`Bearer ${ACCESS}`);
   });

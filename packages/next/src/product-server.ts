@@ -6,8 +6,12 @@ import {
 import type { CmssyNextConfig } from "./config";
 
 export const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug: String!, $filter: JSON, $limit: Int) {
-  publicModelRecords(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: $limit) {
-    items { id data variants { id sku price inventory selectedOptions { name value } } }
+  public {
+    model {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: $limit) {
+        items { id data variants { id sku price inventory selectedOptions { name value } } }
+      }
+    }
   }
 }`;
 
@@ -23,7 +27,7 @@ export async function fetchProducts(
 ): Promise<CmssyProduct[]> {
   const workspaceId = await resolveWorkspaceId(config);
   const data = await graphqlRequest<{
-    publicModelRecords: { items: CmssyProduct[] };
+    public: { model: { records: { items: CmssyProduct[] } } };
   }>(
     config,
     PRODUCTS_QUERY,
@@ -36,7 +40,7 @@ export async function fetchProducts(
     { headers: { "x-workspace-id": workspaceId } },
     "products query",
   );
-  return data.publicModelRecords.items;
+  return data.public.model.records.items;
 }
 
 export interface FetchProductOptions {

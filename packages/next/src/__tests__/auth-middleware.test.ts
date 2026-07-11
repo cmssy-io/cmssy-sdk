@@ -14,7 +14,8 @@ const SECRET = "m".repeat(32);
 
 const config: CmssyNextConfig = {
   apiUrl: "https://api.test/graphql",
-  org: "acme", workspaceSlug: "test-ws",
+  org: "acme",
+  workspaceSlug: "test-ws",
   draftSecret: "d".repeat(16),
   editorOrigin: "https://app.test",
   auth: { modelSlug: "members", sessionSecret: SECRET },
@@ -99,12 +100,14 @@ describe("createCmssyAuthMiddleware", () => {
 
   it("refreshes an expired session onto the response AND the request", async () => {
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: true,
-        message: "ok",
-        accessToken: fakeAccessToken(),
-        refreshToken: "refresh-2",
-        accessTokenExpiresIn: 900,
+      siteMember: {
+        refresh: {
+          success: true,
+          message: "ok",
+          accessToken: fakeAccessToken(),
+          refreshToken: "refresh-2",
+          accessTokenExpiresIn: 900,
+        },
       },
     });
     const middleware = createCmssyAuthMiddleware(config);
@@ -133,12 +136,14 @@ describe("createCmssyAuthMiddleware", () => {
 
   it("clears the cookie on a definitive backend rejection", async () => {
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: false,
-        message: "Invalid credentials.",
-        accessToken: null,
-        refreshToken: null,
-        accessTokenExpiresIn: null,
+      siteMember: {
+        refresh: {
+          success: false,
+          message: "Invalid credentials.",
+          accessToken: null,
+          refreshToken: null,
+          accessTokenExpiresIn: null,
+        },
       },
     });
     const middleware = createCmssyAuthMiddleware(config);
@@ -150,12 +155,14 @@ describe("createCmssyAuthMiddleware", () => {
 
   it("skips refresh for prefetch requests", async () => {
     gqlResponses.push({
-      siteMemberRefresh: {
-        success: true,
-        message: "ok",
-        accessToken: fakeAccessToken(),
-        refreshToken: "refresh-2",
-        accessTokenExpiresIn: 900,
+      siteMember: {
+        refresh: {
+          success: true,
+          message: "ok",
+          accessToken: fakeAccessToken(),
+          refreshToken: "refresh-2",
+          accessTokenExpiresIn: 900,
+        },
       },
     });
     const middleware = createCmssyAuthMiddleware(config);

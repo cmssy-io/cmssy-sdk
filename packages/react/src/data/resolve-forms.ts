@@ -36,9 +36,9 @@ export async function resolveForms(
     ids.map(async (id) => {
       try {
         const data = await client.queryScoped<{
-          publicForm: CmssyFormDefinition | null;
+          public: { form: { get: CmssyFormDefinition | null } };
         }>(FORM_QUERY, { formId: id }, options);
-        return [id, data.publicForm] as const;
+        return [id, data.public.form.get] as const;
       } catch (err) {
         if (typeof console !== "undefined") {
           console.warn(`[cmssy] failed to resolve form ${id}`, err);

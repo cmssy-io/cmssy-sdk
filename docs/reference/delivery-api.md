@@ -51,8 +51,8 @@ You normally never write these - the listed helper calls them for you.
 | `publicPage` (SEO fields) | `fetchPageMeta`                          | `{ id, seoTitle, seoDescription, seoKeywords, displayName }` |
 | `publicPageLayouts`       | `fetchLayouts`                           | `[{ position, blocks }]`                                     |
 | `publicSiteConfig`        | `fetchSiteConfig` / `resolveSiteLocales` | site name, locales, features, branding                       |
-| `publicForm`              | `resolveForms` (and `context.forms`)     | form fields + settings                                       |
-| `submitForm`              | `SUBMIT_FORM_MUTATION`                   | `{ success, message, submissionId, ... }`                    |
+| `public.form.get`         | `resolveForms` (and `context.forms`)     | form fields + settings                                       |
+| `public.form.submit`      | `SUBMIT_FORM_MUTATION`                   | `{ success, message, submissionId, ... }`                    |
 
 ## Write these yourself
 
@@ -70,25 +70,29 @@ query PublicModelRecords(
   $offset: Int
   $populate: [String!]
 ) {
-  publicModelRecords(
-    workspaceId: $workspaceId
-    modelSlug: $modelSlug
-    filter: $filter
-    sort: $sort
-    limit: $limit
-    offset: $offset
-    populate: $populate
-  ) {
-    items {
-      id
-      modelId
-      data
-      status
-      createdAt
-      updatedAt
+  public {
+    model {
+      records(
+        workspaceId: $workspaceId
+        modelSlug: $modelSlug
+        filter: $filter
+        sort: $sort
+        limit: $limit
+        offset: $offset
+        populate: $populate
+      ) {
+        items {
+          id
+          modelId
+          data
+          status
+          createdAt
+          updatedAt
+        }
+        total
+        hasMore
+      }
     }
-    total
-    hasMore
   }
 }
 ```
@@ -136,11 +140,15 @@ This powers a blog or docs index - see the [listing recipe](../building-blocks/r
 
 ```graphql
 mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
-  submitForm(formId: $formId, input: $input) {
-    success
-    message
-    submissionId
-    redirectUrl
+  public {
+    form {
+      submit(formId: $formId, input: $input) {
+        success
+        message
+        submissionId
+        redirectUrl
+      }
+    }
   }
 }
 ```
@@ -149,9 +157,9 @@ Exported as `SUBMIT_FORM_MUTATION`; pass `{ formId, input: { data } }`.
 
 ## Member auth operations
 
-The `siteMember*` mutations (`siteMemberLogin`, `siteMemberRegister`,
-`siteMemberRefresh`, `siteMemberLogout`, `siteMemberForgotPassword`,
-`siteMemberResetPassword`, `siteMemberVerifyEmail`) back the auth flow. **Do not
+The `siteMember { ... }` mutations (`siteMember.login`, `siteMember.register`,
+`siteMember.refresh`, `siteMember.logout`, `siteMember.forgotPassword`,
+`siteMember.resetPassword`, `siteMember.verifyEmail`) back the auth flow. **Do not
 call them directly** - mount [`createCmssyAuthRoute`](../auth/member-auth.md),
 which handles them server-side and seals the session cookie.
 
