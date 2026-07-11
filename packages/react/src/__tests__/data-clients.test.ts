@@ -7,7 +7,11 @@ import {
   SUBMIT_FORM_MUTATION,
 } from "../data/queries";
 
-const config = { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws" };
+const config = {
+  apiUrl: "https://api.test/graphql",
+  org: "acme",
+  workspaceSlug: "ws",
+};
 
 function mockFetch(payload: unknown, ok = true): FetchLike {
   return async () => ({
@@ -41,15 +45,13 @@ function capturingFetch(payload: unknown): {
 describe("createCmssyClient().query (raw)", () => {
   it("runs a document and returns data, without scoping", async () => {
     const { fetch, calls } = capturingFetch({
-      data: { publicForm: { id: "f1", name: "Contact" } },
+      data: { public: { form: { get: { id: "f1", name: "Contact" } } } },
     });
     const client = createCmssyClient(config);
-    const data = await client.query<{ publicForm: { name: string } }>(
-      FORM_QUERY,
-      { formId: "f1" },
-      { fetch },
-    );
-    expect(data.publicForm.name).toBe("Contact");
+    const data = await client.query<{
+      public: { form: { get: { name: string } } };
+    }>(FORM_QUERY, { formId: "f1" }, { fetch });
+    expect(data.public.form.get.name).toBe("Contact");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.headers["x-workspace-id"]).toBeUndefined();
     expect(calls[0]?.variables).toEqual({ formId: "f1" });
@@ -71,7 +73,7 @@ describe("createCmssyClient().query (raw)", () => {
 describe("createCmssyClient().queryScoped", () => {
   it("sets the x-workspace-id header (header-scoped read, e.g. forms)", async () => {
     const { fetch, calls } = capturingFetch({
-      data: { publicForm: null },
+      data: { public: { form: { get: null } } },
     });
     const client = createCmssyClient(config);
     await client.queryScoped(
@@ -85,7 +87,11 @@ describe("createCmssyClient().queryScoped", () => {
 
   it("injects $workspaceId as a variable when the document declares it (records)", async () => {
     const { fetch, calls } = capturingFetch({
-      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+      data: {
+        public: {
+          model: { records: { items: [], total: 0, hasMore: false } },
+        },
+      },
     });
     const client = createCmssyClient(config);
     await client.queryScoped(
@@ -103,7 +109,11 @@ describe("createCmssyClient().queryScoped", () => {
 
   it("does not overwrite an explicit workspaceId variable", async () => {
     const { fetch, calls } = capturingFetch({
-      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+      data: {
+        public: {
+          model: { records: { items: [], total: 0, hasMore: false } },
+        },
+      },
     });
     const client = createCmssyClient(config);
     await client.queryScoped(
@@ -117,7 +127,11 @@ describe("createCmssyClient().queryScoped", () => {
 
   it("injects the resolved id when an existing workspaceId var is nullish", async () => {
     const { fetch, calls } = capturingFetch({
-      data: { publicModelRecords: { items: [], total: 0, hasMore: false } },
+      data: {
+        public: {
+          model: { records: { items: [], total: 0, hasMore: false } },
+        },
+      },
     });
     const client = createCmssyClient(config);
     await client.queryScoped(
@@ -137,9 +151,13 @@ describe("createCmssyClient().queryScoped", () => {
         status: 200,
         json: async () =>
           call === 1
-            ? { data: { public: { siteConfig: { id: "sc", workspaceId: "w7" } } } }
+            ? {
+                data: {
+                  public: { siteConfig: { id: "sc", workspaceId: "w7" } },
+                },
+              }
             : (expect(init.headers["x-workspace-id"]).toBe("w7"),
-              { data: { publicForm: null } }),
+              { data: { public: { form: { get: null } } } }),
       };
     };
     const client = createCmssyClient(config);
@@ -158,8 +176,12 @@ describe("createCmssyClient().queryScoped", () => {
         status: 200,
         json: async () =>
           isSiteConfig
-            ? { data: { public: { siteConfig: { id: "sc", workspaceId: "w7" } } } }
-            : { data: { publicForm: null } },
+            ? {
+                data: {
+                  public: { siteConfig: { id: "sc", workspaceId: "w7" } },
+                },
+              }
+            : { data: { public: { form: { get: null } } } },
       };
     };
     const client = createCmssyClient(config);
