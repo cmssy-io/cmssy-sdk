@@ -208,19 +208,37 @@ describe("createCmssyCartRoute", () => {
     });
   });
 
-  it("drops an address whose required lines are blank rather than sending junk", async () => {
+  it("rejects a malformed address with 400 and names the missing fields (CMS-932)", async () => {
     mockFetch({
       Checkout: { cart: { checkout: { id: "o1" } } },
     });
     const route = createCmssyCartRoute(config);
 
-    await route.POST(
+    const res = await route.POST(
       ...post("checkout", {
         customerEmail: "b@example.com",
         shippingAddress: { name: "  ", line1: "", city: "Kraków" },
       }),
     );
 
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      missing: ["name", "line1", "postalCode", "country"],
+    });
+    expect(fetchCalls).toHaveLength(0);
+  });
+
+  it("treats an omitted address as no address, not an error (CMS-932)", async () => {
+    mockFetch({
+      Checkout: { cart: { checkout: { id: "o1" } } },
+    });
+    const route = createCmssyCartRoute(config);
+
+    const res = await route.POST(
+      ...post("checkout", { customerEmail: "b@example.com" }),
+    );
+
+    expect(res.status).toBe(200);
     const sent = fetchCalls.at(-1)!.body.variables as {
       input: Record<string, unknown>;
     };
