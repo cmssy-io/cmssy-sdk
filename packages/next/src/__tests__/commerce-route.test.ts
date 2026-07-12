@@ -208,6 +208,25 @@ describe("createCmssyCartRoute", () => {
     });
   });
 
+  it("drops an address whose required lines are blank rather than sending junk", async () => {
+    mockFetch({
+      Checkout: { cart: { checkout: { id: "o1" } } },
+    });
+    const route = createCmssyCartRoute(config);
+
+    await route.POST(
+      ...post("checkout", {
+        customerEmail: "b@example.com",
+        shippingAddress: { name: "  ", line1: "", city: "Kraków" },
+      }),
+    );
+
+    const sent = fetchCalls.at(-1)!.body.variables as {
+      input: Record<string, unknown>;
+    };
+    expect(sent.input.shippingAddress).toBeNull();
+  });
+
   it("sets and clears the shipping method (CMS-912)", async () => {
     mockFetch({
       SetShippingMethod: { cart: { setShippingMethod: EMPTY_CART } },

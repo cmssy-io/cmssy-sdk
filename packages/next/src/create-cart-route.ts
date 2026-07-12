@@ -92,15 +92,21 @@ function optionalStr(value: unknown): string | null {
 function shippingAddress(value: unknown): CmssyAddress | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = value as Record<string, unknown>;
+  const name = optionalStr(raw.name);
+  const line1 = optionalStr(raw.line1);
+  const postalCode = optionalStr(raw.postalCode);
+  const city = optionalStr(raw.city);
+  const country = optionalStr(raw.country);
+  if (!name || !line1 || !postalCode || !city || !country) return null;
   return {
-    name: str(raw.name),
+    name,
     company: optionalStr(raw.company),
-    line1: str(raw.line1),
+    line1,
     line2: optionalStr(raw.line2),
-    postalCode: str(raw.postalCode),
-    city: str(raw.city),
+    postalCode,
+    city,
     region: optionalStr(raw.region),
-    country: str(raw.country),
+    country,
     phone: optionalStr(raw.phone),
     vatId: optionalStr(raw.vatId),
   };
