@@ -111,10 +111,19 @@ export interface CmssyOrderPayment {
 
 export type CmssyOrderTaxSummaryLine = CmssyTaxSummaryLine;
 
+export interface CmssyOrderDiscount {
+  code: string;
+  type: string;
+  value: number;
+  amount: number;
+}
+
 export interface CmssyOrder {
   id: string;
   status: string;
   subtotal: number;
+  discount?: number;
+  appliedDiscount?: CmssyOrderDiscount | null;
   total: number;
   currency: string;
   customerEmail: string;

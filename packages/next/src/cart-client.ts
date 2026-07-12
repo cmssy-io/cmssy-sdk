@@ -54,6 +54,8 @@ export const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
       orderNumber
       status
       subtotal
+      discount
+      appliedDiscount { code type value amount }
       tax
       total
       currency
