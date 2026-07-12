@@ -391,13 +391,12 @@ type CartConfig {
   defaultTaxRateId: String
   enableQuoteRequests: Boolean!
   enableSavedCarts: Boolean!
-  fieldMapping: CartFieldMapping!
   loggedInTTLDays: Int!
   lowStockThreshold: Int
   maxItemsPerCart: Int!
   maxQuantityPerItem: Int!
   pricesIncludeTax: Boolean!
-  productModelSlug: String
+  productSources: [CartProductSource!]!
   reservationTtlMinutes: Int
   sessionTTLDays: Int!
   shippingMethods: [ShippingMethodConfig!]!
@@ -409,13 +408,12 @@ input CartConfigInput {
   defaultTaxRateId: String
   enableQuoteRequests: Boolean
   enableSavedCarts: Boolean
-  fieldMapping: CartFieldMappingInput
   loggedInTTLDays: Int
   lowStockThreshold: Int
   maxItemsPerCart: Int
   maxQuantityPerItem: Int
   pricesIncludeTax: Boolean
-  productModelSlug: String
+  productSources: [CartProductSourceInput!]
   reservationTtlMinutes: Int
   sessionTTLDays: Int
   shippingMethods: [ShippingMethodInput!]
@@ -521,6 +519,20 @@ type CartMutations {
 
   """Update quantity or notes on a cart item (public, rate-limited)"""
   updateItem(input: UpdateCartItemInput!): Cart!
+}
+
+"""A model configured as a cart product source, with its field mapping"""
+type CartProductSource {
+  fieldMapping: CartFieldMapping!
+  modelSlug: String!
+}
+
+"""
+One cart product source (CMS-929). The full productSources list is replaced wholesale on update - send the complete desired set.
+"""
+input CartProductSourceInput {
+  fieldMapping: CartFieldMappingInput
+  modelSlug: String!
 }
 
 type CartQueries {
@@ -1259,6 +1271,17 @@ input InviteOrganizationMemberInput {
   roleId: String!
 }
 
+type Invoice {
+  amount: Int!
+  currency: String!
+  date: DateTime
+  description: String
+  hostedUrl: String
+  id: ID!
+  pdfUrl: String
+  status: String
+}
+
 scalar JSON
 
 type LayoutBlock {
@@ -1936,8 +1959,14 @@ type OrganizationBilling {
   aiCreditsResetAt: DateTime
   billingCycle: String
   cancelAtPeriodEnd: Boolean!
+  currency: String
   currentPeriodEnd: DateTime
+  interval: String
   isTrial: Boolean!
+  paymentMethod: PaymentMethod
+  priceAmount: Int
+  renewsAt: DateTime
+  seatsIncluded: Int
   subscriptionStatus: String
   trialEndsAt: DateTime
 }
@@ -1982,7 +2011,9 @@ type OrganizationMutations {
 
 type OrganizationQueries {
   get(id: ID, slug: String): Organization
+  invoices(limit: Int, organizationId: ID!): [Invoice!]!
   list: [Organization!]!
+  usageHistory(id: ID, range: UsageHistoryRange!, slug: String): UsageHistory
 }
 
 type OrganizationWorkspace {
@@ -2248,6 +2279,13 @@ input PatchOperationInput {
   startMarker: String
 }
 
+type PaymentMethod {
+  brand: String
+  expMonth: Int
+  expYear: Int
+  last4: String
+}
+
 """A category of permissions"""
 type PermissionCategory {
   key: String!
@@ -2499,11 +2537,10 @@ type PublicCartConfig {
   defaultTaxRateId: String
   enableQuoteRequests: Boolean!
   enableSavedCarts: Boolean!
-  fieldMapping: CartFieldMapping!
   maxItemsPerCart: Int!
   maxQuantityPerItem: Int!
   pricesIncludeTax: Boolean!
-  productModelSlug: String
+  productSources: [CartProductSource!]!
   shippingMethods: [ShippingMethodConfig!]!
   taxRates: [TaxRate!]!
 }
@@ -2570,12 +2607,20 @@ An order as its buyer sees it, fetched with the access token minted at checkout.
 """
 type PublicOrder {
   amountPaid: Int!
+
+  """The discount code frozen at order time (CMS-919)"""
+  appliedDiscount: OrderDiscount
   balanceDue: Int!
   canceledAt: DateTime
   createdAt: DateTime!
   currency: String!
   customerEmail: String!
   customerNote: String
+
+  """
+  Money taken off the subtotal, in minor units (CMS-919). subtotal - discount + shippingTotal + tax === total.
+  """
+  discount: Int!
   fulfilledAt: DateTime
   fulfillmentStatus: String!
   id: String!
@@ -3345,6 +3390,41 @@ input UploadMediaInput {
 
 input UpsertOrderPipelineInput {
   stages: [OrderPipelineStageInput!]!
+}
+
+type UsageHistory {
+  deltas: UsageHistoryDeltas!
+  points: [UsageHistoryPoint!]!
+  previousPeriod: UsageHistoryTotals
+  totals: UsageHistoryTotals!
+}
+
+type UsageHistoryDeltas {
+  aiCreditsUsed: Float
+  apiRequests: Float
+  bandwidthBytes: Float
+  storageBytes: Float
+}
+
+type UsageHistoryPoint {
+  aiCreditsUsed: Int!
+  apiRequests: Int!
+  bandwidthBytes: Float!
+  day: DateTime!
+  storageBytes: Float!
+}
+
+enum UsageHistoryRange {
+  LAST_14_DAYS
+  LAST_30_DAYS
+  LAST_90_DAYS
+}
+
+type UsageHistoryTotals {
+  aiCreditsUsed: Int!
+  apiRequests: Int!
+  bandwidthBytes: Float!
+  storageBytes: Float!
 }
 
 type User {
