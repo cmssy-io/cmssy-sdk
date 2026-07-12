@@ -109,6 +109,7 @@ export type {
   CmssyProduct,
   CmssyProductVariant,
   CmssyOrder,
+  CmssyOrderDiscount,
   CmssyOrderItem,
   CmssyOrderTaxSummaryLine,
   CmssyShippingMethod,

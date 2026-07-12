@@ -89,24 +89,46 @@ function optionalStr(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+const ADDRESS_REQUIRED = [
+  "name",
+  "line1",
+  "postalCode",
+  "city",
+  "country",
+] as const;
+
+export class CmssyAddressError extends Error {
+  constructor(readonly missing: string[]) {
+    super(
+      `cmssy: shippingAddress is missing required field(s): ${missing.join(
+        ", ",
+      )}. Expected { name, line1, postalCode, city, country } (plus optional company, line2, region, phone, vatId).`,
+    );
+    this.name = "CmssyAddressError";
+  }
+}
+
+// An address that is present but malformed must NOT collapse to "no address":
+// the backend would then reject the checkout with "a shipping address is
+// required", pointing the developer at the wrong problem entirely.
 function shippingAddress(value: unknown): CmssyAddress | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new CmssyAddressError([...ADDRESS_REQUIRED]);
+  }
   const raw = value as Record<string, unknown>;
-  const name = optionalStr(raw.name);
-  const line1 = optionalStr(raw.line1);
-  const postalCode = optionalStr(raw.postalCode);
-  const city = optionalStr(raw.city);
-  const country = optionalStr(raw.country);
-  if (!name || !line1 || !postalCode || !city || !country) return null;
+  const missing = ADDRESS_REQUIRED.filter((key) => !optionalStr(raw[key]));
+  if (missing.length > 0) throw new CmssyAddressError(missing);
+
   return {
-    name,
+    name: optionalStr(raw.name) as string,
     company: optionalStr(raw.company),
-    line1,
+    line1: optionalStr(raw.line1) as string,
     line2: optionalStr(raw.line2),
-    postalCode,
-    city,
+    postalCode: optionalStr(raw.postalCode) as string,
+    city: optionalStr(raw.city) as string,
     region: optionalStr(raw.region),
-    country,
+    country: optionalStr(raw.country) as string,
     phone: optionalStr(raw.phone),
     vatId: optionalStr(raw.vatId),
   };
@@ -226,6 +248,9 @@ export function createCmssyCartRoute(
             return json({ message: "Not found." }, 404);
         }
       } catch (err) {
+        if (err instanceof CmssyAddressError) {
+          return json({ message: err.message, missing: err.missing }, 400);
+        }
         return json(
           {
             message:
