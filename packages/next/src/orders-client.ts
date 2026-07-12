@@ -10,6 +10,8 @@ const ORDER_FIELDS = `
   id
   status
   subtotal
+  discount
+  appliedDiscount { code type value amount }
   tax
   total
   pricesIncludeTax
@@ -48,6 +50,8 @@ const PUBLIC_ORDER_FIELDS = `
   paymentStatus
   fulfillmentStatus
   subtotal
+  discount
+  appliedDiscount { code type value amount }
   tax
   total
   pricesIncludeTax

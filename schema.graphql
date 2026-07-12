@@ -1490,7 +1490,6 @@ type MemberMutations {
   leave: Boolean!
   remove(userId: ID!): Workspace!
   suspend(userId: ID!): Workspace!
-  transferOwnership(newOwnerId: ID!): Workspace!
   unsuspend(userId: ID!): Workspace!
   updateRole(roleId: ID!, userId: ID!): Workspace!
 }
@@ -1706,6 +1705,9 @@ type Order {
   """
   accessToken: String
   amountPaid: Int!
+
+  """The discount code frozen at order time (CMS-919)"""
+  appliedDiscount: OrderDiscount
   balanceDue: Int!
   canceledAt: DateTime
   cartId: String
@@ -1716,6 +1718,11 @@ type Order {
 
   """Message the buyer left at checkout (CMS-913)"""
   customerNote: String
+
+  """
+  Money taken off the subtotal by the discount code, 0 when none (CMS-919)
+  """
+  discount: Int!
   displayStatus: String!
 
   """Admin edit trail; empty for a shopper reading their order."""
@@ -1775,6 +1782,15 @@ type OrderAddress {
   postalCode: String!
   region: String
   vatId: String
+}
+
+"""The discount code as it stood at checkout (CMS-919)."""
+type OrderDiscount {
+  """Money taken off the subtotal, in minor units"""
+  amount: Int!
+  code: String!
+  type: String!
+  value: Int!
 }
 
 type OrderEdit {
@@ -1911,12 +1927,13 @@ type Organization {
   name: String!
   plan: String!
   slug: String!
-  usage: OrganizationUsage!
+  usage: PooledUsage!
   workspaceCount: Int!
   workspaces: [OrganizationWorkspace!]!
 }
 
 type OrganizationBilling {
+  aiCreditsResetAt: DateTime
   billingCycle: String
   cancelAtPeriodEnd: Boolean!
   currentPeriodEnd: DateTime
@@ -1954,6 +1971,11 @@ type OrganizationMutations {
   inviteMember(input: InviteOrganizationMemberInput!, organizationId: ID!): Organization!
   moveWorkspace(organizationId: ID!, workspaceId: ID!): Organization!
   removeMember(organizationId: ID!, userId: ID!): Organization!
+
+  """
+  Hand the organization - and with it the permission bypass over every workspace it owns - to another active member. Owner-only.
+  """
+  transferOwnership(newOwnerId: ID!, organizationId: ID!): Organization!
   update(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateMemberRole(organizationId: ID!, roleId: String!, userId: ID!): Organization!
 }
@@ -1961,16 +1983,6 @@ type OrganizationMutations {
 type OrganizationQueries {
   get(id: ID, slug: String): Organization
   list: [Organization!]!
-}
-
-type OrganizationUsage {
-  aiCreditsMax: Int!
-  aiCreditsResetAt: DateTime
-  aiCreditsUsed: Int!
-  apiRequests: Int!
-  bandwidthBytes: Float!
-  pagesCount: Int!
-  storageBytes: Float!
 }
 
 type OrganizationWorkspace {
@@ -2252,9 +2264,10 @@ type PermissionInfo {
 }
 
 type PooledUsage {
-  aiTokensUsed: Int!
+  aiCreditsUsed: Int!
   apiRequests: Int!
   bandwidthBytes: Float!
+  membersCount: Int!
   pagesCount: Int!
   storageBytes: Float!
 }
@@ -3339,8 +3352,8 @@ type User {
   customFields: [UserCustomField!]!
   email: String!
   id: String!
+  isOrganizationOwner: Boolean
   isVerified: Boolean!
-  isWorkspaceOwner: Boolean
   joinedAt: DateTime
   lastLoginAt: DateTime
   membershipStatus: String
@@ -3461,19 +3474,9 @@ type WebhookQueries {
 }
 
 type Workspace {
-  aiTokensResetAt: DateTime!
-  billingCycle: String
-  cancelAtPeriodEnd: Boolean!
   createdAt: DateTime!
-  currentActiveMembers: Int!
-  currentAiTokensUsed: Int!
-  currentPages: Int!
-  currentPeriodEnd: DateTime
-  currentStorageBytes: Int!
   id: String!
   isOwner: Boolean!
-  isTrial: Boolean!
-  limits: WorkspaceLimits!
   members: [WorkspaceMemberType!]!
   myMembershipStatus: String
   myPermissions: [String!]!
@@ -3483,13 +3486,9 @@ type Workspace {
   organization: WorkspaceOrganization
   organizationId: String!
   organizationSlug: String
-  ownerId: String!
-  plan: String!
   roles: [WorkspaceRoleType!]!
   settings: WorkspaceSettings!
   slug: String!
-  subscriptionStatus: String
-  trialEndsAt: DateTime
   updatedAt: DateTime!
   usage: WorkspaceUsage!
 }
@@ -3527,18 +3526,6 @@ type WorkspaceIntegrations {
   id: String!
   updatedAt: DateTime!
   updatedBy: String
-}
-
-type WorkspaceLimits {
-  canRemoveBranding: Boolean!
-  canUseCart: Boolean!
-  maxAiTokensMonth: Int!
-  maxApiRequestsMonth: Int!
-  maxBandwidthGbMonth: Int!
-  maxPages: Int!
-  maxStorageMb: Int!
-  maxUsers: Int!
-  maxWorkspacesOwned: Int!
 }
 
 type WorkspaceMemberType {
