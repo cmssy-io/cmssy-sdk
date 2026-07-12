@@ -165,6 +165,97 @@ describe("createCmssyCartRoute", () => {
     });
   });
 
+  it("carries the shipping address, PO number and note into checkout (CMS-913)", async () => {
+    mockFetch({
+      Checkout: { cart: { checkout: { id: "o1", accessToken: "tok" } } },
+    });
+    const route = createCmssyCartRoute(config);
+
+    const address = {
+      name: "Anna Kowalska",
+      company: "Machtec",
+      line1: "ul. Przemysłowa 12",
+      line2: null,
+      postalCode: "31-357",
+      city: "Kraków",
+      region: null,
+      country: "PL",
+      phone: null,
+      vatId: "PL1234567890",
+    };
+    const res = await route.POST(
+      ...post("checkout", {
+        customerEmail: "b@example.com",
+        poNumber: "  PO-7  ",
+        customerNote: "",
+        shippingAddress: address,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const sent = fetchCalls.at(-1)!.body.variables as {
+      input: Record<string, unknown>;
+    };
+    expect(sent.input.poNumber).toBe("PO-7");
+    expect(sent.input.customerNote).toBeNull();
+    expect(sent.input.shippingAddress).toMatchObject({
+      city: "Kraków",
+      country: "PL",
+      vatId: "PL1234567890",
+    });
+    await expect(res.json()).resolves.toMatchObject({
+      order: { id: "o1", accessToken: "tok" },
+    });
+  });
+
+  it("drops an address whose required lines are blank rather than sending junk", async () => {
+    mockFetch({
+      Checkout: { cart: { checkout: { id: "o1" } } },
+    });
+    const route = createCmssyCartRoute(config);
+
+    await route.POST(
+      ...post("checkout", {
+        customerEmail: "b@example.com",
+        shippingAddress: { name: "  ", line1: "", city: "Kraków" },
+      }),
+    );
+
+    const sent = fetchCalls.at(-1)!.body.variables as {
+      input: Record<string, unknown>;
+    };
+    expect(sent.input.shippingAddress).toBeNull();
+  });
+
+  it("sets and clears the shipping method (CMS-912)", async () => {
+    mockFetch({
+      SetShippingMethod: { cart: { setShippingMethod: EMPTY_CART } },
+    });
+    const route = createCmssyCartRoute(config);
+
+    await route.POST(...post("set-shipping", { shippingMethodId: "courier" }));
+    expect(
+      (fetchCalls.at(-1)!.body.variables as { shippingMethodId: unknown })
+        .shippingMethodId,
+    ).toBe("courier");
+
+    await route.POST(...post("set-shipping", {}));
+    expect(
+      (fetchCalls.at(-1)!.body.variables as { shippingMethodId: unknown })
+        .shippingMethodId,
+    ).toBeNull();
+  });
+
+  it("merges the guest cart into the member cart after login", async () => {
+    mockFetch({ MergeCart: { cart: { merge: EMPTY_CART } } });
+    const route = createCmssyCartRoute(config);
+
+    const res = await route.POST(...post("merge", {}));
+
+    expect(res.status).toBe(200);
+    expect(String(fetchCalls.at(-1)!.body.query)).toContain("merge(");
+  });
+
   it("returns 404 for an unknown action", async () => {
     mockFetch({});
     const route = createCmssyCartRoute(config);

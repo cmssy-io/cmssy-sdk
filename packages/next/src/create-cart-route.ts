@@ -8,12 +8,15 @@ import {
   backendCheckout,
   backendClearCart,
   backendGetCart,
+  backendMergeCart,
   backendProduct,
   backendRemoveDiscount,
   backendRemoveItem,
+  backendSetShippingMethod,
   backendUpdateItem,
   type CartRequestContext,
 } from "./cart-client";
+import type { CmssyAddress } from "@cmssy/react";
 
 export const CMSSY_CART_COOKIE = "cmssy_cart";
 const CART_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -80,6 +83,33 @@ function str(value: unknown): string {
 function plainObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
+}
+
+function optionalStr(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function shippingAddress(value: unknown): CmssyAddress | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const name = optionalStr(raw.name);
+  const line1 = optionalStr(raw.line1);
+  const postalCode = optionalStr(raw.postalCode);
+  const city = optionalStr(raw.city);
+  const country = optionalStr(raw.country);
+  if (!name || !line1 || !postalCode || !city || !country) return null;
+  return {
+    name,
+    company: optionalStr(raw.company),
+    line1,
+    line2: optionalStr(raw.line2),
+    postalCode,
+    city,
+    region: optionalStr(raw.region),
+    country,
+    phone: optionalStr(raw.phone),
+    vatId: optionalStr(raw.vatId),
+  };
 }
 
 export function createCmssyCartRoute(
@@ -163,12 +193,23 @@ export function createCmssyCartRoute(
             });
           case "remove-discount":
             return json({ cart: await backendRemoveDiscount(config, ctx) });
+          case "set-shipping":
+            return json({
+              cart: await backendSetShippingMethod(
+                config,
+                ctx,
+                optionalStr(body.shippingMethodId),
+              ),
+            });
+          case "merge":
+            return json({ cart: await backendMergeCart(config, ctx) });
           case "checkout": {
-            const order = await backendCheckout(
-              config,
-              ctx,
-              str(body.customerEmail),
-            );
+            const order = await backendCheckout(config, ctx, {
+              customerEmail: str(body.customerEmail),
+              poNumber: optionalStr(body.poNumber),
+              customerNote: optionalStr(body.customerNote),
+              shippingAddress: shippingAddress(body.shippingAddress),
+            });
             await clearCartToken();
             return json({ order });
           }

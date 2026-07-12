@@ -2,6 +2,7 @@ import {
   graphqlRequest,
   resolveApiUrl,
   resolveWorkspaceId,
+  type CmssyAddress,
   type CmssyCart,
   type CmssyOrder,
   type CmssyProduct,
@@ -15,15 +16,23 @@ const CART_FIELDS = `
   subtotal
   currency
   discountedTotal
+  tax
+  totalGross
+  pricesIncludeTax
+  shippingTotal
+  taxSummary { rateId name rate base amount }
+  shippingMethod { id label price etaLabel }
+  availableShippingMethods { id label price etaLabel }
   appliedDiscount { code type value computedAmount }
   items {
     id
     recordId
     quantity
     variantSelections
+    unitPrice
     currentPrice
     priceMismatch
-    snapshot { name price currency imageUrl sku }
+    snapshot { name price currency imageUrl sku tiers { minQty price } }
   }
 `;
 
@@ -34,14 +43,43 @@ export const REMOVE_ITEM = `mutation RemoveCartItem($workspaceId: ID!, $itemId: 
 export const CLEAR_CART = `mutation ClearCart($workspaceId: ID!) { cart { clear(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
 export const APPLY_DISCOUNT = `mutation ApplyDiscount($workspaceId: ID!, $code: String!) { cart { applyDiscount(workspaceId: $workspaceId, code: $code) { ${CART_FIELDS} } } }`;
 export const REMOVE_DISCOUNT = `mutation RemoveDiscount($workspaceId: ID!) { cart { removeDiscount(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
+export const SET_SHIPPING_METHOD = `mutation SetShippingMethod($workspaceId: ID!, $shippingMethodId: String) {
+  cart { setShippingMethod(workspaceId: $workspaceId, shippingMethodId: $shippingMethodId) { ${CART_FIELDS} } }
+}`;
+export const MERGE_CART = `mutation MergeCart($workspaceId: ID!) { cart { merge(workspaceId: $workspaceId) { ${CART_FIELDS} } } }`;
 export const CHECKOUT = `mutation Checkout($input: CheckoutInput!) {
-  cart { checkout(input: $input) { id status subtotal total currency customerEmail } }
+  cart {
+    checkout(input: $input) {
+      id
+      orderNumber
+      status
+      subtotal
+      tax
+      total
+      currency
+      customerEmail
+      accessToken
+      poNumber
+      customerNote
+      shippingTotal
+      pricesIncludeTax
+      shippingMethod { id label price }
+      shippingAddress { name company line1 line2 postalCode city region country phone vatId }
+      taxSummary { rateId name rate base amount }
+      items { name sku quantity price listPrice tierMinQty currency taxRate taxAmount }
+    }
+  }
 }`;
 export const PRODUCT = `query Product($workspaceId: String!, $modelSlug: String!, $filter: JSON) {
   public {
     model {
       records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: 1) {
-        items { id data variants { id sku price inventory selectedOptions { name value } } }
+        items {
+          id
+          data
+          priceTiers { minQty price }
+          variants { id sku price inventory tiers { minQty price } selectedOptions { name value } }
+        }
       }
     }
   }
@@ -216,10 +254,50 @@ export async function backendRemoveDiscount(
   return data.cart.removeDiscount;
 }
 
+export async function backendSetShippingMethod(
+  config: CmssyNextConfig,
+  ctx: CartRequestContext,
+  shippingMethodId: string | null,
+): Promise<CmssyCart> {
+  const workspaceId = await workspaceIdFor(config);
+  const data = await request<{ cart: { setShippingMethod: CmssyCart } }>(
+    config,
+    ctx,
+    workspaceId,
+    SET_SHIPPING_METHOD,
+    { workspaceId, shippingMethodId },
+    "set shipping method",
+  );
+  return data.cart.setShippingMethod;
+}
+
+export async function backendMergeCart(
+  config: CmssyNextConfig,
+  ctx: CartRequestContext,
+): Promise<CmssyCart> {
+  const workspaceId = await workspaceIdFor(config);
+  const data = await request<{ cart: { merge: CmssyCart } }>(
+    config,
+    ctx,
+    workspaceId,
+    MERGE_CART,
+    { workspaceId },
+    "merge cart",
+  );
+  return data.cart.merge;
+}
+
+export interface CheckoutInput {
+  customerEmail: string;
+  poNumber?: string | null;
+  customerNote?: string | null;
+  shippingAddress?: CmssyAddress | null;
+}
+
 export async function backendCheckout(
   config: CmssyNextConfig,
   ctx: CartRequestContext,
-  customerEmail: string,
+  input: CheckoutInput,
 ): Promise<CmssyOrder> {
   const workspaceId = await workspaceIdFor(config);
   const data = await request<{ cart: { checkout: CmssyOrder } }>(
@@ -227,7 +305,7 @@ export async function backendCheckout(
     ctx,
     workspaceId,
     CHECKOUT,
-    { input: { workspaceId, customerEmail } },
+    { input: { workspaceId, ...input } },
     "checkout",
   );
   return data.cart.checkout;
