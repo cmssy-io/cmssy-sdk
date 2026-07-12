@@ -31,8 +31,45 @@ const ORDER_FIELDS = `
   paidAt
   fulfilledAt
   createdAt
-  items { name price currency quantity sku }
+  orderNumber
+  poNumber
+  customerNote
+  shippingTotal
+  shippingMethod { id label price }
+  shippingAddress { name company line1 line2 postalCode city region country phone vatId }
+  items { name price listPrice tierMinQty currency quantity sku }
   payments { amount reference provider at }
+`;
+
+const PUBLIC_ORDER_FIELDS = `
+  id
+  orderNumber
+  status
+  paymentStatus
+  fulfillmentStatus
+  subtotal
+  tax
+  total
+  pricesIncludeTax
+  taxSummary { rateId name rate base amount }
+  currency
+  customerEmail
+  poNumber
+  customerNote
+  shippingTotal
+  shippingMethod { id label price }
+  shippingAddress { name company line1 line2 postalCode city region country phone vatId }
+  amountPaid
+  balanceDue
+  refundedAmount
+  trackingNumber
+  trackingCarrier
+  invoiceNumber
+  invoiceUrl
+  paidAt
+  fulfilledAt
+  createdAt
+  items { name price listPrice tierMinQty currency quantity sku taxRate taxAmount }
 `;
 
 export const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: Int) {
@@ -48,6 +85,16 @@ export const MY_ORDERS = `query MyOrders($workspaceId: ID!, $skip: Int, $limit: 
 export const MY_ORDER = `query MyOrder($workspaceId: ID!, $id: ID!) {
   account {
     order(workspaceId: $workspaceId, id: $id) { ${ORDER_FIELDS} }
+  }
+}`;
+
+export const PUBLIC_ORDER_BY_TOKEN = `query PublicOrder($workspaceId: ID!, $orderId: ID!, $accessToken: String!) {
+  public {
+    order {
+      byToken(workspaceId: $workspaceId, orderId: $orderId, accessToken: $accessToken) {
+        ${PUBLIC_ORDER_FIELDS}
+      }
+    }
   }
 }`;
 
@@ -112,4 +159,25 @@ export async function backendMyOrder(
     "my order",
   );
   return data.account.order;
+}
+
+export async function backendOrderByToken(
+  config: CmssyNextConfig,
+  options: { orderId: string; accessToken: string },
+): Promise<CmssyOrder> {
+  const workspaceId = await workspaceIdFor(config);
+  const data = await graphqlRequest<{
+    public: { order: { byToken: CmssyOrder } };
+  }>(
+    config,
+    PUBLIC_ORDER_BY_TOKEN,
+    {
+      workspaceId,
+      orderId: options.orderId,
+      accessToken: options.accessToken,
+    },
+    { headers: { "x-workspace-id": workspaceId } },
+    "public order lookup",
+  );
+  return data.public.order.byToken;
 }

@@ -72,7 +72,10 @@ export { fetchProducts, fetchProduct } from "./product-server";
 export type {
   FetchProductsOptions,
   FetchProductOptions,
+  CmssyProductPage,
 } from "./product-server";
+export { fetchOrderByToken } from "./order-server";
+export type { FetchOrderByTokenOptions } from "./order-server";
 export { createCmssyOrdersRoute } from "./create-orders-route";
 export type { CmssyOrdersRouteHandlers } from "./create-orders-route";
 export type { MyOrdersResult } from "./orders-client";

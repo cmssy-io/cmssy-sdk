@@ -177,7 +177,9 @@ describe("CmssyCommerceProvider / useCart", () => {
 
     let order;
     await act(async () => {
-      order = await captured.current!.checkout("buyer@example.com");
+      order = await captured.current!.checkout({
+        customerEmail: "buyer@example.com",
+      });
     });
     expect(order).toMatchObject({ id: "o1", status: "pending" });
     expect(captured.current!.cart).toBeNull();

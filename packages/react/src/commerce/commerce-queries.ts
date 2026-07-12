@@ -1,9 +1,15 @@
+export interface CmssyPriceTier {
+  minQty: number;
+  price: number;
+}
+
 export interface CmssyCartItemSnapshot {
   name: string;
   price: number;
   currency: string;
   imageUrl: string | null;
   sku: string | null;
+  tiers: CmssyPriceTier[];
 }
 
 export interface CmssyCartItem {
@@ -12,8 +18,37 @@ export interface CmssyCartItem {
   quantity: number;
   variantSelections: Record<string, string> | null;
   snapshot: CmssyCartItemSnapshot;
+  unitPrice: number;
   currentPrice: number | null;
   priceMismatch: boolean;
+}
+
+export interface CmssyShippingMethod {
+  id: string;
+  label: string;
+  price: number;
+  etaLabel: string | null;
+}
+
+export interface CmssyTaxSummaryLine {
+  rateId: string | null;
+  name: string | null;
+  rate: number;
+  base: number;
+  amount: number;
+}
+
+export interface CmssyAddress {
+  name: string;
+  company?: string | null;
+  line1: string;
+  line2?: string | null;
+  postalCode: string;
+  city: string;
+  region?: string | null;
+  country: string;
+  phone?: string | null;
+  vatId?: string | null;
 }
 
 export interface CmssyCartDiscount {
@@ -32,6 +67,13 @@ export interface CmssyCart {
   currency: string | null;
   appliedDiscount: CmssyCartDiscount | null;
   discountedTotal: number;
+  tax: number;
+  taxSummary: CmssyTaxSummaryLine[];
+  totalGross: number;
+  pricesIncludeTax: boolean;
+  shippingMethod: CmssyShippingMethod | null;
+  shippingTotal: number;
+  availableShippingMethods: CmssyShippingMethod[];
 }
 
 export interface CmssyProductVariant {
@@ -40,17 +82,21 @@ export interface CmssyProductVariant {
   price: number;
   inventory: number | null;
   selectedOptions: Array<{ name: string; value: string }>;
+  tiers: CmssyPriceTier[];
 }
 
 export interface CmssyProduct {
   id: string;
   data: Record<string, unknown>;
   variants: CmssyProductVariant[];
+  priceTiers: CmssyPriceTier[];
 }
 
 export interface CmssyOrderItem {
   name: string;
   price: number;
+  listPrice?: number | null;
+  tierMinQty?: number | null;
   currency: string;
   quantity: number;
   sku: string | null;
@@ -63,13 +109,7 @@ export interface CmssyOrderPayment {
   at: string;
 }
 
-export interface CmssyOrderTaxSummaryLine {
-  rateId: string | null;
-  name: string | null;
-  rate: number;
-  base: number;
-  amount: number;
-}
+export type CmssyOrderTaxSummaryLine = CmssyTaxSummaryLine;
 
 export interface CmssyOrder {
   id: string;
@@ -98,4 +138,11 @@ export interface CmssyOrder {
   paidAt?: string | null;
   fulfilledAt?: string | null;
   createdAt?: string;
+  orderNumber?: number | null;
+  poNumber?: string | null;
+  customerNote?: string | null;
+  shippingAddress?: CmssyAddress | null;
+  shippingMethod?: { id: string; label: string; price: number } | null;
+  shippingTotal?: number;
+  accessToken?: string | null;
 }

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      graphql:
+        specifier: ^16.10.0
+        version: 16.14.2
       typescript:
         specifier: ^5.6.0
         version: 5.9.3

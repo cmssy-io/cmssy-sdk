@@ -32,14 +32,17 @@ export type {
   CmssyCommerceProviderProps,
   CmssyCommerceState,
   CmssyAddToCartOptions,
+  CmssyCheckoutInput,
 } from "./commerce/commerce-provider";
 export { productBlock } from "./commerce/product-block";
 export { cartBlock } from "./commerce/cart-block";
 export { checkoutBlock } from "./commerce/checkout-block";
-export { useCmssyOrders } from "./commerce/use-orders";
+export { useCmssyOrders, useCmssyOrder } from "./commerce/use-orders";
 export type {
   CmssyOrdersState,
   UseCmssyOrdersOptions,
+  CmssyOrderState,
+  UseCmssyOrderOptions,
 } from "./commerce/use-orders";
 export {
   formatPrice,
