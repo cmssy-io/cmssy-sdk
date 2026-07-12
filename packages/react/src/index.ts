@@ -100,13 +100,19 @@ export type {
 } from "./data/queries";
 
 export type {
+  CmssyAddress,
   CmssyCart,
   CmssyCartItem,
   CmssyCartItemSnapshot,
   CmssyCartDiscount,
+  CmssyPriceTier,
   CmssyProduct,
   CmssyProductVariant,
   CmssyOrder,
+  CmssyOrderItem,
+  CmssyOrderTaxSummaryLine,
+  CmssyShippingMethod,
+  CmssyTaxSummaryLine,
 } from "./commerce/commerce-queries";
 
 export { CmssyBlock } from "./components/cmssy-block";

@@ -79,3 +79,64 @@ export function useCmssyOrders(
 
   return { orders, total, hasMore, loading, error, refresh: load };
 }
+
+export interface CmssyOrderState {
+  order: CmssyOrder | null;
+  loading: boolean;
+  error: string | null;
+  refresh(): Promise<void>;
+}
+
+export interface UseCmssyOrderOptions {
+  basePath?: string;
+}
+
+export function useCmssyOrder(
+  id: string | null | undefined,
+  options: UseCmssyOrderOptions = {},
+): CmssyOrderState {
+  const base = (options.basePath ?? "/api/cmssy/orders").replace(/\/+$/, "");
+
+  const [order, setOrder] = useState<CmssyOrder | null>(null);
+  const [loading, setLoading] = useState(Boolean(id));
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!id) {
+      setOrder(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const qs = new URLSearchParams({ id });
+      const res = await fetch(`${base}?${qs.toString()}`, {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        setOrder(null);
+        return;
+      }
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(body.message ?? `Order request failed (${res.status})`);
+      }
+      const data = (await res.json()) as { order?: CmssyOrder | null };
+      setOrder(data.order ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load the order");
+    } finally {
+      setLoading(false);
+    }
+  }, [base, id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { order, loading, error, refresh: load };
+}

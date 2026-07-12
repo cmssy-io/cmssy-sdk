@@ -11,11 +11,23 @@ import {
   type ReactNode,
 } from "react";
 
-import type { CmssyCart, CmssyOrder, CmssyProduct } from "./commerce-queries";
+import type {
+  CmssyAddress,
+  CmssyCart,
+  CmssyOrder,
+  CmssyProduct,
+} from "./commerce-queries";
 
 export interface CmssyAddToCartOptions {
   variantSelections?: Record<string, string>;
   notes?: string;
+}
+
+export interface CmssyCheckoutInput {
+  customerEmail: string;
+  poNumber?: string | null;
+  customerNote?: string | null;
+  shippingAddress?: CmssyAddress | null;
 }
 
 export interface CmssyCommerceState {
@@ -32,7 +44,9 @@ export interface CmssyCommerceState {
   clearCart(): Promise<void>;
   applyDiscount(code: string): Promise<void>;
   removeDiscount(): Promise<void>;
-  checkout(customerEmail: string): Promise<CmssyOrder>;
+  setShippingMethod(shippingMethodId: string | null): Promise<void>;
+  merge(): Promise<void>;
+  checkout(input: CmssyCheckoutInput): Promise<CmssyOrder>;
   refresh(): Promise<void>;
   fetchProduct(
     modelSlug: string,
@@ -149,13 +163,21 @@ export function CmssyCommerceProvider({
     [runCart],
   );
 
+  const setShippingMethod = useCallback(
+    (shippingMethodId: string | null) =>
+      runCart("set-shipping", { shippingMethodId }),
+    [runCart],
+  );
+
+  const merge = useCallback(() => runCart("merge", {}), [runCart]);
+
   const checkout = useCallback(
-    async (customerEmail: string): Promise<CmssyOrder> => {
+    async (input: CmssyCheckoutInput): Promise<CmssyOrder> => {
       const gen = ++generation.current;
       setError(null);
       try {
         const data = await post<{ order: CmssyOrder }>("checkout", {
-          customerEmail,
+          ...input,
         });
         if (gen === generation.current) setCart(null);
         return data.order;
@@ -194,6 +216,8 @@ export function CmssyCommerceProvider({
       clearCart,
       applyDiscount,
       removeDiscount,
+      setShippingMethod,
+      merge,
       checkout,
       refresh,
       fetchProduct,
@@ -208,6 +232,8 @@ export function CmssyCommerceProvider({
       clearCart,
       applyDiscount,
       removeDiscount,
+      setShippingMethod,
+      merge,
       checkout,
       refresh,
       fetchProduct,

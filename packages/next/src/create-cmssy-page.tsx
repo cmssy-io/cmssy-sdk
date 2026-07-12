@@ -36,6 +36,7 @@ export interface CmssyEditorProps {
 
 export interface CreateCmssyPageOptions {
   editor?: ComponentType<CmssyEditorProps>;
+  path?: string;
 }
 
 interface CatchAllParams {
@@ -45,7 +46,7 @@ interface CatchAllParams {
 type SearchParams = Record<string, string | string[] | undefined>;
 
 interface CatchAllProps {
-  params: Promise<CatchAllParams>;
+  params?: Promise<CatchAllParams>;
   searchParams?: Promise<SearchParams>;
 }
 
@@ -74,11 +75,17 @@ export function createCmssyPage(
   // Hoisted so resolveWorkspaceId is memoized across requests (no per-render
   // site-config fetch).
   const client = createCmssyClient(clientConfig);
+  const fixedPath = options?.path
+    ?.split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
   return async function CmssyCatchAllPage({
     params,
     searchParams,
   }: CatchAllProps) {
-    const { path } = await params;
+    const path =
+      fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
     const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);

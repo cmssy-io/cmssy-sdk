@@ -45,7 +45,7 @@ function CheckoutComponent({ content }: { content: Record<string, unknown> }) {
     setBusy(true);
     setError(null);
     try {
-      setOrder(await checkout(email.trim()));
+      setOrder(await checkout({ customerEmail: email.trim() }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
