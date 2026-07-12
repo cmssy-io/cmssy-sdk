@@ -20,9 +20,11 @@ import { describe, expect, it } from "vitest";
 // operation turns a would-be production 400 into a red test.
 
 const here = dirname(fileURLToPath(import.meta.url));
-const schema = buildSchema(
-  readFileSync(resolve(here, "../../../../schema.graphql"), "utf8"),
-);
+const repoRoot = resolve(here, "../../../..");
+const schemaPath = process.env.CMSSY_SCHEMA_FILE
+  ? resolve(repoRoot, process.env.CMSSY_SCHEMA_FILE)
+  : resolve(repoRoot, "schema.graphql");
+const schema = buildSchema(readFileSync(schemaPath, "utf8"));
 
 // Eagerly import every source module so a newly-added operation file is covered
 // without editing this test. Test files and declaration files are excluded -
