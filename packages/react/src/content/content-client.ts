@@ -1,3 +1,29 @@
+// Content/delivery data shapes live in @cmssy/types (single source of truth);
+// re-exported so consumers keep importing them from @cmssy/react.
+import type {
+  CmssyClientConfig,
+  RawBlock,
+  CmssyPageData,
+  RawLayoutBlock,
+  CmssyLayoutSettings,
+  CmssyLayoutGroup,
+  CmssyPageSummary,
+  CmssyLocalizedValue,
+  CmssyPageMeta,
+} from "@cmssy/types";
+
+export type {
+  CmssyClientConfig,
+  RawBlock,
+  CmssyPageData,
+  RawLayoutBlock,
+  CmssyLayoutSettings,
+  CmssyLayoutGroup,
+  CmssyPageSummary,
+  CmssyLocalizedValue,
+  CmssyPageMeta,
+};
+
 /**
  * The cmssy cloud GraphQL delivery endpoint. It is the same for every workspace,
  * so consumers never need to set it - `apiUrl` defaults to this. Self-hosted /
@@ -26,18 +52,6 @@ export function resolvePublicUrl(config: CmssyClientConfig): string {
   return `${base}/public/${config.org}/${config.workspaceSlug}/graphql`;
 }
 
-export interface CmssyClientConfig {
-  /**
-   * Full GraphQL endpoint (used as-is for authenticated requests). Defaults to
-   * {@link DEFAULT_CMSSY_API_URL}. Public reads strip its trailing `/graphql`
-   * and append the org-scoped path (see {@link resolvePublicUrl}).
-   */
-  apiUrl?: string;
-  /** Organization slug - part of the org-scoped delivery path. */
-  org: string;
-  workspaceSlug: string;
-}
-
 export interface FetchLikeResponse {
   ok: boolean;
   status: number;
@@ -61,40 +75,6 @@ export interface FetchPageOptions {
   workspaceId?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
-}
-
-export interface RawBlock {
-  id: string;
-  type: string;
-  content: unknown;
-  style?: unknown;
-  advanced?: unknown;
-}
-
-export interface CmssyPageData {
-  id: string;
-  blocks: RawBlock[];
-}
-
-export interface RawLayoutBlock {
-  id: string;
-  type: string;
-  content: unknown;
-  style?: unknown;
-  advanced?: unknown;
-  order: number;
-  isActive: boolean;
-}
-
-export interface CmssyLayoutSettings {
-  desktopWidth: number | null;
-  mobileBehavior: string;
-}
-
-export interface CmssyLayoutGroup {
-  position: string;
-  blocks: RawLayoutBlock[];
-  settings?: CmssyLayoutSettings | null;
 }
 
 export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
@@ -340,13 +320,6 @@ export async function fetchPageById(
   return { id: page.id, blocks: page.publishedBlocks ?? [] };
 }
 
-export interface CmssyPageSummary {
-  id: string;
-  slug: string;
-  updatedAt: string | null;
-  publishedAt: string | null;
-}
-
 export async function fetchPages(
   config: CmssyClientConfig,
   options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
@@ -393,16 +366,6 @@ export async function fetchPages(
     throw new Error(`cmssy: pages fetch error - ${message}`);
   }
   return json.data?.public?.page?.list ?? [];
-}
-
-export type CmssyLocalizedValue = Record<string, string> | string | null;
-
-export interface CmssyPageMeta {
-  id: string;
-  seoTitle: CmssyLocalizedValue;
-  seoDescription: CmssyLocalizedValue;
-  seoKeywords: string[] | null;
-  displayName: CmssyLocalizedValue;
 }
 
 export async function fetchPageMeta(

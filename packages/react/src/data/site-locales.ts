@@ -1,3 +1,4 @@
+import type { CmssySiteLocales } from "@cmssy/types";
 import {
   resolveApiUrl,
   type CmssyClientConfig,
@@ -5,10 +6,8 @@ import {
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 
-export interface CmssySiteLocales {
-  defaultLocale: string;
-  locales: string[];
-}
+// CmssySiteLocales lives in @cmssy/types; re-exported for consumers.
+export type { CmssySiteLocales };
 
 const TTL_MS = 60_000;
 const MAX_ENTRIES = 64;

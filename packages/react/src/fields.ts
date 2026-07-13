@@ -1,8 +1,6 @@
-import type { FieldDefinition, FieldType } from "./bridge/protocol";
+import type { FieldDefinition, FieldType, FieldControl } from "@cmssy/types";
 
-export type FieldControl = Omit<FieldDefinition, "type" | "label"> & {
-  label?: string;
-};
+export type { FieldControl };
 
 function control(type: FieldType) {
   return (opts: FieldControl = {}): FieldDefinition => ({

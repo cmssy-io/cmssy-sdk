@@ -1,45 +1,17 @@
-import type { FieldType } from "@cmssy/types";
+import type {
+  FieldType,
+  FieldDefinition,
+  BlockSchema,
+  BlockMeta,
+  BlockRect,
+} from "@cmssy/types";
 
 export const PROTOCOL_VERSION = 2;
 
-export type { FieldType };
-
-export interface FieldDefinition {
-  type: FieldType;
-  label: string;
-  defaultValue?: unknown;
-  helperText?: string;
-  required?: boolean;
-  placeholder?: string;
-  tab?: string;
-  options?: string[];
-  itemSchema?: Record<string, FieldDefinition>;
-  itemLabel?: string;
-  addButtonLabel?: string;
-  minItems?: number;
-  maxItems?: number;
-  collapsible?: boolean;
-  multiple?: boolean;
-  pageType?: string;
-}
-
-export type BlockSchema = Record<string, FieldDefinition>;
-
-export interface BlockMeta {
-  label: string;
-  category?: string;
-  icon?: string;
-  layoutPositions?: string[];
-  /** One-line block description; surfaced to the AI page composer. */
-  description?: string;
-}
-
-export interface BlockRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+// Schema/geometry shapes live in @cmssy/types (single source of truth);
+// re-exported here so the editor-bridge message types below and existing
+// consumers keep importing them from this module.
+export type { FieldType, FieldDefinition, BlockSchema, BlockMeta, BlockRect };
 
 export interface ReadyMessage {
   type: "cmssy:ready";
