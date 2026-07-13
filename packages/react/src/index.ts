@@ -68,6 +68,8 @@ export type {
 export { getBlockContentForLanguage } from "./content/get-block-content";
 
 export { graphqlRequest } from "./data/graphql-request";
+export { CmssyRequestError } from "./data/http";
+export type { RetryPolicy } from "./data/http";
 export { fetchSiteConfig, resolveWorkspaceId } from "./data/settings-client";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
 export { createCmssyClient } from "./data/client";

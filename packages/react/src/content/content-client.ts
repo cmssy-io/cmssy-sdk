@@ -12,6 +12,8 @@ import type {
   CmssyPageMeta,
 } from "@cmssy/types";
 
+import { postGraphql, type RetryPolicy } from "../data/http";
+
 export type {
   CmssyClientConfig,
   RawBlock,
@@ -56,6 +58,7 @@ export interface FetchLikeResponse {
   ok: boolean;
   status: number;
   json: () => Promise<unknown>;
+  headers?: { get: (name: string) => string | null };
 }
 
 export type FetchLike = (
@@ -75,6 +78,7 @@ export interface FetchPageOptions {
   workspaceId?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
+  retry?: RetryPolicy | false;
 }
 
 export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
@@ -166,84 +170,48 @@ export async function fetchPage(
   options: FetchPageOptions = {},
 ): Promise<CmssyPageData | null> {
   const slug = normalizeSlug(path);
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
   const devToken = options.devToken?.trim();
   const devPreview = Boolean(options.devPreview && devToken);
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-  };
+  const headers: Record<string, string> = {};
   if (devPreview && devToken) {
     headers["authorization"] = `Bearer ${devToken}`;
     if (options.workspaceId) {
       headers["x-workspace-id"] = options.workspaceId;
     }
   }
-  const response = await doFetch(resolvePublicUrl(config), {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      query: devPreview ? PUBLIC_PAGE_DEV_QUERY : PUBLIC_PAGE_QUERY,
-      variables: {
-        workspaceSlug: config.workspaceSlug,
-        slug,
-        previewSecret,
-        ...(devPreview ? { devPreview: true } : {}),
-      },
-    }),
-    signal: options.signal,
-  });
 
-  type PageResponse = {
-    data?: {
-      public?: {
-        page?: {
-          get?: {
-            id: string;
-            blocks?: RawBlock[] | null;
-            publishedBlocks?: RawBlock[] | null;
-          } | null;
+  type PageData = {
+    public?: {
+      page?: {
+        get?: {
+          id: string;
+          blocks?: RawBlock[] | null;
+          publishedBlocks?: RawBlock[] | null;
         } | null;
       } | null;
-    };
-    errors?: Array<{ message?: string }>;
+    } | null;
   };
 
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = (await response.json()) as PageResponse;
-      if (body.errors && body.errors.length > 0) {
-        detail = ` - ${body.errors
-          .map((error) => error.message ?? "GraphQL error")
-          .join("; ")}`;
-      }
-    } catch {
-      detail = "";
-    }
-    throw new Error(`cmssy: page fetch failed (${response.status})${detail}`);
-  }
-
-  let json: PageResponse;
-  try {
-    json = (await response.json()) as PageResponse;
-  } catch {
-    throw new Error("cmssy: invalid JSON response from the page query");
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: page fetch error - ${message}`);
-  }
-  const page = json.data?.public?.page?.get;
+  const data = await postGraphql<PageData>(
+    resolvePublicUrl(config),
+    devPreview ? PUBLIC_PAGE_DEV_QUERY : PUBLIC_PAGE_QUERY,
+    {
+      workspaceSlug: config.workspaceSlug,
+      slug,
+      previewSecret,
+      ...(devPreview ? { devPreview: true } : {}),
+    },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      headers,
+      retry: options.retry ?? {},
+      label: "page fetch",
+    },
+  );
+  const page = data?.public?.page?.get;
   if (!page) return null;
   const draft = previewSecret !== null || devPreview;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
@@ -255,67 +223,29 @@ export async function fetchPageById(
   pageId: string,
   options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
 ): Promise<CmssyPageData | null> {
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
-  const response = await doFetch(resolvePublicUrl(config), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      query: PUBLIC_PAGE_BY_ID_QUERY,
-      variables: { workspaceSlug: config.workspaceSlug, pageId },
-    }),
-    signal: options.signal,
-  });
-
-  type PageByIdResponse = {
-    data?: {
-      public?: {
-        page?: {
-          getById?: {
-            id: string;
-            publishedBlocks?: RawBlock[] | null;
-          } | null;
+  type PageByIdData = {
+    public?: {
+      page?: {
+        getById?: {
+          id: string;
+          publishedBlocks?: RawBlock[] | null;
         } | null;
       } | null;
-    };
-    errors?: Array<{ message?: string }>;
+    } | null;
   };
 
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = (await response.json()) as PageByIdResponse;
-      if (body.errors && body.errors.length > 0) {
-        detail = ` - ${body.errors
-          .map((error) => error.message ?? "GraphQL error")
-          .join("; ")}`;
-      }
-    } catch {
-      detail = "";
-    }
-    throw new Error(
-      `cmssy: page-by-id fetch failed (${response.status})${detail}`,
-    );
-  }
-
-  let json: PageByIdResponse;
-  try {
-    json = (await response.json()) as PageByIdResponse;
-  } catch {
-    throw new Error("cmssy: invalid JSON response from the page-by-id query");
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: page-by-id fetch error - ${message}`);
-  }
-  const page = json.data?.public?.page?.getById;
+  const data = await postGraphql<PageByIdData>(
+    resolvePublicUrl(config),
+    PUBLIC_PAGE_BY_ID_QUERY,
+    { workspaceSlug: config.workspaceSlug, pageId },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: {},
+      label: "page-by-id fetch",
+    },
+  );
+  const page = data?.public?.page?.getById;
   if (!page) return null;
   return { id: page.id, blocks: page.publishedBlocks ?? [] };
 }
@@ -324,48 +254,24 @@ export async function fetchPages(
   config: CmssyClientConfig,
   options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
 ): Promise<CmssyPageSummary[]> {
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
-  const response = await doFetch(resolvePublicUrl(config), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      query: PUBLIC_PAGES_QUERY,
-      variables: { workspaceSlug: config.workspaceSlug },
-    }),
-    signal: options.signal,
-  });
-
-  type PagesResponse = {
-    data?: {
-      public?: {
-        page?: { list?: CmssyPageSummary[] | null } | null;
-      } | null;
-    };
-    errors?: Array<{ message?: string }>;
+  type PagesData = {
+    public?: {
+      page?: { list?: CmssyPageSummary[] | null } | null;
+    } | null;
   };
 
-  if (!response.ok) {
-    throw new Error(`cmssy: pages fetch failed (${response.status})`);
-  }
-  let json: PagesResponse;
-  try {
-    json = (await response.json()) as PagesResponse;
-  } catch {
-    throw new Error("cmssy: invalid JSON response from the pages query");
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: pages fetch error - ${message}`);
-  }
-  return json.data?.public?.page?.list ?? [];
+  const data = await postGraphql<PagesData>(
+    resolvePublicUrl(config),
+    PUBLIC_PAGES_QUERY,
+    { workspaceSlug: config.workspaceSlug },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: {},
+      label: "pages fetch",
+    },
+  );
+  return data?.public?.page?.list ?? [];
 }
 
 export async function fetchPageMeta(
@@ -374,48 +280,25 @@ export async function fetchPageMeta(
   options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
 ): Promise<CmssyPageMeta | null> {
   const slug = normalizeSlug(path);
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
-  const response = await doFetch(resolvePublicUrl(config), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      query: PUBLIC_PAGE_META_QUERY,
-      variables: { workspaceSlug: config.workspaceSlug, slug },
-    }),
-    signal: options.signal,
-  });
 
-  type MetaResponse = {
-    data?: {
-      public?: {
-        page?: { get?: CmssyPageMeta | null } | null;
-      } | null;
-    };
-    errors?: Array<{ message?: string }>;
+  type MetaData = {
+    public?: {
+      page?: { get?: CmssyPageMeta | null } | null;
+    } | null;
   };
 
-  if (!response.ok) {
-    throw new Error(`cmssy: page meta fetch failed (${response.status})`);
-  }
-  let json: MetaResponse;
-  try {
-    json = (await response.json()) as MetaResponse;
-  } catch {
-    throw new Error("cmssy: invalid JSON response from the page meta query");
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: page meta fetch error - ${message}`);
-  }
-  return json.data?.public?.page?.get ?? null;
+  const data = await postGraphql<MetaData>(
+    resolvePublicUrl(config),
+    PUBLIC_PAGE_META_QUERY,
+    { workspaceSlug: config.workspaceSlug, slug },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: {},
+      label: "page meta fetch",
+    },
+  );
+  return data?.public?.page?.get ?? null;
 }
 
 export async function fetchLayouts(
@@ -424,52 +307,25 @@ export async function fetchLayouts(
   options: FetchPageOptions = {},
 ): Promise<CmssyLayoutGroup[]> {
   const pageSlug = normalizeSlug(path);
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
-  const response = await doFetch(resolvePublicUrl(config), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      query: PUBLIC_PAGE_LAYOUTS_QUERY,
-      variables: {
-        workspaceSlug: config.workspaceSlug,
-        pageSlug,
-        previewSecret,
-      },
-    }),
-    signal: options.signal,
-  });
 
-  type LayoutsResponse = {
-    data?: {
-      public?: {
-        page?: { layouts?: CmssyLayoutGroup[] | null } | null;
-      } | null;
-    };
-    errors?: Array<{ message?: string }>;
+  type LayoutsData = {
+    public?: {
+      page?: { layouts?: CmssyLayoutGroup[] | null } | null;
+    } | null;
   };
 
-  if (!response.ok) {
-    throw new Error(`cmssy: layouts fetch failed (${response.status})`);
-  }
-  let json: LayoutsResponse;
-  try {
-    json = (await response.json()) as LayoutsResponse;
-  } catch {
-    throw new Error("cmssy: invalid JSON response from the layouts query");
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: layouts fetch error - ${message}`);
-  }
-  return json.data?.public?.page?.layouts ?? [];
+  const data = await postGraphql<LayoutsData>(
+    resolvePublicUrl(config),
+    PUBLIC_PAGE_LAYOUTS_QUERY,
+    { workspaceSlug: config.workspaceSlug, pageSlug, previewSecret },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: options.retry ?? {},
+      label: "layouts fetch",
+    },
+  );
+  return data?.public?.page?.layouts ?? [];
 }
