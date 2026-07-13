@@ -86,9 +86,15 @@ export interface RawLayoutBlock {
   isActive: boolean;
 }
 
+export interface CmssyLayoutSettings {
+  desktopWidth: number | null;
+  mobileBehavior: string;
+}
+
 export interface CmssyLayoutGroup {
   position: string;
   blocks: RawLayoutBlock[];
+  settings?: CmssyLayoutSettings | null;
 }
 
 export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
@@ -159,6 +165,7 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug
       layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
         position
         blocks { id type content style advanced order isActive }
+        settings { desktopWidth mobileBehavior }
       }
     }
   }

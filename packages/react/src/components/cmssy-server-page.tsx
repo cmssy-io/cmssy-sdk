@@ -1,6 +1,5 @@
 import type { CmssyPageData } from "../content/content-client";
 import type { CmssyFormDefinition } from "../data/queries";
-import { getBlockContentForLanguage } from "../content/get-block-content";
 import {
   buildBlockMap,
   buildLoaderMap,
@@ -12,6 +11,7 @@ import {
   type CmssyBlockWorkspace,
 } from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
+import { resolveBlocks } from "./resolve-blocks";
 
 export interface CmssyServerPageProps {
   page: CmssyPageData | null;
@@ -55,34 +55,13 @@ export async function CmssyServerPage({
     { auth, workspace },
   );
 
-  // Resolve each block's localized content once, reused for both the loader and
-  // the render below. Each block's loader runs server-side (in parallel); its
-  // result is passed to the block as the `data` prop, enabling SSR of fetched
-  // data.
-  const resolved = await Promise.all(
-    page.blocks.map(async (block) => {
-      const content = getBlockContentForLanguage(
-        block.content,
-        locale,
-        defaultLocale,
-        enabledLocales?.length ? enabledLocales : undefined,
-      );
-      const loader = loaderMap[block.type];
-      let data: unknown;
-      if (loader) {
-        try {
-          data = await loader({ content, context });
-        } catch (err) {
-          if (typeof console !== "undefined") {
-            console.warn(
-              `[cmssy] loader for block "${block.type}" (${block.id}) failed`,
-              err,
-            );
-          }
-        }
-      }
-      return { content, data };
-    }),
+  const resolved = await resolveBlocks(
+    page.blocks,
+    loaderMap,
+    locale,
+    defaultLocale,
+    context,
+    enabledLocales,
   );
 
   return (
