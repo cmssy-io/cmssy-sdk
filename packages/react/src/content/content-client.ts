@@ -221,7 +221,7 @@ export async function fetchPage(
 export async function fetchPageById(
   config: CmssyClientConfig,
   pageId: string,
-  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+  options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
 ): Promise<CmssyPageData | null> {
   type PageByIdData = {
     public?: {
@@ -241,7 +241,7 @@ export async function fetchPageById(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: {},
+      retry: options.retry ?? {},
       label: "page-by-id fetch",
     },
   );
@@ -252,7 +252,7 @@ export async function fetchPageById(
 
 export async function fetchPages(
   config: CmssyClientConfig,
-  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+  options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
 ): Promise<CmssyPageSummary[]> {
   type PagesData = {
     public?: {
@@ -267,7 +267,7 @@ export async function fetchPages(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: {},
+      retry: options.retry ?? {},
       label: "pages fetch",
     },
   );
@@ -277,7 +277,7 @@ export async function fetchPages(
 export async function fetchPageMeta(
   config: CmssyClientConfig,
   path: string | string[] | undefined,
-  options: Pick<FetchPageOptions, "fetch" | "signal"> = {},
+  options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
 ): Promise<CmssyPageMeta | null> {
   const slug = normalizeSlug(path);
 
@@ -294,7 +294,7 @@ export async function fetchPageMeta(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: {},
+      retry: options.retry ?? {},
       label: "page meta fetch",
     },
   );
