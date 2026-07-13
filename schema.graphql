@@ -2436,6 +2436,7 @@ type PropertyField {
   itemType: PropertyFieldType
   key: String!
   label: String!
+  localized: Boolean
   maxLength: Int
   maxValue: Float
   minLength: Int
@@ -2460,6 +2461,7 @@ input PropertyFieldInput {
   itemType: PropertyFieldType
   key: String!
   label: String!
+  localized: Boolean
   maxLength: Int
   maxValue: Float
   minLength: Int
