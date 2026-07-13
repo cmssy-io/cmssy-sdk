@@ -18,8 +18,8 @@ importers:
   packages/next:
     dependencies:
       '@cmssy/types':
-        specifier: 0.26.0
-        version: 0.26.0
+        specifier: 0.27.0
+        version: 0.27.0
       jose:
         specifier: ^6.2.3
         version: 6.2.3
@@ -58,8 +58,8 @@ importers:
   packages/react:
     dependencies:
       '@cmssy/types':
-        specifier: 0.26.0
-        version: 0.26.0
+        specifier: 0.27.0
+        version: 0.27.0
     devDependencies:
       '@testing-library/react':
         specifier: ^16.1.0
@@ -109,8 +109,8 @@ packages:
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
     engines: {node: '>=6.9.0'}
 
-  '@cmssy/types@0.26.0':
-    resolution: {integrity: sha512-jMD1SFF+kwCs8fvq//WV5PFcK0I/FYiNd0KS4ngZkO9t0YDyc6b3MsBIH/scKCqlwnZPAqgBbELTdMeetAW1CA==}
+  '@cmssy/types@0.27.0':
+    resolution: {integrity: sha512-uVZRQ5FhajaapZLjZ+TMb8+WvfuxcErEfX4/p1aN31G/60QBf0VSE+HgQhmhfNeWZSrngNl8uGYaZTQoM34i5Q==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -1526,7 +1526,7 @@ snapshots:
 
   '@babel/runtime@7.29.7': {}
 
-  '@cmssy/types@0.26.0': {}
+  '@cmssy/types@0.27.0': {}
 
   '@csstools/color-helpers@5.1.0': {}
 
