@@ -71,6 +71,7 @@ export type { CmssyAuthMiddleware } from "./auth-middleware";
 export { fetchProducts, fetchProduct } from "./product-server";
 export type {
   FetchProductsOptions,
+  CmssyStockState,
   FetchProductOptions,
   CmssyProductPage,
 } from "./product-server";
