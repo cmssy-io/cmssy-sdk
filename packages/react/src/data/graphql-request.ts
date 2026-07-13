@@ -4,6 +4,7 @@ import {
   type CmssyClientConfig,
   type FetchLike,
 } from "../content/content-client";
+import { postGraphql, type RetryPolicy } from "./http";
 
 export interface GraphqlRequestOptions {
   fetch?: FetchLike;
@@ -15,6 +16,12 @@ export interface GraphqlRequestOptions {
    * resolves the workspace from the URL rather than a global slug lookup.
    */
   public?: boolean;
+  /**
+   * Retry transient HTTP failures (429/503, honoring Retry-After). Off by
+   * default: this function also carries mutations (auth, cart, checkout),
+   * which must never be blind-retried. Read-only callers opt in with `{}`.
+   */
+  retry?: RetryPolicy | false;
 }
 
 export async function graphqlRequest<T>(
@@ -24,55 +31,14 @@ export async function graphqlRequest<T>(
   options: GraphqlRequestOptions = {},
   label = "request",
 ): Promise<T> {
-  const doFetch =
-    options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
-  if (typeof doFetch !== "function") {
-    throw new Error(
-      "cmssy: no fetch implementation available - pass options.fetch",
-    );
-  }
-
   const url = options.public
     ? resolvePublicUrl(config)
     : resolveApiUrl(config.apiUrl);
-  const response = await doFetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...options.headers },
-    body: JSON.stringify({ query, variables }),
+  return postGraphql<T>(url, query, variables, {
+    fetch: options.fetch,
     signal: options.signal,
+    headers: options.headers,
+    retry: options.retry,
+    label,
   });
-
-  type GraphqlResponse = {
-    data?: T;
-    errors?: Array<{ message?: string }>;
-  };
-
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const body = (await response.json()) as GraphqlResponse;
-      if (body.errors && body.errors.length > 0) {
-        detail = ` - ${body.errors
-          .map((error) => error.message ?? "GraphQL error")
-          .join("; ")}`;
-      }
-    } catch {
-      detail = "";
-    }
-    throw new Error(`cmssy: ${label} failed (${response.status})${detail}`);
-  }
-
-  let json: GraphqlResponse;
-  try {
-    json = (await response.json()) as GraphqlResponse;
-  } catch {
-    throw new Error(`cmssy: invalid JSON response from the ${label}`);
-  }
-  if (json.errors && json.errors.length > 0) {
-    const message = json.errors
-      .map((error) => error.message ?? "GraphQL error")
-      .join("; ");
-    throw new Error(`cmssy: ${label} error - ${message}`);
-  }
-  return json.data as T;
 }
