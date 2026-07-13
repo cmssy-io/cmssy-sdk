@@ -12,7 +12,7 @@ export async function fetchSiteConfig(
     config,
     SITE_CONFIG_QUERY,
     { workspaceSlug: config.workspaceSlug },
-    { ...options, public: true },
+    { ...options, public: true, retry: options.retry ?? {} },
     "site config query",
   );
   return data.public?.siteConfig ?? null;

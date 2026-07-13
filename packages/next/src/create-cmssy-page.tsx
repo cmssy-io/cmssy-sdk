@@ -50,16 +50,40 @@ interface CatchAllProps {
   searchParams?: Promise<SearchParams>;
 }
 
-const EDIT_QUERY_PARAM = "cmssyEdit";
-
-function hasEditFlag(value: string | string[] | undefined): boolean {
-  return Array.isArray(value) ? value.includes("1") : value === "1";
-}
-
+/**
+ * Public catch-all page. Statically renderable: edit mode comes from
+ * `draftMode()` only (static-safe), never from `headers()` or
+ * `searchParams` - awaiting either would force every route dynamic and
+ * kill ISR. The `?cmssyEdit=1` editor flow is served by the middleware
+ * rewrite (`cmssyEditRewrite`) onto a dedicated dynamic route mounted
+ * with `createCmssyEditPage`.
+ */
 export function createCmssyPage(
   config: CmssyNextConfig,
   blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
+) {
+  return buildCmssyPageRenderer(config, blocks, options, false);
+}
+
+/**
+ * Editor/preview page for the middleware-rewritten edit route
+ * (`app/__cmssy/edit/[[...path]]/page.tsx`). Always renders the editor;
+ * export `dynamic = "force-dynamic"` alongside it.
+ */
+export function createCmssyEditPage(
+  config: CmssyNextConfig,
+  blocks: BlockDefinition[],
+  options?: CreateCmssyPageOptions,
+) {
+  return buildCmssyPageRenderer(config, blocks, options, true);
+}
+
+function buildCmssyPageRenderer(
+  config: CmssyNextConfig,
+  blocks: BlockDefinition[],
+  options: CreateCmssyPageOptions | undefined,
+  forceEdit: boolean,
 ) {
   if (!Array.isArray(blocks)) {
     throw new Error(
@@ -80,15 +104,11 @@ export function createCmssyPage(
     .map((segment) => segment.trim())
     .filter(Boolean);
 
-  return async function CmssyCatchAllPage({
-    params,
-    searchParams,
-  }: CatchAllProps) {
+  return async function CmssyCatchAllPage({ params }: CatchAllProps) {
     const path =
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
-    const query = searchParams ? await searchParams : {};
-    const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
+    const editMode = forceEdit || isEnabled;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
     const editorActive = editMode;
 

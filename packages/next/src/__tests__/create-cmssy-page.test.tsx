@@ -42,7 +42,7 @@ vi.mock("../auth-server", () => ({
   getCmssyAccessToken: vi.fn(),
 }));
 
-import { createCmssyPage } from "../create-cmssy-page";
+import { createCmssyPage, createCmssyEditPage } from "../create-cmssy-page";
 
 const AUTH_CONFIG = {
   modelSlug: "members",
@@ -171,15 +171,10 @@ describe("createCmssyPage", () => {
     );
   });
 
-  it("enters edit mode via the cmssyEdit query flag without draft mode", async () => {
+  it("createCmssyEditPage renders the editor without draft mode (middleware-rewritten route)", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = unwrap(
-      await Page({
-        params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: "1" }),
-      }),
-    );
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
@@ -206,20 +201,15 @@ describe("createCmssyPage", () => {
     });
   });
 
-  it("enters the editor with a dev token and cmssyEdit, still sending devPreview", async () => {
+  it("enters the editor with a dev token on the edit route, still sending devPreview", async () => {
     vi.stubEnv("NODE_ENV", "development");
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(
+    const Page = createCmssyEditPage(
       { ...CONFIG, devToken: "cs_devtoken" },
       BLOCKS,
       { editor: Editor },
     );
-    const element = unwrap(
-      await Page({
-        params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: "1" }),
-      }),
-    );
+    const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
@@ -265,16 +255,19 @@ describe("createCmssyPage", () => {
     });
   });
 
-  it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
+  it("the public route ignores cmssyEdit search params entirely (rewrite owns them)", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
     const element = unwrap(
       await Page({
         params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
+        searchParams: searchParams({ cmssyEdit: "1" }),
       }),
     );
-    expect(element.type).toBe(Editor);
+    expect(element.type).toBe(CmssyServerPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
   });
 
   it("stays published when cmssyEdit is absent", async () => {
@@ -292,16 +285,12 @@ describe("createCmssyPage", () => {
     });
   });
 
-  it("stays published when an array cmssyEdit contains no '1'", async () => {
+  it("createCmssyEditPage throws without an editor", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
-    const element = unwrap(
-      await Page({
-        params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: ["0", "0"] }),
-      }),
+    const Page = createCmssyEditPage(CONFIG, BLOCKS);
+    await expect(Page({ params: params(["about"]) })).rejects.toThrow(
+      /edit\/dev mode requires options\.editor/,
     );
-    expect(element.type).toBe(CmssyServerPage);
   });
 
   it("calls notFound when the page is missing", async () => {
@@ -324,15 +313,12 @@ describe("createCmssyPage", () => {
 
   it("rejects a wildcard editorOrigin in production when entering edit mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
+    const Page = createCmssyEditPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
       editor: Editor,
     });
-    await expect(
-      Page({
-        params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: "1" }),
-      }),
-    ).rejects.toThrow(/only allowed in development/);
+    await expect(Page({ params: params(["about"]) })).rejects.toThrow(
+      /only allowed in development/,
+    );
   });
 
   it("does not require editorOrigin for a published render", async () => {
