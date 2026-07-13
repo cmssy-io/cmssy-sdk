@@ -56,10 +56,10 @@ export const MODEL_DEFINITIONS_QUERY = `query PublicModelDefinitions($workspaceI
   }
 }`;
 
-export const MODEL_RECORDS_QUERY = `query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $limit: Int, $offset: Int, $populate: [String!]) {
+export const MODEL_RECORDS_QUERY = `query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!]) {
   public {
     model {
-      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, limit: $limit, offset: $offset, populate: $populate) {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, populate: $populate) {
         items { id modelId data status createdAt updatedAt }
         total
         hasMore
