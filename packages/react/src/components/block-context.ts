@@ -1,38 +1,22 @@
-import type { CmssyFormDefinition } from "../data/queries";
+import type {
+  CmssyFormDefinition,
+  CmssyLocaleContext,
+  CmssyBlockMember,
+  CmssyBlockAuthContext,
+  CmssyBlockWorkspace,
+  CmssyBlockContext,
+  BuildBlockContextExtra,
+} from "@cmssy/types";
 
-export interface CmssyLocaleContext {
-  current: string;
-  default: string;
-  enabled: string[];
-}
-
-export interface CmssyBlockMember {
-  recordId: string;
-  email: string;
-}
-
-export interface CmssyBlockAuthContext {
-  isAuthenticated: boolean;
-  member: CmssyBlockMember | null;
-}
-
-export interface CmssyBlockWorkspace {
-  id: string;
-  slug: string;
-}
-
-export interface CmssyBlockContext {
-  locale: CmssyLocaleContext;
-  isPreview: boolean;
-  forms?: Record<string, CmssyFormDefinition>;
-  auth?: CmssyBlockAuthContext;
-  workspace?: CmssyBlockWorkspace;
-}
-
-export interface BuildBlockContextExtra {
-  auth?: CmssyBlockAuthContext;
-  workspace?: CmssyBlockWorkspace;
-}
+// Block-context shapes live in @cmssy/types; re-exported for consumers.
+export type {
+  CmssyLocaleContext,
+  CmssyBlockMember,
+  CmssyBlockAuthContext,
+  CmssyBlockWorkspace,
+  CmssyBlockContext,
+  BuildBlockContextExtra,
+};
 
 export function buildBlockContext(
   locale: string,

@@ -1,11 +1,29 @@
 import type {
-  FieldConditionGroup,
   CmssyBranding,
   CmssySiteConfig,
+  CmssyModelDefinition,
+  CmssyModelRecord,
+  CmssyRecordList,
+  CmssyFormField,
+  CmssyFormSettings,
+  CmssyFormDefinition,
+  CmssyFormSubmitResponse,
+  SubmitFormInput,
 } from "@cmssy/types";
 
-// Site config/branding live in @cmssy/types; re-exported for consumers.
-export type { CmssyBranding, CmssySiteConfig };
+// These data shapes live in @cmssy/types; re-exported for consumers.
+export type {
+  CmssyBranding,
+  CmssySiteConfig,
+  CmssyModelDefinition,
+  CmssyModelRecord,
+  CmssyRecordList,
+  CmssyFormField,
+  CmssyFormSettings,
+  CmssyFormDefinition,
+  CmssyFormSubmitResponse,
+  SubmitFormInput,
+};
 
 export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
   public {
@@ -28,32 +46,6 @@ export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!
   }
 }`;
 
-export interface CmssyModelDefinition {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  icon: string | null;
-  color: string | null;
-  displayField: string | null;
-  recordCount: number | null;
-}
-
-export interface CmssyModelRecord {
-  id: string;
-  modelId: string;
-  data: Record<string, unknown>;
-  status: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-
-export interface CmssyRecordList {
-  items: CmssyModelRecord[];
-  total: number;
-  hasMore: boolean;
-}
-
 export const MODEL_DEFINITIONS_QUERY = `query PublicModelDefinitions($workspaceId: String!) {
   public {
     model {
@@ -75,55 +67,6 @@ export const MODEL_RECORDS_QUERY = `query PublicModelRecords($workspaceId: Strin
     }
   }
 }`;
-
-export interface CmssyFormField {
-  id: string;
-  name: string;
-  fieldType: string;
-  label: string | null;
-  placeholder: string | null;
-  helpText: string | null;
-  defaultValue: unknown;
-  options: unknown;
-  validation: unknown;
-  width: string | null;
-  order: number | null;
-  showWhen: FieldConditionGroup | null;
-  requiredWhen: FieldConditionGroup | null;
-}
-
-export interface CmssyFormSettings {
-  actionType: string | null;
-  submitButtonLabel: unknown;
-  successMessage: unknown;
-  errorMessage: unknown;
-  redirectUrl: string | null;
-  requireLogin: boolean | null;
-  enableCaptcha: boolean | null;
-}
-
-export interface CmssyFormDefinition {
-  id: string;
-  name: string;
-  slug: string | null;
-  description: string | null;
-  fields: CmssyFormField[];
-  settings: CmssyFormSettings | null;
-}
-
-export interface CmssyFormSubmitResponse {
-  success: boolean;
-  message: string | null;
-  submissionId: string | null;
-  redirectUrl: string | null;
-  accessToken: string | null;
-  customer: unknown;
-}
-
-export interface SubmitFormInput {
-  data: Record<string, unknown>;
-  website?: string;
-}
 
 export const FORM_QUERY = `query PublicForm($formId: ID!) {
   public {
