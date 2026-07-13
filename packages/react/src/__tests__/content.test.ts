@@ -523,6 +523,29 @@ describe("fetchLayouts", () => {
     const fetch = mockFetch({ data: { public: { page: { layouts: null } } } });
     expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
   });
+
+  it("carries the position settings authored in the admin", async () => {
+    const fetch = mockFetch({
+      data: {
+        public: {
+          page: {
+            layouts: [
+              {
+                position: "sidebar_left",
+                blocks: [],
+                settings: { desktopWidth: 320, mobileBehavior: "collapse" },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const groups = await fetchLayouts(config, "/", { fetch });
+    expect(groups[0]?.settings).toEqual({
+      desktopWidth: 320,
+      mobileBehavior: "collapse",
+    });
+  });
 });
 
 describe("fetchPages", () => {
