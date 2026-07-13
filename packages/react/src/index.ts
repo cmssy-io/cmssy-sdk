@@ -63,6 +63,7 @@ export type {
   CmssyLocalizedValue,
   RawLayoutBlock,
   CmssyLayoutGroup,
+  CmssyLayoutSettings,
 } from "./content/content-client";
 export { getBlockContentForLanguage } from "./content/get-block-content";
 

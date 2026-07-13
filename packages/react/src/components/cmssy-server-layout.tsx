@@ -2,9 +2,14 @@ import type {
   CmssyLayoutGroup,
   RawLayoutBlock,
 } from "../content/content-client";
-import { buildBlockMap, type BlockDefinition } from "../registry";
+import {
+  buildBlockMap,
+  buildLoaderMap,
+  type BlockDefinition,
+} from "../registry";
 import { buildBlockContext } from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
+import { resolveBlocks } from "./resolve-blocks";
 
 export interface CmssyServerLayoutProps {
   groups: CmssyLayoutGroup[];
@@ -16,7 +21,12 @@ export interface CmssyServerLayoutProps {
   enabledLocales?: string[];
 }
 
-export function CmssyServerLayout({
+/**
+ * Async React Server Component. Like CmssyServerPage it runs each block's
+ * loader server-side before rendering, so a header block can list categories
+ * the same way a page block can. Must be rendered in a server component tree.
+ */
+export async function CmssyServerLayout({
   groups,
   blocks,
   position,
@@ -33,12 +43,23 @@ export function CmssyServerLayout({
     : [];
   if (layoutBlocks.length === 0) return null;
   const map = buildBlockMap(blocks);
+  const loaderMap = buildLoaderMap(blocks);
   const context = buildBlockContext(locale, defaultLocale, enabledLocales);
+  const resolved = await resolveBlocks(
+    layoutBlocks,
+    loaderMap,
+    locale,
+    defaultLocale,
+    context,
+    enabledLocales,
+  );
   return (
     <>
-      {layoutBlocks.map((block) =>
+      {layoutBlocks.map((block, i) =>
         renderResolvedBlock(block, map, locale, defaultLocale, {
           context,
+          data: resolved[i]?.data,
+          resolvedContent: resolved[i]?.content,
           enabledLocales,
         }),
       )}

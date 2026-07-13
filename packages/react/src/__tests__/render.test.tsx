@@ -232,7 +232,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     expect(html).not.toContain("[native code]");
   });
 
-  it("renders only active layout blocks sorted by order", () => {
+  it("renders only active layout blocks sorted by order", async () => {
     const groups = [
       {
         position: "footer",
@@ -262,14 +262,45 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
       },
     ];
     const html = renderToStaticMarkup(
-      <CmssyServerLayout
-        groups={groups}
-        blocks={[heroBlock]}
-        position="footer"
-        locale="en"
-      />,
+      await CmssyServerLayout({
+        groups,
+        blocks: [heroBlock],
+        position: "footer",
+        locale: "en",
+      }),
     );
     expect(html.indexOf("A")).toBeLessThan(html.indexOf("B"));
     expect(html).not.toContain("Off");
+  });
+
+  it("runs a layout block's loader and passes its result as the data prop", async () => {
+    const headerBlock = defineBlock<Record<string, unknown>, { msg: string }>({
+      type: "site-header",
+      props: {},
+      loader: async () => ({ msg: "from-loader" }),
+      component: ({ data }) => <span>{data?.msg ?? "no-data"}</span>,
+    });
+    const html = renderToStaticMarkup(
+      await CmssyServerLayout({
+        groups: [
+          {
+            position: "header",
+            blocks: [
+              {
+                id: "h1",
+                type: "site-header",
+                content: {},
+                order: 0,
+                isActive: true,
+              },
+            ],
+          },
+        ],
+        blocks: [headerBlock],
+        position: "header",
+        locale: "en",
+      }),
+    );
+    expect(html).toContain("from-loader");
   });
 });
