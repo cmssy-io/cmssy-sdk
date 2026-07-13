@@ -5,10 +5,10 @@ import {
 } from "@cmssy/react";
 import type { CmssyNextConfig } from "./config";
 
-export const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug: String!, $filter: JSON, $limit: Int, $offset: Int, $sort: String) {
+export const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug: String!, $filter: JSON, $stockState: String, $limit: Int, $offset: Int, $sort: String) {
   public {
     model {
-      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, limit: $limit, offset: $offset, sort: $sort) {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, stockState: $stockState, limit: $limit, offset: $offset, sort: $sort) {
         total
         hasMore
         items {
@@ -22,9 +22,18 @@ export const PRODUCTS_QUERY = `query Products($workspaceId: String!, $modelSlug:
   }
 }`;
 
+export type CmssyStockState = "in" | "low" | "out";
+
 export interface FetchProductsOptions {
   modelSlug: string;
   filter?: Record<string, unknown>;
+  /**
+   * Availability facet: "in", "low" or "out". Stock is not a data field -
+   * availability is onHand minus reserved, summed across variants - so it
+   * cannot go through `filter`. The backend applies the same rule the admin
+   * catalog uses, so this facet cannot contradict the stock badge.
+   */
+  stockState?: CmssyStockState;
   limit?: number;
   offset?: number;
   sort?: string;
@@ -50,6 +59,7 @@ export async function fetchProducts(
       workspaceId,
       modelSlug: options.modelSlug,
       filter: options.filter ?? {},
+      stockState: options.stockState ?? null,
       limit: options.limit ?? 50,
       offset: options.offset ?? 0,
       sort: options.sort ?? null,
