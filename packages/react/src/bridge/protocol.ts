@@ -19,6 +19,8 @@ export interface FieldDefinition {
   minItems?: number;
   maxItems?: number;
   collapsible?: boolean;
+  multiple?: boolean;
+  pageType?: string;
 }
 
 export type BlockSchema = Record<string, FieldDefinition>;
