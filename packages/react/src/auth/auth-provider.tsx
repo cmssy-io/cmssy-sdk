@@ -11,15 +11,10 @@ import {
   type ReactNode,
 } from "react";
 
-export interface CmssyAuthUser {
-  recordId: string;
-  email: string;
-}
+import type { CmssyAuthUser, CmssyAuthActionResult } from "@cmssy/types";
 
-export interface CmssyAuthActionResult {
-  ok: boolean;
-  message?: string;
-}
+// Auth data shapes live in @cmssy/types; re-exported for consumers.
+export type { CmssyAuthUser, CmssyAuthActionResult };
 
 export interface CmssyAuthState {
   user: CmssyAuthUser | null;

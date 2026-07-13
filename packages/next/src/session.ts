@@ -1,21 +1,17 @@
 import { EncryptJWT, jwtDecrypt } from "jose";
+import type {
+  CmssySessionUser,
+  CmssySessionPayload,
+  SessionCookieOptions,
+} from "@cmssy/types";
+
+// Session data shapes live in @cmssy/types; re-exported for consumers.
+export type { CmssySessionUser, CmssySessionPayload, SessionCookieOptions };
 
 export const CMSSY_SESSION_COOKIE = "cmssy_session";
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 export const MIN_SESSION_SECRET_LENGTH = 32;
 export const ACCESS_EXPIRY_SKEW_MS = 30_000;
-
-export interface CmssySessionUser {
-  recordId: string;
-  email: string;
-}
-
-export interface CmssySessionPayload {
-  accessToken: string;
-  refreshToken: string;
-  accessExpiresAt: number;
-  user: CmssySessionUser;
-}
 
 export async function deriveSessionKey(secret: string): Promise<Uint8Array> {
   if (typeof secret !== "string" || secret.length < MIN_SESSION_SECRET_LENGTH) {
@@ -57,8 +53,7 @@ export async function openSession(
       ...(audience ? { audience } : {}),
     });
     const { accessToken, refreshToken, accessExpiresAt, user } = payload as
-      | Record<string, unknown>
-      | CmssySessionPayload;
+      Record<string, unknown> | CmssySessionPayload;
     if (
       typeof accessToken !== "string" ||
       typeof refreshToken !== "string" ||
@@ -89,14 +84,6 @@ export function isAccessExpired(
   now: number = Date.now(),
 ): boolean {
   return payload.accessExpiresAt <= now + ACCESS_EXPIRY_SKEW_MS;
-}
-
-export interface SessionCookieOptions {
-  httpOnly: true;
-  secure: boolean;
-  sameSite: "lax";
-  path: "/";
-  maxAge: number;
 }
 
 export function sessionCookieOptions(): SessionCookieOptions {

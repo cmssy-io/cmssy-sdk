@@ -1,11 +1,9 @@
-import type { CmssyOrder } from "@cmssy/react";
+import type { CmssyOrder, FetchOrderByTokenOptions } from "@cmssy/types";
 import type { CmssyNextConfig } from "./config";
 import { backendOrderByToken } from "./orders-client";
 
-export interface FetchOrderByTokenOptions {
-  orderId: string;
-  accessToken: string;
-}
+// FetchOrderByTokenOptions lives in @cmssy/types; re-exported for consumers.
+export type { FetchOrderByTokenOptions };
 
 export async function fetchOrderByToken(
   config: CmssyNextConfig,

@@ -2,9 +2,12 @@ import {
   graphqlRequest,
   resolveApiUrl,
   resolveWorkspaceId,
-  type CmssyOrder,
 } from "@cmssy/react";
+import type { CmssyOrder, MyOrdersResult } from "@cmssy/types";
 import type { CmssyNextConfig } from "./config";
+
+// MyOrdersResult lives in @cmssy/types; re-exported for consumers.
+export type { MyOrdersResult };
 
 const ORDER_FIELDS = `
   id
@@ -118,12 +121,6 @@ function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
 
 export function clearWorkspaceIdCache(): void {
   workspaceIdCache.clear();
-}
-
-export interface MyOrdersResult {
-  items: CmssyOrder[];
-  total: number;
-  hasMore: boolean;
 }
 
 function headers(workspaceId: string, accessToken: string) {

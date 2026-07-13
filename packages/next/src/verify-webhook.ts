@@ -1,4 +1,12 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import type {
+  CmssyWebhookOrder,
+  CmssyWebhookEvent,
+  VerifyCmssyWebhookOptions,
+} from "@cmssy/types";
+
+// Webhook data shapes live in @cmssy/types; re-exported for consumers.
+export type { CmssyWebhookOrder, CmssyWebhookEvent, VerifyCmssyWebhookOptions };
 
 /**
  * Verify + parse an inbound cmssy webhook (CMS-693 / CMS-694).
@@ -12,49 +20,6 @@ import { createHmac, timingSafeEqual } from "crypto";
  * IMPORTANT: pass the RAW request body string (e.g. `await req.text()`),
  * never a re-serialized object - the signed bytes must match exactly.
  */
-
-/** Serialized order carried in an order.* webhook (mirrors the backend). */
-export interface CmssyWebhookOrder {
-  id: string;
-  workspaceId: string;
-  displayStatus: string;
-  paymentStatus: string;
-  fulfillmentStatus: string;
-  total: number;
-  currency: string;
-  customerId: string | null;
-  customerEmail: string;
-  paymentProvider: string | null;
-  paymentReference: string | null;
-  refundedAmount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CmssyWebhookEvent {
-  /** Delivery id - also sent in X-Cmssy-Webhook-Id; dedup on it. */
-  id: string;
-  /** e.g. "order.paid", "order.refunded". */
-  event: string;
-  createdAt: string;
-  data: {
-    workspaceId: string;
-    order: CmssyWebhookOrder;
-  };
-}
-
-export interface VerifyCmssyWebhookOptions {
-  /** Raw request body string (NOT parsed JSON). */
-  body: string;
-  /** The `X-Cmssy-Signature` header value, or null if absent. */
-  signatureHeader: string | null;
-  /** The endpoint's signing secret. */
-  secret: string;
-  /** Max age of the signed timestamp, in seconds. Default 300 (5 min). */
-  toleranceSeconds?: number;
-  /** Override the current time (ms) - for tests. */
-  now?: number;
-}
 
 export class CmssyWebhookError extends Error {
   constructor(message: string) {
