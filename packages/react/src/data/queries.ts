@@ -1,23 +1,11 @@
-import type { FieldConditionGroup } from "@cmssy/types";
+import type {
+  FieldConditionGroup,
+  CmssyBranding,
+  CmssySiteConfig,
+} from "@cmssy/types";
 
-export interface CmssyBranding {
-  brandName: string | null;
-  logoUrl: string | null;
-  faviconUrl: string | null;
-  ogImageUrl: string | null;
-}
-
-export interface CmssySiteConfig {
-  id: string;
-  workspaceId: string;
-  siteName: unknown;
-  defaultLanguage: string | null;
-  enabledLanguages: string[];
-  enabledFeatures: string[];
-  notFoundPageId: string | null;
-  previewUrl: string | null;
-  branding: CmssyBranding | null;
-}
+// Site config/branding live in @cmssy/types; re-exported for consumers.
+export type { CmssyBranding, CmssySiteConfig };
 
 export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
   public {
