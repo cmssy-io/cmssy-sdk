@@ -3256,6 +3256,11 @@ input UpdateModelDefinitionInput {
   defaultSort: DefaultSortInput
   description: String
   displayField: String
+
+  """
+  Optimistic-concurrency precondition: the updatedAt the client last read. The update fails with VERSION_CONFLICT if the model changed since.
+  """
+  expectedUpdatedAt: DateTime
   fields: [PropertyFieldInput!]
   icon: String
   id: ID!
