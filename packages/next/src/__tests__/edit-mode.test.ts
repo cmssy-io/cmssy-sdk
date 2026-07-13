@@ -12,11 +12,19 @@ vi.mock("next/headers", () => ({
 
 import {
   CMSSY_EDIT_HEADER,
+  CMSSY_EDIT_QUERY_PARAM,
+  CMSSY_SECRET_QUERY_PARAM,
   isCmssyEditMode,
   isCmssyEditRequest,
 } from "../edit-mode";
 
-function makeRequest(opts: { cmssyEdit?: string[]; draftCookie?: boolean }) {
+const CONFIG = { draftSecret: "test-draft-secret-123" };
+
+function makeRequest(opts: {
+  cmssyEdit?: string[];
+  cmssySecret?: string;
+  draftCookie?: boolean;
+}) {
   return {
     cookies: {
       has: (name: string) =>
@@ -26,23 +34,66 @@ function makeRequest(opts: { cmssyEdit?: string[]; draftCookie?: boolean }) {
       searchParams: {
         getAll: (name: string) =>
           name === "cmssyEdit" ? (opts.cmssyEdit ?? []) : [],
+        get: (name: string) =>
+          name === "cmssySecret" ? (opts.cmssySecret ?? null) : null,
       },
     },
   };
 }
 
-describe("isCmssyEditRequest", () => {
-  it("detects the cmssyEdit=1 query param", () => {
-    expect(isCmssyEditRequest(makeRequest({ cmssyEdit: ["1"] }))).toBe(true);
+describe("isCmssyEditRequest (CMS-948)", () => {
+  it("accepts cmssyEdit=1 with a matching cmssySecret", async () => {
+    expect(
+      await isCmssyEditRequest(
+        makeRequest({ cmssyEdit: ["1"], cmssySecret: CONFIG.draftSecret }),
+        CONFIG,
+      ),
+    ).toBe(true);
   });
 
-  it("detects the draft-mode cookie", () => {
-    expect(isCmssyEditRequest(makeRequest({ draftCookie: true }))).toBe(true);
+  it("rejects a bare cmssyEdit=1 without a secret", async () => {
+    expect(
+      await isCmssyEditRequest(makeRequest({ cmssyEdit: ["1"] }), CONFIG),
+    ).toBe(false);
   });
 
-  it("is false for a plain public request", () => {
-    expect(isCmssyEditRequest(makeRequest({}))).toBe(false);
-    expect(isCmssyEditRequest(makeRequest({ cmssyEdit: ["0"] }))).toBe(false);
+  it("rejects cmssyEdit=1 with a wrong secret", async () => {
+    expect(
+      await isCmssyEditRequest(
+        makeRequest({ cmssyEdit: ["1"], cmssySecret: "wrong" }),
+        CONFIG,
+      ),
+    ).toBe(false);
+  });
+
+  it("rejects when the site has no draft secret configured", async () => {
+    expect(
+      await isCmssyEditRequest(
+        makeRequest({ cmssyEdit: ["1"], cmssySecret: "anything" }),
+        { draftSecret: "" },
+      ),
+    ).toBe(false);
+  });
+
+  it("accepts the draft-mode cookie without any query params", async () => {
+    expect(
+      await isCmssyEditRequest(makeRequest({ draftCookie: true }), CONFIG),
+    ).toBe(true);
+  });
+
+  it("ignores a secret without the cmssyEdit flag", async () => {
+    expect(
+      await isCmssyEditRequest(
+        makeRequest({ cmssySecret: CONFIG.draftSecret }),
+        CONFIG,
+      ),
+    ).toBe(false);
+    expect(
+      await isCmssyEditRequest(
+        makeRequest({ cmssyEdit: ["0"], cmssySecret: CONFIG.draftSecret }),
+        CONFIG,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -57,7 +108,9 @@ describe("isCmssyEditMode", () => {
     expect(await isCmssyEditMode()).toBe(false);
   });
 
-  it("pins the forwarded header name", () => {
+  it("pins the forwarded header and query param names", () => {
     expect(CMSSY_EDIT_HEADER).toBe("x-cmssy-edit");
+    expect(CMSSY_EDIT_QUERY_PARAM).toBe("cmssyEdit");
+    expect(CMSSY_SECRET_QUERY_PARAM).toBe("cmssySecret");
   });
 });

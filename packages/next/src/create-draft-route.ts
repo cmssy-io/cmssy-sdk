@@ -1,19 +1,13 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { draftMode } from "next/headers";
 import { redirect } from "next/navigation";
 import type { CmssyNextConfig } from "./config";
+import { cmssySecretsMatch } from "./secret-match";
 
 export type CmssyDraftRouteConfig = Pick<CmssyNextConfig, "draftSecret"> & {
   defaultRedirect?: string;
 };
 
 const MIN_SECRET_LENGTH = 16;
-
-function secretsMatch(a: string, b: string): boolean {
-  const ha = createHash("sha256").update(a).digest();
-  const hb = createHash("sha256").update(b).digest();
-  return timingSafeEqual(ha, hb);
-}
 
 function safeRedirect(redirect: string | null, fallback: string): string {
   if (!redirect || !redirect.startsWith("/")) return fallback;
@@ -39,15 +33,25 @@ export function createDraftRoute(config: CmssyDraftRouteConfig) {
     );
   }
   return async function GET(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    // Exit path needs no secret - the visitor is only clearing their own
+    // draft cookie. Without it the cookie never expires and the browser is
+    // stuck previewing drafts (and bypassing the cache) forever.
+    if (url.searchParams.get("disable") === "1") {
+      const draft = await draftMode();
+      draft.disable();
+      redirect(
+        safeRedirect(url.searchParams.get("redirect"), fallbackRedirect),
+      );
+    }
     if (config.draftSecret.length < MIN_SECRET_LENGTH) {
       return new Response(
         `cmssy: draftSecret must be at least ${MIN_SECRET_LENGTH} characters`,
         { status: 500 },
       );
     }
-    const url = new URL(request.url);
     const secret = url.searchParams.get("secret");
-    if (!secret || !secretsMatch(secret, config.draftSecret)) {
+    if (!secret || !(await cmssySecretsMatch(secret, config.draftSecret))) {
       return new Response("Invalid draft secret", { status: 401 });
     }
     const location = safeRedirect(
