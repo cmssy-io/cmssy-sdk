@@ -95,7 +95,7 @@ export function createCmssyPage(
 
 /**
  * Editor page for the middleware-rewritten edit route
- * (`app/__cmssy/edit/[[...path]]/page.tsx`, `dynamic = "force-dynamic"`).
+ * (`app/cmssy-edit/[[...path]]/page.tsx`, `dynamic = "force-dynamic"`).
  * Re-verifies the `cmssyEdit` + `cmssySecret` pair itself, so a direct hit
  * on the route path (bypassing the middleware) cannot mount the editor.
  */

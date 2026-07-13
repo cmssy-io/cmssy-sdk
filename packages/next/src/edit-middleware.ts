@@ -6,11 +6,11 @@ import { cmssySecretsMatch } from "./secret-match";
  * Where the middleware rewrites editor-preview traffic. Mount the matching
  * dynamic route in the consumer app:
  *
- *   app/__cmssy/edit/[[...path]]/page.tsx
+ *   app/cmssy-edit/[[...path]]/page.tsx
  *     export const dynamic = "force-dynamic";
  *     export default createCmssyEditPage(cmssy, blocks, { editor: Editor });
  */
-export const CMSSY_EDIT_PATH_PREFIX = "/__cmssy/edit";
+export const CMSSY_EDIT_PATH_PREFIX = "/cmssy-edit";
 
 /**
  * Rewrite VERIFIED editor requests (`cmssyEdit=1` + a `cmssySecret` matching
