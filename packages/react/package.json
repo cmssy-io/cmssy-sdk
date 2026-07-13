@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/react",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "React blocks, renderers, data client and editor bridge for cmssy headless sites",
   "keywords": [
     "cmssy",
@@ -61,6 +61,6 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@cmssy/types": "0.26.0"
+    "@cmssy/types": "0.27.0"
   }
 }
