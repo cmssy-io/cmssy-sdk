@@ -171,7 +171,25 @@ describe("createCmssyPage", () => {
     );
   });
 
-  it("enters edit mode via the cmssyEdit query flag without draft mode", async () => {
+  it("enters edit mode via cmssyEdit + matching cmssySecret without draft mode", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    );
+    expect(element.type).toBe(Editor);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: CONFIG.draftSecret,
+    });
+  });
+
+  it("stays published for a bare cmssyEdit=1 without cmssySecret (CMS-948)", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
     const element = unwrap(
@@ -180,9 +198,24 @@ describe("createCmssyPage", () => {
         searchParams: searchParams({ cmssyEdit: "1" }),
       }),
     );
-    expect(element.type).toBe(Editor);
+    expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
-      previewSecret: CONFIG.draftSecret,
+      previewSecret: undefined,
+    });
+  });
+
+  it("stays published for cmssyEdit=1 with a wrong cmssySecret (CMS-948)", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1", cmssySecret: "wrong" }),
+      }),
+    );
+    expect(element.type).toBe(CmssyServerPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
     });
   });
 
@@ -217,7 +250,10 @@ describe("createCmssyPage", () => {
     const element = unwrap(
       await Page({
         params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: "1" }),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
       }),
     );
     expect(element.type).toBe(Editor);
@@ -271,7 +307,10 @@ describe("createCmssyPage", () => {
     const element = unwrap(
       await Page({
         params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: ["1", "1"] }),
+        searchParams: searchParams({
+          cmssyEdit: ["1", "1"],
+          cmssySecret: CONFIG.draftSecret,
+        }),
       }),
     );
     expect(element.type).toBe(Editor);
@@ -330,7 +369,10 @@ describe("createCmssyPage", () => {
     await expect(
       Page({
         params: params(["about"]),
-        searchParams: searchParams({ cmssyEdit: "1" }),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
       }),
     ).rejects.toThrow(/only allowed in development/);
   });

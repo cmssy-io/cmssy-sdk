@@ -24,6 +24,8 @@ import {
   type CmssyNextConfig,
 } from "./config";
 import { toCspOrigin } from "./csp";
+import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "./edit-mode";
+import { cmssySecretsMatch } from "./secret-match";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -50,10 +52,27 @@ interface CatchAllProps {
   searchParams?: Promise<SearchParams>;
 }
 
-const EDIT_QUERY_PARAM = "cmssyEdit";
-
 function hasEditFlag(value: string | string[] | undefined): boolean {
   return Array.isArray(value) ? value.includes("1") : value === "1";
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// `cmssyEdit=1` alone is not trusted - it must carry a `cmssySecret` matching
+// the site's draft secret, otherwise anyone could view drafts and mount the
+// editable UI (CMS-948). Draft mode (authenticated /api/draft) always wins.
+async function resolveEditMode(
+  draftModeEnabled: boolean,
+  query: SearchParams,
+  draftSecret: string,
+): Promise<boolean> {
+  if (draftModeEnabled) return true;
+  if (!hasEditFlag(query[CMSSY_EDIT_QUERY_PARAM])) return false;
+  const provided = firstValue(query[CMSSY_SECRET_QUERY_PARAM]);
+  if (!provided || !draftSecret) return false;
+  return cmssySecretsMatch(provided, draftSecret);
 }
 
 export function createCmssyPage(
@@ -88,7 +107,11 @@ export function createCmssyPage(
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
-    const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
+    const editMode = await resolveEditMode(
+      isEnabled,
+      query,
+      config.draftSecret,
+    );
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
     const editorActive = editMode;
 

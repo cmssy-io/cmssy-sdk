@@ -17,6 +17,8 @@ export { cmssyCspHeaders, applyCmssyCsp } from "./csp";
 export type { CmssyCspOptions } from "./csp";
 export {
   CMSSY_EDIT_HEADER,
+  CMSSY_EDIT_QUERY_PARAM,
+  CMSSY_SECRET_QUERY_PARAM,
   isCmssyEditRequest,
   isCmssyEditMode,
 } from "./edit-mode";
