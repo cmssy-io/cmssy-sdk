@@ -6,6 +6,8 @@ import {
   createCmssyEditMiddleware,
 } from "../edit-middleware";
 
+const CONFIG = { draftSecret: "draft-secret-1234" };
+
 function request(url: string, cookies: Record<string, string> = {}) {
   const req = new NextRequest(new URL(url, "https://site.example"));
   for (const [name, value] of Object.entries(cookies)) {
@@ -15,16 +17,22 @@ function request(url: string, cookies: Record<string, string> = {}) {
 }
 
 describe("cmssyEditRewrite", () => {
-  it("rewrites ?cmssyEdit=1 onto the edit route, keeping the path", () => {
-    const res = cmssyEditRewrite(request("/about/team?cmssyEdit=1"));
+  it("rewrites a VERIFIED cmssyEdit+cmssySecret pair onto the edit route, keeping the path", async () => {
+    const res = await cmssyEditRewrite(
+      request(`/about/team?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
+      CONFIG,
+    );
     expect(res).not.toBeNull();
     expect(res!.headers.get("x-middleware-rewrite")).toContain(
       `${CMSSY_EDIT_PATH_PREFIX}/about/team`,
     );
   });
 
-  it("rewrites the root path without a trailing slash artifact", () => {
-    const res = cmssyEditRewrite(request("/?cmssyEdit=1"));
+  it("rewrites the root path without a trailing slash artifact", async () => {
+    const res = await cmssyEditRewrite(
+      request(`/?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
+      CONFIG,
+    );
     expect(res!.headers.get("x-middleware-rewrite")).toContain(
       CMSSY_EDIT_PATH_PREFIX,
     );
@@ -33,35 +41,58 @@ describe("cmssyEditRewrite", () => {
     );
   });
 
-  it("rewrites when the draft-mode bypass cookie is present", () => {
-    const res = cmssyEditRewrite(
-      request("/about", { __prerender_bypass: "x" }),
-    );
-    expect(res).not.toBeNull();
-  });
-
-  it("passes normal traffic through", () => {
-    expect(cmssyEditRewrite(request("/about"))).toBeNull();
-    expect(cmssyEditRewrite(request("/about?cmssyEdit=0"))).toBeNull();
-  });
-
-  it("never rewrites a request already on the edit route", () => {
+  it("does not rewrite a bare cmssyEdit=1 (CMS-948: unverified)", async () => {
     expect(
-      cmssyEditRewrite(request(`${CMSSY_EDIT_PATH_PREFIX}/about?cmssyEdit=1`)),
+      await cmssyEditRewrite(request("/about?cmssyEdit=1"), CONFIG),
+    ).toBeNull();
+  });
+
+  it("does not rewrite a wrong secret", async () => {
+    expect(
+      await cmssyEditRewrite(
+        request("/about?cmssyEdit=1&cmssySecret=wrong"),
+        CONFIG,
+      ),
+    ).toBeNull();
+  });
+
+  it("does not rewrite draft-mode cookie traffic (draft preview stays on the public route)", async () => {
+    expect(
+      await cmssyEditRewrite(
+        request("/about", { __prerender_bypass: "x" }),
+        CONFIG,
+      ),
+    ).toBeNull();
+  });
+
+  it("passes normal traffic through", async () => {
+    expect(await cmssyEditRewrite(request("/about"), CONFIG)).toBeNull();
+  });
+
+  it("never rewrites a request already on the edit route", async () => {
+    expect(
+      await cmssyEditRewrite(
+        request(
+          `${CMSSY_EDIT_PATH_PREFIX}/about?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`,
+        ),
+        CONFIG,
+      ),
     ).toBeNull();
   });
 });
 
 describe("createCmssyEditMiddleware", () => {
-  it("returns NextResponse.next() for public traffic", () => {
-    const middleware = createCmssyEditMiddleware();
-    const res = middleware(request("/pricing"));
+  it("returns NextResponse.next() for public traffic", async () => {
+    const middleware = createCmssyEditMiddleware(CONFIG);
+    const res = await middleware(request("/pricing"));
     expect(res.headers.get("x-middleware-rewrite")).toBeNull();
   });
 
-  it("returns the rewrite for edit traffic", () => {
-    const middleware = createCmssyEditMiddleware();
-    const res = middleware(request("/pricing?cmssyEdit=1"));
+  it("returns the rewrite for verified edit traffic", async () => {
+    const middleware = createCmssyEditMiddleware(CONFIG);
+    const res = await middleware(
+      request(`/pricing?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
+    );
     expect(res.headers.get("x-middleware-rewrite")).toContain(
       `${CMSSY_EDIT_PATH_PREFIX}/pricing`,
     );

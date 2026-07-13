@@ -467,7 +467,7 @@ describe("createCmssyPage", () => {
   it("passes every configured origin to the bridge so any of them can frame the editor", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const Page = createCmssyPage(
+    const Page = createCmssyEditPage(
       {
         ...CONFIG,
         editorOrigin: ["https://app.cmssy.io", "https://staging.cmssy.io"],
