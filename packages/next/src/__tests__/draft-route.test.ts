@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { enable, redirect } = vi.hoisted(() => ({
+const { enable, disable, redirect } = vi.hoisted(() => ({
   enable: vi.fn(),
+  disable: vi.fn(),
   redirect: vi.fn((location: string) => {
     throw new Error(`NEXT_REDIRECT:${location}`);
   }),
 }));
 
 vi.mock("next/headers", () => ({
-  draftMode: vi.fn(async () => ({ enable, isEnabled: false })),
+  draftMode: vi.fn(async () => ({ enable, disable, isEnabled: false })),
 }));
 
 vi.mock("next/navigation", () => ({ redirect }));
@@ -20,6 +21,7 @@ const SECRET = "s3cret-value-1234";
 describe("createDraftRoute", () => {
   beforeEach(() => {
     enable.mockClear();
+    disable.mockClear();
     redirect.mockClear();
   });
 
@@ -118,5 +120,36 @@ describe("createDraftRoute", () => {
     await expect(
       GET(new Request(`https://pilot.test/api/draft?secret=${SECRET}`)),
     ).rejects.toThrow("NEXT_REDIRECT:/home");
+  });
+
+  it("disables draft mode without a secret and redirects (exit preview)", async () => {
+    const GET = createDraftRoute({ draftSecret: SECRET });
+    await expect(
+      GET(
+        new Request("https://pilot.test/api/draft?disable=1&redirect=/blog"),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT:/blog");
+    expect(disable).toHaveBeenCalledOnce();
+    expect(enable).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes the exit redirect", async () => {
+    const GET = createDraftRoute({ draftSecret: SECRET });
+    await expect(
+      GET(
+        new Request(
+          "https://pilot.test/api/draft?disable=1&redirect=https://evil.test",
+        ),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT:/");
+    expect(disable).toHaveBeenCalledOnce();
+  });
+
+  it("exits draft mode even when the configured secret is too short", async () => {
+    const GET = createDraftRoute({ draftSecret: "short" });
+    await expect(
+      GET(new Request("https://pilot.test/api/draft?disable=1")),
+    ).rejects.toThrow("NEXT_REDIRECT:/");
+    expect(disable).toHaveBeenCalledOnce();
   });
 });

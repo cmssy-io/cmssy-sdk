@@ -24,6 +24,8 @@ import {
   type CmssyNextConfig,
 } from "./config";
 import { toCspOrigin } from "./csp";
+import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "./edit-mode";
+import { cmssySecretsMatch } from "./secret-match";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -50,10 +52,27 @@ interface CatchAllProps {
   searchParams?: Promise<SearchParams>;
 }
 
-const EDIT_QUERY_PARAM = "cmssyEdit";
-
 function hasEditFlag(value: string | string[] | undefined): boolean {
   return Array.isArray(value) ? value.includes("1") : value === "1";
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// `cmssyEdit=1` alone is not trusted - it must carry a `cmssySecret` matching
+// the site's draft secret, otherwise anyone could view drafts and mount the
+// editable UI (CMS-948). Only the editor iframe sends this pair; draft mode
+// (the authenticated /api/draft route) shows draft CONTENT but never mounts
+// the editor.
+async function resolveEditorRequest(
+  query: SearchParams,
+  draftSecret: string,
+): Promise<boolean> {
+  if (!hasEditFlag(query[CMSSY_EDIT_QUERY_PARAM])) return false;
+  const provided = firstValue(query[CMSSY_SECRET_QUERY_PARAM]);
+  if (!provided || !draftSecret) return false;
+  return cmssySecretsMatch(provided, draftSecret);
 }
 
 export function createCmssyPage(
@@ -88,9 +107,12 @@ export function createCmssyPage(
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
-    const editMode = isEnabled || hasEditFlag(query[EDIT_QUERY_PARAM]);
+    // editorActive mounts the editable UI (editor iframe only); editMode
+    // additionally covers draft-mode preview, which fetches draft content
+    // but renders the plain, selectable page.
+    const editorActive = await resolveEditorRequest(query, config.draftSecret);
+    const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
-    const editorActive = editMode;
 
     let locale: string;
     let pagePath = path;
