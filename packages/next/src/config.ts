@@ -1,4 +1,8 @@
+import type { CmssyAuthConfig } from "@cmssy/types";
 import { MIN_SESSION_SECRET_LENGTH } from "./session";
+
+// CmssyAuthConfig lives in @cmssy/types; re-exported for consumers.
+export type { CmssyAuthConfig };
 
 export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://cmssy.io",
@@ -39,11 +43,6 @@ export function resolveEditorOrigin(
     return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGINS;
   }
   return value.trim().length > 0 ? value : DEFAULT_CMSSY_EDITOR_ORIGINS;
-}
-
-export interface CmssyAuthConfig {
-  modelSlug: string;
-  sessionSecret: string;
 }
 
 export interface CmssyNextConfig {

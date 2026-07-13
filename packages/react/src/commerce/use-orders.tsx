@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import type { CmssyOrder } from "./commerce-queries";
+import type {
+  CmssyOrder,
+  UseCmssyOrdersOptions,
+  UseCmssyOrderOptions,
+} from "@cmssy/types";
+
+// Hook option shapes live in @cmssy/types; re-exported for consumers.
+export type { UseCmssyOrdersOptions, UseCmssyOrderOptions };
 
 export interface CmssyOrdersState {
   orders: CmssyOrder[];
@@ -11,12 +18,6 @@ export interface CmssyOrdersState {
   loading: boolean;
   error: string | null;
   refresh(): Promise<void>;
-}
-
-export interface UseCmssyOrdersOptions {
-  basePath?: string;
-  skip?: number;
-  limit?: number;
 }
 
 export function useCmssyOrders(
@@ -85,10 +86,6 @@ export interface CmssyOrderState {
   loading: boolean;
   error: string | null;
   refresh(): Promise<void>;
-}
-
-export interface UseCmssyOrderOptions {
-  basePath?: string;
 }
 
 export function useCmssyOrder(
