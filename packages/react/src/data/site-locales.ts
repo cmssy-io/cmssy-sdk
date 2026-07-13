@@ -30,7 +30,8 @@ export async function resolveSiteLocales(
       config,
       SITE_CONFIG_QUERY,
       { workspaceSlug: config.workspaceSlug },
-      { ...options, public: true, retry: options?.retry ?? {} },      "site config",
+      { ...options, public: true, retry: options?.retry ?? {} },
+      "site config",
     );
     const siteConfig = data.public?.siteConfig ?? null;
     const defaultLocale = siteConfig?.defaultLanguage || "en";
