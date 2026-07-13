@@ -12,23 +12,15 @@ import {
 } from "react";
 
 import type {
-  CmssyAddress,
   CmssyCart,
   CmssyOrder,
   CmssyProduct,
-} from "./commerce-queries";
+  CmssyAddToCartOptions,
+  CmssyCheckoutInput,
+} from "@cmssy/types";
 
-export interface CmssyAddToCartOptions {
-  variantSelections?: Record<string, string>;
-  notes?: string;
-}
-
-export interface CmssyCheckoutInput {
-  customerEmail: string;
-  poNumber?: string | null;
-  customerNote?: string | null;
-  shippingAddress?: CmssyAddress | null;
-}
+// Option shapes live in @cmssy/types; re-exported for consumers.
+export type { CmssyAddToCartOptions, CmssyCheckoutInput };
 
 export interface CmssyCommerceState {
   cart: CmssyCart | null;
