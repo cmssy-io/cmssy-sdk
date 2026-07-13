@@ -62,13 +62,13 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 
 // `cmssyEdit=1` alone is not trusted - it must carry a `cmssySecret` matching
 // the site's draft secret, otherwise anyone could view drafts and mount the
-// editable UI (CMS-948). Draft mode (authenticated /api/draft) always wins.
-async function resolveEditMode(
-  draftModeEnabled: boolean,
+// editable UI (CMS-948). Only the editor iframe sends this pair; draft mode
+// (the authenticated /api/draft route) shows draft CONTENT but never mounts
+// the editor.
+async function resolveEditorRequest(
   query: SearchParams,
   draftSecret: string,
 ): Promise<boolean> {
-  if (draftModeEnabled) return true;
   if (!hasEditFlag(query[CMSSY_EDIT_QUERY_PARAM])) return false;
   const provided = firstValue(query[CMSSY_SECRET_QUERY_PARAM]);
   if (!provided || !draftSecret) return false;
@@ -107,13 +107,12 @@ export function createCmssyPage(
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
     const query = searchParams ? await searchParams : {};
-    const editMode = await resolveEditMode(
-      isEnabled,
-      query,
-      config.draftSecret,
-    );
+    // editorActive mounts the editable UI (editor iframe only); editMode
+    // additionally covers draft-mode preview, which fetches draft content
+    // but renders the plain, selectable page.
+    const editorActive = await resolveEditorRequest(query, config.draftSecret);
+    const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
-    const editorActive = editMode;
 
     let locale: string;
     let pagePath = path;
