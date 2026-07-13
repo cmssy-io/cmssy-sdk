@@ -42,7 +42,7 @@ vi.mock("../auth-server", () => ({
   getCmssyAccessToken: vi.fn(),
 }));
 
-import { createCmssyPage } from "../create-cmssy-page";
+import { createCmssyPage, createCmssyEditPage } from "../create-cmssy-page";
 
 const AUTH_CONFIG = {
   modelSlug: "members",
@@ -160,7 +160,7 @@ describe("createCmssyPage", () => {
 
   it("renders the consumer editor for a verified editor request", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
     const element = unwrap(
       await Page({
         params: params([]),
@@ -182,7 +182,7 @@ describe("createCmssyPage", () => {
 
   it("throws for a verified editor request when no editor is provided", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS);
     await expect(
       Page({
         params: params([]),
@@ -204,7 +204,7 @@ describe("createCmssyPage", () => {
 
   it("enters edit mode via cmssyEdit + matching cmssySecret without draft mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
     const element = unwrap(
       await Page({
         params: params(["about"]),
@@ -273,7 +273,7 @@ describe("createCmssyPage", () => {
   it("enters the editor with a dev token and cmssyEdit, still sending devPreview", async () => {
     vi.stubEnv("NODE_ENV", "development");
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(
+    const Page = createCmssyEditPage(
       { ...CONFIG, devToken: "cs_devtoken" },
       BLOCKS,
       { editor: Editor },
@@ -334,7 +334,7 @@ describe("createCmssyPage", () => {
 
   it("enters edit mode when cmssyEdit arrives as a repeated (array) param", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
     const element = unwrap(
       await Page({
         params: params(["about"]),
@@ -374,6 +374,46 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
   });
 
+  it("the public route ignores even a VERIFIED cmssyEdit pair (rewrite owns the edit flow)", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    );
+    expect(element.type).toBe(CmssyServerPage);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
+  });
+
+  it("the edit route 404s on a bare cmssyEdit without the secret", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    await expect(
+      Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1" }),
+      }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
+  it("the edit route 404s on a wrong cmssySecret", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    await expect(
+      Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1", cmssySecret: "wrong" }),
+      }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
   it("calls notFound when the page is missing", async () => {
     fetchPage.mockResolvedValue(null);
     const Page = createCmssyPage(CONFIG, BLOCKS);
@@ -394,7 +434,7 @@ describe("createCmssyPage", () => {
 
   it("rejects a wildcard editorOrigin in production when entering edit mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    const Page = createCmssyPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
+    const Page = createCmssyEditPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {
       editor: Editor,
     });
     await expect(
@@ -427,7 +467,7 @@ describe("createCmssyPage", () => {
   it("passes every configured origin to the bridge so any of them can frame the editor", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const Page = createCmssyPage(
+    const Page = createCmssyEditPage(
       {
         ...CONFIG,
         editorOrigin: ["https://app.cmssy.io", "https://staging.cmssy.io"],

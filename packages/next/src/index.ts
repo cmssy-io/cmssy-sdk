@@ -1,8 +1,13 @@
-export { createCmssyPage } from "./create-cmssy-page";
+export { createCmssyPage, createCmssyEditPage } from "./create-cmssy-page";
 export type {
   CmssyEditorProps,
   CreateCmssyPageOptions,
 } from "./create-cmssy-page";
+export {
+  CMSSY_EDIT_PATH_PREFIX,
+  cmssyEditRewrite,
+  createCmssyEditMiddleware,
+} from "./edit-middleware";
 export { createCmssyNotFound } from "./create-cmssy-not-found";
 export type { CreateCmssyNotFoundOptions } from "./create-cmssy-not-found";
 export { createCmssyRobots } from "./create-cmssy-robots";

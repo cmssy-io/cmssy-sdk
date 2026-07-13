@@ -75,10 +75,43 @@ async function resolveEditorRequest(
   return cmssySecretsMatch(provided, draftSecret);
 }
 
+/**
+ * Public catch-all page. Statically renderable: it never reads
+ * `searchParams` or `headers()` - awaiting either forces every route
+ * dynamic and kills ISR (CMS-952). Draft-mode preview (the authenticated
+ * /api/draft cookie) still works per-request via `draftMode()`, which is
+ * static-safe, and renders draft CONTENT without the editor (CMS-948).
+ * The editor-iframe flow (`?cmssyEdit=1&cmssySecret=...`) is served by
+ * the middleware rewrite (`cmssyEditRewrite`) onto the dynamic edit route
+ * mounted with `createCmssyEditPage`.
+ */
 export function createCmssyPage(
   config: CmssyNextConfig,
   blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
+) {
+  return buildCmssyPageRenderer(config, blocks, options, false);
+}
+
+/**
+ * Editor page for the middleware-rewritten edit route
+ * (`app/__cmssy/edit/[[...path]]/page.tsx`, `dynamic = "force-dynamic"`).
+ * Re-verifies the `cmssyEdit` + `cmssySecret` pair itself, so a direct hit
+ * on the route path (bypassing the middleware) cannot mount the editor.
+ */
+export function createCmssyEditPage(
+  config: CmssyNextConfig,
+  blocks: BlockDefinition[],
+  options?: CreateCmssyPageOptions,
+) {
+  return buildCmssyPageRenderer(config, blocks, options, true);
+}
+
+function buildCmssyPageRenderer(
+  config: CmssyNextConfig,
+  blocks: BlockDefinition[],
+  options: CreateCmssyPageOptions | undefined,
+  editRoute: boolean,
 ) {
   if (!Array.isArray(blocks)) {
     throw new Error(
@@ -106,11 +139,19 @@ export function createCmssyPage(
     const path =
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
-    const query = searchParams ? await searchParams : {};
-    // editorActive mounts the editable UI (editor iframe only); editMode
-    // additionally covers draft-mode preview, which fetches draft content
-    // but renders the plain, selectable page.
-    const editorActive = await resolveEditorRequest(query, config.draftSecret);
+
+    // editorActive mounts the editable UI (verified editor iframe only);
+    // editMode additionally covers draft-mode preview, which fetches draft
+    // content but renders the plain, selectable page. Only the edit route
+    // reads searchParams - the public route must stay static.
+    let editorActive = false;
+    if (editRoute) {
+      const query = searchParams ? await searchParams : {};
+      editorActive = await resolveEditorRequest(query, config.draftSecret);
+      if (!editorActive) {
+        notFound();
+      }
+    }
     const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
 
