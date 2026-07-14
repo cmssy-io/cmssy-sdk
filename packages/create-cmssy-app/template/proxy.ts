@@ -1,4 +1,4 @@
-import { createCmssyProxy } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 // Resolves the language, sends verified editor traffic to /cmssy-edit (carrying

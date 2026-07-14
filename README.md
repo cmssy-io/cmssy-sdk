@@ -27,7 +27,7 @@ editor; your app owns rendering and hosting.
 
 ```ts
 // proxy.ts
-import { createCmssyProxy } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 export const proxy = createCmssyProxy(cmssy);
@@ -61,9 +61,9 @@ Collect your blocks in one array, then wire these files in your Next.js app.
 
 ```ts
 // cmssy.config.ts
-import type { CmssyNextConfig } from "@cmssy/next";
+import type { CmssyConfig } from "@cmssy/next";
 
-export const cmssy: CmssyNextConfig = {
+export const cmssy: CmssyConfig = {
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
   // apiUrl + editorOrigin default to cmssy cloud; set them only for self-host/staging.
@@ -72,7 +72,7 @@ export const cmssy: CmssyNextConfig = {
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { createCmssyPage } from "@cmssy/next";
+import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks"; // array of defineBlock(...) results
 
@@ -85,7 +85,7 @@ To preview in-progress editor edits on your **own** local site during developmen
 
 ```ts
 // app/api/draft/route.ts (Node.js runtime)
-import { createDraftRoute } from "@cmssy/next";
+import { createDraftRoute } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export const GET = createDraftRoute(cmssy);
@@ -98,7 +98,7 @@ import {
   applyCmssyCsp,
   isCmssyEditRequest,
   CMSSY_EDIT_HEADER,
-} from "@cmssy/next";
+} from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
@@ -120,7 +120,7 @@ In your root `layout.tsx`, read `isCmssyEditMode()` to fetch draft vs published
 layout blocks on the same signal as page content:
 
 ```tsx
-import { isCmssyEditMode } from "@cmssy/next";
+import { isCmssyEditMode } from "@cmssy/next/server";
 import { fetchLayouts } from "@cmssy/react";
 
 const editMode = await isCmssyEditMode();
@@ -145,7 +145,7 @@ request `host` (multi-domain safe), or from `config.siteUrl` when set.
 
 ```ts
 // app/robots.ts
-import { createCmssyRobots } from "@cmssy/next";
+import { createCmssyRobots } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export default createCmssyRobots(cmssy);
@@ -153,7 +153,7 @@ export default createCmssyRobots(cmssy);
 
 ```ts
 // app/sitemap.ts
-import { createCmssySitemap } from "@cmssy/next";
+import { createCmssySitemap } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export default createCmssySitemap(cmssy);
@@ -173,7 +173,7 @@ branding OG image). Use it in a route's `generateMetadata`:
 
 ```ts
 // app/[[...path]]/page.tsx
-import { buildCmssyMetadata } from "@cmssy/next";
+import { buildCmssyMetadata } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export async function generateMetadata({ params }) {

@@ -227,7 +227,7 @@ returns a Next.js `Metadata` object.
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { buildCmssyMetadata } from "@cmssy/next";
+import { buildCmssyMetadata } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export async function generateMetadata({
