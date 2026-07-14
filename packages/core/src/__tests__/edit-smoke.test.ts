@@ -5,7 +5,7 @@ const BASE = "http://localhost:3000";
 const SECRET = "draft-secret-1234";
 
 const PUBLIC_HTML = "<html><header>MACHTEC</header><main>hi</main></html>";
-const EDIT_HTML = "<html><script>CmssyEditor</script><main>hi</main></html>";
+const EDIT_HTML = '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
 
 /** Serves a body per URL; anything unrouted 404s, which the check reports. */
 function serve(routes: Record<string, string>) {
@@ -44,7 +44,7 @@ describe("checkCmssyEditMode", () => {
     serve({
       [`${BASE}/`]: bare,
       [`${BASE}/?cmssyEdit=1`]: bare,
-      [verifiedUrl()]: "<html><script>CmssyEditor</script><main>hi</main></html>",
+      [verifiedUrl()]: '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>',
     });
 
     const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
@@ -73,7 +73,7 @@ describe("checkCmssyEditMode", () => {
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-      [verifiedUrl()]: `<html><script>CmssyEditor</script><header>MACHTEC</header></html>`,
+      [verifiedUrl()]: `<html><div data-cmssy-editor="1" hidden></div><header>MACHTEC</header></html>`,
     });
 
     const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
@@ -120,7 +120,7 @@ describe("checkCmssyEditMode", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/no")]:
-        "<html><script>CmssyEditor</script><main>Handlekurv</main></html>",
+        '<html><div data-cmssy-editor="1" hidden></div><main>Handlekurv</main></html>',
     });
 
     const result = await checkCmssyEditMode({

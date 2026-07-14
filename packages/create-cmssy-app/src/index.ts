@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = resolve(here, "..", "templates");
 
-const FRAMEWORKS = ["next", "astro"] as const;
+const FRAMEWORKS = ["next", "astro", "remix"] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 function isFramework(value: string): value is Framework {
@@ -57,7 +57,7 @@ async function main() {
 
   if (!name) {
     console.error(
-      "Usage: npx create-cmssy-app <directory> [--framework next|astro]",
+      "Usage: npx create-cmssy-app <directory> [--framework next|astro|remix]",
     );
     process.exit(1);
   }
