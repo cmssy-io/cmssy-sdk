@@ -15,16 +15,16 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 
 ## Packages
 
-| Package                | Description                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `@cmssy/core`          | No framework, no Node built-ins: transport, queries, config, secrets, webhooks, the versioned postMessage protocol. |
-| `@cmssy/react`         | Rendering: block registry, field controls, `CmssyServerPage`, the edit bridge.                                      |
-| `@cmssy/next`          | Next.js bindings, one entry per runtime: `/server`, `/middleware`, `/client`.                                       |
+| Package                | Description                                                                                                                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@cmssy/core`          | No framework, no Node built-ins: transport, queries, config, secrets, webhooks, the versioned postMessage protocol.                          |
+| `@cmssy/react`         | Rendering: block registry, field controls, `CmssyServerPage`, the edit bridge.                                                               |
+| `@cmssy/next`          | Next.js bindings, one entry per runtime: `/server`, `/middleware`, `/client`.                                                                |
 | `@cmssy/remix`         | React Router 7 bindings: page loader, framing CSP, sitemap, robots. No edit route needed - a React Router page always sees its query string. |
-| `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.       |
-| `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                     |
-| `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                        |
-| `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                            |
+| `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                |
+| `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                                              |
+| `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                                                 |
+| `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                                                     |
 
 ## Docs
 
@@ -34,6 +34,7 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 | [**Reference wiring**](docs/wiring.md)             | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other. |
 | [**Troubleshooting**](docs/troubleshooting.md)     | Symptom → cause. Every row cost us half a day, and none of them failed a build.            |
 | [**Testing**](docs/testing.md)                     | `checkCmssyEditMode` - the editor is the one path a build cannot check.                    |
+| [**Migrating to v8**](docs/migrations/v7-to-v8.md) | A block's content is typed by its schema. A renamed field is now a build error.            |
 | [**Migrating to v5**](docs/migrations/v4-to-v5.md) | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not.             |
 | [**Migrating to v4**](docs/migrations/v3-to-v4.md) | The editor moved to its own route. Skip this and your preview goes blank.                  |
 | [**Changelog**](CHANGELOG.md)                      | Every entry answers one question: do I have to do anything?                                |

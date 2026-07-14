@@ -6,6 +6,48 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 8.0.0
+
+**A block's `content` is typed by its field schema.** Until now the schema and
+the component's content type were two independent sources of truth, kept in sync
+by hand. Rename a field in one and forget the other, and TypeScript said nothing:
+the block rendered **empty**, in the editor and in production.
+
+```ts
+props: {
+  headline: fields.text({ required: true });
+} // schema
+interface HeroContent {
+  heading?: string;
+} // component - drifted
+// tsc --noEmit → exit 0. The block renders nothing.
+```
+
+Fields now carry the type of the value they hold, and `defineBlock` derives the
+component's content from `props`. The schema is the only place a field is named.
+
+```bash
+npx @cmssy/codemod v8 .
+```
+
+The codemod removes the type arguments `defineBlock` no longer needs and **names
+every block you must retype by hand** - it will not rewrite a hand-written
+content type, because that type is the thing that drifted, and copying it forward
+would launder the bug.
+
+```tsx
+export const heroProps = { heading: fields.text({ required: true }) };
+
+export default function Hero({ content }: BlockProps<typeof heroProps>) {
+  return <h1>{content.heading}</h1>; // string, not string | undefined
+}
+```
+
+Also: a `select` narrows to its own options, `media` to `string` or `string[]` by
+`multiple`, a `repeater` to the shape of one row. Phantom types only - the
+emitted JavaScript is unchanged. Full guide:
+[v7 → v8](docs/migrations/v7-to-v8.md).
+
 ## 7.0.0
 
 **`CmssyChrome` → `CmssyLayoutSlot`.** "Chrome" is UI jargon for the frame around
