@@ -174,10 +174,10 @@ describe("createCmssyCartRoute", () => {
     const address = {
       name: "Anna Kowalska",
       company: "Machtec",
-      line1: "ul. Przemysłowa 12",
+      line1: "12 Industrial Way",
       line2: null,
       postalCode: "31-357",
-      city: "Kraków",
+      city: "Bergen",
       region: null,
       country: "PL",
       phone: null,
@@ -199,7 +199,7 @@ describe("createCmssyCartRoute", () => {
     expect(sent.input.poNumber).toBe("PO-7");
     expect(sent.input.customerNote).toBeNull();
     expect(sent.input.shippingAddress).toMatchObject({
-      city: "Kraków",
+      city: "Bergen",
       country: "PL",
       vatId: "PL1234567890",
     });
@@ -217,7 +217,7 @@ describe("createCmssyCartRoute", () => {
     const res = await route.POST(
       ...post("checkout", {
         customerEmail: "b@example.com",
-        shippingAddress: { name: "  ", line1: "", city: "Kraków" },
+        shippingAddress: { name: "  ", line1: "", city: "Bergen" },
       }),
     );
 

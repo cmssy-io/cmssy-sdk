@@ -13,9 +13,10 @@ const result = await checkCmssyEditMode({
   baseUrl: "http://localhost:3000",
   secret: process.env.CMSSY_DRAFT_SECRET!,
   path: "/",
-  // Only if your URLs carry the language:
+  // Only if your URLs carry the language. The check reads <html lang> - a
+  // contract - rather than hunting for a word from your copy, which an editor
+  // can rewrite at any time.
   localizedPath: "/no",
-  localizedMarker: "Handlekurv", // a word only the Norwegian page says
 });
 
 expect(result.failures).toEqual([]);
@@ -33,7 +34,7 @@ in the first place.
    request must never open the door.
 3. A verified `cmssyEdit=1` + `cmssySecret` renders the editor **and** moves the
    chrome onto the edit bridge.
-4. Optionally: the localized preview speaks the language its URL asks for.
+4. Optionally: the localized preview **declares** the language its URL asks for (`<html lang>`).
 
 ## Why "no `<header>` in the SSR" means success
 

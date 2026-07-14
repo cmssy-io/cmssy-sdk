@@ -12,9 +12,9 @@
   "dependencies": {
     "@astrojs/node": "^9.0.0",
     "@astrojs/react": "^4.2.0",
-    "@cmssy/astro": "^6.2.0",
-    "@cmssy/core": "^6.2.0",
-    "@cmssy/react": "^6.2.0",
+    "@cmssy/astro": "^7.0.0",
+    "@cmssy/core": "^7.0.0",
+    "@cmssy/react": "^7.0.0",
     "astro": "^5.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -8,11 +8,16 @@ export interface EditSmokeOptions {
   /**
    * The same page under a language prefix, e.g. "/no". Pass it on a site whose
    * URLs carry the language, and the check also proves the preview renders in
-   * THAT language rather than the default one.
+   * THAT language rather than the default one - by reading `<html lang>`, which
+   * is a contract, unlike a word from the page's copy that an editor can change
+   * at any time.
    */
   localizedPath?: string;
-  /** A word only the localized page says - "Handlekurv", say. */
-  localizedMarker?: string;
+  /**
+   * The language `localizedPath` must render, e.g. "no". Defaults to the first
+   * path segment, which IS the language on a prefixed site.
+   */
+  localizedLocale?: string;
 }
 
 export interface EditSmokeResult {
@@ -25,10 +30,10 @@ export interface EditSmokeResult {
 // is matching whatever the bundler happened to emit, which passed on two
 // frameworks by luck and failed on the third for no reason.
 const EDITOR_MARKER = /data-cmssy-editor/;
-/** Layout blocks rendered server-side. In edit mode they move to the edit
- *  bridge and mount on the client, so their absence from the SSR HTML is what
- *  proves the chrome is editable rather than plain markup. */
-const SERVER_CHROME = /<header|<footer/;
+/** Layout blocks rendered server-side. In edit mode they move to the edit bridge
+ *  and mount on the client, so their absence from the SSR HTML is what proves
+ *  the header and footer are editable blocks rather than plain markup. */
+const SERVER_LAYOUT_BLOCKS = /<header|<footer/;
 
 async function html(url: string): Promise<{ status: number; body: string }> {
   const response = await fetch(url, { redirect: "manual" });
@@ -68,7 +73,7 @@ export async function checkCmssyEditMode(
   // A site with no layout blocks is perfectly valid, so their absence is not a
   // failure. What matters is the CHANGE: chrome that is server-rendered publicly
   // must move to the edit bridge in edit mode.
-  const hasServerChrome = SERVER_CHROME.test(publicPage.body);
+  const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {
@@ -88,14 +93,16 @@ export async function checkCmssyEditMode(
       `edit ${path}: no editor in the response - is the /cmssy-edit route mounted?`,
     );
   }
-  if (hasServerChrome && SERVER_CHROME.test(verified.body)) {
+  if (hasServerLayoutBlocks && SERVER_LAYOUT_BLOCKS.test(verified.body)) {
     failures.push(
-      `edit ${path}: the chrome is still server-rendered - the header and footer will be selectable but have no fields (is CMSSY_EDIT_HEADER set on the rewrite?)`,
+      `edit ${path}: the header and footer are still server-rendered - the editor will let you select them but show no fields (is CMSSY_EDIT_HEADER set on the rewrite?)`,
     );
   }
 
-  const { localizedPath, localizedMarker } = options;
-  if (localizedPath && localizedMarker) {
+  const { localizedPath } = options;
+  if (localizedPath) {
+    const locale =
+      options.localizedLocale ?? localizedPath.split("/").filter(Boolean)[0];
     const localized = await html(
       url(
         `${localizedPath}?cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`,
@@ -104,9 +111,10 @@ export async function checkCmssyEditMode(
     if (!EDITOR_MARKER.test(localized.body)) {
       failures.push(`edit ${localizedPath}: no editor in the response`);
     }
-    if (!localized.body.includes(localizedMarker)) {
+    const served = /<html[^>]*\slang=["']([^"']+)["']/i.exec(localized.body)?.[1];
+    if (locale && served !== locale) {
       failures.push(
-        `edit ${localizedPath}: "${localizedMarker}" is missing - the preview renders in the default language, not the one the URL asks for`,
+        `edit ${localizedPath}: the page reports lang="${served ?? "?"}" but the URL asks for "${locale}" - the preview renders in the wrong language`,
       );
     }
   }
