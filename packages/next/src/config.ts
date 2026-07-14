@@ -124,6 +124,22 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
     }
   }
   if (missing.length > 0) {
+    // In the browser these variables are ALWAYS missing - they are server-side
+    // env, and Next does not ship them. So this is not a configuration mistake
+    // at all: a client component pulled a VALUE out of a module that reads the
+    // config, dragging it into the browser bundle. Saying "set your env vars"
+    // here sends the developer to fix something that is already correct.
+    if (typeof window !== "undefined") {
+      throw new Error(
+        "cmssy: the config was evaluated in the browser, so it cannot see the " +
+          "server's environment variables.\n\n" +
+          "This is an import problem, not a config problem: a client component " +
+          '("use client") imported a VALUE from a module that reads the cmssy ' +
+          "config - directly, or through a helper next to one.\n\n" +
+          "Fix it by importing types only (they are erased at build time), or by " +
+          "moving the value into a module that does not touch the config.",
+      );
+    }
     throw new Error(
       `cmssy: missing required configuration:\n  - ${missing.join(
         "\n  - ",
