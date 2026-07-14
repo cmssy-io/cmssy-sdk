@@ -1,14 +1,3 @@
-// Rendering a cmssy page reads the request and the config, so this module belongs
-// to the server tree only. `server-only` turns "imported from a client component"
-// into a build error naming the file - the mistake used to surface as "missing
-// required configuration" in the browser, which reads like a config problem and
-// is really an import problem.
-//
-// It sits here rather than on the package entry on purpose: middleware and route
-// handlers legitimately import that entry, and Turbopack does not resolve the
-// react-server condition for them.
-import "server-only";
-
 import type { ComponentType } from "react";
 import { draftMode } from "next/headers";
 import { notFound } from "next/navigation";
