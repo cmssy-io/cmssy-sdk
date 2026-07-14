@@ -1,0 +1,117 @@
+name: Starter smoke
+
+# Generates a starter for every framework, builds it, starts it, and asks the
+# running site whether its editor works. An adapter nobody runs is an adapter we
+# do not know works - and we shipped a dead editor twice while every build was
+# green (CMS-969, CMS-970).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  starter:
+    runs-on: ubuntu-latest
+    # The `secrets` context is not available in a step `if`, so it is lifted into
+    # env once and the steps branch on that.
+    env:
+      CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
+      CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
+      CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [next, astro]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm -r build
+
+      - name: Generate the starter
+        run: |
+          node packages/create-cmssy-app/dist/index.js /tmp/app \
+            --framework ${{ matrix.framework }}
+
+      # The starter pins the version it will ship with, which is not on npm yet -
+      # and asking npm for it would test the last release, not this diff. Pack the
+      # packages and install the tarballs: that is the artifact users get, not a
+      # symlink into a monorepo that resolves differently.
+      - name: Pack this checkout
+        run: |
+          mkdir -p /tmp/pkgs
+          for pkg in core react next astro eslint-plugin; do
+            (cd "packages/$pkg" && pnpm pack --pack-destination /tmp/pkgs)
+          done
+          ls /tmp/pkgs
+
+      - name: Install the starter against those tarballs
+        working-directory: /tmp/app
+        run: |
+          node -e '
+            const fs = require("fs");
+            const files = fs.readdirSync("/tmp/pkgs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const tarballFor = (name) => {
+              const base = "cmssy-" + name.slice("@cmssy/".length) + "-";
+              const file = files.find((f) => f.startsWith(base));
+              if (!file) throw new Error("no tarball for " + name);
+              return "file:/tmp/pkgs/" + file;
+            };
+            const linked = [];
+            for (const field of ["dependencies", "devDependencies"]) {
+              for (const name of Object.keys(pkg[field] ?? {})) {
+                if (!name.startsWith("@cmssy/")) continue;
+                pkg[field][name] = tarballFor(name);
+                linked.push(name);
+              }
+            }
+            // @cmssy/next depends on @cmssy/core at the version being released,
+            // which is not on npm yet either - so redirect the transitive ones too.
+            const overrides = {};
+            for (const file of files) {
+              const name = "@cmssy/" + file.replace(/^cmssy-/, "").replace(/-\d+\.\d+\.\d+.*$/, "");
+              overrides[name] = "file:/tmp/pkgs/" + file;
+            }
+            pkg.pnpm = { ...pkg.pnpm, overrides };
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+            console.log("direct:", linked.join(", "));
+            console.log("overrides:", Object.keys(overrides).join(", "));
+          '
+          pnpm install --no-frozen-lockfile
+
+      # The Next build reads the workspace (sitemap, page data), so without the
+      # secrets there is nothing honest to build against. Astro's build does not,
+      # but a build without an editor check proves the least interesting half.
+      - name: Build
+        if: env.CMSSY_DRAFT_SECRET != ''
+        working-directory: /tmp/app
+        run: pnpm build
+
+      # A build proves the app compiles. The editor is the path it cannot check,
+      # and that needs a running server and a real workspace. Without the
+      # secrets, say so - a green check that verifies nothing is worse than none.
+      - name: Editor smoke test
+        if: env.CMSSY_DRAFT_SECRET != ''
+        working-directory: /tmp/app
+        env:
+          SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'next' && '3000' || '4321' }}
+        run: |
+          pnpm start &
+          npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
+          pnpm smoke:edit
+
+      # A green check that verifies nothing is worse than no check, so say it out
+      # loud rather than let the job look like it proved something.
+      - name: No workspace secrets - NOTHING was verified
+        if: env.CMSSY_DRAFT_SECRET == ''
+        run: |
+          echo "::warning::CMSSY_ORG_SLUG / CMSSY_WORKSPACE_SLUG / CMSSY_DRAFT_SECRET" \
+               "are not set on this repo, so the ${{ matrix.framework }} starter was" \
+               "generated but NEITHER built NOR checked. This job proved nothing."

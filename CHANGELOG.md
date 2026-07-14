@@ -6,6 +6,23 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 6.1.0
+
+**`create-cmssy-app --framework next|astro`.**
+
+An adapter with no starter rots: nobody runs it, so nobody notices the day it
+stops working. Both frameworks now generate a complete, wired app - the edit
+route, the middleware carrying the locale and the edit flag, the chrome on the
+edit bridge, sitemap, robots, and `pnpm smoke:edit`.
+
+And CI generates **both** starters on every push, builds them, starts them, and
+asks the running site whether its editor works. We shipped a dead editor twice
+with every build green (CMS-969, CMS-970); this is the check that would have
+caught it.
+
+Without the workspace secrets the smoke step **says so** rather than passing
+quietly - a green check that verifies nothing is worse than no check.
+
 ## 6.0.0
 
 **`@cmssy/core` no longer imports Node.**
