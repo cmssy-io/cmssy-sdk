@@ -40,26 +40,37 @@ jobs:
             --framework ${{ matrix.framework }}
 
       # The starter pins the version it will ship with, which is not on npm yet -
-      # and asking npm for it would test the last release, not this diff. Point
-      # every @cmssy/* dependency at THIS checkout instead.
-      - name: Install the starter against this checkout
+      # and asking npm for it would test the last release, not this diff. Pack the
+      # packages and install the tarballs: that is the artifact users get, not a
+      # symlink into a monorepo that resolves differently.
+      - name: Pack this checkout
+        run: |
+          mkdir -p /tmp/pkgs
+          for pkg in core react next astro eslint-plugin; do
+            (cd "packages/$pkg" && pnpm pack --pack-destination /tmp/pkgs)
+          done
+          ls /tmp/pkgs
+
+      - name: Install the starter against those tarballs
         working-directory: /tmp/app
         run: |
           node -e '
             const fs = require("fs");
-            const root = process.env.GITHUB_WORKSPACE;
+            const files = fs.readdirSync("/tmp/pkgs");
             const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
             const linked = [];
             for (const field of ["dependencies", "devDependencies"]) {
               for (const name of Object.keys(pkg[field] ?? {})) {
                 if (!name.startsWith("@cmssy/")) continue;
-                const dir = name === "@cmssy/eslint-plugin" ? "eslint-plugin" : name.slice("@cmssy/".length);
-                pkg[field][name] = `link:${root}/packages/${dir}`;
-                linked.push(name);
+                const base = "cmssy-" + name.slice("@cmssy/".length);
+                const tarball = files.find((f) => f.startsWith(base + "-"));
+                if (!tarball) throw new Error("no tarball for " + name);
+                pkg[field][name] = "file:/tmp/pkgs/" + tarball;
+                linked.push(name + " -> " + tarball);
               }
             }
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
-            console.log("linked:", linked.join(", "));
+            console.log(linked.join("\n"));
           '
           pnpm install --no-frozen-lockfile
 
