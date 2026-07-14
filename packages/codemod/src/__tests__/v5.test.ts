@@ -50,10 +50,10 @@ describe("v5 codemod", () => {
 
   it("rewrites the preset, which no longer exists", () => {
     const { code } = transform(
-      'import { createCmssyProxy } from "@cmssy/next/preset";\nimport { CmssyChrome } from "@cmssy/next/preset";',
+      'import { createCmssyProxy } from "@cmssy/next/preset";\nimport { CmssyLayoutSlot } from "@cmssy/next/preset";',
     );
     expect(code).toContain('from "@cmssy/next/middleware"');
-    expect(code).toContain('import { CmssyChrome } from "@cmssy/next/server";');
+    expect(code).toContain('import { CmssyLayoutSlot } from "@cmssy/next/server";');
     expect(code).not.toContain("preset");
   });
 

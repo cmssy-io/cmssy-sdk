@@ -19,10 +19,10 @@ describe("getBlockContentForLanguage", () => {
   it("selects the requested locale", () => {
     expect(
       getBlockContentForLanguage(
-        { en: { title: "Hi" }, pl: { title: "Cześć" } },
-        "pl",
+        { en: { title: "Hi" }, no: { title: "Hei" } },
+        "no",
       ),
-    ).toEqual({ title: "Cześć" });
+    ).toEqual({ title: "Hei" });
   });
 
   it("falls back to default then first available", () => {
@@ -58,7 +58,7 @@ describe("getBlockContentForLanguage", () => {
         { id: { x: 1 }, en: { title: "Hi" } },
         "en",
         "en",
-        ["en", "pl"],
+        ["en", "no"],
       ),
     ).toEqual({ id: { x: 1 }, title: "Hi" });
   });

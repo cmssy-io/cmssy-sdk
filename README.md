@@ -60,7 +60,7 @@ export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 
 ```tsx
 // app/layout.tsx - the header and footer are blocks, so they are editable too
-<CmssyChrome
+<CmssyLayoutSlot
   config={cmssy}
   blocks={blocks}
   position="header"

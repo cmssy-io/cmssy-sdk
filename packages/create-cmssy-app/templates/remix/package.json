@@ -10,9 +10,9 @@
     "smoke:edit": "node scripts/smoke-edit.mjs"
   },
   "dependencies": {
-    "@cmssy/core": "^6.2.0",
-    "@cmssy/react": "^6.2.0",
-    "@cmssy/remix": "^6.2.0",
+    "@cmssy/core": "^7.0.0",
+    "@cmssy/react": "^7.0.0",
+    "@cmssy/remix": "^7.0.0",
     "@react-router/node": "^7.5.0",
     "@react-router/serve": "^7.5.0",
     "isbot": "^5.1.0",
