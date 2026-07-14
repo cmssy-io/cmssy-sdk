@@ -28,17 +28,17 @@ in the first place.
 
 ## What it asserts
 
-1. The public page returns 200, **without** the editor, with the chrome rendered
+1. The public page returns 200, **without** the editor, with the header and footer rendered
    server-side.
 2. A bare `?cmssyEdit=1` (no secret) does **not** enter edit mode. An unverified
    request must never open the door.
 3. A verified `cmssyEdit=1` + `cmssySecret` renders the editor **and** moves the
-   chrome onto the edit bridge.
+   header and footer onto the edit bridge.
 4. Optionally: the localized preview **declares** the language its URL asks for (`<html lang>`).
 
 ## Why "no `<header>` in the SSR" means success
 
-In edit mode the chrome is mounted through the edit bridge, which renders on the
+In edit mode the header and footer mount through the edit bridge, which renders on the
 **client**. So a header that is still in the server-rendered HTML is a header the
 editor can select and cannot edit - the difference between an editable block and
 plain markup.
@@ -47,7 +47,7 @@ That is the check that would have caught our second outage, and the one whose
 failure message names the cause:
 
 ```
-edit /shop: the chrome is still server-rendered - the header and footer will be
+edit /shop: the header and footer are still server-rendered - they will be
 selectable but have no fields (is CMSSY_EDIT_HEADER set on the rewrite?)
 ```
 
