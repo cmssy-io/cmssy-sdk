@@ -49,15 +49,17 @@ jobs:
             const fs = require("fs");
             const root = process.env.GITHUB_WORKSPACE;
             const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
-            const overrides = {};
-            for (const name of Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })) {
-              if (!name.startsWith("@cmssy/")) continue;
-              const dir = name === "@cmssy/eslint-plugin" ? "eslint-plugin" : name.slice("@cmssy/".length);
-              overrides[name] = `link:${root}/packages/${dir}`;
+            const linked = [];
+            for (const field of ["dependencies", "devDependencies"]) {
+              for (const name of Object.keys(pkg[field] ?? {})) {
+                if (!name.startsWith("@cmssy/")) continue;
+                const dir = name === "@cmssy/eslint-plugin" ? "eslint-plugin" : name.slice("@cmssy/".length);
+                pkg[field][name] = `link:${root}/packages/${dir}`;
+                linked.push(name);
+              }
             }
-            pkg.pnpm = { ...pkg.pnpm, overrides };
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
-            console.log("linked:", Object.keys(overrides).join(", "));
+            console.log("linked:", linked.join(", "));
           '
           pnpm install --no-frozen-lockfile
 
