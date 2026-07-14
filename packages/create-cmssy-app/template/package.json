@@ -10,14 +10,14 @@
     "smoke:edit": "node scripts/smoke-edit.mjs"
   },
   "dependencies": {
-    "@cmssy/next": "^5.1.0",
-    "@cmssy/react": "^5.1.0",
+    "@cmssy/next": "^6.0.0",
+    "@cmssy/react": "^6.0.0",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@cmssy/eslint-plugin": "^5.1.0",
+    "@cmssy/eslint-plugin": "^6.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@typescript-eslint/parser": "^8.20.0",
