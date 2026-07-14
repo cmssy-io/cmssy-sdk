@@ -120,6 +120,28 @@ describe("createCmssySitemap", () => {
     expect(result[3]?.lastModified).toEqual(new Date("2026-02-02T00:00:00Z"));
   });
 
+  it("builds extra entries at request time, with the same baseUrl and locales", async () => {
+    // A shop's product URLs are model records, not pages - the workspace cannot
+    // express them. A resolver gets what the page entries got, so the two
+    // cannot disagree about the origin or the languages.
+    stubGraphql({
+      pages: [{ id: "1", slug: "/", updatedAt: null, publishedAt: null }],
+    });
+    const result = await createCmssySitemap(CONFIG, {
+      extra: ({ baseUrl, defaultLocale, locales }) =>
+        locales.map((locale) => ({
+          url: `${baseUrl}${locale === defaultLocale ? "" : `/${locale}`}/shop/p/pump`,
+        })),
+    })();
+
+    expect(result.map((entry) => entry.url)).toEqual([
+      "https://cmssy.com/",
+      "https://cmssy.com/pl",
+      "https://cmssy.com/shop/p/pump",
+      "https://cmssy.com/pl/shop/p/pump",
+    ]);
+  });
+
   it("degrades to [] when the page fetch fails", async () => {
     stubGraphql({ pagesOk: false });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});

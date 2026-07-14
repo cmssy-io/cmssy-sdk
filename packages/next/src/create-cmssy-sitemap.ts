@@ -8,9 +8,25 @@ import type { CmssyNextConfig } from "./config";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
 import { localizedPath, normalizeSlug, resolveSeoLocales } from "./seo-paths";
 
+/** What an `extra` resolver needs to build URLs that agree with the page ones. */
+export interface CmssySitemapContext {
+  baseUrl: string;
+  defaultLocale: string;
+  locales: string[];
+}
+
 export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
-  /** Extra static entries appended to the generated page list. */
-  extra?: MetadataRoute.Sitemap;
+  /**
+   * Entries appended to the generated page list - the URLs a workspace's PAGES
+   * cannot express, like a product or a category rendered from model records.
+   * Pass a resolver to build them at request time; it gets the same baseUrl and
+   * locales the page entries use, so the two cannot disagree.
+   */
+  extra?:
+    | MetadataRoute.Sitemap
+    | ((
+        context: CmssySitemapContext,
+      ) => MetadataRoute.Sitemap | Promise<MetadataRoute.Sitemap>);
   /**
    * Additional page slugs to omit. The workspace's configured 404 page
    * (Settings → 404 page) is excluded automatically via its id, so this is
@@ -94,6 +110,11 @@ export function createCmssySitemap(
         }));
       });
 
-    return options.extra ? [...entries, ...options.extra] : entries;
+    if (!options.extra) return entries;
+    const extra =
+      typeof options.extra === "function"
+        ? await options.extra({ baseUrl, defaultLocale, locales })
+        : options.extra;
+    return [...entries, ...extra];
   };
 }
