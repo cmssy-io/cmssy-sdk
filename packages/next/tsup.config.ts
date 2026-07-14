@@ -4,7 +4,7 @@ import { defineConfig } from "tsup";
 const CLIENT_OUTPUTS = ["dist/client.js", "dist/client.cjs"];
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/client.ts"],
+  entry: ["src/index.ts", "src/client.ts", "src/testing.ts"],
   format: ["esm", "cjs"],
   dts: true,
   clean: true,
