@@ -2,21 +2,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { CmssyEditablePage } from "../components/editable-page";
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import { PROTOCOL_VERSION } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 
-const Hero = ({ content }: { content: Record<string, unknown> }) => (
-  <h1>{String(content.heading ?? "")}</h1>
+const heroProps = { heading: fields.text() };
+
+const Hero = ({ content }: BlockProps<typeof heroProps>) => (
+  <h1>{content.heading ?? ""}</h1>
 );
 
 const blocks = [
   defineBlock({
     type: "hero",
     component: Hero,
-    props: { heading: fields.text() },
+    props: heroProps,
   }),
 ];
 

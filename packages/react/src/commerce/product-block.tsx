@@ -2,20 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import { useCart } from "./commerce-provider";
 import { formatPrice, toMinorUnits } from "@cmssy/core";
 import type { CmssyProduct, CmssyProductVariant } from "@cmssy/core";
 
-interface ProductContent {
-  modelSlug?: string;
-  slugField?: string;
-  slug?: string;
-  nameField?: string;
-  priceField?: string;
-  imageField?: string;
-  product?: CmssyProduct;
+const productProps = {
+  modelSlug: fields.text({ label: "Model slug" }),
+  slugField: fields.text({ label: "Slug field" }),
+  slug: fields.text({ label: "Product slug" }),
+  nameField: fields.text({ label: "Name field" }),
+  priceField: fields.text({ label: "Price field" }),
+  imageField: fields.text({ label: "Image field" }),
+};
+
+/**
+ * `product` is not a field: the editor never asks for it. A server loader may
+ * inject an already-fetched product, and the component then skips the fetch.
+ */
+interface ProductBlockProps extends BlockProps<typeof productProps> {
+  content: BlockProps<typeof productProps>["content"] & {
+    product?: CmssyProduct;
+  };
 }
 
 function deriveAxes(
@@ -47,8 +56,7 @@ function matchVariant(
   );
 }
 
-function ProductComponent({ content }: { content: Record<string, unknown> }) {
-  const c = content as ProductContent;
+function ProductComponent({ content: c }: ProductBlockProps) {
   const { fetchProduct, addToCart } = useCart();
   const injected = c.product ?? null;
   const [product, setProduct] = useState<CmssyProduct | null>(injected);
@@ -179,13 +187,6 @@ export const productBlock = defineBlock({
   type: "product",
   label: "Product",
   category: "Commerce",
-  props: {
-    modelSlug: fields.text({ label: "Model slug" }),
-    slugField: fields.text({ label: "Slug field" }),
-    slug: fields.text({ label: "Product slug" }),
-    nameField: fields.text({ label: "Name field" }),
-    priceField: fields.text({ label: "Price field" }),
-    imageField: fields.text({ label: "Image field" }),
-  },
+  props: productProps,
   component: ProductComponent,
 });

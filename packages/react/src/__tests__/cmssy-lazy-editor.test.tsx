@@ -2,13 +2,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, waitFor, cleanup } from "@testing-library/react";
 import { CmssyLazyEditor } from "../components/cmssy-lazy-editor";
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 
-const Hero = ({ content }: { content: Record<string, unknown> }) => (
-  <h1>{String(content.heading ?? "")}</h1>
+const heroProps = { heading: fields.text() };
+
+const Hero = ({ content }: BlockProps<typeof heroProps>) => (
+  <h1>{content.heading ?? ""}</h1>
 );
 
 const blocks = [
@@ -16,7 +18,7 @@ const blocks = [
     type: "hero",
     label: "Hero",
     component: Hero,
-    props: { heading: fields.text() },
+    props: heroProps,
   }),
 ];
 
