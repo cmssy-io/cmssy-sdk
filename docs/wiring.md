@@ -93,7 +93,7 @@ export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 Skip this file and the editor preview is blank. That is the single most common
 way to break a cmssy app.
 
-## 5. The chrome (header and footer)
+## 5. The header and footer
 
 They are layout **blocks**, so they must be editable like any other block:
 

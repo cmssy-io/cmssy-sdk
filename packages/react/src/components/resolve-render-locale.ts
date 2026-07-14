@@ -50,7 +50,7 @@ export async function resolveRenderLocale({
       "[cmssy] Rendering in \"en\": no locale was passed and no config was given to " +
         "look the workspace's default language up. Pass `locale` (from the route) " +
         "or `config`, or a workspace whose default language is not English will " +
-        "render its chrome in the wrong one.",
+        "render its header and footer in the wrong one.",
     );
   }
 
