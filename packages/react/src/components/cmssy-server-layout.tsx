@@ -1,4 +1,5 @@
 import type {
+  CmssyClientConfig,
   CmssyLayoutGroup,
   RawLayoutBlock,
 } from "../content/content-client";
@@ -10,15 +11,22 @@ import {
 import { buildBlockContext } from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
+import { resolveRenderLocale } from "./resolve-render-locale";
 
 export interface CmssyServerLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
   position: string;
+  /** The language to render in. Omit it and the workspace's default is used. */
   locale?: string;
   defaultLocale?: string;
   /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
   enabledLocales?: string[];
+  /**
+   * The workspace, so the languages can be looked up when they are not passed.
+   * Without it the SDK has to guess, and its guess is "en".
+   */
+  config?: CmssyClientConfig;
 }
 
 /**
@@ -30,10 +38,17 @@ export async function CmssyServerLayout({
   groups,
   blocks,
   position,
-  locale = "en",
-  defaultLocale = "en",
-  enabledLocales,
+  locale: localeProp,
+  defaultLocale: defaultLocaleProp,
+  enabledLocales: enabledLocalesProp,
+  config,
 }: CmssyServerLayoutProps) {
+  const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
+    locale: localeProp,
+    defaultLocale: defaultLocaleProp,
+    enabledLocales: enabledLocalesProp,
+    config,
+  });
   const group = groups.find((g) => g.position === position);
   const layoutBlocks: RawLayoutBlock[] = group
     ? group.blocks

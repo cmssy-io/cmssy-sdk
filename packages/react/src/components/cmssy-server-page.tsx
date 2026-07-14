@@ -1,4 +1,7 @@
-import type { CmssyPageData } from "../content/content-client";
+import type {
+  CmssyClientConfig,
+  CmssyPageData,
+} from "../content/content-client";
 import type { CmssyFormDefinition } from "../data/queries";
 import {
   buildBlockMap,
@@ -12,6 +15,7 @@ import {
 } from "./block-context";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
+import { resolveRenderLocale } from "./resolve-render-locale";
 
 export interface CmssyServerPageProps {
   page: CmssyPageData | null;
@@ -20,6 +24,11 @@ export interface CmssyServerPageProps {
   defaultLocale?: string;
   /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
   enabledLocales?: string[];
+  /**
+   * The workspace, so the languages can be looked up when they are not passed.
+   * Without it the SDK has to guess, and its guess is "en".
+   */
+  config?: CmssyClientConfig;
   /** Form definitions referenced by page blocks, exposed via context.forms. */
   forms?: Record<string, CmssyFormDefinition>;
   /** Member auth state, exposed via context.auth. Resolved by createCmssyPage. */
@@ -36,14 +45,21 @@ export interface CmssyServerPageProps {
 export async function CmssyServerPage({
   page,
   blocks,
-  locale = "en",
-  defaultLocale = "en",
-  enabledLocales,
+  locale: localeProp,
+  defaultLocale: defaultLocaleProp,
+  enabledLocales: enabledLocalesProp,
+  config,
   forms,
   auth,
   workspace,
 }: CmssyServerPageProps) {
   if (!page) return null;
+  const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
+    locale: localeProp,
+    defaultLocale: defaultLocaleProp,
+    enabledLocales: enabledLocalesProp,
+    config,
+  });
   const map = buildBlockMap(blocks);
   const loaderMap = buildLoaderMap(blocks);
   const context = buildBlockContext(
