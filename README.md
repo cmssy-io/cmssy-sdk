@@ -20,6 +20,7 @@ editor; your app owns rendering and hosting.
 | [**Reference wiring**](docs/wiring.md)             | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other. |
 | [**Troubleshooting**](docs/troubleshooting.md)     | Symptom → cause. Every row cost us half a day, and none of them failed a build.            |
 | [**Testing**](docs/testing.md)                     | `checkCmssyEditMode` - the editor is the one path a build cannot check.                    |
+| [**Migrating to v5**](docs/migrations/v4-to-v5.md) | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not. |
 | [**Migrating to v4**](docs/migrations/v3-to-v4.md) | The editor moved to its own route. Skip this and your preview goes blank.                  |
 | [**Changelog**](CHANGELOG.md)                      | Every entry answers one question: do I have to do anything?                                |
 
