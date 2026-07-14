@@ -4,18 +4,20 @@ import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyServerLayout } from "../components/cmssy-server-layout";
 import { CmssyBlock } from "../components/cmssy-block";
 import { renderResolvedBlock } from "../components/render-resolved-block";
-import { defineBlock, buildBlockMap } from "../registry";
+import { defineBlock, buildBlockMap, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 
-const Hero = ({ content }: { content: Record<string, unknown> }) => (
-  <h1>{String(content.heading ?? "")}</h1>
+const heroProps = { heading: fields.text() };
+
+const Hero = ({ content }: BlockProps<typeof heroProps>) => (
+  <h1>{content.heading ?? ""}</h1>
 );
 
 const heroBlock = defineBlock({
   type: "hero",
   label: "Hero",
   component: Hero,
-  props: { heading: fields.text() },
+  props: heroProps,
 });
 
 describe("CmssyBlock blockMap proto-safety", () => {
@@ -53,13 +55,9 @@ describe("CmssyBlock style/advanced field values", () => {
     content,
     style,
     advanced,
-  }: {
-    content: Record<string, unknown>;
-    style?: Record<string, unknown>;
-    advanced?: Record<string, unknown>;
-  }) => (
+  }: BlockProps<typeof heroProps>) => (
     <div>
-      <span>{String(content.heading ?? "")}</span>
+      <span>{content.heading ?? ""}</span>
       <span>{String(style?.bg ?? "")}</span>
       <span>{String(advanced?.secret ?? "")}</span>
     </div>
@@ -68,7 +66,7 @@ describe("CmssyBlock style/advanced field values", () => {
     type: "panel",
     label: "Panel",
     component: Panel,
-    props: { heading: fields.text() },
+    props: heroProps,
   });
   const map = buildBlockMap([panelBlock]);
 
@@ -152,7 +150,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
   });
 
   it("runs a block loader and passes its result as the data prop", async () => {
-    const loadedBlock = defineBlock<Record<string, unknown>, { msg: string }>({
+    const loadedBlock = defineBlock({
       type: "loaded",
       props: {},
       loader: async () => ({ msg: "from-loader" }),
@@ -274,7 +272,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
   });
 
   it("runs a layout block's loader and passes its result as the data prop", async () => {
-    const headerBlock = defineBlock<Record<string, unknown>, { msg: string }>({
+    const headerBlock = defineBlock({
       type: "site-header",
       props: {},
       loader: async () => ({ msg: "from-loader" }),

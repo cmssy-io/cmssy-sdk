@@ -2,20 +2,21 @@
 
 import { useState } from "react";
 
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import { useCart } from "./commerce-provider";
 import { formatPrice } from "@cmssy/core";
 import type { CmssyOrder } from "@cmssy/core";
 
-interface CheckoutContent {
-  successMessage?: string;
-}
+const checkoutProps = {
+  successMessage: fields.text({ label: "Success message" }),
+};
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-function CheckoutComponent({ content }: { content: Record<string, unknown> }) {
-  const c = content as CheckoutContent;
+function CheckoutComponent({
+  content: c,
+}: BlockProps<typeof checkoutProps>) {
   const { cart, loading, checkout } = useCart();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -90,8 +91,6 @@ export const checkoutBlock = defineBlock({
   type: "checkout",
   label: "Checkout",
   category: "Commerce",
-  props: {
-    successMessage: fields.text({ label: "Success message" }),
-  },
+  props: checkoutProps,
   component: CheckoutComponent,
 });
