@@ -3,10 +3,10 @@
 import { useState } from "react";
 
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
+import { fields } from "@cmssy/core";
 import { useCart } from "./commerce-provider";
-import { formatPrice } from "./money";
-import type { CmssyOrder } from "./commerce-queries";
+import { formatPrice } from "@cmssy/core";
+import type { CmssyOrder } from "@cmssy/core";
 
 interface CheckoutContent {
   successMessage?: string;

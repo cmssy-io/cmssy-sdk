@@ -7,9 +7,9 @@ import {
   type CmssyClientConfig,
   type CmssyLocalizedValue,
 } from "@cmssy/react";
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
-import { localizedPath, resolveSeoLocales } from "./seo-paths";
+import { localizedPath, resolveSeoLocales } from "@cmssy/core";
 
 export interface BuildCmssyMetadataOptions extends SeoBaseUrlOption {
   /** Override the Open Graph / Twitter image (defaults to workspace branding). */
@@ -53,7 +53,7 @@ function pick(
  * language's URL, which tells Google the translation is a duplicate.
  */
 export async function buildCmssyMetadata(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   path?: string | string[],
   options: BuildCmssyMetadataOptions = {},
 ): Promise<Metadata> {

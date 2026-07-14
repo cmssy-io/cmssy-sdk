@@ -1,8 +1,8 @@
 import type {
   CmssyClientConfig,
   CmssyPageData,
-} from "../content/content-client";
-import type { CmssyFormDefinition } from "../data/queries";
+} from "@cmssy/core";
+import type { CmssyFormDefinition } from "@cmssy/core";
 import {
   buildBlockMap,
   buildLoaderMap,
@@ -12,7 +12,7 @@ import {
   buildBlockContext,
   type CmssyBlockAuthContext,
   type CmssyBlockWorkspace,
-} from "./block-context";
+} from "@cmssy/core";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
 import { resolveRenderLocale } from "./resolve-render-locale";

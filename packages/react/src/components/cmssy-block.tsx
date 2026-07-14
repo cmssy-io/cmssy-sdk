@@ -3,9 +3,9 @@ import type { BlockMap } from "../registry";
 import {
   asBucket,
   getBlockContentForLanguage,
-} from "../content/get-block-content";
-import type { RawBlock } from "../content/content-client";
-import type { CmssyBlockContext } from "./block-context";
+} from "@cmssy/core";
+import type { RawBlock } from "@cmssy/core";
+import type { CmssyBlockContext } from "@cmssy/core";
 import { UnknownBlock } from "./unknown-block";
 
 export interface CmssyBlockProps {

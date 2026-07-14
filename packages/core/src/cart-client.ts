@@ -1,13 +1,7 @@
-import {
-  graphqlRequest,
-  resolveApiUrl,
-  resolveWorkspaceId,
-  type CmssyAddress,
-  type CmssyCart,
-  type CmssyOrder,
-  type CmssyProduct,
-} from "@cmssy/react";
-import type { CmssyNextConfig } from "./config";
+import { graphqlRequest } from "./data/graphql-request";
+import { cachedWorkspaceId } from "./data/settings-client";
+import { type CmssyAddress, type CmssyCart, type CmssyOrder, type CmssyProduct } from "./commerce/commerce-queries";
+import type { CmssyConfig } from "./config";
 
 const CART_FIELDS = `
   id
@@ -92,26 +86,8 @@ export interface CartRequestContext {
   accessToken?: string;
 }
 
-const workspaceIdCache = new Map<string, Promise<string>>();
-
-function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
-  const existing = workspaceIdCache.get(key);
-  if (existing) return existing;
-  const fresh = resolveWorkspaceId(config).catch((err: unknown) => {
-    workspaceIdCache.delete(key);
-    throw err;
-  });
-  workspaceIdCache.set(key, fresh);
-  return fresh;
-}
-
-export function clearCartWorkspaceIdCache(): void {
-  workspaceIdCache.clear();
-}
-
 async function request<T>(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   workspaceId: string,
   query: string,
@@ -136,10 +112,10 @@ async function request<T>(
 }
 
 export async function backendGetCart(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
 ): Promise<CmssyCart | null> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { get: CmssyCart | null } }>(
     config,
     ctx,
@@ -152,7 +128,7 @@ export async function backendGetCart(
 }
 
 export async function backendAddToCart(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   input: {
     recordId: string;
@@ -161,7 +137,7 @@ export async function backendAddToCart(
     notes?: string;
   },
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { addItem: CmssyCart } }>(
     config,
     ctx,
@@ -174,11 +150,11 @@ export async function backendAddToCart(
 }
 
 export async function backendUpdateItem(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   input: { itemId: string; quantity: number },
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { updateItem: CmssyCart } }>(
     config,
     ctx,
@@ -191,11 +167,11 @@ export async function backendUpdateItem(
 }
 
 export async function backendRemoveItem(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   itemId: string,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { removeItem: CmssyCart } }>(
     config,
     ctx,
@@ -208,10 +184,10 @@ export async function backendRemoveItem(
 }
 
 export async function backendClearCart(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { clear: CmssyCart } }>(
     config,
     ctx,
@@ -224,11 +200,11 @@ export async function backendClearCart(
 }
 
 export async function backendApplyDiscount(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   code: string,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { applyDiscount: CmssyCart } }>(
     config,
     ctx,
@@ -241,10 +217,10 @@ export async function backendApplyDiscount(
 }
 
 export async function backendRemoveDiscount(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { removeDiscount: CmssyCart } }>(
     config,
     ctx,
@@ -257,11 +233,11 @@ export async function backendRemoveDiscount(
 }
 
 export async function backendSetShippingMethod(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   shippingMethodId: string | null,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { setShippingMethod: CmssyCart } }>(
     config,
     ctx,
@@ -274,10 +250,10 @@ export async function backendSetShippingMethod(
 }
 
 export async function backendMergeCart(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
 ): Promise<CmssyCart> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { merge: CmssyCart } }>(
     config,
     ctx,
@@ -297,11 +273,11 @@ export interface CheckoutInput {
 }
 
 export async function backendCheckout(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   input: CheckoutInput,
 ): Promise<CmssyOrder> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{ cart: { checkout: CmssyOrder } }>(
     config,
     ctx,
@@ -314,12 +290,12 @@ export async function backendCheckout(
 }
 
 export async function backendProduct(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   ctx: CartRequestContext,
   modelSlug: string,
   filter: Record<string, unknown>,
 ): Promise<CmssyProduct | null> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await request<{
     public: { model: { records: { items: CmssyProduct[] } } };
   }>(

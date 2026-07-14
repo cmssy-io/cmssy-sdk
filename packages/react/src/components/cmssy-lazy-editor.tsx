@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CmssyPageData } from "../content/content-client";
-import type { CmssyFormDefinition } from "../data/queries";
+import type { CmssyPageData } from "@cmssy/core";
+import type { CmssyFormDefinition } from "@cmssy/core";
 import type { BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { CmssyEditablePage } from "./editable-page";

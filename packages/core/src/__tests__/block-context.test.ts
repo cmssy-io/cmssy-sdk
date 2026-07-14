@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBlockContext } from "./block-context";
+import { buildBlockContext } from "../block-context";
 
 describe("buildBlockContext", () => {
   it("uses the provided enabled locales", () => {

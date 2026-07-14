@@ -1,9 +1,9 @@
 import { draftMode } from "next/headers";
 import { redirect } from "next/navigation";
-import type { CmssyNextConfig } from "./config";
-import { cmssySecretsMatch } from "./secret-match";
+import type { CmssyConfig } from "@cmssy/core";
+import { cmssySecretsMatch } from "@cmssy/core";
 
-export type CmssyDraftRouteConfig = Pick<CmssyNextConfig, "draftSecret"> & {
+export type CmssyDraftRouteConfig = Pick<CmssyConfig, "draftSecret"> & {
   defaultRedirect?: string;
 };
 

@@ -3,8 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyEditableLayout } from "../components/cmssy-editable-layout";
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
-import { PROTOCOL_VERSION } from "../bridge/protocol";
+import { fields } from "@cmssy/core";
+import { PROTOCOL_VERSION } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 

@@ -9,7 +9,7 @@ import {
   type CmssyClientConfig,
 } from "@cmssy/react";
 import { CmssyLocaleProvider } from "@cmssy/react/client";
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
 
 export interface CreateCmssyNotFoundOptions {
   /**
@@ -47,7 +47,7 @@ function DefaultNotFound() {
  *   export default createCmssyNotFound(cmssy, blocks);
  */
 export function createCmssyNotFound(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   blocks: BlockDefinition[],
   options?: CreateCmssyNotFoundOptions,
 ) {

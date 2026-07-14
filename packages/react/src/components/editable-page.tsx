@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { CmssyPageData, RawBlock } from "../content/content-client";
-import type { CmssyFormDefinition } from "../data/queries";
+import type { CmssyPageData, RawBlock } from "@cmssy/core";
+import type { CmssyFormDefinition } from "@cmssy/core";
 import {
   blocksToMeta,
   blocksToSchemas,
@@ -12,7 +12,7 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
-import { buildBlockContext } from "./block-context";
+import { buildBlockContext } from "@cmssy/core";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {

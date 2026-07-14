@@ -2,10 +2,10 @@ import { createElement } from "react";
 import {
   asBucket,
   getBlockContentForLanguage,
-} from "../content/get-block-content";
-import type { RawBlock } from "../content/content-client";
+} from "@cmssy/core";
+import type { RawBlock } from "@cmssy/core";
 import type { BlockMap } from "../registry";
-import type { CmssyBlockContext } from "./block-context";
+import type { CmssyBlockContext } from "@cmssy/core";
 import { UnknownBlock } from "./unknown-block";
 
 export interface RenderResolvedBlockOptions {

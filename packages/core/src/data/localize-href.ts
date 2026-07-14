@@ -1,4 +1,4 @@
-import type { CmssyLocaleContext } from "../components/block-context";
+import type { CmssyLocaleContext } from "../block-context";
 
 const PROTOCOL_OR_RELATIVE = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
 

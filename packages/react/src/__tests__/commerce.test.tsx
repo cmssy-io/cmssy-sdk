@@ -7,7 +7,7 @@ import {
   useCart,
   type CmssyCommerceState,
 } from "../commerce/commerce-provider";
-import { formatPrice, toMinorUnits } from "../commerce/money";
+import { formatPrice, toMinorUnits } from "@cmssy/core";
 import { productBlock } from "../commerce/product-block";
 
 const EMPTY_CART = {

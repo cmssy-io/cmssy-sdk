@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CMSSY_SESSION_COOKIE, sealSession } from "../session";
-import type { CmssyNextConfig } from "../config";
+import { CMSSY_SESSION_COOKIE, sealSession } from "@cmssy/core";
+import type { CmssyConfig } from "@cmssy/core";
 
 const cookieStore = new Map<string, { value: string; options?: unknown }>();
 
@@ -17,11 +17,11 @@ vi.mock("next/headers", () => ({
 }));
 
 import { createCmssyCartRoute, CMSSY_CART_COOKIE } from "../create-cart-route";
-import { clearCartWorkspaceIdCache } from "../cart-client";
+import { clearWorkspaceIdCache } from "@cmssy/core";
 
 const SECRET = "s".repeat(32);
 
-const config: CmssyNextConfig = {
+const config: CmssyConfig = {
   apiUrl: "https://api.test/graphql",
   org: "acme", workspaceSlug: "test-ws",
   draftSecret: "d".repeat(16),
@@ -81,7 +81,7 @@ function post(action: string, body: unknown = {}) {
 beforeEach(() => {
   cookieStore.clear();
   fetchCalls.length = 0;
-  clearCartWorkspaceIdCache();
+  clearWorkspaceIdCache();
 });
 afterEach(() => vi.unstubAllGlobals());
 
