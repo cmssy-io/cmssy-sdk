@@ -1,0 +1,79 @@
+name: Starter smoke
+
+# Generates a starter for every framework, builds it, starts it, and asks the
+# running site whether its editor works. An adapter nobody runs is an adapter we
+# do not know works - and we shipped a dead editor twice while every build was
+# green (CMS-969, CMS-970).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  starter:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [next, astro]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm -r build
+
+      - name: Generate the starter
+        run: |
+          node packages/create-cmssy-app/dist/index.js /tmp/app \
+            --framework ${{ matrix.framework }}
+
+      # The starter depends on the PUBLISHED packages; this build is about the
+      # template's own wiring, so point it at the workspace build instead of
+      # whatever npm has.
+      - name: Install the starter against this checkout
+        working-directory: /tmp/app
+        run: |
+          pnpm install --no-frozen-lockfile
+          for pkg in core react next astro eslint-plugin; do
+            dir="$GITHUB_WORKSPACE/packages/$pkg"
+            [ -d "$dir" ] || continue
+            target="node_modules/@cmssy/$pkg"
+            [ -e "$target" ] || continue
+            rm -rf "$target" && ln -s "$dir" "$target"
+          done
+
+      - name: Build
+        working-directory: /tmp/app
+        env:
+          CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
+          CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
+          CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
+        run: pnpm build
+
+      # A build proves the app compiles. The editor is the path it cannot check,
+      # and that needs a running server and a real workspace. Without the
+      # secrets, say so - a green check that verifies nothing is worse than none.
+      - name: Editor smoke test
+        if: ${{ secrets.CMSSY_DRAFT_SECRET != '' }}
+        working-directory: /tmp/app
+        env:
+          CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
+          CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
+          CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
+          SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'next' && '3000' || '4321' }}
+        run: |
+          pnpm start &
+          npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
+          pnpm smoke:edit
+
+      - name: No workspace secrets - editor NOT verified
+        if: ${{ secrets.CMSSY_DRAFT_SECRET == '' }}
+        run: |
+          echo "::warning::CMSSY_* secrets are absent, so the editor was not checked." \
+               "The build passing says nothing about whether the editor still works."

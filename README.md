@@ -1,16 +1,29 @@
 # cmssy SDK
 
-Headless SDK for [cmssy](https://cmssy.io) — register your own React components as
-blocks, render cmssy pages in your own app, and edit them visually through the cmssy
-editor. cmssy keeps the backend (content, commerce, auth, forms, data) and the visual
-editor; your app owns rendering and hosting.
+Headless SDK for [cmssy](https://cmssy.io): render cmssy pages in your own app and
+edit them visually through the cmssy editor. cmssy keeps the backend (content,
+commerce, auth, forms, data) and the editor; your app owns rendering and hosting.
+
+**The framework is an adapter, never the foundation.** Everything that is not
+rendering - the data layer, the config, the editor protocol - lives in
+`@cmssy/core`, which imports no framework at all. A test fails the build if that
+ever stops being true.
+
+```bash
+npx create-cmssy-app my-site --framework next   # or: astro
+```
 
 ## Packages
 
-| Package        | Description                                                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@cmssy/react` | Framework-agnostic core: component registry, field controls, `CmssyServerPage`, the editor bridge agent, content/data clients, the versioned postMessage protocol. |
-| `@cmssy/next`  | Next.js adapter: catch-all route helper, draft mode, framing CSP.                                                                                                  |
+| Package                | Description                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `@cmssy/core`          | No framework, no Node built-ins: transport, queries, config, secrets, webhooks, the versioned postMessage protocol. |
+| `@cmssy/react`         | Rendering: block registry, field controls, `CmssyServerPage`, the edit bridge.                                      |
+| `@cmssy/next`          | Next.js bindings, one entry per runtime: `/server`, `/middleware`, `/client`.                                       |
+| `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.       |
+| `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                     |
+| `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                        |
+| `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                            |
 
 ## Docs
 
@@ -20,7 +33,7 @@ editor; your app owns rendering and hosting.
 | [**Reference wiring**](docs/wiring.md)             | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other. |
 | [**Troubleshooting**](docs/troubleshooting.md)     | Symptom → cause. Every row cost us half a day, and none of them failed a build.            |
 | [**Testing**](docs/testing.md)                     | `checkCmssyEditMode` - the editor is the one path a build cannot check.                    |
-| [**Migrating to v5**](docs/migrations/v4-to-v5.md) | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not. |
+| [**Migrating to v5**](docs/migrations/v4-to-v5.md) | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not.             |
 | [**Migrating to v4**](docs/migrations/v3-to-v4.md) | The editor moved to its own route. Skip this and your preview goes blank.                  |
 | [**Changelog**](CHANGELOG.md)                      | Every entry answers one question: do I have to do anything?                                |
 
