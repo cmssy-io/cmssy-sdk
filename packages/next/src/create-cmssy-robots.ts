@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
 
 export interface CreateCmssyRobotsOptions extends SeoBaseUrlOption {
@@ -24,7 +24,7 @@ export interface CreateCmssyRobotsOptions extends SeoBaseUrlOption {
  *   export default createCmssyRobots(cmssy);
  */
 export function createCmssyRobots(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   options: CreateCmssyRobotsOptions = {},
 ) {
   return async function robots(): Promise<MetadataRoute.Robots> {

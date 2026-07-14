@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { collectFormIds } from "../data/resolve-forms";
+import { collectFormIds } from "@cmssy/core";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
-import type { RawBlock } from "../content/content-client";
-import type { CmssyBlockContext } from "../components/block-context";
+import { fields } from "@cmssy/core";
+import type { RawBlock } from "@cmssy/core";
+import type { CmssyBlockContext } from "@cmssy/core";
 
 describe("collectFormIds", () => {
   it("collects unique formId values from block content", () => {

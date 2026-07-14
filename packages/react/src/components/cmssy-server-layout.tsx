@@ -2,13 +2,13 @@ import type {
   CmssyClientConfig,
   CmssyLayoutGroup,
   RawLayoutBlock,
-} from "../content/content-client";
+} from "@cmssy/core";
 import {
   buildBlockMap,
   buildLoaderMap,
   type BlockDefinition,
 } from "../registry";
-import { buildBlockContext } from "./block-context";
+import { buildBlockContext } from "@cmssy/core";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
 import { resolveRenderLocale } from "./resolve-render-locale";

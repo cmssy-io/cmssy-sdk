@@ -27,7 +27,7 @@ jobs:
           CMSSY_API_URL: ${{ vars.CMSSY_API_URL || 'https://api.cmssy.io/graphql' }}
 
       - name: Every SDK operation is one production accepts
-        run: pnpm --filter @cmssy/next test -- sdl-operations
+        run: pnpm --filter @cmssy/core test -- sdl-operations
         env:
           CMSSY_SCHEMA_FILE: prod-schema.graphql
 

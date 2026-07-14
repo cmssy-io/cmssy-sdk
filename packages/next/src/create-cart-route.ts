@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
-import type { CmssyNextConfig } from "./config";
-import { CMSSY_SESSION_COOKIE, isAccessExpired, openSession } from "./session";
+import type { CmssyConfig } from "@cmssy/core";
+import { CMSSY_SESSION_COOKIE, isAccessExpired, openSession } from "@cmssy/core";
 import {
   backendAddToCart,
   backendApplyDiscount,
@@ -15,7 +15,7 @@ import {
   backendSetShippingMethod,
   backendUpdateItem,
   type CartRequestContext,
-} from "./cart-client";
+} from "@cmssy/core";
 import type { CmssyAddress } from "@cmssy/react";
 
 export const CMSSY_CART_COOKIE = "cmssy_cart";
@@ -135,7 +135,7 @@ function shippingAddress(value: unknown): CmssyAddress | null {
 }
 
 export function createCmssyCartRoute(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): CmssyCartRouteHandlers {
   async function ensureCartToken(): Promise<string> {
     const jar = await cookies();

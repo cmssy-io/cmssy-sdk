@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
+import { fields } from "@cmssy/core";
 import { useCart } from "./commerce-provider";
-import { formatPrice, toMinorUnits } from "./money";
-import type { CmssyProduct, CmssyProductVariant } from "./commerce-queries";
+import { formatPrice, toMinorUnits } from "@cmssy/core";
+import type { CmssyProduct, CmssyProductVariant } from "@cmssy/core";
 
 interface ProductContent {
   modelSlug?: string;

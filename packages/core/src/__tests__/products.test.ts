@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fetchProducts, PRODUCTS_QUERY } from "../product-server";
+import { fetchProducts, PRODUCTS_QUERY } from "../commerce/product-client";
 
 const config = {
   apiUrl: "https://api.test/graphql",

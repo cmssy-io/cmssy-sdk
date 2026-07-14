@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { CmssyNextConfig } from "./config";
-import { assertAuthConfig } from "./config";
-import { backendRefresh, toSessionPayload } from "./auth-client";
+import type { CmssyConfig } from "@cmssy/core";
+import { assertAuthConfig } from "@cmssy/core";
+import { backendRefresh, toSessionPayload } from "@cmssy/core";
 import {
   CMSSY_SESSION_COOKIE,
   isAccessExpired,
   openSession,
   sealSession,
   sessionCookieOptions,
-} from "./session";
+} from "@cmssy/core";
 
 export type CmssyAuthMiddleware = (
   request: NextRequest,
@@ -23,7 +23,7 @@ function isPrefetch(request: NextRequest): boolean {
 }
 
 export function createCmssyAuthMiddleware(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): CmssyAuthMiddleware {
   const auth = assertAuthConfig(config);
 

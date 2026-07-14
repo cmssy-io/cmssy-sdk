@@ -6,6 +6,40 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 5.0.0
+
+**`@cmssy/core` - cmssy stops requiring React.**
+
+The data layer never needed React, and the config, CSP, session, cart, webhook
+and smoke-test code never needed Next. They just happened to be written there.
+The cost was not cosmetic: **a Vue, Svelte or Astro app had to install React to
+fetch a page.**
+
+They now live in `@cmssy/core`, which imports no framework at all - and a test
+fails the build if that ever stops being true.
+
+```
+@cmssy/core     transport, queries, config, editor protocol, secrets, webhooks
+@cmssy/react    rendering: blocks, components, edit bridge, hooks
+@cmssy/next     Next only: middleware, route handlers, Metadata, sitemap/robots
+```
+
+**Do I have to do anything?** If you import only from `@cmssy/next` and
+`@cmssy/react`, no - both still re-export what they always did. If you imported
+data helpers deeper, point them at `@cmssy/core`. See
+[docs/architecture.md](docs/architecture.md).
+
+Two renames, because the names had become lies:
+
+- `CmssyNextConfig` → `CmssyConfig` (nothing about it is Next's).
+- `clearCartWorkspaceIdCache` → `clearWorkspaceIdCache` - there were **three**
+  copies of the same workspace-id cache, two sharing a name. There is now one.
+
+`fetchProducts` / `fetchProduct` behave exactly as before **when imported from
+`@cmssy/next`** (they still pick up the request's language). Imported from
+`@cmssy/core` they take the locale you pass and nothing else - core does not
+know what a request is.
+
 ## 4.7.0
 
 **`@cmssy/next/preset` - the whole wiring, in three lines.**
@@ -18,7 +52,12 @@ export const config = { matcher: cmssyProxyMatcher };
 
 ```tsx
 // layout.tsx
-<CmssyChrome config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
+<CmssyChrome
+  config={cmssy}
+  blocks={blocks}
+  position="header"
+  editable={EditableLayout}
+/>
 ```
 
 `CmssyChrome` renders the site chrome server-side for visitors and through the

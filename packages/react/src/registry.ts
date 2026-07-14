@@ -1,10 +1,10 @@
 import type { ComponentType } from "react";
-import type { CmssyBlockContext } from "./components/block-context";
+import type { CmssyBlockContext } from "@cmssy/core";
 import type {
   BlockMeta,
   BlockSchema,
   FieldDefinition,
-} from "./bridge/protocol";
+} from "@cmssy/core";
 
 export interface BlockLoaderArgs {
   content: Record<string, unknown>;

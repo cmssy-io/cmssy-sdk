@@ -5,7 +5,7 @@ import {
   localizeHtmlLinks,
   isExternalHref,
 } from "../data/localize-href";
-import type { CmssyLocaleContext } from "../components/block-context";
+import type { CmssyLocaleContext } from "../block-context";
 
 const en: CmssyLocaleContext = {
   current: "en",

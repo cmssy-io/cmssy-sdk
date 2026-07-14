@@ -1,5 +1,5 @@
-import type { CmssyClientConfig } from "../content/content-client";
-import { resolveSiteLocales } from "../data/site-locales";
+import type { CmssyClientConfig } from "@cmssy/core";
+import { resolveSiteLocales } from "@cmssy/core";
 
 export interface RenderLocaleInput {
   locale?: string;

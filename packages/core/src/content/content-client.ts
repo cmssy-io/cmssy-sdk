@@ -1,5 +1,5 @@
 // Content/delivery data shapes live in @cmssy/types (single source of truth);
-// re-exported so consumers keep importing them from @cmssy/react.
+// re-exported so consumers import them from @cmssy/core.
 import type {
   CmssyClientConfig,
   RawBlock,

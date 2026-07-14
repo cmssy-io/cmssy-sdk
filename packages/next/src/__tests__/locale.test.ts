@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/react", async (importActual) => {
-  const actual = await importActual<typeof import("@cmssy/react")>();
+vi.mock("@cmssy/core", async (importActual) => {
+  const actual = await importActual<typeof import("@cmssy/core")>();
   return { ...actual, resolveSiteLocales };
 });
 
@@ -13,14 +13,14 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import {
-  localeForPathname,
-  splitCmssyLocale,
-  getCmssyLocale,
-  CMSSY_LOCALE_HEADER,
-} from "../locale";
+import { getCmssyLocale } from "../locale";
+import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
-const CONFIG = { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws" };
+const CONFIG = {
+  apiUrl: "https://api.test/graphql",
+  org: "acme",
+  workspaceSlug: "ws",
+};
 
 beforeEach(() => {
   resolveSiteLocales.mockReset();
@@ -31,37 +31,14 @@ beforeEach(() => {
   headerStore = new Map();
 });
 
-describe("localeForPathname", () => {
-  it("returns the non-default locale from the path prefix", async () => {
-    expect(await localeForPathname(CONFIG, "/en/about")).toBe("en");
-  });
-
-  it("returns the default locale for an unprefixed path", async () => {
-    expect(await localeForPathname(CONFIG, "/about")).toBe("pl");
-  });
-
-  it("returns the default locale for the root path", async () => {
-    expect(await localeForPathname(CONFIG, "/")).toBe("pl");
-  });
-});
-
-describe("splitCmssyLocale", () => {
-  it("splits the locale prefix off the path", async () => {
-    expect(await splitCmssyLocale(CONFIG, ["en", "about"])).toEqual({
-      locale: "en",
-      path: ["about"],
-    });
-  });
-
-  it("keeps the default-locale path intact", async () => {
-    expect(await splitCmssyLocale(CONFIG, ["about"])).toEqual({
-      locale: "pl",
-      path: ["about"],
-    });
-  });
-});
-
+// Resolving a locale from a path is plain string work and lives in @cmssy/core.
+// What belongs to Next is the request-bound fallback: the header the middleware
+// forwards, and the workspace default when there is none.
 describe("getCmssyLocale", () => {
+  it("prefers the routed path, which is static-safe", async () => {
+    expect(await getCmssyLocale(CONFIG, { path: ["en", "about"] })).toBe("en");
+  });
+
   it("returns the locale from the request header", async () => {
     headerStore.set(CMSSY_LOCALE_HEADER, "en");
     expect(await getCmssyLocale(CONFIG)).toBe("en");

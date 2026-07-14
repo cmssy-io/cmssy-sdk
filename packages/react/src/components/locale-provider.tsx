@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { CmssyLocaleContext } from "./block-context";
+import type { CmssyLocaleContext } from "@cmssy/core";
 
 const LocaleContext = createContext<CmssyLocaleContext | null>(null);
 

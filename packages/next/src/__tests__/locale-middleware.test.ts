@@ -15,7 +15,7 @@ import {
   resolveLocaleFromPathname,
   createCmssyLocaleMiddleware,
 } from "../locale-middleware";
-import { CMSSY_LOCALE_HEADER } from "../locale";
+import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
 const STATIC = {
   apiUrl: "https://api.test/graphql",
