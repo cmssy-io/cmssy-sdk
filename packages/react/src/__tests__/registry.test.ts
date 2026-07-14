@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import {
   defineBlock,
   buildBlockMap,
   blocksToSchemas,
   blocksToMeta,
+  type BlockProps,
 } from "../registry";
 import { fields } from "@cmssy/core";
 import { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
@@ -11,18 +12,120 @@ import { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
 const Dummy = () => null;
 
 describe("defineBlock", () => {
-  it("returns the definition unchanged and accepts a narrowly-typed content prop", () => {
-    const Typed = ({ content }: { content: { heading: string } }) =>
+  it("returns the definition unchanged", () => {
+    const props = { heading: fields.text({ required: true }) };
+    const Typed = ({ content }: BlockProps<typeof props>) =>
       content.heading;
+
     const block = defineBlock({
       type: "typed",
       label: "Typed",
+      props,
       component: Typed,
-      props: { heading: fields.text() },
     });
+
     expect(block.type).toBe("typed");
     expect(block.label).toBe("Typed");
     expect(block.component).toBe(Typed);
+  });
+});
+
+/**
+ * The point of the whole thing. Every assertion below is checked by
+ * `tsc --noEmit`, not by vitest: a missing error is a failed build, which is
+ * the only way to prove that a mistake in a schema cannot reach production.
+ *
+ * Before typed fields, a block whose schema said `headline` and whose component
+ * read `content.heading` compiled clean and rendered an empty block.
+ */
+describe("the schema types the content", () => {
+  it("gives a required field a required key, and everything else an optional one", () => {
+    const props = {
+      headline: fields.text({ required: true }),
+      subtitle: fields.text(),
+      columns: fields.number(),
+      featured: fields.boolean(),
+    };
+
+    expectTypeOf<BlockProps<typeof props>["content"]>().toEqualTypeOf<{
+      headline: string;
+      subtitle?: string;
+      columns?: number;
+      featured?: boolean;
+    }>();
+  });
+
+  it("narrows a select to its own options, and a media field by `multiple`", () => {
+    const props = {
+      align: fields.select({ options: ["left", "center"], required: true }),
+      tags: fields.multiselect({ options: ["new", "sale"], required: true }),
+      cover: fields.media({ required: true }),
+      gallery: fields.media({ multiple: true, required: true }),
+    };
+    type Content = BlockProps<typeof props>["content"];
+
+    expectTypeOf<Content["align"]>().toEqualTypeOf<"left" | "center">();
+    expectTypeOf<Content["tags"]>().toEqualTypeOf<("new" | "sale")[]>();
+    expectTypeOf<Content["cover"]>().toEqualTypeOf<string>();
+    expectTypeOf<Content["gallery"]>().toEqualTypeOf<string[]>();
+  });
+
+  it("gives a repeater the shape of one row", () => {
+    const props = {
+      items: fields.repeater({
+        required: true,
+        itemSchema: {
+          label: fields.text({ required: true }),
+          href: fields.url(),
+        },
+      }),
+    };
+    type Content = BlockProps<typeof props>["content"];
+
+    expectTypeOf<Content["items"]>().toEqualTypeOf<
+      { label: string; href?: string }[]
+    >();
+  });
+
+  it("REJECTS a component that reads a field the schema does not declare", () => {
+    const props = { headline: fields.text({ required: true }) };
+
+    const Renamed = ({ content }: BlockProps<typeof props>) =>
+      // @ts-expect-error - the schema says `headline`; there is no `heading`.
+      content.heading;
+
+    expect(Renamed).toBeTypeOf("function");
+  });
+
+  it("REJECTS a hand-written content type that has drifted from the schema", () => {
+    const props = {
+      headline: fields.text({ required: true }),
+      subtitle: fields.text(),
+    };
+    // The old two-sources-of-truth shape: compatible with the schema (they share
+    // `subtitle`), so plain structural assignability let it through.
+    const Drifted = ({
+      content,
+    }: {
+      content: { heading?: string; subtitle?: string };
+    }) => content.heading ?? content.subtitle;
+
+    // @ts-expect-error - content must be derived from props, not retyped beside it.
+    const block = defineBlock({ type: "drifted", props, component: Drifted });
+
+    expect(block.type).toBe("drifted");
+  });
+
+  it("REJECTS a loader that reads a field the schema does not declare", () => {
+    const props = { slug: fields.text({ required: true }) };
+
+    defineBlock({
+      type: "loaded",
+      props,
+      // @ts-expect-error - `category` is not in the schema.
+      loader: ({ content }) => Promise.resolve(content.category),
+      component: Dummy,
+    });
   });
 });
 

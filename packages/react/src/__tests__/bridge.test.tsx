@@ -3,15 +3,17 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyEditablePage } from "../components/editable-page";
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import { PROTOCOL_VERSION } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 
-const Hero = ({ content }: { content: Record<string, unknown> }) => (
+const heroProps = { heading: fields.text(), sub: fields.text() };
+
+const Hero = ({ content }: BlockProps<typeof heroProps>) => (
   <h1>
-    {String(content.heading ?? "")}|{String(content.sub ?? "")}
+    {content.heading ?? ""}|{content.sub ?? ""}
   </h1>
 );
 
@@ -19,7 +21,7 @@ const heroBlock = defineBlock({
   type: "hero",
   label: "Hero",
   component: Hero,
-  props: { heading: fields.text(), sub: fields.text() },
+  props: heroProps,
 });
 const blocks = [heroBlock];
 
@@ -81,17 +83,15 @@ function selectEvent(origin: string, blockId = "b1") {
   });
 }
 
+const styledProps = { heading: fields.text() };
+
 const Styled = ({
   content,
   style,
   advanced,
-}: {
-  content: Record<string, unknown>;
-  style?: Record<string, unknown>;
-  advanced?: Record<string, unknown>;
-}) => (
+}: BlockProps<typeof styledProps>) => (
   <div>
-    {String(content.heading ?? "")}|{String(style?.bg ?? "none")}|
+    {content.heading ?? ""}|{String(style?.bg ?? "none")}|
     {String(advanced?.anchor ?? "none")}
   </div>
 );
@@ -99,7 +99,7 @@ const styledBlock = defineBlock({
   type: "styled",
   label: "Styled",
   component: Styled,
-  props: { heading: fields.text() },
+  props: styledProps,
 });
 const styledPage = {
   id: "sp",

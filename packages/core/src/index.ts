@@ -94,7 +94,13 @@ export type {
 } from "./block-context";
 
 export { fields } from "./fields";
-export type { FieldControl } from "./fields";
+export type {
+  BlockPropsSchema,
+  FieldControl,
+  FieldOptions,
+  InferBlockContent,
+  TypedField,
+} from "./fields";
 export { evaluateFieldConditionGroup } from "@cmssy/types";
 export type {
   FieldCondition,

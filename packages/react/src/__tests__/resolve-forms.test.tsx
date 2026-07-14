@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { collectFormIds } from "@cmssy/core";
 import { CmssyServerPage } from "../components/cmssy-server-page";
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
@@ -29,23 +29,15 @@ describe("collectFormIds", () => {
   });
 });
 
-function Contact({
-  content,
-  context,
-}: {
-  content: Record<string, unknown>;
-  context?: CmssyBlockContext;
-}) {
-  const id = content.formId as string;
+const contactProps = { formId: fields.text() };
+
+function Contact({ content, context }: BlockProps<typeof contactProps>) {
+  const id = content.formId ?? "";
   return <div>{context?.forms?.[id]?.name ?? "no-form"}</div>;
 }
 
 const blocks = [
-  defineBlock({
-    type: "contact",
-    component: Contact,
-    props: { formId: fields.text() },
-  }),
+  defineBlock({ type: "contact", component: Contact, props: contactProps }),
 ];
 
 const page = {
