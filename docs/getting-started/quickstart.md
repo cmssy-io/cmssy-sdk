@@ -12,7 +12,10 @@ draft secret.
 ## 1. Install
 
 ```bash
-npm i @cmssy/next @cmssy/react
+npx create-cmssy-app my-site --framework next   # or: astro, remix
+
+# or, into an existing app:
+npm i @cmssy/core @cmssy/react @cmssy/next
 ```
 
 ## 2. Configure
