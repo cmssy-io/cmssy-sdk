@@ -44,6 +44,39 @@ describe("v8", () => {
     expect(result.notes?.[0]).toContain("BlockProps");
   });
 
+  /**
+   * The migrated shape splits the block in two: the schema and the component in
+   * one file, the registration in another. The registration names neither a
+   * field nor BlockProps - and it is correct. Flagging it taught the first repo
+   * through this migration to ignore the report.
+   */
+  it("says nothing about a registration that points at an exported schema", () => {
+    const source = [
+      `import { defineBlock } from "@cmssy/react";`,
+      `import Hero, { heroProps } from "./Hero";`,
+      `export const heroBlock = defineBlock({ type: "hero", component: Hero, props: heroProps });`,
+    ].join("\n");
+
+    const result = transform(source);
+
+    expect(result.changed).toBe(false);
+    expect(result.notes).toBeUndefined();
+  });
+
+  it("flags a registration whose schema is still written inline", () => {
+    const source = [
+      `import { defineBlock, fields } from "@cmssy/react";`,
+      `import Hero from "./Hero";`,
+      `export const heroBlock = defineBlock({`,
+      `  type: "hero",`,
+      `  component: Hero,`,
+      `  props: { heading: fields.text({ label: "Heading" }) },`,
+      `});`,
+    ].join("\n");
+
+    expect(transform(source).notes?.[0]).toContain("BlockProps");
+  });
+
   it("says nothing about a block already typed from its schema", () => {
     const source = [
       `import { defineBlock, fields, type BlockProps } from "@cmssy/react";`,
