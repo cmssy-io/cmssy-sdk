@@ -43,12 +43,14 @@ async function main(): Promise<void> {
 
   const files = await sourceFiles(target);
   const touched: string[] = [];
+  let needsCore = false;
 
   for (const file of files) {
     const source = await readFile(file, "utf8");
     const { code, changed } = transform(source);
     if (!changed) continue;
     touched.push(file);
+    if (code.includes('from "@cmssy/core"')) needsCore = true;
     if (!dry) await writeFile(file, code);
   }
 
@@ -63,11 +65,34 @@ async function main(): Promise<void> {
   for (const file of touched) {
     console.log(`  ${file.slice(target.length + 1)}`);
   }
+
+  // Rewriting an import to a package the app does not depend on trades one
+  // broken build for another, so say it here rather than let the bundler say it.
+  if (needsCore && !(await dependsOnCore(target))) {
+    console.log(
+      "\nYour code now imports @cmssy/core, which you do not depend on yet:\n" +
+        "  npm install @cmssy/core   (or pnpm add / yarn add)",
+    );
+  }
+
   console.log(
     "\nThe imports moved; the wiring did not. Run your build, then the editor\n" +
       "smoke test - a site whose editor is dead still builds:\n" +
       "  https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/testing.md",
   );
+}
+
+async function dependsOnCore(target: string): Promise<boolean> {
+  try {
+    const manifest = JSON.parse(
+      await readFile(join(target, "package.json"), "utf8"),
+    ) as { dependencies?: Record<string, string> };
+    return Boolean(manifest.dependencies?.["@cmssy/core"]);
+  } catch {
+    // No manifest here (the codemod was pointed at a subdirectory) - saying
+    // nothing beats guessing wrong.
+    return true;
+  }
 }
 
 main().catch((error: unknown) => {
