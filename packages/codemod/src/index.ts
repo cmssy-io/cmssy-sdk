@@ -1,7 +1,11 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import { transform } from "./v5";
+import { transform as transformV5 } from "./v5";
+import { transform as transformV7 } from "./v7";
+
+const TRANSFORMS = { v5: transformV5, v7: transformV7 };
+type Version = keyof typeof TRANSFORMS;
 
 const SKIP = new Set(["node_modules", "dist", "build", "out", "coverage"]);
 const EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
@@ -29,16 +33,17 @@ async function sourceFiles(dir: string): Promise<string[]> {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const version = args[0];
-  if (version !== "v5") {
-    console.error("usage: cmssy-codemod v5 [path] [--dry]");
+  const version = args[0] as Version;
+  const transform = TRANSFORMS[version];
+  if (!transform) {
+    console.error("usage: cmssy-codemod v5|v7 [path] [--dry]");
     process.exitCode = 1;
     return;
   }
 
   const dry = args.includes("--dry");
   const target = resolve(
-    args.find((a) => !a.startsWith("-") && a !== "v5") ?? ".",
+    args.find((a) => !a.startsWith("-") && !(a in TRANSFORMS)) ?? ".",
   );
 
   const files = await sourceFiles(target);

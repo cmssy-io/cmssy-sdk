@@ -35,7 +35,7 @@ something.
 | `buildCmssyMetadata`, sitemap, robots                        | `@cmssy/next/server`      |
 | route handlers (`createCmssyAuthRoute`, cart, orders, draft) | `@cmssy/next/server`      |
 | `getCmssyUser`, `getCmssyLocale`, `fetchProducts`            | `@cmssy/next/server`      |
-| `CmssyChrome` (was `@cmssy/next/preset`)                     | `@cmssy/next/server`      |
+| `CmssyLayoutSlot` (was `@cmssy/next/preset`)                     | `@cmssy/next/server`      |
 | `createCmssyProxy` (was `@cmssy/next/preset`)                | `@cmssy/next/middleware`  |
 | `cmssyEditRewrite`, locale/auth middleware, CSP              | `@cmssy/next/middleware`  |
 | `CmssyLink`, `CmssyLocaleProvider`                           | `@cmssy/next/client`      |

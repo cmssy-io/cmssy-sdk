@@ -5,6 +5,7 @@ const BASE = "http://localhost:3000";
 const SECRET = "draft-secret-1234";
 
 const PUBLIC_HTML = "<html><header>MACHTEC</header><main>hi</main></html>";
+const EDITOR = '<div data-cmssy-editor="1" hidden></div>';
 const EDIT_HTML = '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
 
 /** Serves a body per URL; anything unrouted 404s, which the check reports. */
@@ -99,35 +100,35 @@ describe("checkCmssyEditMode", () => {
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      // The editor is mounted, but the page still says it is English.
+      [verifiedUrl("/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
       [verifiedUrl()]: EDIT_HTML,
-      [verifiedUrl("/no")]: EDIT_HTML, // editor is there, Norwegian is not
     });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
       localizedPath: "/no",
-      localizedMarker: "Handlekurv",
     });
 
     expect(result.ok).toBe(false);
-    expect(result.failures.join(" ")).toContain("default language");
+    expect(result.failures.join(" ")).toContain("wrong language");
   });
 
-  it("passes when the localized preview speaks the language its URL asks for", async () => {
+  // <html lang> is a contract. A word from the page's copy is content - an editor
+  // can rewrite it at any time, and then the test lies about what it proved.
+  it("passes when the localized preview declares the language its URL asks for", async () => {
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
-      [verifiedUrl("/no")]:
-        '<html><div data-cmssy-editor="1" hidden></div><main>Handlekurv</main></html>',
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
       localizedPath: "/no",
-      localizedMarker: "Handlekurv",
     });
 
     expect(result.failures).toEqual([]);

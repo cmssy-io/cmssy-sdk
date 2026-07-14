@@ -7,8 +7,8 @@ export type {
 } from "./create-cmssy-page";
 export { createCmssyNotFound } from "./create-cmssy-not-found";
 export type { CreateCmssyNotFoundOptions } from "./create-cmssy-not-found";
-export { CmssyChrome } from "./preset/cmssy-chrome";
-export type { CmssyChromeProps } from "./preset/cmssy-chrome";
+export { CmssyLayoutSlot } from "./preset/cmssy-layout-slot";
+export type { CmssyLayoutSlotProps } from "./preset/cmssy-layout-slot";
 
 export { buildCmssyMetadata } from "./build-cmssy-metadata";
 export type { BuildCmssyMetadataOptions } from "./build-cmssy-metadata";

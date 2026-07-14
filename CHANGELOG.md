@@ -6,6 +6,29 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 7.0.0
+
+**`CmssyChrome` → `CmssyLayoutSlot`.** "Chrome" is UI jargon for the frame around
+the content. In a CMS SDK it reads as the browser, and the thing it actually
+renders is a **layout slot**: the header or footer blocks at a named position.
+
+```bash
+npx @cmssy/codemod v7 .
+```
+
+**The localized editor check no longer needs a word from your copy.**
+
+```diff
+- localizedMarker: "Handlekurv",   // breaks the day an editor rewrites the copy
++ // nothing: the check reads <html lang>, which is a contract
+```
+
+`checkCmssyEditMode` now proves the localized preview renders in the right
+language by reading `<html lang>` rather than searching for a word only that
+language says. A word in the page's copy is content - an editor can change it at
+any time, and then the test lies. `localizedMarker` is gone; pass
+`localizedLocale` if the language is not the first path segment.
+
 ## 6.2.0
 
 **`@cmssy/remix` - React Router 7.** And a smoke test that stops lying.
