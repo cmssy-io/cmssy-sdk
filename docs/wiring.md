@@ -112,14 +112,14 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 
 ```tsx
 // app/layout.tsx
-import { CmssyChrome } from "@cmssy/next/server";
+import { CmssyLayoutSlot } from "@cmssy/next/server";
 
-<CmssyChrome config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
+<CmssyLayoutSlot config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
 <main>{children}</main>
-<CmssyChrome config={cmssy} blocks={blocks} position="footer" editable={EditableLayout} />
+<CmssyLayoutSlot config={cmssy} blocks={blocks} position="footer" editable={EditableLayout} />
 ```
 
-`CmssyChrome` renders them server-side for visitors, and through the edit bridge
+`CmssyLayoutSlot` renders them server-side for visitors, and through the edit bridge
 (with the draft, behind the preview secret) in the editor.
 
 ## 6. The editor bridge

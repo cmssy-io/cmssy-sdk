@@ -198,16 +198,16 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
             {
               id: "b1",
               type: "hero",
-              content: { en: { heading: "Hello" }, pl: { heading: "Cześć" } },
+              content: { en: { heading: "Hello" }, no: { heading: "Hei" } },
             },
             { id: "b2", type: "ghost", content: {} },
           ],
         },
         blocks: [heroBlock],
-        locale: "pl",
+        locale: "no",
       }),
     );
-    expect(html).toContain("Cześć");
+    expect(html).toContain("Hei");
     expect(html).toContain('data-cmssy-unknown-block="ghost"');
     expect(html).toContain("display:none");
   });

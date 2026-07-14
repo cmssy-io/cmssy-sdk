@@ -52,17 +52,17 @@ describe("blocksToSchemas", () => {
         type: "editorial-intro",
         component: Dummy,
         props: {
-          kicker: fields.text({ defaultValue: "Nasze usługi" }),
-          body: fields.richText({ label: "Treść" }),
+          kicker: fields.text({ defaultValue: "Our services" }),
+          body: fields.richText({ label: "Body" }),
         },
       }),
     ]);
     expect(schemas["editorial-intro"]!.kicker?.type).toBe("text");
     expect(schemas["editorial-intro"]!.kicker?.defaultValue).toBe(
-      "Nasze usługi",
+      "Our services",
     );
     expect(schemas["editorial-intro"]!.kicker?.label).toBe("kicker");
-    expect(schemas["editorial-intro"]!.body?.label).toBe("Treść");
+    expect(schemas["editorial-intro"]!.body?.label).toBe("Body");
   });
 
   it("is null-prototype", () => {

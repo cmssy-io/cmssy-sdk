@@ -10,7 +10,7 @@ import { resolveEditorOrigin, type CmssyConfig } from "@cmssy/core";
 import { isCmssyEditMode } from "../edit-mode";
 import { getCmssyLocale } from "../locale";
 
-export interface CmssyChromeProps {
+export interface CmssyLayoutSlotProps {
   config: CmssyConfig;
   blocks: BlockDefinition[];
   position: string;
@@ -45,13 +45,13 @@ export interface CmssyChromeProps {
  * Getting this wrong is invisible - the site looks right and the editor shows a
  * header it cannot edit, or the published version of one. Both shipped before.
  */
-export async function CmssyChrome({
+export async function CmssyLayoutSlot({
   config,
   blocks,
   position,
   page = "/",
   editable,
-}: CmssyChromeProps) {
+}: CmssyLayoutSlotProps) {
   const editMode = await isCmssyEditMode();
 
   const [groups, locale, siteLocales] = await Promise.all([

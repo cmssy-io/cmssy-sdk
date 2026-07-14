@@ -88,7 +88,7 @@ The header and the footer are layout **blocks**. Rendered server-side they are
 just markup. In edit mode they have to go through the edit bridge:
 
 ```tsx
-<CmssyChrome
+<CmssyLayoutSlot
   config={cmssy}
   blocks={blocks}
   position="header"
