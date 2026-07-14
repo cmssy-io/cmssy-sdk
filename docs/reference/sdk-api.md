@@ -1,12 +1,25 @@
 ---
 title: API reference
-description: Every public export of @cmssy/react and @cmssy/next - block authoring, the delivery client, page/SEO/draft helpers, auth, locale, commerce - with signatures.
+description: Every public export of @cmssy/core, @cmssy/react and @cmssy/next - the delivery client, block authoring, page/SEO/draft helpers, auth, locale, commerce - with signatures.
 ---
 
 # API reference
 
-The public surface of the two SDK packages, grouped by use. Signatures match the
-source; if something here disagrees with the installed package, the package wins.
+The public surface of the SDK, grouped by use. Signatures match the source; if
+something here disagrees with the installed package, the package wins.
+
+**Where things live.** `@cmssy/core` is the foundation: the delivery client, the
+config, the editor protocol, webhooks, `checkCmssyEditMode` - no framework, no
+Node built-ins. `@cmssy/react` renders. `@cmssy/next`, `@cmssy/astro` and
+`@cmssy/remix` are adapters over both. `@cmssy/react` and `@cmssy/next` re-export
+the common core symbols, so a simple app needs one import path.
+
+## @cmssy/core
+
+Everything below under "@cmssy/react → Delivery client / data" and the config,
+session, webhook and secret helpers live here. They are re-exported from the
+adapters for convenience; import them from `@cmssy/core` in a Vue, Astro or
+plain-Node consumer.
 
 ## @cmssy/react
 
