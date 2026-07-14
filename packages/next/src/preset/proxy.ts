@@ -74,6 +74,13 @@ export function createCmssyProxy(
   };
 }
 
-/** The matcher a cmssy app wants: everything except Next internals, API routes
- *  and files with an extension. */
+/**
+ * The matcher a cmssy app wants: everything except Next internals, API routes
+ * and files with an extension.
+ *
+ * Next parses `export const config` at COMPILE time, so it rejects an imported
+ * constant - copy this value into your proxy literally:
+ *
+ *   export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
+ */
 export const cmssyProxyMatcher = ["/((?!_next/|api/|.*\\..*).*)"];

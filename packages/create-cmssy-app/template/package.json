@@ -1,0 +1,24 @@
+{
+  "name": "cmssy-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "smoke:edit": "node scripts/smoke-edit.mjs"
+  },
+  "dependencies": {
+    "@cmssy/next": "^4.7.1",
+    "@cmssy/react": "^4.7.1",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}

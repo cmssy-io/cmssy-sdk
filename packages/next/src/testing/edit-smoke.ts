@@ -61,11 +61,10 @@ export async function checkCmssyEditMode(
   if (EDITOR_MARKER.test(publicPage.body)) {
     failures.push(`public ${path}: the editor is mounted on a public page`);
   }
-  if (!SERVER_CHROME.test(publicPage.body)) {
-    failures.push(
-      `public ${path}: no server-rendered chrome - the layout blocks are missing`,
-    );
-  }
+  // A site with no layout blocks is perfectly valid, so their absence is not a
+  // failure. What matters is the CHANGE: chrome that is server-rendered publicly
+  // must move to the edit bridge in edit mode.
+  const hasServerChrome = SERVER_CHROME.test(publicPage.body);
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {
@@ -85,7 +84,7 @@ export async function checkCmssyEditMode(
       `edit ${path}: no editor in the response - is the /cmssy-edit route mounted?`,
     );
   }
-  if (SERVER_CHROME.test(verified.body)) {
+  if (hasServerChrome && SERVER_CHROME.test(verified.body)) {
     failures.push(
       `edit ${path}: the chrome is still server-rendered - the header and footer will be selectable but have no fields (is CMSSY_EDIT_HEADER set on the rewrite?)`,
     );

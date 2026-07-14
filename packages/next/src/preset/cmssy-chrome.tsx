@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentType } from "react";
 import {
   CmssyServerLayout,
   fetchLayouts,
@@ -19,18 +19,20 @@ export interface CmssyChromeProps {
    */
   page?: string;
   /**
-   * Renders the layout blocks through the edit bridge. Pass the consumer's
-   * client wrapper around CmssyLazyLayout; without it the header and the footer
-   * are markup the editor can select and cannot fill.
+   * The client wrapper around CmssyLazyLayout, rendered in edit mode. Without it
+   * the header and the footer are markup the editor can select and cannot fill.
+   *
+   * A COMPONENT, not a function to call: it lives on the client, and the server
+   * can only render it.
    */
-  editable?: (props: {
+  editable?: ComponentType<{
     groups: CmssyLayoutGroup[];
     position: string;
     locale: string;
     defaultLocale: string;
     enabledLocales: string[];
     edit: { editorOrigin: string };
-  }) => ReactNode;
+  }>;
 }
 
 /**
@@ -64,14 +66,19 @@ export async function CmssyChrome({
 
   if (editMode && editable) {
     const origin = resolveEditorOrigin(config.editorOrigin);
-    return editable({
-      groups,
-      position,
-      locale,
-      defaultLocale: siteLocales.defaultLocale,
-      enabledLocales: siteLocales.locales,
-      edit: { editorOrigin: (Array.isArray(origin) ? origin[0] : origin) ?? "" },
-    });
+    const Editable = editable;
+    return (
+      <Editable
+        groups={groups}
+        position={position}
+        locale={locale}
+        defaultLocale={siteLocales.defaultLocale}
+        enabledLocales={siteLocales.locales}
+        edit={{
+          editorOrigin: (Array.isArray(origin) ? origin[0] : origin) ?? "",
+        }}
+      />
+    );
   }
 
   return (
