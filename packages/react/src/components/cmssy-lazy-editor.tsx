@@ -47,12 +47,21 @@ export function CmssyLazyEditor({ load, ...props }: CmssyLazyEditorProps) {
     };
   }, [load]);
 
-  if (!loaded) return null;
+  // An explicit, layout-neutral marker that the edit bridge is mounted. It is
+  // rendered before the blocks arrive and on the server, because a smoke test
+  // has to be able to ASK the page whether it is editable. The old check matched
+  // bundler artifacts - a chunk name, an island's component name - which meant
+  // it passed on Next and Astro by accident and found nothing on React Router.
   return (
-    <CmssyEditablePage
-      {...props}
-      blocks={loaded.blocks}
-      category={loaded.category}
-    />
+    <>
+      <div data-cmssy-editor="1" hidden />
+      {loaded ? (
+        <CmssyEditablePage
+          {...props}
+          blocks={loaded.blocks}
+          category={loaded.category}
+        />
+      ) : null}
+    </>
   );
 }

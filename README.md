@@ -10,7 +10,7 @@ rendering - the data layer, the config, the editor protocol - lives in
 ever stops being true.
 
 ```bash
-npx create-cmssy-app my-site --framework next   # or: astro
+npx create-cmssy-app my-site --framework next   # or: astro, remix
 ```
 
 ## Packages
@@ -20,6 +20,7 @@ npx create-cmssy-app my-site --framework next   # or: astro
 | `@cmssy/core`          | No framework, no Node built-ins: transport, queries, config, secrets, webhooks, the versioned postMessage protocol. |
 | `@cmssy/react`         | Rendering: block registry, field controls, `CmssyServerPage`, the edit bridge.                                      |
 | `@cmssy/next`          | Next.js bindings, one entry per runtime: `/server`, `/middleware`, `/client`.                                       |
+| `@cmssy/remix`         | React Router 7 bindings: page loader, framing CSP, sitemap, robots. No edit route needed - a React Router page always sees its query string. |
 | `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.       |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                     |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                        |
