@@ -1,12 +1,3 @@
-// Anything here reads the cmssy config (process.env) or Next's request headers,
-// so it must never reach the browser bundle. Importing a VALUE from here in a
-// client component used to compile fine and then throw "missing required
-// configuration" at page load, which reads like a config mistake and is really
-// an import mistake. Now it is a build error, with the file that caused it.
-// Client-side pieces live in "@cmssy/next/client"; pure path maths in the
-// exports that carry no config.
-import "server-only";
-
 export { createCmssyPage, createCmssyEditPage } from "./create-cmssy-page";
 export type {
   CmssyEditorProps,
