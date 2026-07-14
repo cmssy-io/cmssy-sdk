@@ -1,12 +1,17 @@
 export { fields } from "@cmssy/core";
-export type { FieldControl } from "@cmssy/core";
+export type {
+  BlockPropsSchema,
+  FieldControl,
+  InferBlockContent,
+  TypedField,
+} from "@cmssy/core";
 export {
   defineBlock,
   buildBlockMap,
   blocksToSchemas,
   blocksToMeta,
 } from "./registry";
-export type { BlockDefinition, BlockMap } from "./registry";
+export type { BlockDefinition, BlockMap, BlockProps } from "./registry";
 export { CmssyServerPage } from "./components/cmssy-server-page";
 export type { CmssyServerPageProps } from "./components/cmssy-server-page";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
@@ -33,11 +38,7 @@ export type {
   ParentReadyMessage,
   EditorToAppMessage,
 } from "@cmssy/core";
-export {
-  postToEditor,
-  parseEditorMessage,
-  normalizeOrigin,
-} from "@cmssy/core";
+export { postToEditor, parseEditorMessage, normalizeOrigin } from "@cmssy/core";
 export type { PostTarget } from "@cmssy/core";
 
 export {

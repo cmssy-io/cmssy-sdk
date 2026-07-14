@@ -2,13 +2,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, waitFor, cleanup } from "@testing-library/react";
 import { CmssyLazyLayout } from "../components/cmssy-lazy-layout";
-import { defineBlock } from "../registry";
+import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 
-const Header = ({ content }: { content: Record<string, unknown> }) => (
-  <header>{String(content.brand ?? "")}</header>
+const headerProps = { brand: fields.text() };
+
+const Header = ({ content }: BlockProps<typeof headerProps>) => (
+  <header>{content.brand ?? ""}</header>
 );
 
 const blocks = [
@@ -17,7 +19,7 @@ const blocks = [
     label: "Header",
     component: Header,
     layoutPositions: ["header"],
-    props: { brand: fields.text() },
+    props: headerProps,
   }),
 ];
 

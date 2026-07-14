@@ -8,24 +8,49 @@ description: Define a custom block with defineBlock and fields - the editor sche
 A block is a React component plus an editor schema. You define both with
 `defineBlock`, then register the result so pages and the editor can use it.
 
-## defineBlock
+**The schema types the component.** Declare the fields once and derive the
+component's `content` from them with `BlockProps<typeof props>`. Nothing else
+knows a field's name, so a rename breaks the build instead of silently rendering
+an empty block.
+
+```tsx
+// Hero.tsx - the schema lives next to the component that reads it
+import { fields, type BlockProps } from "@cmssy/react";
+
+export const heroProps = {
+  heading: fields.text({ label: "Heading", required: true }),
+  showCta: fields.boolean({ label: "Show CTA", defaultValue: true }),
+};
+
+export default function Hero({ content }: BlockProps<typeof heroProps>) {
+  // content.heading is string (required), content.showCta is boolean | undefined
+  return (
+    <section>
+      <h1>{content.heading}</h1>
+      {content.showCta && <a href="/signup">Get started</a>}
+    </section>
+  );
+}
+```
 
 ```ts
-import { defineBlock, fields } from "@cmssy/react";
-import Hero from "./Hero";
+// block.ts
+import { defineBlock } from "@cmssy/react";
+import Hero, { heroProps } from "./Hero";
 
 export const heroBlock = defineBlock({
   type: "hero", // unique id, stored on every instance
   label: "Hero", // shown in the editor's block list
   component: Hero,
-  props: {
-    heading: fields.singleLine({ label: "Heading" }),
-    showCta: fields.boolean({ label: "Show CTA", defaultValue: true }),
-  },
+  props: heroProps,
   // optional, server-only data fetching - see ./server-loaders.md
   // loader: async ({ content, context }) => ({ ... }),
 });
 ```
+
+Retyping `content` by hand next to the schema is now a compile error:
+`defineBlock` rejects a component whose `content` disagrees with the fields the
+schema declares.
 
 Full shape:
 
@@ -42,57 +67,78 @@ Full shape:
 
 ## The `fields` registry
 
-`fields` provides the editor controls. Each returns a field definition from a
-single options object:
+`fields` provides the editor controls. Each returns a field definition that
+carries the type of the value it holds, which is what lets `content` be derived
+from the schema:
 
-| Control              | Editor input              | Notable options                                                  |
-| -------------------- | ------------------------- | ---------------------------------------------------------------- |
-| `fields.singleLine`  | One-line text             | `defaultValue`, `placeholder`, `required`                        |
-| `fields.multiLine`   | Multi-line text           | `defaultValue`, `placeholder`                                    |
-| `fields.richText`    | Rich text (HTML)          | `required`                                                       |
-| `fields.numeric`     | Number                    | `defaultValue`                                                   |
-| `fields.date`        | Date picker               | `defaultValue`                                                   |
-| `fields.media`       | Media picker (image/file) | -                                                                |
-| `fields.link`        | Internal/external link    | -                                                                |
-| `fields.select`      | Single choice             | `options: string[]`, `defaultValue`                              |
-| `fields.multiselect` | Multiple choice           | `options: string[]`                                              |
-| `fields.boolean`     | Toggle                    | `defaultValue`                                                   |
-| `fields.color`       | Color picker              | `defaultValue`                                                   |
-| `fields.repeater`    | Repeatable group          | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible` |
+| Control               | Editor input              | `content` type            | Notable options                                                  |
+| --------------------- | ------------------------- | ------------------------- | ---------------------------------------------------------------- |
+| `fields.text`         | One-line text             | `string`                  | `defaultValue`, `placeholder`, `required`                        |
+| `fields.textarea`     | Multi-line text           | `string`                  | `defaultValue`, `placeholder`                                    |
+| `fields.richText`     | Rich text (HTML)          | `string`                  | `required`                                                       |
+| `fields.markdown`     | Markdown                  | `string`                  | `required`                                                       |
+| `fields.number`       | Number                    | `number`                  | `defaultValue`                                                   |
+| `fields.boolean`      | Toggle                    | `boolean`                 | `defaultValue`                                                   |
+| `fields.date`         | Date picker               | `string`                  | `defaultValue`                                                   |
+| `fields.media`        | Media picker (image/file) | `string`, `string[]`      | `multiple`, `acceptedTypes`, `maxSize`                           |
+| `fields.link`         | Internal/external link    | `string`                  | -                                                                |
+| `fields.url`          | URL                       | `string`                  | `required`                                                       |
+| `fields.select`       | Single choice             | union of its `options`    | `options`, `defaultValue`                                        |
+| `fields.radio`        | Single choice (radios)    | union of its `options`    | `options`                                                        |
+| `fields.multiselect`  | Multiple choice           | array of its `options`    | `options`                                                        |
+| `fields.color`        | Color picker              | `string`                  | `defaultValue`                                                   |
+| `fields.repeater`     | Repeatable group          | array of its `itemSchema` | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible` |
+| `fields.pageSelector` | Page picker               | `PageRef[]`               | `pageType`, `multiple`                                           |
+| `fields.json`         | JSON                      | `JsonValue`               | -                                                                |
 
 Every control accepts `label`, `helperText`, and `required`.
 
+`required: true` makes the key required in `content`. Everything else is
+optional - the editor lets an author leave a field empty, and the type says so.
+
 ```ts
-props: {
-  badge: fields.singleLine({ label: "Badge", placeholder: "New" }),
-  size: fields.select({ label: "Size", defaultValue: "md", options: ["sm", "md", "lg"] }),
+export const cardProps = {
+  badge: fields.text({ label: "Badge", placeholder: "New" }),
+  size: fields.select({
+    label: "Size",
+    defaultValue: "md",
+    options: ["sm", "md", "lg"],
+  }),
   features: fields.repeater({
     label: "Features",
     itemSchema: {
-      title: fields.singleLine({ label: "Title", required: true }),
+      title: fields.text({ label: "Title", required: true }),
       icon: fields.media({ label: "Icon" }),
     },
   }),
-}
+};
+
+// content.badge    → string | undefined
+// content.size     → "sm" | "md" | "lg" | undefined   (not just `string`)
+// content.features → { title: string; icon?: string }[] | undefined
 ```
 
 ## The component contract
 
-A block component receives three props:
+A block component receives three props, all of them typed by
+`BlockProps<typeof props>`:
 
-- `content` - the resolved field values for the current locale.
+- `content` - the resolved field values for the current locale, typed by the schema.
 - `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`, and (when configured) `auth` and `workspace`. See [Member auth](../auth/member-auth.md) for `context.auth`.
-- `data` - the [server loader](./server-loaders.md) result, or `undefined` in the editor.
+- `data` - the [server loader](./server-loaders.md) result, or `undefined` in the editor. Pass the loader's type as the second parameter: `BlockProps<typeof props, Posts>`.
 
 ```tsx
-function Hero({
-  content,
-}: {
-  content: { heading?: string; showCta?: boolean };
-}) {
+import { fields, type BlockProps } from "@cmssy/react";
+
+export const heroProps = {
+  heading: fields.text({ label: "Heading" }),
+  showCta: fields.boolean({ label: "Show CTA", defaultValue: true }),
+};
+
+function Hero({ content, context }: BlockProps<typeof heroProps>) {
   const { heading, showCta = true } = content;
   return (
-    <section>
+    <section lang={context?.locale.current}>
       {heading && <h1>{heading}</h1>}
       {showCta && <a href="/signup">Get started</a>}
     </section>
