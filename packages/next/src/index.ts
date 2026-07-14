@@ -13,7 +13,10 @@ export type { CreateCmssyNotFoundOptions } from "./create-cmssy-not-found";
 export { createCmssyRobots } from "./create-cmssy-robots";
 export type { CreateCmssyRobotsOptions } from "./create-cmssy-robots";
 export { createCmssySitemap } from "./create-cmssy-sitemap";
-export type { CreateCmssySitemapOptions } from "./create-cmssy-sitemap";
+export type {
+  CreateCmssySitemapOptions,
+  CmssySitemapContext,
+} from "./create-cmssy-sitemap";
 export { buildCmssyMetadata } from "./build-cmssy-metadata";
 export type { BuildCmssyMetadataOptions } from "./build-cmssy-metadata";
 export { createDraftRoute } from "./create-draft-route";
