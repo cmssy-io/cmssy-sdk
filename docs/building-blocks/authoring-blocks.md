@@ -131,7 +131,7 @@ export const blocks = [heroBlock, pricingBlock];
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { createCmssyPage } from "@cmssy/next";
+import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 

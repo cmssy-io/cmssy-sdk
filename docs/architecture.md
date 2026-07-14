@@ -52,6 +52,33 @@ webhook and cart clients lived in `@cmssy/next`. Nothing was wrong with the code
 
 Structure was the fix. The guard became a consequence of it, not a workaround.
 
+## Inside an adapter: one entry per runtime
+
+`@cmssy/next` spans three runtimes, and code cannot cross between them:
+
+| Entry                    | Runs in                | Never contains                |
+| ------------------------ | ---------------------- | ----------------------------- |
+| `@cmssy/next`            | anywhere               | anything runtime-bound        |
+| `@cmssy/next/middleware` | the edge               | `next/headers`, `server-only` |
+| `@cmssy/next/server`     | RSC and route handlers | client components             |
+| `@cmssy/next/client`     | the browser            | anything that reads env       |
+
+`entry-boundary.test.ts` walks each entry's import graph and fails if one
+reaches code from another's runtime. That test exists because in 4.6.2 we put
+`server-only` on the shared entry and broke every consumer's middleware.
+
+## The chain a bundler cannot see
+
+`server-only` protects **our** modules. It cannot protect the consumer's:
+
+```
+editor.tsx ("use client")  ->  lib/locale.ts  ->  cmssy.config.ts  ->  process.env
+```
+
+Nothing in that chain imports a server-only module - and it took a live site
+down (CMS-968). `@cmssy/eslint-plugin` follows the chain across the consumer's
+own files and reports it, which is the only place it can be caught.
+
 ## The rule is enforced, not documented
 
 `packages/core/src/__tests__/framework-boundary.test.ts` fails if **any** file in
