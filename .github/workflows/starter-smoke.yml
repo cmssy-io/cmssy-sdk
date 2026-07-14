@@ -86,7 +86,11 @@ jobs:
           '
           pnpm install --no-frozen-lockfile
 
+      # The Next build reads the workspace (sitemap, page data), so without the
+      # secrets there is nothing honest to build against. Astro's build does not,
+      # but a build without an editor check proves the least interesting half.
       - name: Build
+        if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
         run: pnpm build
 
@@ -103,8 +107,11 @@ jobs:
           npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
           pnpm smoke:edit
 
-      - name: No workspace secrets - editor NOT verified
+      # A green check that verifies nothing is worse than no check, so say it out
+      # loud rather than let the job look like it proved something.
+      - name: No workspace secrets - NOTHING was verified
         if: env.CMSSY_DRAFT_SECRET == ''
         run: |
-          echo "::warning::CMSSY_* secrets are absent, so the editor was not checked." \
-               "The build passing says nothing about whether the editor still works."
+          echo "::warning::CMSSY_ORG_SLUG / CMSSY_WORKSPACE_SLUG / CMSSY_DRAFT_SECRET" \
+               "are not set on this repo, so the ${{ matrix.framework }} starter was" \
+               "generated but NEITHER built NOR checked. This job proved nothing."
