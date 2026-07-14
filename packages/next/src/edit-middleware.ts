@@ -43,6 +43,7 @@ export async function cmssyEditRewrite(
   if (!(await cmssySecretsMatch(provided, config.draftSecret))) return null;
   const url = request.nextUrl.clone();
   url.pathname = `${CMSSY_EDIT_PATH_PREFIX}${pathname === "/" ? "" : pathname}`;
+  warnIfEditRouteMissing(url);
   return NextResponse.rewrite(
     url,
     options.requestHeaders
@@ -58,4 +59,37 @@ export function createCmssyEditMiddleware(config: { draftSecret: string }) {
   ): Promise<NextResponse> {
     return (await cmssyEditRewrite(request, config)) ?? NextResponse.next();
   };
+}
+
+let probed = false;
+
+/**
+ * The rewrite is half the wiring; the route behind it is the other half. Without
+ * it the editor iframe just gets a 404 it cannot explain - which is exactly how
+ * two consumers shipped a dead editor while their builds stayed green.
+ *
+ * Dev only, once per process, and never awaited: a 404 here is a wiring mistake,
+ * not a request to fail.
+ */
+function warnIfEditRouteMissing(url: URL): void {
+  if (process.env.NODE_ENV === "production" || probed) return;
+  probed = true;
+
+  // The probe hits /cmssy-edit/..., which this middleware passes straight
+  // through (see the prefix check above), so it cannot recurse.
+  void fetch(url, { method: "HEAD" })
+    .then((response) => {
+      if (response.status !== 404) return;
+      console.error(
+        `[cmssy] The editor request was rewritten to ${url.pathname}, but nothing is mounted there ` +
+          `(404). Add the edit route:\n\n` +
+          `  // app/cmssy-edit/[[...path]]/page.tsx\n` +
+          `  export const dynamic = "force-dynamic";\n` +
+          `  export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });\n\n` +
+          `Until then the editor preview stays blank.`,
+      );
+    })
+    .catch(() => {
+      // The app may not be listening yet - a failed probe says nothing.
+    });
 }
