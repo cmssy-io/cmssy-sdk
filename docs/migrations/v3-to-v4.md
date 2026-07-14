@@ -48,11 +48,11 @@ The easy way - the preset does the whole thing, in the order it has to happen:
 
 ```ts
 // proxy.ts
-import { createCmssyProxy, cmssyProxyMatcher } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/preset";
 import { cmssy } from "@/cmssy/config";
 
 export const proxy = createCmssyProxy(cmssy);
-export const config = { matcher: cmssyProxyMatcher };
+export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
 ```
 
 By hand, if your middleware does other things too:
