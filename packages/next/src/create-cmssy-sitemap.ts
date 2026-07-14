@@ -61,26 +61,37 @@ export function createCmssySitemap(
     const { defaultLocale, locales } = resolveSeoLocales(config, siteConfig);
 
     const excluded = new Set((options.excludeSlugs ?? []).map(normalizeSlug));
+
+    // Every language version is its own <url>, and each lists all of them
+    // (itself included) plus x-default. Listing only the default language and
+    // hanging the translations off it as alternates leaves the translated URLs
+    // out of the sitemap entirely - they are then a hint, not a submission.
+    const languagesFor = (slug: string) =>
+      locales.length > 1
+        ? {
+            languages: {
+              ...Object.fromEntries(
+                locales.map((locale) => [
+                  locale,
+                  `${baseUrl}${localizedPath(slug, locale, defaultLocale)}`,
+                ]),
+              ),
+              "x-default": `${baseUrl}${localizedPath(slug, defaultLocale, defaultLocale)}`,
+            },
+          }
+        : undefined;
+
     const entries: MetadataRoute.Sitemap = pages
       .map((page) => ({ ...page, slug: normalizeSlug(page.slug) }))
       .filter((page) => page.id !== notFoundPageId && !excluded.has(page.slug))
-      .map((page) => {
+      .flatMap((page) => {
         const lastModified = page.updatedAt ?? page.publishedAt ?? undefined;
-        const entry: MetadataRoute.Sitemap[number] = {
-          url: `${baseUrl}${localizedPath(page.slug, defaultLocale, defaultLocale)}`,
+        const alternates = languagesFor(page.slug);
+        return locales.map((locale) => ({
+          url: `${baseUrl}${localizedPath(page.slug, locale, defaultLocale)}`,
           ...(lastModified ? { lastModified: new Date(lastModified) } : {}),
-        };
-        if (locales.length > 1) {
-          entry.alternates = {
-            languages: Object.fromEntries(
-              locales.map((locale) => [
-                locale,
-                `${baseUrl}${localizedPath(page.slug, locale, defaultLocale)}`,
-              ]),
-            ),
-          };
-        }
-        return entry;
+          ...(alternates ? { alternates } : {}),
+        }));
       });
 
     return options.extra ? [...entries, ...options.extra] : entries;
