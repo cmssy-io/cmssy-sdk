@@ -25,6 +25,15 @@ export const CMSSY_EDIT_PATH_PREFIX = "/cmssy-edit";
 export async function cmssyEditRewrite(
   request: NextRequest,
   config: { draftSecret: string },
+  options: {
+    /**
+     * Headers to forward to the edit route, for a site whose middleware tells
+     * the app something the path alone does not - a resolved locale, say.
+     * Without them the editor preview renders in the default language while the
+     * public page renders in the visitor's.
+     */
+    requestHeaders?: Headers;
+  } = {},
 ): Promise<NextResponse | null> {
   const { pathname, searchParams } = request.nextUrl;
   if (pathname.startsWith(CMSSY_EDIT_PATH_PREFIX)) return null;
@@ -34,7 +43,12 @@ export async function cmssyEditRewrite(
   if (!(await cmssySecretsMatch(provided, config.draftSecret))) return null;
   const url = request.nextUrl.clone();
   url.pathname = `${CMSSY_EDIT_PATH_PREFIX}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(
+    url,
+    options.requestHeaders
+      ? { request: { headers: options.requestHeaders } }
+      : undefined,
+  );
 }
 
 /** Standalone middleware when the consumer has no other middleware to compose. */
