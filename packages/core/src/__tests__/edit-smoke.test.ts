@@ -40,7 +40,7 @@ describe("checkCmssyEditMode", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("does not require layout blocks: a site without chrome is valid", async () => {
+  it("does not require layout blocks: a site with no header or footer is valid", async () => {
     const bare = "<html><main>hi</main></html>";
     serve({
       [`${BASE}/`]: bare,
@@ -68,7 +68,7 @@ describe("checkCmssyEditMode", () => {
     expect(result.failures.join(" ")).toContain("no editor in the response");
   });
 
-  it("fails when the chrome is still server-rendered in edit mode (CMS-970)", async () => {
+  it("fails when the header is still server-rendered in edit mode (CMS-970)", async () => {
     // The editor selects the header and has no fields for it: the blocks never
     // reached the edit bridge.
     serve({

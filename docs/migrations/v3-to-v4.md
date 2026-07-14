@@ -82,7 +82,7 @@ language. Drop the edit flag and your header and footer become markup the editor
 can select and cannot fill - it looks like a broken editor, and it is a missing
 header.
 
-### 3. Keep the chrome editable
+### 3. Keep the header and footer editable
 
 The header and the footer are layout **blocks**. Rendered server-side they are
 just markup. In edit mode they have to go through the edit bridge:
@@ -100,7 +100,7 @@ just markup. In edit mode they have to go through the edit bridge:
 see the reference wiring.)
 
 Also fetch the layout with `previewSecret` in edit mode, or the editor shows you
-the **published** chrome while you edit the draft.
+the **published** header and footer while you edit the draft.
 
 ### 4. SEO: pass the routed path (4.1.0)
 
@@ -129,5 +129,5 @@ expect(result.failures).toEqual([]);
 ```
 
 Run it against a started production build. It asserts that a verified request
-renders the editor, that an unverified one does **not**, and that the chrome
+renders the editor, that an unverified one does **not**, and that the header and footer
 reached the edit bridge instead of staying plain markup.
