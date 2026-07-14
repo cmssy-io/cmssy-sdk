@@ -38,7 +38,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          for pkg in react next; do
+          for pkg in react next create-cmssy-app; do
             v=$(node -p "require('./packages/$pkg/package.json').version")
             if [ "$tag" != "$v" ]; then
               echo "::error::tag v$tag does not match @cmssy/$pkg@$v"
@@ -56,14 +56,15 @@ jobs:
 
       - run: pnpm -r test
 
-      # Publish in dependency order (react before next). Skips a package whose
-      # current version is already on npm, so re-runs are safe.
+      # Publish in dependency order (react, then next, then the starter that
+      # depends on both). Skips a package whose current version is already on
+      # npm, so re-runs are safe.
       - name: Publish packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
-          for pkg in react next; do
+          for pkg in react next create-cmssy-app; do
             cd "packages/$pkg"
             name=$(node -p "require('./package.json').name")
             version=$(node -p "require('./package.json').version")
