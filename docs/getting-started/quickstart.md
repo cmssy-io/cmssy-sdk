@@ -19,9 +19,9 @@ npm i @cmssy/next @cmssy/react
 
 ```ts
 // cmssy.config.ts
-import type { CmssyNextConfig } from "@cmssy/next";
+import type { CmssyConfig } from "@cmssy/next";
 
-export const cmssy: CmssyNextConfig = {
+export const cmssy: CmssyConfig = {
   org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
@@ -45,7 +45,7 @@ override them only for self-hosted or staging deployments.
 
 ```ts
 // self-host / staging only:
-export const cmssy: CmssyNextConfig = {
+export const cmssy: CmssyConfig = {
   org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,
@@ -89,7 +89,7 @@ export function CmssyEditor(props: CmssyEditorProps) {
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { createCmssyPage } from "@cmssy/next";
+import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -106,7 +106,7 @@ published content.
 
 ```ts
 // app/api/draft/route.ts
-import { createDraftRoute } from "@cmssy/next";
+import { createDraftRoute } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export const GET = createDraftRoute(cmssy);
@@ -121,7 +121,7 @@ import {
   applyCmssyCsp,
   isCmssyEditRequest,
   CMSSY_EDIT_HEADER,
-} from "@cmssy/next";
+} from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 export function middleware(request: NextRequest) {
@@ -161,7 +161,7 @@ toggle controls this, and your local app opts in with a `devToken`:
 
 ```ts
 // cmssy.config.ts - development only
-export const cmssy: CmssyNextConfig = {
+export const cmssy: CmssyConfig = {
   org: process.env.CMSSY_ORG_SLUG!,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
   draftSecret: process.env.CMSSY_DRAFT_SECRET!,

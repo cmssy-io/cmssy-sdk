@@ -24,9 +24,39 @@ fails the build if that ever stops being true.
 @cmssy/next     Next only: middleware, route handlers, Metadata, sitemap/robots
 ```
 
-**Do I have to do anything?** If you import only from `@cmssy/next` and
-`@cmssy/react`, no - both still re-export what they always did. If you imported
-data helpers deeper, point them at `@cmssy/core`. See
+**`@cmssy/next` now says which runtime each export belongs to.**
+
+The package spans three worlds that cannot share code: middleware runs on the
+edge, pages and route handlers run on the server, components run in the browser.
+They used to share one entry, which is why `server-only` could not be placed
+anywhere without breaking someone (and did - reverted in 4.6.2).
+
+```ts
+import { defineCmssyConfig } from "@cmssy/next"; // safe everywhere
+import { createCmssyProxy } from "@cmssy/next/middleware"; // edge
+import { createCmssyPage, CmssyChrome } from "@cmssy/next/server"; // RSC + routes
+import { CmssyLink } from "@cmssy/next/client"; // browser
+```
+
+`@cmssy/next/server` now carries `server-only`, for real: the bundles are
+checked, and a test walks the import graph of every entry so middleware can
+never reach `next/headers` again. **`@cmssy/next/preset` is gone** -
+`createCmssyProxy` moved to `/middleware`, `CmssyChrome` to `/server`.
+
+**New: `@cmssy/eslint-plugin`.** `server-only` cannot catch the crash we
+actually shipped (CMS-968), because the chain ran through the consumer's own
+files: a client component imported `lib/locale.ts`, which imported
+`cmssy.config`. The rule follows that chain and names it:
+
+```
+editor.tsx -> lib/locale.ts -> cmssy.config.ts
+```
+
+It is on by default in `create-cmssy-app`.
+
+**Do I have to do anything?** Yes - the import paths moved. If you import only
+from `@cmssy/next` and `@cmssy/react`, the data helpers still re-export from
+there; what changed is which entry the Next bindings live behind. See
 [docs/architecture.md](docs/architecture.md).
 
 Two renames, because the names had become lies:

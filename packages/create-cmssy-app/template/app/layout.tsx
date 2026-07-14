@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CmssyChrome } from "@cmssy/next/preset";
+import { CmssyChrome } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { EditableLayout } from "@/cmssy/editable-layout";
