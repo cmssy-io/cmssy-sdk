@@ -28,6 +28,25 @@ describe("cmssyEditRewrite", () => {
     );
   });
 
+  it("forwards request headers the middleware resolved, so the editor is not stuck in the default language", async () => {
+    // A site whose middleware resolves the locale (per-prefix routing) tells the
+    // app through a header. The rewrite dropped it, so the editor preview
+    // rendered in the default language while the public page rendered in the
+    // visitor's - the same page, two languages.
+    const headers = new Headers({ "x-cmssy-locale": "no" });
+    const res = await cmssyEditRewrite(
+      request(`/shop?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
+      CONFIG,
+      { requestHeaders: headers },
+    );
+
+    expect(res).not.toBeNull();
+    expect(res!.headers.get("x-middleware-override-headers")).toContain(
+      "x-cmssy-locale",
+    );
+    expect(res!.headers.get("x-middleware-request-x-cmssy-locale")).toBe("no");
+  });
+
   it("rewrites the root path without a trailing slash artifact", async () => {
     const res = await cmssyEditRewrite(
       request(`/?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
