@@ -6,6 +6,33 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 5.1.0
+
+**`@cmssy/astro` - the first adapter that is not Next.**
+
+`@cmssy/core` was extracted so that any framework could talk to cmssy. Until a
+second adapter existed, that was a claim. Now it is a test: `@cmssy/astro`
+depends on `@cmssy/core` alone, and its suite **fails the build if any file in it
+imports React or Next**.
+
+```ts
+// src/middleware.ts - the whole adapter
+import { cmssyMiddleware } from "@cmssy/astro";
+import { cmssy } from "./cmssy.config";
+
+export const onRequest = cmssyMiddleware(cmssy);
+```
+
+It resolves the language, routes a verified editor request to `/cmssy-edit`, and
+applies the CSP that lets the admin frame the site - the same sequence the Next
+proxy uses, because it is the same protocol, not a Next protocol.
+
+Also: `loadCmssyPage`, `createCmssySitemap`, `createCmssyRobots`, and
+`@cmssy/astro/testing` re-exporting the same editor smoke test. See
+[docs/astro.md](docs/astro.md).
+
+**Do I have to do anything?** No - nothing in 5.0 changed.
+
 ## 5.0.0
 
 **`@cmssy/core` - cmssy stops requiring React.**
