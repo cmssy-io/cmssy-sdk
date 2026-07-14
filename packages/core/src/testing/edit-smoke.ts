@@ -20,7 +20,11 @@ export interface EditSmokeResult {
   failures: string[];
 }
 
-const EDITOR_MARKER = /CmssyEditor|cmssy-edit/;
+// The edit bridge renders `data-cmssy-editor` (see @cmssy/react). Matching that
+// is a contract; matching a chunk name or a component name - as this once did -
+// is matching whatever the bundler happened to emit, which passed on two
+// frameworks by luck and failed on the third for no reason.
+const EDITOR_MARKER = /data-cmssy-editor/;
 /** Layout blocks rendered server-side. In edit mode they move to the edit
  *  bridge and mount on the client, so their absence from the SSR HTML is what
  *  proves the chrome is editable rather than plain markup. */

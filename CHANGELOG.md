@@ -6,6 +6,28 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 6.2.0
+
+**`@cmssy/remix` - React Router 7.** And a smoke test that stops lying.
+
+The Remix adapter needs **no `/cmssy-edit` route**: that route exists because a
+Next page can be static, and a static page never sees the query string. React
+Router renders on every request, so the editor is served from the page itself -
+verified the same way, on the same protocol.
+
+**The editor smoke test was passing for the wrong reason.** It looked for
+`CmssyEditor` or `cmssy-edit` in the HTML - a chunk name and a route path. Those
+are bundler artifacts, not a contract: they happened to appear in Next and Astro
+output, and appeared nowhere in React Router's, so a working editor reported as
+broken.
+
+The edit bridge now renders an explicit `data-cmssy-editor` marker, and the smoke
+test looks for **that**. All three starters (next, astro, remix) pass against it -
+on a real production build, against a real workspace.
+
+**Do I have to do anything?** No, unless you wrote your own editor bridge without
+`CmssyLazyEditor` / `CmssyEditablePage` - then render the marker yourself.
+
 ## 6.1.0
 
 **`create-cmssy-app --framework next|astro`.**
