@@ -3,6 +3,7 @@ import {
   fetchPageMeta,
   fetchSiteConfig,
   normalizeSlug,
+  splitLocaleFromPath,
   type CmssyClientConfig,
   type CmssyLocalizedValue,
 } from "@cmssy/react";
@@ -17,6 +18,12 @@ export interface BuildCmssyMetadataOptions extends SeoBaseUrlOption {
   ogType?: string;
   /** Twitter card. Defaults to "summary_large_image" when an image exists. */
   twitterCard?: "summary" | "summary_large_image";
+  /**
+   * The language to render metadata in. Only needed when the language does not
+   * live in the URL (a per-domain or cookie strategy); with a locale prefix the
+   * path already says it.
+   */
+  locale?: string;
 }
 
 /** Pick a localized string, falling back to the default locale then any value. */
@@ -36,10 +43,14 @@ function pick(
  * `hreflang` alternates, and Open Graph / Twitter cards (with the branding OG
  * image). Use in a route's `generateMetadata`:
  *
- *   export const generateMetadata = ({ params }) =>
+ *   export const generateMetadata = async ({ params }) =>
  *     buildCmssyMetadata(cmssy, (await params).path);
  *
- * `path` is the catch-all segments with the locale prefix already stripped.
+ * Pass the catch-all segments **as routed**, locale prefix and all: the prefix
+ * is what says which language this page is. Stripping it first (and leaving the
+ * language to `config.resolveLocale`) is how every localized page ends up with
+ * the default language's title - and a canonical pointing at the default
+ * language's URL, which tells Google the translation is a duplicate.
  */
 export async function buildCmssyMetadata(
   config: CmssyNextConfig,
@@ -52,8 +63,7 @@ export async function buildCmssyMetadata(
     workspaceSlug: config.workspaceSlug,
   };
 
-  const [meta, siteConfig, baseUrl] = await Promise.all([
-    fetchPageMeta(clientConfig, path).catch(() => null),
+  const [siteConfig, baseUrl] = await Promise.all([
     fetchSiteConfig(clientConfig).catch(() => null),
     resolveSeoBaseUrl(config, options.baseUrl),
   ]);
@@ -62,8 +72,27 @@ export async function buildCmssyMetadata(
     config,
     siteConfig,
   );
-  const locale = (await config.resolveLocale?.()) ?? defaultLocale;
-  const slug = normalizeSlug(path);
+
+  // The prefix in the path is the language, so read it from there - the same
+  // rule the router used. An explicit locale wins (per-domain strategies), and
+  // resolveLocale is the fallback for a site whose URLs carry no language.
+  const segments = Array.isArray(path)
+    ? path
+    : path
+      ? path.split("/").filter(Boolean)
+      : undefined;
+  const fromPath = splitLocaleFromPath(segments, {
+    defaultLocale,
+    locales: enabledLocales,
+  });
+  const locale =
+    options.locale ??
+    (fromPath.locale !== defaultLocale
+      ? fromPath.locale
+      : ((await config.resolveLocale?.()) ?? defaultLocale));
+  const slug = normalizeSlug(fromPath.path);
+
+  const meta = await fetchPageMeta(clientConfig, slug).catch(() => null);
 
   const siteName =
     pick(siteConfig?.siteName as CmssyLocalizedValue, locale, defaultLocale) ||
@@ -84,12 +113,16 @@ export async function buildCmssyMetadata(
     : undefined;
   const languages =
     baseUrl && enabledLocales.length > 1
-      ? Object.fromEntries(
-          enabledLocales.map((l) => [
-            l,
-            `${baseUrl}${localizedPath(slug, l, defaultLocale)}`,
-          ]),
-        )
+      ? {
+          ...Object.fromEntries(
+            enabledLocales.map((l) => [
+              l,
+              `${baseUrl}${localizedPath(slug, l, defaultLocale)}`,
+            ]),
+          ),
+          // What to serve a reader whose language none of these match.
+          "x-default": `${baseUrl}${localizedPath(slug, defaultLocale, defaultLocale)}`,
+        }
       : undefined;
 
   return {

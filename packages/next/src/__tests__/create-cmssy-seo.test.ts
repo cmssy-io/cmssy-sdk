@@ -99,18 +99,25 @@ describe("createCmssySitemap", () => {
       ],
     });
     const result = await createCmssySitemap(CONFIG)();
-    expect(result).toHaveLength(2);
-    expect(result[0]?.url).toBe("https://cmssy.com/");
-    expect(result[0]?.alternates?.languages).toEqual({
-      en: "https://cmssy.com/",
-      pl: "https://cmssy.com/pl",
-    });
-    expect(result[1]?.url).toBe("https://cmssy.com/about");
-    expect(result[1]?.alternates?.languages).toEqual({
-      en: "https://cmssy.com/about",
-      pl: "https://cmssy.com/pl/about",
-    });
-    expect(result[1]?.lastModified).toEqual(new Date("2026-02-02T00:00:00Z"));
+
+    // One entry PER LANGUAGE VERSION, not one entry for the default language
+    // with the translations hanging off it as a hint: a URL that is not in the
+    // sitemap was never submitted.
+    expect(result.map((entry) => entry.url)).toEqual([
+      "https://cmssy.com/",
+      "https://cmssy.com/pl",
+      "https://cmssy.com/about",
+      "https://cmssy.com/pl/about",
+    ]);
+    for (const entry of result.slice(2)) {
+      expect(entry.alternates?.languages).toEqual({
+        en: "https://cmssy.com/about",
+        pl: "https://cmssy.com/pl/about",
+        "x-default": "https://cmssy.com/about",
+      });
+    }
+    expect(result[2]?.lastModified).toEqual(new Date("2026-02-02T00:00:00Z"));
+    expect(result[3]?.lastModified).toEqual(new Date("2026-02-02T00:00:00Z"));
   });
 
   it("degrades to [] when the page fetch fails", async () => {
@@ -141,7 +148,10 @@ describe("createCmssySitemap", () => {
       notFoundPageId: "nf",
     });
     const result = await createCmssySitemap(CONFIG)();
-    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+    expect(result.map((e) => e.url)).toEqual([
+      "https://cmssy.com/",
+      "https://cmssy.com/pl",
+    ]);
   });
 
   it("keeps a /not-found page that is NOT the configured 404 page", async () => {
@@ -152,7 +162,10 @@ describe("createCmssySitemap", () => {
       notFoundPageId: "some-other-id",
     });
     const result = await createCmssySitemap(CONFIG)();
-    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/not-found"]);
+    expect(result.map((e) => e.url)).toEqual([
+      "https://cmssy.com/not-found",
+      "https://cmssy.com/pl/not-found",
+    ]);
   });
 
   it("honours a custom excludeSlugs list (normalized)", async () => {
@@ -165,7 +178,10 @@ describe("createCmssySitemap", () => {
     const result = await createCmssySitemap(CONFIG, {
       excludeSlugs: ["/draft"],
     })();
-    expect(result.map((e) => e.url)).toEqual(["https://cmssy.com/"]);
+    expect(result.map((e) => e.url)).toEqual([
+      "https://cmssy.com/",
+      "https://cmssy.com/pl",
+    ]);
   });
 
   it("normalizes slugs without a leading slash", async () => {
@@ -237,6 +253,7 @@ describe("buildCmssyMetadata", () => {
     expect(md.alternates?.languages).toEqual({
       en: "https://cmssy.com/about",
       pl: "https://cmssy.com/pl/about",
+      "x-default": "https://cmssy.com/about",
     });
     expect(md.openGraph?.url).toBe("https://cmssy.com/about");
     expect((md.openGraph as { type?: string })?.type).toBe("website");
@@ -244,6 +261,58 @@ describe("buildCmssyMetadata", () => {
     expect((md.openGraph as { siteName?: string })?.siteName).toBe("Cmssy");
     expect((md.twitter as { card?: string })?.card).toBe("summary_large_image");
     expect(md.twitter?.images).toEqual(["https://assets/og.png"]);
+  });
+
+  it("reads the language from the path, not from a config the caller may not have set", async () => {
+    // The prefix IS the language. Taking it from config.resolveLocale (which a
+    // consumer easily leaves unset) served every translated page the default
+    // language's title - and a canonical pointing at the default language's
+    // URL, which tells Google the translation is a duplicate.
+    stubMeta({
+      page: {
+        id: "1",
+        seoTitle: { en: "About Cmssy", pl: "O Cmssy" },
+        seoDescription: { en: "Learn about us", pl: "O nas" },
+        displayName: { en: "About", pl: "O nas" },
+      },
+      siteConfig: SITE_CONFIG,
+    });
+    // No resolveLocale on this config - exactly how cmssy.com was configured.
+    const md = await buildCmssyMetadata(CONFIG, ["pl", "about"]);
+
+    expect(md.title).toBe("O Cmssy");
+    expect(md.description).toBe("O nas");
+    expect(md.alternates?.canonical).toBe("https://cmssy.com/pl/about");
+    expect((md.openGraph as { locale?: string })?.locale).toBe("pl");
+  });
+
+  it("still fetches the page by its unprefixed slug", async () => {
+    const fetchStub = stubMeta({
+      page: { id: "1", seoTitle: { pl: "O Cmssy" } },
+      siteConfig: SITE_CONFIG,
+    });
+    await buildCmssyMetadata(CONFIG, ["pl", "about"]);
+
+    const pageCall = fetchStub.mock.calls.find((call) =>
+      !JSON.parse((call[1] as { body: string }).body).query.includes(
+        "PublicSiteConfig",
+      ),
+    );
+    const variables = JSON.parse(
+      (pageCall![1] as { body: string }).body,
+    ).variables;
+    expect(variables.slug).toBe("/about");
+  });
+
+  it("an explicit locale wins over the path (per-domain sites)", async () => {
+    stubMeta({
+      page: { id: "1", seoTitle: { en: "About Cmssy", pl: "O Cmssy" } },
+      siteConfig: SITE_CONFIG,
+    });
+    const md = await buildCmssyMetadata(CONFIG, ["pl", "about"], {
+      locale: "en",
+    });
+    expect(md.title).toBe("About Cmssy");
   });
 
   it("falls back to displayName then siteName for the title", async () => {
@@ -307,6 +376,7 @@ describe("buildCmssyMetadata", () => {
     expect(md.alternates?.languages).toEqual({
       pl: "https://cmssy.com/o-nas",
       en: "https://cmssy.com/en/o-nas",
+      "x-default": "https://cmssy.com/o-nas",
     });
     expect(md.title).toBe("Strona");
   });
