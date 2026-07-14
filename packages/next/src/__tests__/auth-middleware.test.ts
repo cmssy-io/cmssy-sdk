@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { createCmssyAuthMiddleware } from "../auth-middleware";
-import { clearWorkspaceIdCache } from "../auth-client";
+import { clearWorkspaceIdCache } from "@cmssy/core";
 import {
   CMSSY_SESSION_COOKIE,
   sealSession,
   openSession,
   type CmssySessionPayload,
-} from "../session";
-import type { CmssyNextConfig } from "../config";
+} from "@cmssy/core";
+import type { CmssyConfig } from "@cmssy/core";
 
 const SECRET = "m".repeat(32);
 
-const config: CmssyNextConfig = {
+const config: CmssyConfig = {
   apiUrl: "https://api.test/graphql",
   org: "acme",
   workspaceSlug: "test-ws",

@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 
-import type { CmssyNextConfig } from "./config";
-import { CMSSY_SESSION_COOKIE, isAccessExpired, openSession } from "./session";
-import { backendMyOrder, backendMyOrders } from "./orders-client";
+import type { CmssyConfig } from "@cmssy/core";
+import { CMSSY_SESSION_COOKIE, isAccessExpired, openSession } from "@cmssy/core";
+import { backendMyOrder, backendMyOrders } from "@cmssy/core";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -22,7 +22,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 export function createCmssyOrdersRoute(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): CmssyOrdersRouteHandlers {
   async function memberAccessToken(): Promise<string | undefined> {
     if (!config.auth) return undefined;

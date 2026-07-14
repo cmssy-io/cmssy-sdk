@@ -45,7 +45,7 @@ export function resolveEditorOrigin(
   return value.trim().length > 0 ? value : DEFAULT_CMSSY_EDITOR_ORIGINS;
 }
 
-export interface CmssyNextConfig {
+export interface CmssyConfig {
   /**
    * Full GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint
    * (`https://api.cmssy.io/graphql`); set it only for self-hosted / staging.
@@ -90,7 +90,7 @@ export interface CmssyNextConfig {
  * empty string) or a cast.
  */
 export type CmssyEnvConfig = Omit<
-  CmssyNextConfig,
+  CmssyConfig,
   "org" | "workspaceSlug" | "draftSecret"
 > & {
   org?: string;
@@ -106,12 +106,12 @@ const REQUIRED_CONFIG_ENV = [
 
 /**
  * Validates an env-sourced config and returns a strictly-typed
- * {@link CmssyNextConfig}. Pass raw `process.env.*` values; this throws a clear,
+ * {@link CmssyConfig}. Pass raw `process.env.*` values; this throws a clear,
  * actionable error listing any missing required variables (rendered by the
  * Next.js error overlay / boundary), so the app fails fast instead of running
  * with silently-empty config.
  */
-export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
+export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
   const resolved: CmssyEnvConfig = { ...config };
   const missing: string[] = [];
   for (const [key, env] of REQUIRED_CONFIG_ENV) {
@@ -133,9 +133,9 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
       throw new Error(
         "cmssy: the config was evaluated in the browser, so it cannot see the " +
           "server's environment variables.\n\n" +
-          "This is an import problem, not a config problem: a client component " +
-          '("use client") imported a VALUE from a module that reads the cmssy ' +
-          "config - directly, or through a helper next to one.\n\n" +
+          "This is an import problem, not a config problem: client-side code " +
+          "imported a VALUE from a module that reads the cmssy config - " +
+          "directly, or through a helper sitting next to one.\n\n" +
           "Fix it by importing types only (they are erased at build time), or by " +
           "moving the value into a module that does not touch the config.",
       );
@@ -146,10 +146,10 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyNextConfig {
       )}\nSet the listed environment variables (e.g. in .env.local) and restart the dev server.`,
     );
   }
-  return resolved as CmssyNextConfig;
+  return resolved as CmssyConfig;
 }
 
-export function assertAuthConfig(config: CmssyNextConfig): CmssyAuthConfig {
+export function assertAuthConfig(config: CmssyConfig): CmssyAuthConfig {
   const auth = config.auth;
   if (!auth || typeof auth.modelSlug !== "string" || !auth.modelSlug) {
     throw new Error("cmssy: config.auth.modelSlug is required for auth routes");

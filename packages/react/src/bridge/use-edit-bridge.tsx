@@ -4,12 +4,12 @@ import {
   type BlockMeta,
   type BlockRect,
   type BlockSchema,
-} from "./protocol";
+} from "@cmssy/core";
 import {
   parseEditorMessage,
   postToEditor,
   resolveInitialTarget,
-} from "./messages";
+} from "@cmssy/core";
 
 export interface EditBridgeConfig {
   editorOrigin: string | string[];

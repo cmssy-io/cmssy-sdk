@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { EditBridgeConfig, PatchMap } from "./use-edit-bridge";
-import { parseEditorMessage } from "./messages";
+import { parseEditorMessage } from "@cmssy/core";
 
 export function useLayoutPatchBridge(
   position: string,

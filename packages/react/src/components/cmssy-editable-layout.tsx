@@ -4,11 +4,11 @@ import { useMemo } from "react";
 import type {
   CmssyLayoutGroup,
   RawLayoutBlock,
-} from "../content/content-client";
+} from "@cmssy/core";
 import { buildBlockMap, type BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
-import { buildBlockContext } from "./block-context";
+import { buildBlockContext } from "@cmssy/core";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditableLayoutProps {

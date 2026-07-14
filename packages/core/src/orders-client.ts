@@ -1,10 +1,7 @@
-import {
-  graphqlRequest,
-  resolveApiUrl,
-  resolveWorkspaceId,
-} from "@cmssy/react";
+import { graphqlRequest } from "./data/graphql-request";
+import { cachedWorkspaceId } from "./data/settings-client";
 import type { CmssyOrder, MyOrdersResult } from "@cmssy/types";
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "./config";
 
 // MyOrdersResult lives in @cmssy/types; re-exported for consumers.
 export type { MyOrdersResult };
@@ -105,24 +102,6 @@ export const PUBLIC_ORDER_BY_TOKEN = `query PublicOrder($workspaceId: ID!, $orde
   }
 }`;
 
-const workspaceIdCache = new Map<string, Promise<string>>();
-
-function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
-  const existing = workspaceIdCache.get(key);
-  if (existing) return existing;
-  const fresh = resolveWorkspaceId(config).catch((err: unknown) => {
-    workspaceIdCache.delete(key);
-    throw err;
-  });
-  workspaceIdCache.set(key, fresh);
-  return fresh;
-}
-
-export function clearWorkspaceIdCache(): void {
-  workspaceIdCache.clear();
-}
-
 function headers(workspaceId: string, accessToken: string) {
   return {
     "x-workspace-id": workspaceId,
@@ -131,11 +110,11 @@ function headers(workspaceId: string, accessToken: string) {
 }
 
 export async function backendMyOrders(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   accessToken: string,
   options: { skip?: number; limit?: number },
 ): Promise<MyOrdersResult> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await graphqlRequest<{ account: { orders: MyOrdersResult } }>(
     config,
     MY_ORDERS,
@@ -147,11 +126,11 @@ export async function backendMyOrders(
 }
 
 export async function backendMyOrder(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   accessToken: string,
   id: string,
 ): Promise<CmssyOrder | null> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await graphqlRequest<{ account: { order: CmssyOrder | null } }>(
     config,
     MY_ORDER,
@@ -163,10 +142,10 @@ export async function backendMyOrder(
 }
 
 export async function backendOrderByToken(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   options: { orderId: string; accessToken: string },
 ): Promise<CmssyOrder> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   const data = await graphqlRequest<{
     public: { order: { byToken: CmssyOrder } };
   }>(

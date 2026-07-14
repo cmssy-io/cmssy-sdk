@@ -1,16 +1,16 @@
 import { cookies } from "next/headers";
-import type { CmssyNextConfig } from "./config";
-import { assertAuthConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
+import { assertAuthConfig } from "@cmssy/core";
 import {
   CMSSY_SESSION_COOKIE,
   isAccessExpired,
   openSession,
   type CmssySessionPayload,
   type CmssySessionUser,
-} from "./session";
+} from "@cmssy/core";
 
 async function readValidSession(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): Promise<CmssySessionPayload | null> {
   const auth = assertAuthConfig(config);
   const jar = await cookies();
@@ -26,14 +26,14 @@ async function readValidSession(
 }
 
 export async function getCmssyUser(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): Promise<CmssySessionUser | null> {
   const session = await readValidSession(config);
   return session?.user ?? null;
 }
 
 export async function getCmssyAccessToken(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): Promise<string | null> {
   const session = await readValidSession(config);
   return session?.accessToken ?? null;

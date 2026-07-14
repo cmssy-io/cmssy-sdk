@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { resolveSiteLocales } from "@cmssy/react";
-import type { CmssyNextConfig } from "../config";
-import { applyCmssyCsp } from "../csp";
-import { CMSSY_EDIT_HEADER } from "../edit-mode";
+import type { CmssyConfig } from "@cmssy/core";
+import { applyCmssyCsp } from "@cmssy/core";
+import { CMSSY_EDIT_HEADER } from "@cmssy/core";
 import { cmssyEditRewrite } from "../edit-middleware";
-import { CMSSY_LOCALE_HEADER, localeForPathname } from "../locale";
+import { CMSSY_LOCALE_HEADER, localeForPathname } from "@cmssy/core";
 
 export interface CmssyProxyOptions {
   /**
@@ -31,7 +31,7 @@ export interface CmssyProxyOptions {
  * before this existed.
  */
 export function createCmssyProxy(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   options: CmssyProxyOptions = {},
 ) {
   return async function cmssyProxy(request: NextRequest): Promise<NextResponse> {

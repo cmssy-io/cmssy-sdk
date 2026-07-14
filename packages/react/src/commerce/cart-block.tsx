@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { defineBlock } from "../registry";
 import { useCart } from "./commerce-provider";
-import { formatPrice } from "./money";
+import { formatPrice } from "@cmssy/core";
 
 function CartComponent() {
   const {

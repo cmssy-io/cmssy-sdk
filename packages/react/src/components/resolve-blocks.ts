@@ -1,7 +1,7 @@
-import type { RawBlock } from "../content/content-client";
-import { getBlockContentForLanguage } from "../content/get-block-content";
+import type { RawBlock } from "@cmssy/core";
+import { getBlockContentForLanguage } from "@cmssy/core";
 import type { LoaderMap } from "../registry";
-import type { CmssyBlockContext } from "./block-context";
+import type { CmssyBlockContext } from "@cmssy/core";
 
 export interface ResolvedBlock {
   content: Record<string, unknown>;

@@ -4,8 +4,8 @@ import {
   sealSession,
   openSession,
   type CmssySessionPayload,
-} from "../session";
-import type { CmssyNextConfig } from "../config";
+} from "@cmssy/core";
+import type { CmssyConfig } from "@cmssy/core";
 
 const cookieStore = new Map<string, { value: string; options?: unknown }>();
 
@@ -22,13 +22,13 @@ vi.mock("next/headers", () => ({
 }));
 
 import { createCmssyAuthRoute } from "../create-auth-route";
-import { assertAuthConfig } from "../config";
+import { assertAuthConfig } from "@cmssy/core";
 import { getCmssyUser, getCmssyAccessToken } from "../auth-server";
-import { clearWorkspaceIdCache, decodeAccessClaims } from "../auth-client";
+import { clearWorkspaceIdCache, decodeAccessClaims } from "@cmssy/core";
 
 const SECRET = "s".repeat(32);
 
-const config: CmssyNextConfig = {
+const config: CmssyConfig = {
   apiUrl: "https://api.test/graphql",
   org: "acme",
   workspaceSlug: "test-ws",

@@ -1,5 +1,5 @@
 // Commerce data shapes live in @cmssy/types (single source of truth);
-// re-exported here so consumers keep importing them from @cmssy/react.
+// re-exported here so consumers import them from @cmssy/core.
 export type {
   CmssyPriceTier,
   CmssyCartItemSnapshot,
