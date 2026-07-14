@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: [next, astro]
+        framework: [next, astro, remix]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -46,7 +46,7 @@ jobs:
       - name: Pack this checkout
         run: |
           mkdir -p /tmp/pkgs
-          for pkg in core react next astro eslint-plugin; do
+          for pkg in core react next astro remix eslint-plugin; do
             (cd "packages/$pkg" && pnpm pack --pack-destination /tmp/pkgs)
           done
           ls /tmp/pkgs
@@ -101,7 +101,7 @@ jobs:
         if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
         env:
-          SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'next' && '3000' || '4321' }}
+          SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'astro' && '4321' || '3000' }}
         run: |
           pnpm start &
           npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
