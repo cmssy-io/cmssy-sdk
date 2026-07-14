@@ -144,3 +144,24 @@ describe("framework boundary", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// A site that advertises localhost is worse than one with no sitemap at all:
+// Google indexes nothing and you find out weeks later. Behind Vercel the
+// server's own origin IS localhost, so the forwarded host is the only truth.
+describe("base URL behind a proxy", () => {
+  it("uses the host the visitor asked for, not the server's own origin", async () => {
+    stubSiteConfig();
+    const { createCmssyRobots } = await import("../seo");
+
+    const response = await createCmssyRobots(CONFIG)({
+      url: new URL("http://localhost:3000/robots.txt"),
+      request: new Request("http://localhost:3000/robots.txt", {
+        headers: { "x-forwarded-host": "shop.example.com" },
+      }),
+    });
+    const body = await response.text();
+
+    expect(body).toContain("Sitemap: https://shop.example.com/sitemap.xml");
+    expect(body).not.toContain("localhost");
+  });
+});
