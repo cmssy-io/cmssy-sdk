@@ -7,6 +7,10 @@ import { transform as transformV7 } from "./v7";
 const TRANSFORMS = { v5: transformV5, v7: transformV7 };
 type Version = keyof typeof TRANSFORMS;
 
+// The message has to name the version it looked for. Saying "no 4.x imports"
+// after a v7 run tells the developer nothing about what was checked.
+const PREVIOUS_MAJOR: Record<Version, string> = { v5: "4.x", v7: "6.x" };
+
 const SKIP = new Set(["node_modules", "dist", "build", "out", "coverage"]);
 const EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
@@ -60,7 +64,9 @@ async function main(): Promise<void> {
   }
 
   if (touched.length === 0) {
-    console.log("cmssy: nothing to migrate - no 4.x imports found.");
+    console.log(
+      `cmssy: nothing to migrate - no ${PREVIOUS_MAJOR[version]} imports found.`,
+    );
     return;
   }
 

@@ -1,4 +1,14 @@
 {
-  "url": "https://context7.com/cmssy-io/cmssy-sdk",
-  "public_key": "pk_dn8mCBCoFKGcWyPFzluwi"
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "cmssy SDK",
+  "description": "Headless SDK for cmssy. @cmssy/core is framework-agnostic (no React, no Next, no Node built-ins); @cmssy/react, @cmssy/next, @cmssy/astro and @cmssy/remix are adapters.",
+  "folders": ["docs", "packages"],
+  "excludeFolders": ["node_modules", "dist", "_autodocs"],
+  "excludeFiles": ["CHANGELOG.md"],
+  "rules": [
+    "The framework is an adapter, never the foundation. Data, config and the editor protocol live in @cmssy/core.",
+    "@cmssy/next has one entry per runtime: / (anywhere), /server (RSC + route handlers), /middleware (edge), /client (browser).",
+    "The editor needs a verified request: cmssyEdit=1 AND a cmssySecret matching the draft secret. A bare cmssyEdit=1 must never open it.",
+    "A build cannot tell you whether the editor still works. Run checkCmssyEditMode against a started production build."
+  ]
 }
