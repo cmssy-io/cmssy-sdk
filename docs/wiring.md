@@ -39,7 +39,7 @@ empty one, and the error surfaces later, somewhere unrelated.
 
 ```ts
 // proxy.ts
-import { createCmssyProxy, cmssyProxyMatcher } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/preset";
 import { cmssy } from "@/cmssy.config";
 
 export const proxy = createCmssyProxy(cmssy, {
@@ -48,7 +48,9 @@ export const proxy = createCmssyProxy(cmssy, {
   stripLocalePrefix: true,
 });
 
-export const config = { matcher: cmssyProxyMatcher };
+// Next parses this at compile time, so the matcher must be a literal - an
+// imported constant is rejected.
+export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
 ```
 
 The preset resolves the language, sends verified editor traffic to `/cmssy-edit`

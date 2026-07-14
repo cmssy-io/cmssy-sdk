@@ -15,6 +15,18 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
+  packages/create-cmssy-app:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/next:
     dependencies:
       '@cmssy/types':
@@ -793,6 +805,9 @@ packages:
 
   '@types/node@20.19.41':
     resolution: {integrity: sha512-ECymXOukMnOoVkC2bb1Vc/w/836DXncOg5m8Xj1RH7xSHZJWNYY6Zh7EH477vcnD5egKNNfy2RpNOmuChhFPgQ==}
+
+  '@types/node@22.20.1':
+    resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -1942,6 +1957,10 @@ snapshots:
   '@types/estree@1.0.9': {}
 
   '@types/node@20.19.41':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.20.1':
     dependencies:
       undici-types: 6.21.0
 

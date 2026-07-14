@@ -39,6 +39,19 @@ describe("checkCmssyEditMode", () => {
     expect(result.ok).toBe(true);
   });
 
+  it("does not require layout blocks: a site without chrome is valid", async () => {
+    const bare = "<html><main>hi</main></html>";
+    serve({
+      [`${BASE}/`]: bare,
+      [`${BASE}/?cmssyEdit=1`]: bare,
+      [verifiedUrl()]: "<html><script>CmssyEditor</script><main>hi</main></html>",
+    });
+
+    const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
+
+    expect(result.failures).toEqual([]);
+  });
+
   it("fails when the verified request renders no editor - the /cmssy-edit route is missing (CMS-969)", async () => {
     // Exactly what a consumer looks like after an SDK 4 bump without the route:
     // the site serves fine, and the editor iframe gets a page it cannot edit.
