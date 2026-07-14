@@ -10,8 +10,8 @@
     "smoke:edit": "node scripts/smoke-edit.mjs"
   },
   "dependencies": {
-    "@cmssy/next": "^4.7.1",
-    "@cmssy/react": "^4.7.1",
+    "@cmssy/next": "^4.7.2",
+    "@cmssy/react": "^4.7.2",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
