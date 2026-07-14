@@ -74,5 +74,30 @@ jobs:
               echo "Publishing $name@$version"
               pnpm publish --access public --no-git-checks
             fi
+            # A first publish under this scope lands RESTRICTED even though npm
+            # reports "public access", so the package 404s for everyone who is
+            # not us. This is idempotent on an already-public package.
+            npm access set status=public "$name"
             cd ../..
           done
+
+      # `npm view` runs with our token, so it happily finds a package nobody
+      # else can install - which is exactly how 5.0.0 shipped three packages
+      # that 404'd for the world. This asks the registry as a stranger.
+      - name: Verify the packages are installable by anyone
+        run: |
+          set -e
+          failed=0
+          for pkg in core eslint-plugin codemod react next create-cmssy-app; do
+            name=$(node -p "require('./packages/$pkg/package.json').name")
+            version=$(node -p "require('./packages/$pkg/package.json').version")
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              "https://registry.npmjs.org/${name}/${version}")
+            if [ "$code" = "200" ]; then
+              echo "ok  $name@$version"
+            else
+              echo "FAIL $name@$version — anonymous fetch returned $code"
+              failed=1
+            fi
+          done
+          exit $failed
