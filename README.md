@@ -12,6 +12,43 @@ editor; your app owns rendering and hosting.
 | `@cmssy/react` | Framework-agnostic core: component registry, field controls, `CmssyServerPage`, the editor bridge agent, content/data clients, the versioned postMessage protocol. |
 | `@cmssy/next`  | Next.js adapter: catch-all route helper, draft mode, framing CSP.                                                                                                  |
 
+## Docs
+
+| | |
+| --- | --- |
+| [**Reference wiring**](docs/wiring.md) | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other. |
+| [**Troubleshooting**](docs/troubleshooting.md) | Symptom → cause. Every row cost us half a day, and none of them failed a build. |
+| [**Testing**](docs/testing.md) | `checkCmssyEditMode` - the editor is the one path a build cannot check. |
+| [**Migrating to v4**](docs/migrations/v3-to-v4.md) | The editor moved to its own route. Skip this and your preview goes blank. |
+| [**Changelog**](CHANGELOG.md) | Every entry answers one question: do I have to do anything? |
+
+## Wiring, the short version
+
+```ts
+// proxy.ts
+import { createCmssyProxy, cmssyProxyMatcher } from "@cmssy/next/preset";
+import { cmssy } from "@/cmssy.config";
+
+export const proxy = createCmssyProxy(cmssy);
+export const config = { matcher: cmssyProxyMatcher };
+```
+
+```tsx
+// app/[[...path]]/page.tsx        - the public pages
+export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
+
+// app/cmssy-edit/[[...path]]/page.tsx  - the editor. Miss this file and the
+export const dynamic = "force-dynamic";  //  preview is blank.
+export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
+```
+
+```tsx
+// app/layout.tsx - the header and footer are blocks, so they are editable too
+<CmssyChrome config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
+```
+
+Full version, with the reasons: [docs/wiring.md](docs/wiring.md).
+
 ## `@cmssy/next` quickstart
 
 Collect your blocks in one array, then wire these files in your Next.js app.
