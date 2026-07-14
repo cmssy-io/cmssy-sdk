@@ -32,8 +32,24 @@ function xmlEscape(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-async function baseUrlFor(config: CmssyConfig, url: URL): Promise<string> {
-  return (config.siteUrl ?? url.origin).replace(/\/+$/, "");
+/**
+ * Behind a proxy (Vercel, Cloudflare, any CDN) the server sees its own origin -
+ * `http://localhost:3000` - so a sitemap built from it advertises localhost URLs
+ * to Google. The forwarded host is what the visitor actually asked for.
+ */
+function baseUrlFor(config: CmssyConfig, url: URL, request: Request): string {
+  if (config.siteUrl) return config.siteUrl.replace(/\/+$/, "");
+
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!host) return url.origin.replace(/\/+$/, "");
+
+  const protocol =
+    request.headers.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") || host.startsWith("127.0.0.1")
+      ? "http"
+      : "https");
+  return `${protocol}://${host}`.replace(/\/+$/, "");
 }
 
 /**
@@ -44,8 +60,14 @@ export function createCmssySitemap(
   config: CmssyConfig,
   options: CmssySitemapOptions = {},
 ) {
-  return async function GET({ url }: { url: URL }): Promise<Response> {
-    const baseUrl = await baseUrlFor(config, url);
+  return async function GET({
+    url,
+    request,
+  }: {
+    url: URL;
+    request: Request;
+  }): Promise<Response> {
+    const baseUrl = baseUrlFor(config, url, request);
     const { defaultLocale, locales } = await resolveSiteLocales(config);
 
     const pages = await fetchPages(config);
@@ -96,8 +118,14 @@ export function createCmssySitemap(
 }
 
 export function createCmssyRobots(config: CmssyConfig) {
-  return async function GET({ url }: { url: URL }): Promise<Response> {
-    const baseUrl = await baseUrlFor(config, url);
+  return async function GET({
+    url,
+    request,
+  }: {
+    url: URL;
+    request: Request;
+  }): Promise<Response> {
+    const baseUrl = baseUrlFor(config, url, request);
     const body = [
       "User-agent: *",
       "Allow: /",
