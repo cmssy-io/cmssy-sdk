@@ -1,0 +1,22 @@
+{
+  "name": "create-cmssy-app",
+  "version": "4.7.1",
+  "description": "Start a cmssy-powered Next.js app that works, is editable, and proves it stays that way.",
+  "type": "module",
+  "bin": {
+    "create-cmssy-app": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}

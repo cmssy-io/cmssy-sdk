@@ -26,11 +26,11 @@ editor; your app owns rendering and hosting.
 
 ```ts
 // proxy.ts
-import { createCmssyProxy, cmssyProxyMatcher } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/preset";
 import { cmssy } from "@/cmssy.config";
 
 export const proxy = createCmssyProxy(cmssy);
-export const config = { matcher: cmssyProxyMatcher };
+export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
 ```
 
 ```tsx
