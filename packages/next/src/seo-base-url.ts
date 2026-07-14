@@ -1,4 +1,4 @@
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
 
 export interface SeoBaseUrlOption {
   /**
@@ -13,7 +13,7 @@ function trimTrailingSlash(url: string): string {
 }
 
 export async function resolveSeoBaseUrl(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   option?: SeoBaseUrlOption["baseUrl"],
 ): Promise<string> {
   if (typeof option === "function") return trimTrailingSlash(await option());

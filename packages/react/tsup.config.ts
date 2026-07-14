@@ -10,7 +10,7 @@ export default defineConfig({
   clean: true,
   splitting: false,
   treeshake: true,
-  external: ["react", "react-dom"],
+  external: ["react", "react-dom", /^@cmssy\/core/],
   async onSuccess() {
     for (const file of CLIENT_OUTPUTS) {
       const code = await readFile(file, "utf8");

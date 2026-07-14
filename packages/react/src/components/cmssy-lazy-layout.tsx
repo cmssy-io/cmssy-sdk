@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CmssyLayoutGroup } from "../content/content-client";
+import type { CmssyLayoutGroup } from "@cmssy/core";
 import type { BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { CmssyEditableLayout } from "./cmssy-editable-layout";

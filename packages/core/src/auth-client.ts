@@ -1,9 +1,6 @@
-import {
-  graphqlRequest,
-  resolveApiUrl,
-  resolveWorkspaceId,
-} from "@cmssy/react";
-import type { CmssyNextConfig } from "./config";
+import { graphqlRequest } from "./data/graphql-request";
+import { cachedWorkspaceId } from "./data/settings-client";
+import type { CmssyConfig } from "./config";
 import type { CmssySessionPayload, CmssySessionUser } from "./session";
 
 export interface AuthMutationResult {
@@ -69,32 +66,14 @@ export const VERIFY_MUTATION = `mutation SiteMemberVerifyEmail($token: String!) 
   }
 }`;
 
-const workspaceIdCache = new Map<string, Promise<string>>();
-
-function workspaceIdFor(config: CmssyNextConfig): Promise<string> {
-  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
-  const existing = workspaceIdCache.get(key);
-  if (existing) return existing;
-  const fresh = resolveWorkspaceId(config).catch((err: unknown) => {
-    workspaceIdCache.delete(key);
-    throw err;
-  });
-  workspaceIdCache.set(key, fresh);
-  return fresh;
-}
-
-export function clearWorkspaceIdCache(): void {
-  workspaceIdCache.clear();
-}
-
 async function authRequest<T>(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   query: string,
   variables: Record<string, unknown>,
   label: string,
   accessToken?: string,
 ): Promise<T> {
-  const workspaceId = await workspaceIdFor(config);
+  const workspaceId = await cachedWorkspaceId(config);
   return graphqlRequest<T>(
     config,
     query,
@@ -156,7 +135,7 @@ export function toSessionPayload(
 }
 
 export async function backendSignIn(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   modelSlug: string,
   identity: string,
   password: string,
@@ -173,7 +152,7 @@ export async function backendSignIn(
 }
 
 export async function backendRegister(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   modelSlug: string,
   identity: string,
   password: string,
@@ -191,7 +170,7 @@ export async function backendRegister(
 }
 
 export async function backendRefresh(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   refreshToken: string,
 ): Promise<AuthTokenResult> {
   const data = await authRequest<{ siteMember: { refresh: AuthTokenResult } }>(
@@ -204,7 +183,7 @@ export async function backendRefresh(
 }
 
 export async function backendSignOut(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   refreshToken: string,
 ): Promise<void> {
   try {
@@ -220,7 +199,7 @@ export async function backendSignOut(
 }
 
 export async function backendSignOutEverywhere(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   accessToken: string,
 ): Promise<void> {
   try {
@@ -237,7 +216,7 @@ export async function backendSignOutEverywhere(
 }
 
 export async function backendForgotPassword(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   modelSlug: string,
   identity: string,
 ): Promise<AuthMutationResult> {
@@ -253,7 +232,7 @@ export async function backendForgotPassword(
 }
 
 export async function backendResetPassword(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   token: string,
   newPassword: string,
 ): Promise<AuthMutationResult> {
@@ -269,7 +248,7 @@ export async function backendResetPassword(
 }
 
 export async function backendVerifyEmail(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   token: string,
 ): Promise<AuthMutationResult> {
   const data = await authRequest<{ siteMember: { verifyEmail: AuthMutationResult } }>(

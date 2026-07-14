@@ -4,8 +4,8 @@ import {
   splitLocaleFromPath,
   type CmssySiteLocales,
 } from "@cmssy/react";
-import type { CmssyNextConfig } from "./config";
-import { CMSSY_LOCALE_HEADER } from "./locale";
+import type { CmssyConfig } from "@cmssy/core";
+import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
 /**
  * Resolves the active locale from a pathname's leading segment. Uses the
@@ -13,7 +13,7 @@ import { CMSSY_LOCALE_HEADER } from "./locale";
  * network); otherwise fetches the workspace locales (cached).
  */
 export async function resolveLocaleFromPathname(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   pathname: string,
 ): Promise<string> {
   const segments = pathname.split("/").filter(Boolean);
@@ -41,7 +41,7 @@ export async function resolveLocaleFromPathname(
  * the `x-cmssy-locale` request header, so server components that can't read the
  * path (root layout) resolve the right locale via `getCmssyLocale`.
  */
-export function createCmssyLocaleMiddleware(config: CmssyNextConfig) {
+export function createCmssyLocaleMiddleware(config: CmssyConfig) {
   return async function cmssyLocaleMiddleware(
     request: NextRequest,
   ): Promise<NextResponse> {

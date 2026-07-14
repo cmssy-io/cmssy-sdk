@@ -4,9 +4,9 @@ import {
   fetchSiteConfig,
   type CmssyClientConfig,
 } from "@cmssy/react";
-import type { CmssyNextConfig } from "./config";
+import type { CmssyConfig } from "@cmssy/core";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
-import { localizedPath, normalizeSlug, resolveSeoLocales } from "./seo-paths";
+import { localizedPath, normalizeSlug, resolveSeoLocales } from "@cmssy/core";
 
 /** What an `extra` resolver needs to build URLs that agree with the page ones. */
 export interface CmssySitemapContext {
@@ -43,7 +43,7 @@ export interface CreateCmssySitemapOptions extends SeoBaseUrlOption {
  *   export default createCmssySitemap(cmssy);
  */
 export function createCmssySitemap(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   options: CreateCmssySitemapOptions = {},
 ) {
   const clientConfig: CmssyClientConfig = {

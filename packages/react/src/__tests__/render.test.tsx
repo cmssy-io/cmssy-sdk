@@ -5,7 +5,7 @@ import { CmssyServerLayout } from "../components/cmssy-server-layout";
 import { CmssyBlock } from "../components/cmssy-block";
 import { renderResolvedBlock } from "../components/render-resolved-block";
 import { defineBlock, buildBlockMap } from "../registry";
-import { fields } from "../fields";
+import { fields } from "@cmssy/core";
 
 const Hero = ({ content }: { content: Record<string, unknown> }) => (
   <h1>{String(content.heading ?? "")}</h1>

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { createCmssyProxy } from "../preset/proxy";
-import { CMSSY_EDIT_HEADER } from "../edit-mode";
-import { CMSSY_LOCALE_HEADER } from "../locale";
+import { CMSSY_EDIT_HEADER } from "@cmssy/core";
+import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",

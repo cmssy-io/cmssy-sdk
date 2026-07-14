@@ -5,8 +5,8 @@ import {
   blocksToSchemas,
   blocksToMeta,
 } from "../registry";
-import { fields } from "../fields";
-import { PROTOCOL_VERSION, isProtocolCompatible } from "../bridge/protocol";
+import { fields } from "@cmssy/core";
+import { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
 
 const Dummy = () => null;
 

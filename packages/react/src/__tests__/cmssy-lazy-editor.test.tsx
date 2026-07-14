@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, waitFor, cleanup } from "@testing-library/react";
 import { CmssyLazyEditor } from "../components/cmssy-lazy-editor";
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
+import { fields } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
-import type { CmssyNextConfig, CmssyAuthConfig } from "./config";
-import { assertAuthConfig } from "./config";
+import type { CmssyConfig, CmssyAuthConfig } from "@cmssy/core";
+import { assertAuthConfig } from "@cmssy/core";
 import {
   CMSSY_SESSION_COOKIE,
   isAccessExpired,
@@ -8,7 +8,7 @@ import {
   sealSession,
   sessionCookieOptions,
   type CmssySessionPayload,
-} from "./session";
+} from "@cmssy/core";
 import {
   backendForgotPassword,
   backendRefresh,
@@ -19,7 +19,7 @@ import {
   backendSignOutEverywhere,
   backendVerifyEmail,
   toSessionPayload,
-} from "./auth-client";
+} from "@cmssy/core";
 
 const MAX_BODY_CHARS = 16 * 1024;
 
@@ -71,7 +71,7 @@ function plainObject(value: unknown): Record<string, unknown> {
 }
 
 async function readSession(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   auth: CmssyAuthConfig,
 ): Promise<CmssySessionPayload | null> {
   const jar = await cookies();
@@ -81,7 +81,7 @@ async function readSession(
 }
 
 async function writeSession(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   auth: CmssyAuthConfig,
   payload: CmssySessionPayload,
 ): Promise<void> {
@@ -103,7 +103,7 @@ async function clearSession(): Promise<void> {
 }
 
 async function refreshSession(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   auth: CmssyAuthConfig,
   session: CmssySessionPayload,
 ): Promise<CmssySessionPayload | null> {
@@ -118,7 +118,7 @@ async function refreshSession(
 }
 
 export function createCmssyAuthRoute(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
 ): CmssyAuthRouteHandlers {
   const auth = assertAuthConfig(config);
 

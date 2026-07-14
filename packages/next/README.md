@@ -95,7 +95,7 @@ Language switcher and raw markup helpers live in `@cmssy/react`:
 
 `createCmssyPage`, `createDraftRoute`, `cmssyCspHeaders` / `applyCmssyCsp`,
 `isCmssyEditRequest` / `isCmssyEditMode`, `createCmssyLocaleMiddleware` /
-`resolveLocaleFromPathname`, the `CmssyNextConfig` type, and from
+`resolveLocaleFromPathname`, the `CmssyConfig` type, and from
 `@cmssy/next/client`: `CmssyLink`, `CmssyLocaleProvider`, `useCmssyLocale`.
 
 ## License

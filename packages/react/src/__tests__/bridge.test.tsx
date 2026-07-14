@@ -4,8 +4,8 @@ import { render, act, cleanup } from "@testing-library/react";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyEditablePage } from "../components/editable-page";
 import { defineBlock } from "../registry";
-import { fields } from "../fields";
-import { PROTOCOL_VERSION } from "../bridge/protocol";
+import { fields } from "@cmssy/core";
+import { PROTOCOL_VERSION } from "@cmssy/core";
 
 const editorOrigin = "https://editor.cmssy.io";
 

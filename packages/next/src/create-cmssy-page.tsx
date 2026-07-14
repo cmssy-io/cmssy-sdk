@@ -21,11 +21,11 @@ import { getCmssyUser } from "./auth-server";
 import {
   isDevelopment,
   resolveEditorOrigin,
-  type CmssyNextConfig,
-} from "./config";
-import { toCspOrigin } from "./csp";
-import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "./edit-mode";
-import { cmssySecretsMatch } from "./secret-match";
+  type CmssyConfig,
+} from "@cmssy/core";
+import { toCspOrigin } from "@cmssy/core";
+import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
+import { cmssySecretsMatch } from "@cmssy/core";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -86,7 +86,7 @@ async function resolveEditorRequest(
  * mounted with `createCmssyEditPage`.
  */
 export function createCmssyPage(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
 ) {
@@ -100,7 +100,7 @@ export function createCmssyPage(
  * on the route path (bypassing the middleware) cannot mount the editor.
  */
 export function createCmssyEditPage(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   blocks: BlockDefinition[],
   options?: CreateCmssyPageOptions,
 ) {
@@ -108,7 +108,7 @@ export function createCmssyEditPage(
 }
 
 function buildCmssyPageRenderer(
-  config: CmssyNextConfig,
+  config: CmssyConfig,
   blocks: BlockDefinition[],
   options: CreateCmssyPageOptions | undefined,
   editRoute: boolean,

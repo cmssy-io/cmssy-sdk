@@ -6,12 +6,12 @@ import {
   type BlockDefinition,
   type CmssyLayoutGroup,
 } from "@cmssy/react";
-import { resolveEditorOrigin, type CmssyNextConfig } from "../config";
+import { resolveEditorOrigin, type CmssyConfig } from "@cmssy/core";
 import { isCmssyEditMode } from "../edit-mode";
 import { getCmssyLocale } from "../locale";
 
 export interface CmssyChromeProps {
-  config: CmssyNextConfig;
+  config: CmssyConfig;
   blocks: BlockDefinition[];
   position: string;
   /**
