@@ -1,0 +1,38 @@
+{
+  "name": "@cmssy/codemod",
+  "version": "5.0.0",
+  "description": "Rewrites cmssy imports across major versions, so a breaking release costs minutes instead of an afternoon.",
+  "keywords": [
+    "cmssy",
+    "codemod",
+    "migration"
+  ],
+  "homepage": "https://cmssy.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmssy-io/cmssy-sdk.git",
+    "directory": "packages/codemod"
+  },
+  "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "cmssy-codemod": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
