@@ -39,20 +39,27 @@ jobs:
           node packages/create-cmssy-app/dist/index.js /tmp/app \
             --framework ${{ matrix.framework }}
 
-      # The starter depends on the PUBLISHED packages; this build is about the
-      # template's own wiring, so point it at the workspace build instead of
-      # whatever npm has.
+      # The starter pins the version it will ship with, which is not on npm yet -
+      # and asking npm for it would test the last release, not this diff. Point
+      # every @cmssy/* dependency at THIS checkout instead.
       - name: Install the starter against this checkout
         working-directory: /tmp/app
         run: |
+          node -e '
+            const fs = require("fs");
+            const root = process.env.GITHUB_WORKSPACE;
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const overrides = {};
+            for (const name of Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })) {
+              if (!name.startsWith("@cmssy/")) continue;
+              const dir = name === "@cmssy/eslint-plugin" ? "eslint-plugin" : name.slice("@cmssy/".length);
+              overrides[name] = `link:${root}/packages/${dir}`;
+            }
+            pkg.pnpm = { ...pkg.pnpm, overrides };
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+            console.log("linked:", Object.keys(overrides).join(", "));
+          '
           pnpm install --no-frozen-lockfile
-          for pkg in core react next astro eslint-plugin; do
-            dir="$GITHUB_WORKSPACE/packages/$pkg"
-            [ -d "$dir" ] || continue
-            target="node_modules/@cmssy/$pkg"
-            [ -e "$target" ] || continue
-            rm -rf "$target" && ln -s "$dir" "$target"
-          done
 
       - name: Build
         working-directory: /tmp/app
