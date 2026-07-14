@@ -1,0 +1,38 @@
+---
+import { loadCmssyPage } from "@cmssy/astro";
+import { cmssy } from "../cmssy.config";
+import { Blocks } from "../components/Blocks";
+
+export const prerender = false;
+
+const { page, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
+  cmssy,
+  Astro.request,
+  Astro.url,
+);
+
+if (!page) {
+  Astro.response.status = 404;
+}
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <title>{page?.seoTitle?.[locale] ?? page?.displayName?.[locale] ?? "cmssy on Astro"}</title>
+  </head>
+  <body>
+    {
+      page ? (
+        <Blocks
+          page={page}
+          locale={locale}
+          defaultLocale={defaultLocale}
+          enabledLocales={enabledLocales}
+        />
+      ) : (
+        <main><h1>Not found</h1></main>
+      )
+    }
+  </body>
+</html>
