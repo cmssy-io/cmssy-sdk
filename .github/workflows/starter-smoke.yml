@@ -14,6 +14,12 @@ on:
 jobs:
   starter:
     runs-on: ubuntu-latest
+    # The `secrets` context is not available in a step `if`, so it is lifted into
+    # env once and the steps branch on that.
+    env:
+      CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
+      CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
+      CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
     strategy:
       fail-fast: false
       matrix:
@@ -50,22 +56,15 @@ jobs:
 
       - name: Build
         working-directory: /tmp/app
-        env:
-          CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
-          CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
-          CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
         run: pnpm build
 
       # A build proves the app compiles. The editor is the path it cannot check,
       # and that needs a running server and a real workspace. Without the
       # secrets, say so - a green check that verifies nothing is worse than none.
       - name: Editor smoke test
-        if: ${{ secrets.CMSSY_DRAFT_SECRET != '' }}
+        if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
         env:
-          CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
-          CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
-          CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
           SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'next' && '3000' || '4321' }}
         run: |
           pnpm start &
@@ -73,7 +72,7 @@ jobs:
           pnpm smoke:edit
 
       - name: No workspace secrets - editor NOT verified
-        if: ${{ secrets.CMSSY_DRAFT_SECRET == '' }}
+        if: env.CMSSY_DRAFT_SECRET == ''
         run: |
           echo "::warning::CMSSY_* secrets are absent, so the editor was not checked." \
                "The build passing says nothing about whether the editor still works."
