@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineCmssyConfig } from "../config";
 
 describe("defineCmssyConfig", () => {
@@ -66,5 +66,26 @@ describe("defineCmssyConfig", () => {
         draftSecret: "shhh",
       }),
     ).toThrowError(/CMSSY_WORKSPACE_SLUG/);
+  });
+});
+
+describe("config evaluated in the browser", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("says it is an import problem, not a config problem", () => {
+    // In the browser the server's env is never there, so "set your env vars"
+    // sends the developer to fix something that is already correct. The real
+    // mistake is a client component importing a value that reads the config.
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyConfig({
+        org: undefined,
+        workspaceSlug: undefined,
+        draftSecret: undefined,
+      }),
+    ).toThrow(/import problem, not a config problem/);
   });
 });
