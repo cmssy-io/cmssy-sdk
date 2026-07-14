@@ -15,6 +15,11 @@ const FORBIDDEN = [
   /^next(\/|$)/,
   /^vue(\/|$)/,
   /^svelte(\/|$)/,
+  // Node built-ins are a framework too - the framework of one runtime. core
+  // imported node's `crypto` for HMAC, and the day an Astro island pulled core
+  // into a browser bundle, the build died on it. Web Crypto works everywhere;
+  // node:crypto works in exactly one place.
+  /^(node:)?(crypto|fs|path|os|http|https|stream|buffer|child_process|url|util)$/,
 ];
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");

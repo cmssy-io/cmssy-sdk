@@ -40,10 +40,10 @@ function makeBody(): string {
 describe("verifyCmssyWebhook", () => {
   const now = 1_700_000_000_000;
 
-  it("accepts a valid signature and returns the typed event", () => {
+  it("accepts a valid signature and returns the typed event", async () => {
     const body = makeBody();
     const header = `t=${now},v1=${sign(SECRET, now, body)}`;
-    const event = verifyCmssyWebhook({
+    const event = await verifyCmssyWebhook({
       body,
       signatureHeader: header,
       secret: SECRET,
@@ -54,105 +54,105 @@ describe("verifyCmssyWebhook", () => {
     expect(event.data.order.paymentStatus).toBe("paid");
   });
 
-  it("ignores header part order and extra parts", () => {
+  it("ignores header part order and extra parts", async () => {
     const body = makeBody();
     const header = `v1=${sign(SECRET, now, body)},t=${now},foo=bar`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: header,
         secret: SECRET,
         now,
       }),
-    ).not.toThrow();
+    ).resolves.toBeDefined();
   });
 
-  it("rejects a tampered body", () => {
+  it("rejects a tampered body", async () => {
     const body = makeBody();
     const header = `t=${now},v1=${sign(SECRET, now, body)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body: body.replace('"total":1000', '"total":1'),
         signatureHeader: header,
         secret: SECRET,
         now,
       }),
-    ).toThrow(CmssyWebhookError);
+    ).rejects.toThrow(CmssyWebhookError);
   });
 
-  it("rejects a wrong secret", () => {
+  it("rejects a wrong secret", async () => {
     const body = makeBody();
     const header = `t=${now},v1=${sign(SECRET, now, body)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: header,
         secret: "x".repeat(64),
         now,
       }),
-    ).toThrow(/signature mismatch/i);
+    ).rejects.toThrow(/signature mismatch/i);
   });
 
-  it("rejects a tampered timestamp (signature no longer matches)", () => {
+  it("rejects a tampered timestamp (signature no longer matches)", async () => {
     const body = makeBody();
     const header = `t=${now + 1},v1=${sign(SECRET, now, body)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: header,
         secret: SECRET,
         now,
       }),
-    ).toThrow(/signature mismatch/i);
+    ).rejects.toThrow(/signature mismatch/i);
   });
 
-  it("rejects a stale timestamp outside tolerance", () => {
+  it("rejects a stale timestamp outside tolerance", async () => {
     const body = makeBody();
     const stale = now - 10 * 60 * 1000; // 10 min old
     const header = `t=${stale},v1=${sign(SECRET, stale, body)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: header,
         secret: SECRET,
         now,
       }),
-    ).toThrow(/tolerance/i);
+    ).rejects.toThrow(/tolerance/i);
   });
 
-  it("rejects a missing or malformed header", () => {
+  it("rejects a missing or malformed header", async () => {
     const body = makeBody();
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({ body, signatureHeader: null, secret: SECRET, now }),
-    ).toThrow(/missing/i);
-    expect(() =>
+    ).rejects.toThrow(/missing/i);
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: "garbage",
         secret: SECRET,
         now,
       }),
-    ).toThrow(/malformed/i);
+    ).rejects.toThrow(/malformed/i);
   });
 
-  it("rejects an invalid-hex signature without throwing a RangeError", () => {
+  it("rejects an invalid-hex signature without throwing a RangeError", async () => {
     const body = makeBody();
     const header = `t=${now},v1=${"z".repeat(64)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({
         body,
         signatureHeader: header,
         secret: SECRET,
         now,
       }),
-    ).toThrow(CmssyWebhookError);
+    ).rejects.toThrow(CmssyWebhookError);
   });
 
-  it("rejects an empty secret", () => {
+  it("rejects an empty secret", async () => {
     const body = makeBody();
     const header = `t=${now},v1=${sign(SECRET, now, body)}`;
-    expect(() =>
+    await expect(
       verifyCmssyWebhook({ body, signatureHeader: header, secret: "", now }),
-    ).toThrow(/secret/i);
+    ).rejects.toThrow(/secret/i);
   });
 });

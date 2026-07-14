@@ -6,6 +6,31 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 6.0.0
+
+**`@cmssy/core` no longer imports Node.**
+
+It said it ran anywhere. It did not: webhook verification used node's `crypto`,
+so the moment an Astro island pulled `@cmssy/core` into a browser bundle, the
+build died on `"timingSafeEqual" is not exported by __vite-browser-external`.
+
+Nobody hit it before because every consumer was Next, where core never reached
+the client. The first non-Next adapter found it on day one - which is exactly why
+the adapter exists.
+
+Webhook verification now uses **Web Crypto**, like the secret comparison already
+did. It works in Node, on the edge, in a browser and in a Vue app.
+
+**Do I have to do anything?** Only if you verify webhooks - it is async now:
+
+```diff
+- const event = verifyCmssyWebhook({ body, signatureHeader, secret });
++ const event = await verifyCmssyWebhook({ body, signatureHeader, secret });
+```
+
+The boundary test in core now fails the build on **any** Node built-in, not just
+on React and Next. A built-in is a framework too - the framework of one runtime.
+
 ## 5.1.0
 
 **`@cmssy/astro` - the first adapter that is not Next.**
