@@ -63,15 +63,23 @@ function stripTypeArguments(source: string): {
   return { code, changed };
 }
 
+/**
+ * A schema written straight into the `defineBlock` call, rather than declared
+ * where the component can be typed from it. `props: heroProps` is the migrated
+ * shape and must not be flagged - a codemod that keeps nagging about correct
+ * code teaches people to ignore it.
+ */
+const INLINE_SCHEMA = /props\s*:\s*\{/;
+
 export function transform(source: string): TransformResult {
   const { code, changed } = stripTypeArguments(source);
 
   const notes: string[] = [];
   const usesBlockProps = /\bBlockProps\s*</.test(code);
 
-  if (/\bdefineBlock\s*[<(]/.test(code) && !usesBlockProps) {
+  if (/\bdefineBlock\s*\(/.test(code) && INLINE_SCHEMA.test(code)) {
     notes.push(
-      "declares a block - type its component as BlockProps<typeof props>",
+      "the schema is inline - export it, and type the component with BlockProps<typeof props>",
     );
   } else if (HAND_TYPED_CONTENT.test(code) && !usesBlockProps) {
     notes.push(
