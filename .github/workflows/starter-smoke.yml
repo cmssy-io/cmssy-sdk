@@ -58,19 +58,31 @@ jobs:
             const fs = require("fs");
             const files = fs.readdirSync("/tmp/pkgs");
             const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const tarballFor = (name) => {
+              const base = "cmssy-" + name.slice("@cmssy/".length) + "-";
+              const file = files.find((f) => f.startsWith(base));
+              if (!file) throw new Error("no tarball for " + name);
+              return "file:/tmp/pkgs/" + file;
+            };
             const linked = [];
             for (const field of ["dependencies", "devDependencies"]) {
               for (const name of Object.keys(pkg[field] ?? {})) {
                 if (!name.startsWith("@cmssy/")) continue;
-                const base = "cmssy-" + name.slice("@cmssy/".length);
-                const tarball = files.find((f) => f.startsWith(base + "-"));
-                if (!tarball) throw new Error("no tarball for " + name);
-                pkg[field][name] = "file:/tmp/pkgs/" + tarball;
-                linked.push(name + " -> " + tarball);
+                pkg[field][name] = tarballFor(name);
+                linked.push(name);
               }
             }
+            // @cmssy/next depends on @cmssy/core at the version being released,
+            // which is not on npm yet either - so redirect the transitive ones too.
+            const overrides = {};
+            for (const file of files) {
+              const name = "@cmssy/" + file.replace(/^cmssy-/, "").replace(/-\d+\.\d+\.\d+.*$/, "");
+              overrides[name] = "file:/tmp/pkgs/" + file;
+            }
+            pkg.pnpm = { ...pkg.pnpm, overrides };
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
-            console.log(linked.join("\n"));
+            console.log("direct:", linked.join(", "));
+            console.log("overrides:", Object.keys(overrides).join(", "));
           '
           pnpm install --no-frozen-lockfile
 
