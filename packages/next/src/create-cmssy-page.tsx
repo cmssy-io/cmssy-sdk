@@ -161,7 +161,12 @@ function buildCmssyPageRenderer(
     let enabledLocales = config.enabledLocales;
 
     if (config.resolveLocale) {
-      defaultLocale = config.defaultLocale ?? "en";
+      // The workspace knows its default language, so ask it rather than assume
+      // English - the lookup is cached, and a Norwegian-first site would
+      // otherwise treat "no" as a non-default language and prefix every URL.
+      defaultLocale =
+        config.defaultLocale ??
+        (await resolveSiteLocales(clientConfig)).defaultLocale;
       locale = await config.resolveLocale();
     } else {
       const siteLocales = await resolveSiteLocales(clientConfig);
