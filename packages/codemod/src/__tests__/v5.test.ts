@@ -6,10 +6,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   CLIENT_SYMBOLS,
+  CORE_SYMBOLS,
   MIDDLEWARE_SYMBOLS,
+  RENAMES,
   SERVER_SYMBOLS,
   transform,
 } from "../v5";
+import NEXT4_EXPORTS from "./next4-exports.json";
 
 const NEXT_SRC = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -74,10 +77,39 @@ describe("v5 codemod", () => {
     expect(transform(source)).toEqual({ code: source, changed: false });
   });
 
-  // The map IS the codemod. If a runtime entry gains an export the map does not
-  // know, the codemod leaves that import on the root - which does not export it
-  // - and the consumer's build breaks on a migration we called automatic.
-  // Symbols the root also exports are exempt: leaving those alone is correct.
+  it("sends symbols that moved to @cmssy/core there, not to the root", () => {
+    const { code } = transform(
+      'import { fetchOrderByToken, verifyCmssyWebhook } from "@cmssy/next";',
+    );
+    expect(code).toBe(
+      'import { fetchOrderByToken, verifyCmssyWebhook } from "@cmssy/core";',
+    );
+  });
+
+  // THE test. A 4.x app imports 79 symbols from @cmssy/next. Every one of them
+  // must land somewhere in 5.0 - a runtime entry, @cmssy/core, or a rename.
+  // A symbol with no home is silently left on the root, which no longer exports
+  // it, so `npx @cmssy/codemod v5` hands the developer a broken build and calls
+  // the migration automatic. This caught 28 of them, including fetchOrderByToken
+  // - found only because cmssy-demo's build failed on it.
+  it("gives every 4.x export a home in 5.0", () => {
+    const rootExports = new Set(exportedSymbols("index.ts"));
+    const homeless = (NEXT4_EXPORTS as string[]).filter(
+      (symbol) =>
+        !SERVER_SYMBOLS.has(symbol) &&
+        !MIDDLEWARE_SYMBOLS.has(symbol) &&
+        !CLIENT_SYMBOLS.has(symbol) &&
+        !CORE_SYMBOLS.has(symbol) &&
+        !(symbol in RENAMES) &&
+        !rootExports.has(symbol),
+    );
+
+    expect(homeless).toEqual([]);
+  });
+
+  // If a runtime entry gains an export the map does not know, the codemod leaves
+  // that import on the root, which does not export it. Symbols the root also
+  // exports are exempt: leaving those alone is correct.
   it("knows every symbol that lives ONLY on a runtime entry", () => {
     const mapped = new Set([
       ...SERVER_SYMBOLS,

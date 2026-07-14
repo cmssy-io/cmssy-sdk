@@ -60,10 +60,45 @@ export const CLIENT_SYMBOLS = new Set([
   "useCmssyLocale",
 ]);
 
+// Symbols @cmssy/next used to re-export that are not Next's at all - a webhook
+// verifier, a session cookie, an order lookup. They live in @cmssy/core now and
+// nowhere else, so leaving them on the root entry is not a smaller change: it is
+// a broken build.
+export const CORE_SYMBOLS = new Set([
+  "resolveApiUrl",
+  "DEFAULT_CMSSY_API_URL",
+  "evaluateFieldConditionGroup",
+  "FieldCondition",
+  "FieldConditionGroup",
+  "FieldConditionLogic",
+  "splitCmssyLocale",
+  "sealSession",
+  "openSession",
+  "isAccessExpired",
+  "sessionCookieOptions",
+  "SESSION_MAX_AGE_SECONDS",
+  "CmssySessionPayload",
+  "CmssySessionUser",
+  "SessionCookieOptions",
+  "verifyCmssyWebhook",
+  "CmssyWebhookError",
+  "CmssyWebhookEvent",
+  "CmssyWebhookOrder",
+  "VerifyCmssyWebhookOptions",
+  "fetchOrderByToken",
+  "FetchOrderByTokenOptions",
+  "MyOrdersResult",
+  "FetchProductsOptions",
+  "FetchProductOptions",
+  "CmssyProductPage",
+  "CmssyStockState",
+]);
+
 const ENTRY_FOR = (symbol: string): string => {
   if (SERVER_SYMBOLS.has(symbol)) return "@cmssy/next/server";
   if (MIDDLEWARE_SYMBOLS.has(symbol)) return "@cmssy/next/middleware";
   if (CLIENT_SYMBOLS.has(symbol)) return "@cmssy/next/client";
+  if (CORE_SYMBOLS.has(symbol)) return "@cmssy/core";
   return "@cmssy/next";
 };
 
