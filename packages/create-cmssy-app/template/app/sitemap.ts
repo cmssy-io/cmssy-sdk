@@ -1,4 +1,4 @@
-import { createCmssySitemap } from "@cmssy/next";
+import { createCmssySitemap } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 // One entry per language version of every published page, with hreflang and

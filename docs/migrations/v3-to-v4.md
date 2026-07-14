@@ -29,7 +29,7 @@ design.
 
 ```tsx
 // app/cmssy-edit/[[...path]]/page.tsx
-import { createCmssyEditPage } from "@cmssy/next";
+import { createCmssyEditPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy/config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -48,7 +48,7 @@ The easy way - the preset does the whole thing, in the order it has to happen:
 
 ```ts
 // proxy.ts
-import { createCmssyProxy } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy/config";
 
 export const proxy = createCmssyProxy(cmssy);

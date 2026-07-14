@@ -14,7 +14,7 @@ server-side; your client code never touches a token.
 
 ```ts
 // cmssy.config.ts
-export const cmssy: CmssyNextConfig = {
+export const cmssy: CmssyConfig = {
   // ...
   auth: {
     modelSlug: "members", // the member model in your workspace
@@ -30,7 +30,7 @@ export const cmssy: CmssyNextConfig = {
 
 ```ts
 // app/api/auth/[action]/route.ts
-import { createCmssyAuthRoute } from "@cmssy/next";
+import { createCmssyAuthRoute } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export const { POST, GET } = createCmssyAuthRoute(cmssy);
@@ -55,7 +55,7 @@ only place credentials/tokens are handled - clients just POST.
 
 ```ts
 // middleware.ts
-import { createCmssyAuthMiddleware } from "@cmssy/next";
+import { createCmssyAuthMiddleware } from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 export const middleware = createCmssyAuthMiddleware(cmssy);
@@ -66,7 +66,7 @@ This transparently refreshes an expiring session cookie on navigation.
 ## 4. Read the current member (server-side)
 
 ```ts
-import { getCmssyUser, getCmssyAccessToken } from "@cmssy/next";
+import { getCmssyUser, getCmssyAccessToken } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 const user = await getCmssyUser(cmssy); // { recordId, email } | null
@@ -119,7 +119,7 @@ action / route handler that reads the token:
 ```ts
 // app/actions/update-profile.ts
 "use server";
-import { getCmssyAccessToken } from "@cmssy/next";
+import { getCmssyAccessToken } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 
 export async function updateProfile(input: ProfileInput) {

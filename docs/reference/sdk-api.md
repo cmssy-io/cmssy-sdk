@@ -165,7 +165,7 @@ advanced use.
 ## Config types
 
 ```ts
-interface CmssyNextConfig {
+interface CmssyConfig {
   org: string; // organization slug (org-scoped delivery path)
   workspaceSlug: string;
   draftSecret: string; // generated per workspace: Settings → Headless (copy exact value)

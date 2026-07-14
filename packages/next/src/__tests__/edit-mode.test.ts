@@ -10,7 +10,8 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { isCmssyEditMode, isCmssyEditRequest } from "../edit-mode";
+import { isCmssyEditMode } from "../edit-mode";
+import { isCmssyEditRequest } from "../edit-request";
 import { CMSSY_EDIT_HEADER, CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
 
 const CONFIG = { draftSecret: "test-draft-secret-123" };

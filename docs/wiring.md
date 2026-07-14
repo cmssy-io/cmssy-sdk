@@ -39,7 +39,7 @@ empty one, and the error surfaces later, somewhere unrelated.
 
 ```ts
 // proxy.ts
-import { createCmssyProxy } from "@cmssy/next/preset";
+import { createCmssyProxy } from "@cmssy/next/middleware";
 import { cmssy } from "@/cmssy.config";
 
 export const proxy = createCmssyProxy(cmssy, {
@@ -62,7 +62,7 @@ because the order is what makes it correct.
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { buildCmssyMetadata, createCmssyPage } from "@cmssy/next";
+import { buildCmssyMetadata, createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -80,7 +80,7 @@ export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 
 ```tsx
 // app/cmssy-edit/[[...path]]/page.tsx
-import { createCmssyEditPage } from "@cmssy/next";
+import { createCmssyEditPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -112,7 +112,7 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 
 ```tsx
 // app/layout.tsx
-import { CmssyChrome } from "@cmssy/next/preset";
+import { CmssyChrome } from "@cmssy/next/server";
 
 <CmssyChrome config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
 <main>{children}</main>
