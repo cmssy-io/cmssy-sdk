@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import type {
   CmssyWebhookOrder,
   CmssyWebhookEvent,
@@ -51,15 +50,49 @@ function parseSignatureHeader(header: string): {
   return { timestamp, signature };
 }
 
+function hexToBytes(hex: string): Uint8Array | null {
+  // Invalid hex decodes to nothing rather than to a shorter buffer: a bad v1
+  // must fail as a signature mismatch, not as a thrown length error.
+  if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i += 1) {
+    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
-  // Decode first, then compare BUFFER lengths: an attacker-supplied v1
-  // with odd/invalid hex decodes to a shorter buffer, and timingSafeEqual
-  // throws on a length mismatch. Comparing decoded lengths (not hex string
-  // lengths) keeps the throw from escaping as a non-CmssyWebhookError.
-  const expected = Buffer.from(expectedHex, "hex");
-  const provided = Buffer.from(providedHex, "hex");
-  if (expected.length !== provided.length) return false;
-  return timingSafeEqual(expected, provided);
+  const expected = hexToBytes(expectedHex);
+  const provided = hexToBytes(providedHex);
+  if (!expected || !provided || expected.length !== provided.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < expected.length; i += 1) {
+    diff |= (expected[i] ?? 0) ^ (provided[i] ?? 0);
+  }
+  return diff === 0;
+}
+
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(message),
+  );
+  return bytesToHex(new Uint8Array(signature));
 }
 
 /**
@@ -67,9 +100,9 @@ function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
  * `CmssyWebhookError` on any failure (missing/malformed header, bad
  * signature, stale timestamp, invalid JSON) - catch it and respond 400.
  */
-export function verifyCmssyWebhook(
+export async function verifyCmssyWebhook(
   options: VerifyCmssyWebhookOptions,
-): CmssyWebhookEvent {
+): Promise<CmssyWebhookEvent> {
   const { body, signatureHeader, secret } = options;
   if (!signatureHeader) {
     throw new CmssyWebhookError("Missing X-Cmssy-Signature header");
@@ -87,9 +120,7 @@ export function verifyCmssyWebhook(
     throw new CmssyWebhookError("Webhook timestamp outside tolerance");
   }
 
-  const expected = createHmac("sha256", secret)
-    .update(`${timestamp}.${body}`)
-    .digest("hex");
+  const expected = await hmacSha256Hex(secret, `${timestamp}.${body}`);
   if (!timingSafeHexEqual(expected, signature)) {
     throw new CmssyWebhookError("Webhook signature mismatch");
   }
