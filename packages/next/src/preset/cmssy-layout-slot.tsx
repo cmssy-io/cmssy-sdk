@@ -15,7 +15,8 @@ export interface CmssyLayoutSlotProps {
   blocks: BlockDefinition[];
   position: string;
   /**
-   * The page whose layout to render. Defaults to "/" - the site chrome.
+   * The page whose layout to render. Defaults to "/" - the site-wide header
+   * and footer.
    */
   page?: string;
   /**
@@ -36,7 +37,7 @@ export interface CmssyLayoutSlotProps {
 }
 
 /**
- * The site chrome, rendered the way each mode needs it:
+ * The site-wide header and footer, rendered the way each mode needs them:
  *
  *  - published traffic: server-rendered layout blocks (static, no client cost);
  *  - the editor: the same blocks through the edit bridge, fetched with the

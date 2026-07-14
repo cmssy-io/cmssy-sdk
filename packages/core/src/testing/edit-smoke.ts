@@ -45,11 +45,11 @@ async function html(url: string): Promise<{ status: number; body: string }> {
  * because the site compiles and serves fine while being uneditable.
  *
  * It asserts three independent things:
- *   1. the public page renders WITHOUT the editor, chrome server-rendered;
+ *   1. the public page renders WITHOUT the editor, header and footer server-rendered;
  *   2. a bare `?cmssyEdit=1` does NOT enter edit mode (an unverified pair must
  *      not open the door - CMS-948);
  *   3. a verified `cmssyEdit=1` + `cmssySecret` renders the editor AND moves the
- *      chrome onto the edit bridge.
+ *      header and footer onto the edit bridge.
  *
  * Run it against a started production build:
  *
@@ -71,7 +71,7 @@ export async function checkCmssyEditMode(
     failures.push(`public ${path}: the editor is mounted on a public page`);
   }
   // A site with no layout blocks is perfectly valid, so their absence is not a
-  // failure. What matters is the CHANGE: chrome that is server-rendered publicly
+  // failure. What matters is the CHANGE: a header that is server-rendered publicly
   // must move to the edit bridge in edit mode.
   const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
 
