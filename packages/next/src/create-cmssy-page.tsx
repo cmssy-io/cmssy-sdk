@@ -228,6 +228,7 @@ function buildCmssyPageRenderer(
         defaultLocale,
         enabledLocales,
         forms,
+        isPreview: true,
       });
       return (
         <CmssyLocaleProvider value={localeContext}>
