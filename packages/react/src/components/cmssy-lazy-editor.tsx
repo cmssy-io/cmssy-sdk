@@ -14,6 +14,7 @@ export interface CmssyLazyEditorProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   forms?: Record<string, CmssyFormDefinition>;
+  data?: Record<string, unknown>;
   load: () => Promise<{ blocks: BlockDefinition[]; category?: string }>;
 }
 

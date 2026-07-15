@@ -8,6 +8,7 @@ import {
   resolveSiteLocales,
   splitLocaleFromPath,
   CmssyServerPage,
+  resolveBlockData,
   type BlockDefinition,
   type CmssyBlockAuthContext,
   type CmssyBlockWorkspace,
@@ -34,6 +35,7 @@ export interface CmssyEditorProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   forms?: Record<string, CmssyFormDefinition>;
+  data?: Record<string, unknown>;
 }
 
 export interface CreateCmssyPageOptions {
@@ -219,6 +221,14 @@ function buildCmssyPageRenderer(
 
     if (editorActive && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
+      const editorData = await resolveBlockData({
+        page,
+        blocks,
+        locale,
+        defaultLocale,
+        enabledLocales,
+        forms,
+      });
       return (
         <CmssyLocaleProvider value={localeContext}>
           <Editor
@@ -228,6 +238,7 @@ function buildCmssyPageRenderer(
             enabledLocales={enabledLocales}
             edit={{ editorOrigin: bridgeOrigin }}
             forms={forms}
+            data={editorData}
           />
         </CmssyLocaleProvider>
       );

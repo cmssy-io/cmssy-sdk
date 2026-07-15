@@ -24,6 +24,7 @@ export interface CmssyEditablePageProps {
   edit: EditBridgeConfig;
   category?: string;
   forms?: Record<string, CmssyFormDefinition>;
+  data?: Record<string, unknown>;
 }
 
 export function CmssyEditablePage({
@@ -35,6 +36,7 @@ export function CmssyEditablePage({
   edit,
   category,
   forms,
+  data,
 }: CmssyEditablePageProps) {
   if (!Array.isArray(blocks)) {
     throw new Error(
@@ -52,6 +54,7 @@ export function CmssyEditablePage({
       edit={edit}
       category={category}
       forms={forms}
+      data={data}
     />
   );
 }
@@ -65,6 +68,7 @@ interface EditableBlocksProps {
   edit: EditBridgeConfig;
   category?: string;
   forms?: Record<string, CmssyFormDefinition>;
+  data?: Record<string, unknown>;
 }
 
 function EditableBlocks({
@@ -76,6 +80,7 @@ function EditableBlocks({
   edit,
   category,
   forms,
+  data,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
   const context = useMemo(
@@ -136,6 +141,7 @@ function EditableBlocks({
           blockMap={blockMap}
           editable
           context={context}
+          data={data?.[block.id]}
         />
       ))}
       {dropY !== null && (
