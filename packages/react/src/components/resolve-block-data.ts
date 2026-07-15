@@ -10,6 +10,7 @@ export interface ResolveBlockDataOptions {
   defaultLocale: string;
   enabledLocales?: string[];
   forms?: Record<string, CmssyFormDefinition>;
+  isPreview?: boolean;
 }
 
 export async function resolveBlockData({
@@ -19,6 +20,7 @@ export async function resolveBlockData({
   defaultLocale,
   enabledLocales,
   forms,
+  isPreview = false,
 }: ResolveBlockDataOptions): Promise<Record<string, unknown>> {
   if (!page) return {};
   const loaderMap = buildLoaderMap(blocks);
@@ -26,7 +28,7 @@ export async function resolveBlockData({
     locale,
     defaultLocale,
     enabledLocales,
-    false,
+    isPreview,
     forms,
   );
   const resolved = await resolveBlocks(
