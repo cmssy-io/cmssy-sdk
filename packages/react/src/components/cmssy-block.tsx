@@ -1,9 +1,6 @@
 import { createElement } from "react";
 import type { BlockMap } from "../registry";
-import {
-  asBucket,
-  getBlockContentForLanguage,
-} from "@cmssy/core";
+import { asBucket, getBlockContentForLanguage } from "@cmssy/core";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
 import { UnknownBlock } from "./unknown-block";
@@ -19,6 +16,7 @@ export interface CmssyBlockProps {
   editable?: boolean;
   layoutPosition?: string;
   context?: CmssyBlockContext;
+  data?: unknown;
 }
 
 export function CmssyBlock({
@@ -32,6 +30,7 @@ export function CmssyBlock({
   editable,
   layoutPosition,
   context,
+  data,
 }: CmssyBlockProps) {
   const Component = Object.hasOwn(blockMap, block.type)
     ? blockMap[block.type]
@@ -58,6 +57,7 @@ export function CmssyBlock({
           style,
           advanced,
           context,
+          data,
         })
       ) : (
         <UnknownBlock type={block.type} />
