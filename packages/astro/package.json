@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/astro",
-  "version": "8.0.2",
+  "version": "8.0.3",
   "description": "Astro bindings for cmssy headless sites: middleware, page loader, sitemap and robots.",
   "keywords": [
     "cmssy",
