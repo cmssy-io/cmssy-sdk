@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type {
-  CmssyLayoutGroup,
-  RawLayoutBlock,
-} from "@cmssy/core";
+import type { CmssyLayoutGroup, RawLayoutBlock } from "@cmssy/core";
 import { buildBlockMap, type BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
@@ -19,6 +16,7 @@ export interface CmssyEditableLayoutProps {
   defaultLocale?: string;
   enabledLocales?: string[];
   edit: EditBridgeConfig;
+  data?: Record<string, unknown>;
 }
 
 export function CmssyEditableLayout({
@@ -29,6 +27,7 @@ export function CmssyEditableLayout({
   defaultLocale = "en",
   enabledLocales,
   edit,
+  data,
 }: CmssyEditableLayoutProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
   const layoutBlocks = useMemo<RawLayoutBlock[]>(() => {
@@ -59,6 +58,7 @@ export function CmssyEditableLayout({
           patchedContent={patches[block.id]}
           layoutPosition={position}
           context={context}
+          data={data?.[block.id]}
         />
       ))}
     </>
