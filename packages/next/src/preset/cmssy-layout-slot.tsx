@@ -102,6 +102,7 @@ export async function CmssyLayoutSlot({
       locale={locale}
       defaultLocale={siteLocales.defaultLocale}
       enabledLocales={siteLocales.locales}
+      editMode={editMode}
     />
   );
 }
