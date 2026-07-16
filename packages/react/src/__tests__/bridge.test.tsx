@@ -511,6 +511,74 @@ describe("edit bridge (blocks-driven)", () => {
     );
   });
 
+  it("posts cmssy:deselect when clicking outside any block after a selection", () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      { type: "cmssy:deselect" },
+      editorOrigin,
+    );
+  });
+
+  it("does not post cmssy:deselect when nothing is selected", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    mockParent.postMessage.mockClear();
+    act(() => {
+      document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockParent.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("keeps the selection when the outside click lands on a link or button", () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    const link = document.createElement("a");
+    link.setAttribute("href", "/other-page");
+    document.body.appendChild(link);
+    act(() => {
+      link.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    link.remove();
+    expect(mockParent.postMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:deselect" }),
+      expect.anything(),
+    );
+  });
+
   it("re-posts cmssy:bounds for the selected block on scroll", () => {
     let rafCb: FrameRequestCallback | null = null;
     vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
