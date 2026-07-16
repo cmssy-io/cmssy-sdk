@@ -4,11 +4,9 @@ import {
   CMSSY_LOCALE_HEADER,
   CMSSY_SECRET_QUERY_PARAM,
   applyCmssyCsp,
-  collectEditDiagnostics,
   isDevelopment,
   isVerifiedEditUrl,
   localeForPathname,
-  renderEditDiagnosticsDocument,
   resolveSiteLocales,
   type CmssyConfig,
 } from "@cmssy/core";
@@ -77,6 +75,8 @@ export function cmssyMiddleware(
         return response;
       }
       if (!verified && isDevelopment()) {
+        const { collectEditDiagnostics, renderEditDiagnosticsDocument } =
+          await import("@cmssy/core/preflight");
         const diagnostics = await collectEditDiagnostics({
           config,
           providedSecret: context.url.searchParams.get(

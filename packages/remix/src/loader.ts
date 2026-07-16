@@ -3,12 +3,10 @@ import {
   CMSSY_LOCALE_HEADER,
   CMSSY_SECRET_QUERY_PARAM,
   cmssyCspHeaders,
-  collectEditDiagnostics,
   fetchLayouts,
   fetchPage,
   isDevelopment,
   isVerifiedEditUrl,
-  renderEditDiagnostics,
   resolveSiteLocales,
   splitLocaleFromPath,
   type CmssyConfig,
@@ -50,6 +48,9 @@ export function createCmssyLoader(config: CmssyConfig) {
       .getAll(CMSSY_EDIT_QUERY_PARAM)
       .includes("1");
     if (!isEdit && editRequested && isDevelopment()) {
+      const { collectEditDiagnostics, renderEditDiagnostics } = await import(
+        "@cmssy/core/preflight"
+      );
       const diagnosed = await collectEditDiagnostics({
         config,
         providedSecret: url.searchParams.get(CMSSY_SECRET_QUERY_PARAM),

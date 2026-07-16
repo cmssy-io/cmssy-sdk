@@ -346,3 +346,15 @@ export function buildEditorUrl(
   const base = `${CMSSY_ADMIN_ORIGIN}/dashboard/organizations/${config.org}/workspaces/${config.workspaceSlug}/editor`;
   return pageId ? `${base}?pageId=${encodeURIComponent(pageId)}` : base;
 }
+
+export {
+  collectEditDiagnostics,
+  renderEditDiagnostics,
+  renderEditDiagnosticsDocument,
+} from "./edit-diagnostics";
+export type {
+  EditDiagnostics,
+  EditDiagnosticsCheck,
+  EditDiagnosticsConfig,
+  EditDiagnosticsInput,
+} from "./edit-diagnostics";

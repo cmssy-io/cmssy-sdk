@@ -20,9 +20,7 @@ import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/client";
 import { getCmssyUser } from "./auth-server";
 import {
-  collectEditDiagnostics,
   isDevelopment,
-  renderEditDiagnostics,
   resolveEditorOrigin,
   type CmssyConfig,
 } from "@cmssy/core";
@@ -288,6 +286,9 @@ async function renderEditDiagnosticsPage(
   config: CmssyConfig,
   query: SearchParams,
 ) {
+  const { collectEditDiagnostics, renderEditDiagnostics } = await import(
+    "@cmssy/core/preflight"
+  );
   const diagnostics = await collectEditDiagnostics({
     config,
     providedSecret: firstValue(query[CMSSY_SECRET_QUERY_PARAM]) ?? null,
