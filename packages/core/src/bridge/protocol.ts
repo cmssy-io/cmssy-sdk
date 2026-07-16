@@ -39,6 +39,10 @@ export interface ClickMessage {
   layoutPosition?: string;
 }
 
+export interface DeselectMessage {
+  type: "cmssy:deselect";
+}
+
 export interface MoveMessage {
   type: "cmssy:move";
   protocolVersion: number;
@@ -53,7 +57,12 @@ export interface DragIndexMessage {
 }
 
 export type AppToEditorMessage =
-  ReadyMessage | BoundsMessage | ClickMessage | MoveMessage | DragIndexMessage;
+  | ReadyMessage
+  | BoundsMessage
+  | ClickMessage
+  | DeselectMessage
+  | MoveMessage
+  | DragIndexMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";
