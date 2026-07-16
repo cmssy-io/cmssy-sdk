@@ -37,6 +37,25 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  packages/cli:
+    dependencies:
+      '@cmssy/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.41
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(postcss@8.5.19)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)(lightningcss@1.32.0)
+
   packages/codemod:
     devDependencies:
       '@types/node':

@@ -37,11 +37,13 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 | `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                      |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                         |
+| `@cmssy/cli`           | `cmssy link` - connects an app to a workspace: writes .env.local, sets the preview URL, verifies the wiring.         |
 | `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                             |
 
 ## Documentation map
 
 - **Getting Started** - [Quickstart](./getting-started/quickstart.md): a working headless project end to end.
+- **CLI** - [`cmssy link`](./cli.md): connect an app to a workspace without hand-copying secrets.
 - **Architecture** - [What lives where, and why](./architecture.md): the layering, and the two outages that forced it.
 - **Frameworks**
   - [Next.js wiring](./wiring.md) - the complete, correct way to mount cmssy. Copy it whole.
