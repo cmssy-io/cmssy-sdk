@@ -143,6 +143,17 @@ export {
   isVerifiedEditUrl,
 } from "./edit-request";
 export { cmssySecretsMatch } from "./secret-match";
+export {
+  collectEditDiagnostics,
+  renderEditDiagnostics,
+  renderEditDiagnosticsDocument,
+} from "./edit-diagnostics";
+export type {
+  EditDiagnostics,
+  EditDiagnosticsCheck,
+  EditDiagnosticsConfig,
+  EditDiagnosticsInput,
+} from "./edit-diagnostics";
 export { cmssyCspHeaders, applyCmssyCsp, toCspOrigin } from "./csp";
 export type { CmssyCspOptions } from "./csp";
 export { localizedPath } from "./seo-paths";

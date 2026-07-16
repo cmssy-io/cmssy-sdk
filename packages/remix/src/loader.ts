@@ -1,9 +1,14 @@
 import {
+  CMSSY_EDIT_QUERY_PARAM,
   CMSSY_LOCALE_HEADER,
+  CMSSY_SECRET_QUERY_PARAM,
   cmssyCspHeaders,
+  collectEditDiagnostics,
   fetchLayouts,
   fetchPage,
+  isDevelopment,
   isVerifiedEditUrl,
+  renderEditDiagnostics,
   resolveSiteLocales,
   splitLocaleFromPath,
   type CmssyConfig,
@@ -20,6 +25,7 @@ export interface CmssyRouteData {
   /** True for a VERIFIED editor request. The route renders the edit bridge. */
   isEdit: boolean;
   editorOrigin: string | string[];
+  diagnostics?: string;
 }
 
 /**
@@ -39,6 +45,28 @@ export function createCmssyLoader(config: CmssyConfig) {
   }): Promise<CmssyRouteData> {
     const url = new URL(request.url);
     const isEdit = await isVerifiedEditUrl(url, config);
+
+    const editRequested = url.searchParams
+      .getAll(CMSSY_EDIT_QUERY_PARAM)
+      .includes("1");
+    if (!isEdit && editRequested && isDevelopment()) {
+      const diagnosed = await collectEditDiagnostics({
+        config,
+        providedSecret: url.searchParams.get(CMSSY_SECRET_QUERY_PARAM),
+        devOrigin: url.origin,
+      });
+      const locales = await resolveSiteLocales(config);
+      return {
+        page: null,
+        layouts: [],
+        locale: locales.defaultLocale,
+        defaultLocale: locales.defaultLocale,
+        enabledLocales: locales.locales,
+        isEdit: false,
+        editorOrigin: config.editorOrigin ?? "*",
+        diagnostics: renderEditDiagnostics(diagnosed),
+      };
+    }
 
     const siteLocales = await resolveSiteLocales(config);
     const segments = url.pathname.split("/").filter(Boolean);

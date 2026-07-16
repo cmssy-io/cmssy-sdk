@@ -87,3 +87,15 @@ import {
 `checkWorkspaceReachable` and `checkDraftSecret` talk to the delivery API;
 `checkPreviewUrl`, `checkFrameAncestors` and `buildEditorUrl` are pure string
 logic. None of them import a framework or a Node built-in.
+
+## What you see when wiring is broken
+
+In development the same checks guard the edit route itself. An editor request
+that fails verification (`cmssyEdit=1` with a wrong or missing `cmssySecret`)
+does not 404: the adapter renders a diagnostics page inside the editor iframe
+instead, one line per check - missing env vars (and where to get them), an
+unreachable workspace, a draft secret mismatch (phrased as "could not verify
+against the platform" when the platform cannot confirm it), plus the preview
+URL comparison and the origins `frame-ancestors` must allow. The page shows the
+workspace slug and which check failed, never a secret value. In production the
+edit route keeps serving a 404, exactly as before.

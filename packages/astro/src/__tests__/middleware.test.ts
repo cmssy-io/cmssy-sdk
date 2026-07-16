@@ -46,7 +46,10 @@ function contextFor(href: string) {
   };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe("cmssyMiddleware", () => {
   it("tells the page which language it is rendering", async () => {
@@ -101,6 +104,58 @@ describe("cmssyMiddleware", () => {
     await cmssyMiddleware(CONFIG)(context, next);
 
     expect(context.request.headers.get("x-cmssy-edit")).toBeNull();
+  });
+
+  it("renders diagnostics in development for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    stubSiteConfig();
+    const context = contextFor(
+      "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
+    );
+    const next = vi.fn(async () => new Response("ok"));
+
+    const response = await cmssyMiddleware(CONFIG)(context, next);
+
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const body = await response.text();
+    expect(body).toContain("cmssy editor diagnostics");
+    expect(body).toContain("acme/ws");
+    expect(body).toContain("frame-ancestors");
+    expect(body).not.toContain("draft-secret-1234");
+    expect(context.rewrite).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("keeps the production behavior for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubSiteConfig();
+    const context = contextFor(
+      "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
+    );
+    const next = vi.fn(async () => new Response("ok"));
+
+    await cmssyMiddleware(CONFIG)(context, next);
+
+    expect(context.rewrite).not.toHaveBeenCalled();
+    expect(context.request.headers.get("x-cmssy-edit")).toBeNull();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("still routes a verified editor request in development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    stubSiteConfig();
+    const context = contextFor(
+      "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    const next = vi.fn(async () => new Response("ok"));
+
+    await cmssyMiddleware(CONFIG)(context, next);
+
+    expect(context.rewrite).toHaveBeenCalledWith(
+      expect.stringContaining("/cmssy-edit/about"),
+    );
+    expect(context.request.headers.get("x-cmssy-edit")).toBe("1");
+    expect(next).not.toHaveBeenCalled();
   });
 
   it("strips the language prefix when asked, but never the default language's", async () => {

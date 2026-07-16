@@ -48,7 +48,10 @@ function stubApi() {
   return calls;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe("createCmssyLoader", () => {
   it("reads the language off the path - the prefix IS the language", async () => {
@@ -92,6 +95,49 @@ describe("createCmssyLoader", () => {
     });
 
     expect(data.isEdit).toBe(false);
+  });
+
+  it("returns diagnostics in development for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
+      ),
+    });
+
+    expect(data.isEdit).toBe(false);
+    expect(data.page).toBeNull();
+    expect(data.diagnostics).toContain("cmssy editor diagnostics");
+    expect(data.diagnostics).toContain("acme/ws");
+    expect(data.diagnostics).toContain("frame-ancestors");
+    expect(data.diagnostics).not.toContain("draft-secret-1234");
+  });
+
+  it("returns no diagnostics in production for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
+      ),
+    });
+
+    expect(data.isEdit).toBe(false);
+    expect(data.diagnostics).toBeUndefined();
+  });
+
+  it("still enters edit mode in development with the right secret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+      ),
+    });
+
+    expect(data.isEdit).toBe(true);
+    expect(data.diagnostics).toBeUndefined();
   });
 
   it("serves the framing CSP - without it the editor is an empty box", () => {
