@@ -1,36 +1,62 @@
 ---
 title: cmssy SDK
-description: Build a headless site on cmssy - register React components as blocks, render cmssy pages in your own app, and edit them visually.
+description: Build a headless site on cmssy with Next.js, Astro or React Router - render cmssy pages in your own app and edit them visually.
 ---
 
 # cmssy SDK
 
 cmssy is a headless, multi-tenant CMS. cmssy owns the backend - content, commerce,
 auth, forms, data - and the visual block editor. **Your app owns rendering and
-hosting.** You register your own React components as blocks, render cmssy pages in
-your Next.js app, and editors arrange them visually through the cmssy editor.
+hosting.**
 
 cmssy never renders or hosts your site. It stores content and serves it over a
 GraphQL delivery API; your app fetches and renders it.
 
+## The framework is an adapter, never the foundation
+
+Everything that is not rendering - the delivery client, the config, the editor
+protocol, webhook verification - lives in **`@cmssy/core`**, which imports **no
+framework and no Node built-ins**. A test fails the build if that ever stops being
+true.
+
+So a Next app, an Astro app and a React Router app all talk to the same core. You
+are not buying into React by choosing cmssy.
+
+```bash
+npx create-cmssy-app my-site --framework next   # or: astro, remix
+```
+
 ## Packages
 
-| Package              | Use it for                                                                                         |
-| -------------------- | -------------------------------------------------------------------------------------------------- |
-| `@cmssy/react`       | Core: block registry (`defineBlock`, `fields`), `CmssyServerPage`, delivery client, editor bridge. |
-| `@cmssy/next`        | Next.js adapter: catch-all page route, draft mode, auth routes, SEO, CSP, locale middleware.       |
-| `@cmssy/next/client` | Client helpers - `CmssyLink` (locale-aware internal navigation).                                   |
+| Package                | Use it for                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@cmssy/core`          | The foundation: delivery client, config, secrets, webhooks, the editor protocol, `checkCmssyEditMode`. No framework. |
+| `@cmssy/react`         | Rendering: block registry (`defineBlock`, `fields`), `CmssyServerPage`, the edit bridge, hooks.                      |
+| `@cmssy/next`          | Next.js. One entry per runtime: `/server` (RSC + route handlers), `/middleware` (edge), `/client` (browser).         |
+| `@cmssy/astro`         | Astro: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                 |
+| `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                |
+| `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                      |
+| `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                         |
+| `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                             |
 
 ## Documentation map
 
 - **Getting Started** - [Quickstart](./getting-started/quickstart.md): a working headless project end to end.
+- **Architecture** - [What lives where, and why](./architecture.md): the layering, and the two outages that forced it.
+- **Frameworks**
+  - [Next.js wiring](./wiring.md) - the complete, correct way to mount cmssy. Copy it whole.
+  - [Astro](./astro.md) - the adapter that proves the core is framework-free.
+  - [React Router 7 / Remix](./remix.md) - and why it needs no `/cmssy-edit` route.
 - **Building Blocks**
   - [Authoring a block](./building-blocks/authoring-blocks.md) - `defineBlock`, `fields`, the component contract.
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.
   - [Block recipes](./building-blocks/recipes.md) - rich text, listing child pages, forms, SEO.
 - **Auth** - [Member auth](./auth/member-auth.md): secure httpOnly-cookie sign-in/register/sessions.
+- **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
+- **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.
+- **Migrating** - [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
 - **Reference**
-  - [API reference](./reference/sdk-api.md) - every export of `@cmssy/react` + `@cmssy/next`.
+  - [API reference](./reference/sdk-api.md) - every export.
   - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.
 
 > Each guide is backed by a real, compiling example. If something here disagrees
