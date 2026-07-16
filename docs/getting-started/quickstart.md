@@ -18,6 +18,15 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 npm i @cmssy/core @cmssy/react @cmssy/next
 ```
 
+Then connect the app to your workspace with [`cmssy link`](../cli.md) instead
+of hand-copying values from the dashboard - it writes `CMSSY_ORG_SLUG`,
+`CMSSY_WORKSPACE_SLUG` and `CMSSY_DRAFT_SECRET` into `.env.local`, sets the
+workspace preview URL, verifies the wiring and prints the editor deep link:
+
+```bash
+npx @cmssy/cli link --token cs_...
+```
+
 ## 2. Configure
 
 ```ts
