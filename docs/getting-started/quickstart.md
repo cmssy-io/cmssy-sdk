@@ -22,15 +22,13 @@ npm i @cmssy/core @cmssy/react @cmssy/next
 
 ```ts
 // cmssy.config.ts
-import type { CmssyConfig } from "@cmssy/next";
+import { defineCmssyConfig } from "@cmssy/next";
 
-export const cmssy: CmssyConfig = {
-  org: process.env.CMSSY_ORG_SLUG!,
-  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
-  draftSecret: process.env.CMSSY_DRAFT_SECRET!,
-  defaultLocale: "en",
-  enabledLocales: ["en"],
-};
+export const cmssy = defineCmssyConfig({
+  org: process.env.CMSSY_ORG_SLUG,
+  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
+  draftSecret: process.env.CMSSY_DRAFT_SECRET,
+});
 ```
 
 On cmssy cloud you only set the two per-workspace values. `apiUrl` and
