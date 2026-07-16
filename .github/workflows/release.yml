@@ -38,7 +38,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          for pkg in core eslint-plugin codemod react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
             v=$(node -p "require('./packages/$pkg/package.json').version")
             if [ "$tag" != "$v" ]; then
               echo "::error::tag v$tag does not match @cmssy/$pkg@$v"
@@ -64,7 +64,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
-          for pkg in core eslint-plugin codemod react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
             cd "packages/$pkg"
             name=$(node -p "require('./package.json').name")
             version=$(node -p "require('./package.json').version")
@@ -91,7 +91,7 @@ jobs:
         run: |
           set -e
           failed=0
-          for pkg in core eslint-plugin codemod react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
             name=$(node -p "require('./packages/$pkg/package.json').name")
             version=$(node -p "require('./packages/$pkg/package.json').version")
             code=$(curl -s -o /dev/null -w '%{http_code}' \

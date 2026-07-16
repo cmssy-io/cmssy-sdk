@@ -31,6 +31,11 @@
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js",
       "require": "./dist/testing.cjs"
+    },
+    "./preflight": {
+      "types": "./dist/preflight.d.ts",
+      "import": "./dist/preflight.js",
+      "require": "./dist/preflight.cjs"
     }
   },
   "main": "./dist/index.cjs",
