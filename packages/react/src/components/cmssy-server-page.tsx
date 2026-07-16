@@ -1,7 +1,4 @@
-import type {
-  CmssyClientConfig,
-  CmssyPageData,
-} from "@cmssy/core";
+import type { CmssyClientConfig, CmssyPageData } from "@cmssy/core";
 import type { CmssyFormDefinition } from "@cmssy/core";
 import {
   buildBlockMap,
@@ -35,6 +32,7 @@ export interface CmssyServerPageProps {
   auth?: CmssyBlockAuthContext;
   /** Workspace identity, exposed via context.workspace. Resolved by createCmssyPage. */
   workspace?: CmssyBlockWorkspace;
+  editMode?: boolean;
 }
 
 /**
@@ -52,6 +50,7 @@ export async function CmssyServerPage({
   forms,
   auth,
   workspace,
+  editMode,
 }: CmssyServerPageProps) {
   if (!page) return null;
   const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
@@ -88,6 +87,8 @@ export async function CmssyServerPage({
           data: resolved[i]?.data,
           resolvedContent: resolved[i]?.content,
           enabledLocales,
+          error: resolved[i]?.error,
+          editMode,
         }),
       )}
     </>

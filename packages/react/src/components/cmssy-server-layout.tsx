@@ -27,6 +27,7 @@ export interface CmssyServerLayoutProps {
    * Without it the SDK has to guess, and its guess is "en".
    */
   config?: CmssyClientConfig;
+  editMode?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export async function CmssyServerLayout({
   defaultLocale: defaultLocaleProp,
   enabledLocales: enabledLocalesProp,
   config,
+  editMode,
 }: CmssyServerLayoutProps) {
   const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
     locale: localeProp,
@@ -76,6 +78,8 @@ export async function CmssyServerLayout({
           data: resolved[i]?.data,
           resolvedContent: resolved[i]?.content,
           enabledLocales,
+          error: resolved[i]?.error,
+          editMode,
         }),
       )}
     </>

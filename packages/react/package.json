@@ -32,6 +32,11 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "require": "./dist/client.cjs"
+    },
+    "./block-error-boundary": {
+      "types": "./dist/block-error-boundary.d.ts",
+      "import": "./dist/block-error-boundary.js",
+      "require": "./dist/block-error-boundary.cjs"
     }
   },
   "main": "./dist/index.cjs",

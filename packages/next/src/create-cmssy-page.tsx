@@ -276,6 +276,7 @@ function buildCmssyPageRenderer(
           forms={forms}
           auth={auth}
           workspace={workspace}
+          editMode={editMode}
         />
       </CmssyLocaleProvider>
     );
@@ -286,9 +287,8 @@ async function renderEditDiagnosticsPage(
   config: CmssyConfig,
   query: SearchParams,
 ) {
-  const { collectEditDiagnostics, renderEditDiagnostics } = await import(
-    "@cmssy/core/preflight"
-  );
+  const { collectEditDiagnostics, renderEditDiagnostics } =
+    await import("@cmssy/core/preflight");
   const diagnostics = await collectEditDiagnostics({
     config,
     providedSecret: firstValue(query[CMSSY_SECRET_QUERY_PARAM]) ?? null,
