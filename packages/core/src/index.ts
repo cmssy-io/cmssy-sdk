@@ -49,7 +49,11 @@ export {
   clearWorkspaceIdCache,
 } from "./data/settings-client";
 export { collectFormIds, resolveForms } from "./data/resolve-forms";
-export { resolveSiteLocales, splitLocaleFromPath } from "./data/site-locales";
+export {
+  localesFromSiteConfig,
+  resolveSiteLocales,
+  splitLocaleFromPath,
+} from "./data/site-locales";
 export type { CmssySiteLocales } from "./data/site-locales";
 export {
   localizeHref,
@@ -141,7 +145,7 @@ export {
 export { cmssySecretsMatch } from "./secret-match";
 export { cmssyCspHeaders, applyCmssyCsp, toCspOrigin } from "./csp";
 export type { CmssyCspOptions } from "./csp";
-export { resolveSeoLocales, localizedPath } from "./seo-paths";
+export { localizedPath } from "./seo-paths";
 
 export {
   CMSSY_SESSION_COOKIE,

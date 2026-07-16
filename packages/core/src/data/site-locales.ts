@@ -13,6 +13,25 @@ const TTL_MS = 60_000;
 const MAX_ENTRIES = 64;
 const cache = new Map<string, { value: CmssySiteLocales; expires: number }>();
 
+/**
+ * Maps a workspace site config to its locale set. The single place that
+ * decides the default and enabled languages - the router and the SEO helpers
+ * must agree, so both go through here.
+ */
+export function localesFromSiteConfig(
+  siteConfig: {
+    defaultLanguage?: string | null;
+    enabledLanguages?: string[];
+  } | null,
+): CmssySiteLocales {
+  const defaultLocale = siteConfig?.defaultLanguage || "en";
+  const enabled = siteConfig?.enabledLanguages ?? [];
+  return {
+    defaultLocale,
+    locales: enabled.length > 0 ? enabled : [defaultLocale],
+  };
+}
+
 export async function resolveSiteLocales(
   config: CmssyClientConfig,
   options?: GraphqlRequestOptions,
@@ -33,13 +52,7 @@ export async function resolveSiteLocales(
       { ...options, public: true, retry: options?.retry ?? {} },
       "site config",
     );
-    const siteConfig = data.public?.siteConfig ?? null;
-    const defaultLocale = siteConfig?.defaultLanguage || "en";
-    const enabled = siteConfig?.enabledLanguages ?? [];
-    value = {
-      defaultLocale,
-      locales: enabled.length > 0 ? enabled : [defaultLocale],
-    };
+    value = localesFromSiteConfig(data.public?.siteConfig ?? null);
   } catch {
     value = { defaultLocale: "en", locales: ["en"] };
   }

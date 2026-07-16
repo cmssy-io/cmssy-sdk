@@ -34,6 +34,7 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 | [**Reference wiring**](docs/wiring.md)             | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other. |
 | [**Troubleshooting**](docs/troubleshooting.md)     | Symptom → cause. Every row cost us half a day, and none of them failed a build.            |
 | [**Testing**](docs/testing.md)                     | `checkCmssyEditMode` - the editor is the one path a build cannot check.                    |
+| [**Migrating to v9**](docs/migrations/v8-to-v9.md) | The config locale override is gone. The workspace languages rule everywhere.               |
 | [**Migrating to v8**](docs/migrations/v7-to-v8.md) | A block's content is typed by its schema. A renamed field is now a build error.            |
 | [**Migrating to v5**](docs/migrations/v4-to-v5.md) | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not.             |
 | [**Migrating to v4**](docs/migrations/v3-to-v4.md) | The editor moved to its own route. Skip this and your preview goes blank.                  |
