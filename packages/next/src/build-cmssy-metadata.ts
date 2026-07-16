@@ -9,7 +9,7 @@ import {
 } from "@cmssy/react";
 import type { CmssyConfig } from "@cmssy/core";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
-import { localizedPath, resolveSeoLocales } from "@cmssy/core";
+import { localesFromSiteConfig, localizedPath } from "@cmssy/core";
 
 export interface BuildCmssyMetadataOptions extends SeoBaseUrlOption {
   /** Override the Open Graph / Twitter image (defaults to workspace branding). */
@@ -68,10 +68,8 @@ export async function buildCmssyMetadata(
     resolveSeoBaseUrl(config, options.baseUrl),
   ]);
 
-  const { defaultLocale, locales: enabledLocales } = resolveSeoLocales(
-    config,
-    siteConfig,
-  );
+  const { defaultLocale, locales: enabledLocales } =
+    localesFromSiteConfig(siteConfig);
 
   // The prefix in the path is the language, so read it from there - the same
   // rule the router used. An explicit locale wins (per-domain strategies), and

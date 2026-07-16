@@ -54,7 +54,7 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 - **Auth** - [Member auth](./auth/member-auth.md): secure httpOnly-cookie sign-in/register/sessions.
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
 - **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.
-- **Migrating** - [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
+- **Migrating** - [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
 - **Reference**
   - [API reference](./reference/sdk-api.md) - every export.
   - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.

@@ -6,6 +6,29 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 9.0.0
+
+**The config locale override is gone.** `CmssyConfig.defaultLocale` and
+`CmssyConfig.enabledLocales` duplicated the workspace site config and were
+honored inconsistently: the sitemap, `buildCmssyMetadata` and the Next locale
+middleware read them, the page router never did. Set `defaultLocale: "en"` in
+a `pl`-default workspace and the sitemap disagreed with the routing - silently.
+The workspace (Settings → Languages) is the only source of truth now.
+
+```bash
+npx @cmssy/codemod v9 .
+```
+
+The codemod strips the two keys from your config literal and reports each
+removal. If the removed value disagreed with the workspace, fix the workspace
+languages - everything follows them now. `resolveLocale` is unchanged. See
+[the migration guide](docs/migrations/v8-to-v9.md).
+
+New in `@cmssy/core`: `localesFromSiteConfig(siteConfig)` - the one mapper
+from a workspace site config to `{ defaultLocale, locales }`; the router and
+the SEO helpers both go through it, so they can no longer disagree.
+`resolveSeoLocales` (config-aware) is removed.
+
 ## 8.0.0
 
 **A block's `content` is typed by its field schema.** Until now the schema and

@@ -74,19 +74,11 @@ export function createCmssyNotFound(
       const page = await fetchPageById(clientConfig, notFoundPageId);
       if (!page || page.blocks.length === 0) return fallback;
 
-      let locale: string;
-      let defaultLocale: string;
-      let enabledLocales = config.enabledLocales;
-
-      if (config.resolveLocale) {
-        defaultLocale = config.defaultLocale ?? "en";
-        locale = await config.resolveLocale();
-      } else {
-        const siteLocales = await resolveSiteLocales(clientConfig);
-        defaultLocale = config.defaultLocale ?? siteLocales.defaultLocale;
-        enabledLocales = config.enabledLocales ?? siteLocales.locales;
-        locale = defaultLocale;
-      }
+      const { defaultLocale, locales: enabledLocales } =
+        await resolveSiteLocales(clientConfig);
+      const locale = config.resolveLocale
+        ? await config.resolveLocale()
+        : defaultLocale;
 
       const resolvedForms = await resolveForms(
         clientConfig,
@@ -100,10 +92,7 @@ export function createCmssyNotFound(
       const localeContext = {
         current: locale,
         default: defaultLocale,
-        enabled:
-          enabledLocales && enabledLocales.length > 0
-            ? enabledLocales
-            : Array.from(new Set([defaultLocale, locale])),
+        enabled: enabledLocales,
       };
 
       return (

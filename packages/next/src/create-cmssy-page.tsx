@@ -159,23 +159,17 @@ function buildCmssyPageRenderer(
 
     let locale: string;
     let pagePath = path;
-    let defaultLocale: string;
-    let enabledLocales = config.enabledLocales;
+
+    // The workspace knows its default language, so ask it rather than assume
+    // English - the lookup is cached, and a Norwegian-first site would
+    // otherwise treat "no" as a non-default language and prefix every URL.
+    const siteLocales = await resolveSiteLocales(clientConfig);
+    const { defaultLocale, locales: enabledLocales } = siteLocales;
 
     if (config.resolveLocale) {
-      // The workspace knows its default language, so ask it rather than assume
-      // English - the lookup is cached, and a Norwegian-first site would
-      // otherwise treat "no" as a non-default language and prefix every URL.
-      defaultLocale =
-        config.defaultLocale ??
-        (await resolveSiteLocales(clientConfig)).defaultLocale;
       locale = await config.resolveLocale();
     } else {
-      const siteLocales = await resolveSiteLocales(clientConfig);
-      defaultLocale = config.defaultLocale ?? siteLocales.defaultLocale;
-      const locales = config.enabledLocales ?? siteLocales.locales;
-      enabledLocales = locales;
-      const split = splitLocaleFromPath(path, { defaultLocale, locales });
+      const split = splitLocaleFromPath(path, siteLocales);
       locale = split.locale;
       pagePath = split.path;
     }
@@ -213,10 +207,7 @@ function buildCmssyPageRenderer(
     const localeContext = {
       current: locale,
       default: defaultLocale,
-      enabled:
-        enabledLocales && enabledLocales.length > 0
-          ? enabledLocales
-          : Array.from(new Set([defaultLocale, locale])),
+      enabled: enabledLocales,
     };
 
     if (editorActive && Editor) {

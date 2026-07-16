@@ -10,8 +10,6 @@ const CONFIG = {
   draftSecret: "draft-secret-1234",
   editorOrigin: "https://app.cmssy.io",
   siteUrl: "https://cmssy.com",
-  defaultLocale: "en",
-  enabledLocales: ["en", "pl"],
 };
 
 interface StubPage {
@@ -29,15 +27,29 @@ function stubGraphql(opts: {
   pages?: StubPage[];
   notFoundPageId?: string | null;
   pagesOk?: boolean;
+  defaultLanguage?: string;
+  enabledLanguages?: string[];
 }) {
-  const { pages = [], notFoundPageId = null, pagesOk = true } = opts;
+  const {
+    pages = [],
+    notFoundPageId = null,
+    pagesOk = true,
+    defaultLanguage = "en",
+    enabledLanguages = ["en", "pl"],
+  } = opts;
   const fetchStub = vi.fn(async (_url: string, init: { body: string }) => {
     const query = JSON.parse(init.body).query as string;
     if (query.includes("PublicSiteConfig")) {
       return {
         ok: true,
         status: 200,
-        json: async () => ({ data: { public: { siteConfig: { notFoundPageId } } } }),
+        json: async () => ({
+          data: {
+            public: {
+              siteConfig: { notFoundPageId, defaultLanguage, enabledLanguages },
+            },
+          },
+        }),
       };
     }
     return {
@@ -153,11 +165,9 @@ describe("createCmssySitemap", () => {
   it("omits alternates for a single-locale site", async () => {
     stubGraphql({
       pages: [{ id: "1", slug: "/", updatedAt: null, publishedAt: null }],
+      enabledLanguages: ["en"],
     });
-    const result = await createCmssySitemap({
-      ...CONFIG,
-      enabledLocales: ["en"],
-    })();
+    const result = await createCmssySitemap(CONFIG)();
     expect(result[0]?.alternates).toBeUndefined();
   });
 
