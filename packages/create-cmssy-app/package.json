@@ -1,6 +1,6 @@
 {
   "name": "create-cmssy-app",
-  "version": "8.0.3",
+  "version": "8.0.4",
   "description": "Start a cmssy-powered app (Next.js or Astro) that works, is editable, and proves it stays that way.",
   "type": "module",
   "bin": {
