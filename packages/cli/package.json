@@ -1,10 +1,11 @@
 {
   "name": "@cmssy/cli",
   "version": "9.4.0",
-  "description": "One command to connect an app to a cmssy workspace: `cmssy link` writes .env.local, sets the preview URL and verifies the editor wiring.",
+  "description": "The cmssy CLI: `cmssy init` wires cmssy into an existing Next.js, Astro or React Router app; `cmssy link` connects it to a workspace and verifies the editor wiring.",
   "keywords": [
     "cmssy",
     "cli",
+    "init",
     "link"
   ],
   "homepage": "https://cmssy.com",
@@ -22,7 +23,8 @@
     "cmssy": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "scripts": {
     "build": "tsup",

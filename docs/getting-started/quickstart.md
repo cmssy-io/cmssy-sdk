@@ -11,10 +11,16 @@ draft secret.
 
 ## 1. Install
 
-```bash
-npx create-cmssy-app my-site --framework next   # or: astro, remix
+Create the app with your framework's own CLI, then let `cmssy init` generate
+the cmssy wiring - config, block registry, catch-all page, edit route, draft
+route and proxy - for the framework it detects:
 
-# or, into an existing app:
+```bash
+npx create-next-app@latest my-site   # or: npm create astro@latest / npx create-react-router@latest
+cd my-site
+npx @cmssy/cli init
+
+# or wire it by hand:
 npm i @cmssy/core @cmssy/react @cmssy/next
 ```
 
