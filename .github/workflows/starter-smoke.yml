@@ -1,9 +1,10 @@
 name: Starter smoke
 
-# Generates a starter for every framework, builds it, starts it, and asks the
-# running site whether its editor works. An adapter nobody runs is an adapter we
-# do not know works - and we shipped a dead editor twice while every build was
-# green (CMS-969, CMS-970).
+# Scaffolds a FRESH app with each framework's own CLI, runs the built
+# `cmssy init` on it, builds it against this checkout's tarballs, starts it,
+# and asks the running site whether its editor works. This is the real user
+# path - an adapter nobody runs is an adapter we do not know works, and we
+# shipped a dead editor twice while every build was green (CMS-969, CMS-970).
 
 on:
   push:
@@ -34,15 +35,38 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm -r build
 
-      - name: Generate the starter
+      # The framework's own CLI owns the skeleton; cmssy owns only the wiring.
+      # The default home page is removed because the cmssy catch-all serves /,
+      # and React Router's routes.ts because cmssy init refuses to overwrite it.
+      - name: Scaffold a fresh app with the framework's own CLI
         run: |
-          node packages/create-cmssy-app/dist/index.js /tmp/app \
-            --framework ${{ matrix.framework }}
+          case "${{ matrix.framework }}" in
+            next)
+              npx --yes create-next-app@latest /tmp/app --ts --app --no-eslint \
+                --no-tailwind --no-src-dir --import-alias "@/*" \
+                --skip-install --disable-git --yes
+              rm /tmp/app/app/page.tsx
+              ;;
+            astro)
+              npm create -y astro@latest /tmp/app -- --template minimal \
+                --no-install --no-git --yes
+              rm -f /tmp/app/src/pages/index.astro
+              ;;
+            remix)
+              npx --yes create-react-router@latest /tmp/app --no-install \
+                --no-git-init --yes
+              rm /tmp/app/app/routes.ts
+              rm -rf /tmp/app/app/routes/home.tsx /tmp/app/app/welcome
+              ;;
+          esac
 
-      # The starter pins the version it will ship with, which is not on npm yet -
-      # and asking npm for it would test the last release, not this diff. Pack the
-      # packages and install the tarballs: that is the artifact users get, not a
-      # symlink into a monorepo that resolves differently.
+      - name: Run the built cmssy init on it
+        run: node packages/cli/dist/index.js init --dir /tmp/app
+
+      # cmssy init pins the version it ships with, which is not on npm yet -
+      # and asking npm for it would test the last release, not this diff. Pack
+      # the packages and install the tarballs: that is the artifact users get,
+      # not a symlink into a monorepo that resolves differently.
       - name: Pack this checkout
         run: |
           mkdir -p /tmp/pkgs
@@ -51,7 +75,7 @@ jobs:
           done
           ls /tmp/pkgs
 
-      - name: Install the starter against those tarballs
+      - name: Install the app against those tarballs
         working-directory: /tmp/app
         run: |
           node -e '
@@ -86,9 +110,16 @@ jobs:
           '
           pnpm install --no-frozen-lockfile
 
+      # cmssy init tells the user to run this themselves - the CI does what the
+      # user does. The React integration renders the blocks; the Node adapter
+      # serves the on-demand cmssy routes.
+      - name: Add the Astro integrations
+        if: matrix.framework == 'astro'
+        working-directory: /tmp/app
+        run: npx astro add react node --yes
+
       # The Next build reads the workspace (sitemap, page data), so without the
-      # secrets there is nothing honest to build against. Astro's build does not,
-      # but a build without an editor check proves the least interesting half.
+      # secrets there is nothing honest to build against.
       - name: Build
         if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
@@ -103,9 +134,33 @@ jobs:
         env:
           SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'astro' && '4321' || '3000' }}
         run: |
-          pnpm start &
+          cat > smoke-edit.mjs <<'EOF'
+          import { checkCmssyEditMode } from "@cmssy/${{ matrix.framework }}/testing";
+
+          const baseUrl = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
+          const secret = process.env.CMSSY_DRAFT_SECRET;
+
+          if (!secret) {
+            console.error("CMSSY_DRAFT_SECRET is not set - the editor cannot be checked.");
+            process.exit(1);
+          }
+
+          const result = await checkCmssyEditMode({ baseUrl, secret });
+
+          if (!result.ok) {
+            console.error("Editor smoke test FAILED:");
+            for (const failure of result.failures) console.error(`  - ${failure}`);
+            process.exit(1);
+          }
+
+          console.log("Editor smoke test passed.");
+          EOF
+          case "${{ matrix.framework }}" in
+            astro) node ./dist/server/entry.mjs & ;;
+            *) pnpm start & ;;
+          esac
           npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
-          pnpm smoke:edit
+          node smoke-edit.mjs
 
       # A green check that verifies nothing is worse than no check, so say it out
       # loud rather than let the job look like it proved something.
@@ -113,5 +168,5 @@ jobs:
         if: env.CMSSY_DRAFT_SECRET == ''
         run: |
           echo "::warning::CMSSY_ORG_SLUG / CMSSY_WORKSPACE_SLUG / CMSSY_DRAFT_SECRET" \
-               "are not set on this repo, so the ${{ matrix.framework }} starter was" \
-               "generated but NEITHER built NOR checked. This job proved nothing."
+               "are not set on this repo, so the ${{ matrix.framework }} app was" \
+               "scaffolded and wired but NEITHER built NOR checked. This job proved nothing."

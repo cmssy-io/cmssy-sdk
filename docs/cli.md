@@ -1,7 +1,53 @@
 ---
-title: cmssy link
-description: Connect an app to a cmssy workspace with one command - the CLI fetches the slugs and the draft secret, writes .env.local, sets the preview URL and verifies the wiring.
+title: The cmssy CLI
+description: cmssy init generates the cmssy wiring into an existing app; cmssy link connects it to a workspace - fetches the slugs and the draft secret, writes .env.local, sets the preview URL and verifies the wiring.
 ---
+
+# `cmssy init` (@cmssy/cli)
+
+cmssy never scaffolds your app - the framework is an adapter, never the
+foundation. You create the app with the framework's own CLI (`create-next-app`,
+`create astro`, `create-react-router`), and `cmssy init` generates only the
+cmssy wiring into it: the config, the block registry with an example block, the
+catch-all page, the `/cmssy-edit` route, the draft route, the proxy/middleware
+and `.env.example`.
+
+```bash
+npx create-next-app@latest my-site
+cd my-site
+npx @cmssy/cli init
+cmssy init --dir ../my-site --force
+```
+
+## What it does
+
+1. Detects the framework from the app's `package.json` dependencies - `next`,
+   `astro`, or `react-router`. No supported framework is a loud failure with
+   the create command for each one, never a guess.
+2. Writes the wiring files for that framework. A file that already exists is
+   skipped and reported as exactly that - `cmssy init` never deletes or
+   overwrites anything unless you pass `--force`. Run it twice and the second
+   run is a no-op.
+3. Adds the missing `@cmssy/*` dependencies to `package.json`, caret-pinned to
+   the CLI's own version (they release in lockstep). Dependencies you already
+   have are left untouched. You run the install yourself - the hint names the
+   package manager your lockfile says you use.
+4. Prints what needs your attention: a conflicting `app/page.tsx` next to the
+   catch-all (Next), the `npx astro add react node` step (Astro), or an
+   `app/routes.ts` it refused to overwrite (React Router).
+
+Flags: `--dir <path>` targets an app outside the working directory; `--force`
+overwrites existing wiring files.
+
+## What it writes
+
+| Framework      | Wiring                                                                                                                                                                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout), `blocks/hero/`, `app/[[...path]]/`, `app/cmssy-edit/[[...path]]/`, `app/api/draft/`, `app/robots.ts`, `app/sitemap.ts` - under `src/` when the app uses one. |
+| Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`, robots + sitemap.                                                                            |
+| React Router 7 | `cmssy.config.ts`, `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`, robots + sitemap. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                     |
+
+Then connect the app to a workspace:
 
 # `cmssy link` (@cmssy/cli)
 
