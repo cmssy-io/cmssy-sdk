@@ -6,7 +6,11 @@ import {
 } from "@cmssy/react";
 import type { CmssyConfig } from "@cmssy/core";
 import { resolveSeoBaseUrl, type SeoBaseUrlOption } from "./seo-base-url";
-import { localizedPath, normalizeSlug, resolveSeoLocales } from "@cmssy/core";
+import {
+  localesFromSiteConfig,
+  localizedPath,
+  normalizeSlug,
+} from "@cmssy/core";
 
 /** What an `extra` resolver needs to build URLs that agree with the page ones. */
 export interface CmssySitemapContext {
@@ -74,7 +78,7 @@ export function createCmssySitemap(
     const notFoundPageId = siteConfig?.notFoundPageId ?? null;
 
     const baseUrl = await resolveSeoBaseUrl(config, options.baseUrl);
-    const { defaultLocale, locales } = resolveSeoLocales(config, siteConfig);
+    const { defaultLocale, locales } = localesFromSiteConfig(siteConfig);
 
     const excluded = new Set((options.excludeSlugs ?? []).map(normalizeSlug));
 

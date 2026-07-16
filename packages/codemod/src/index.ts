@@ -4,8 +4,14 @@ import { join, resolve } from "node:path";
 import { transform as transformV5 } from "./v5";
 import { transform as transformV7 } from "./v7";
 import { transform as transformV8 } from "./v8";
+import { transform as transformV9 } from "./v9";
 
-const TRANSFORMS = { v5: transformV5, v7: transformV7, v8: transformV8 };
+const TRANSFORMS = {
+  v5: transformV5,
+  v7: transformV7,
+  v8: transformV8,
+  v9: transformV9,
+};
 type Version = keyof typeof TRANSFORMS;
 
 // The message has to name the version it looked for. Saying "no 4.x imports"
@@ -14,6 +20,14 @@ const PREVIOUS_MAJOR: Record<Version, string> = {
   v5: "4.x",
   v7: "6.x",
   v8: "7.x",
+  v9: "8.x",
+};
+
+const MIGRATION_GUIDE: Record<Version, string> = {
+  v5: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v4-to-v5.md",
+  v7: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v4-to-v5.md",
+  v8: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v7-to-v8.md",
+  v9: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v8-to-v9.md",
 };
 
 const SKIP = new Set(["node_modules", "dist", "build", "out", "coverage"]);
@@ -45,7 +59,7 @@ async function main(): Promise<void> {
   const version = args[0] as Version;
   const transform = TRANSFORMS[version];
   if (!transform) {
-    console.error("usage: cmssy-codemod v5|v7|v8 [path] [--dry]");
+    console.error("usage: cmssy-codemod v5|v7|v8|v9 [path] [--dry]");
     process.exitCode = 1;
     return;
   }
@@ -92,16 +106,11 @@ async function main(): Promise<void> {
 
   // A codemod that stayed quiet about what it could not do would read as "done".
   if (manual.length > 0) {
-    console.log(
-      `\ncmssy: ${manual.length} file(s) need a human - a block's content must be\n` +
-        "derived from its schema, and only you know which fields it means to read:\n",
-    );
+    console.log(`\ncmssy: ${manual.length} file(s) need a look from you:\n`);
     for (const { file, notes } of manual) {
       console.log(`  ${report(file)}\n    ${notes.join("\n    ")}`);
     }
-    console.log(
-      "\n  https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v7-to-v8.md",
-    );
+    console.log(`\n  ${MIGRATION_GUIDE[version]}`);
   }
 
   // Rewriting an import to a package the app does not depend on trades one

@@ -1,38 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
-import {
-  resolveSiteLocales,
-  splitLocaleFromPath,
-  type CmssySiteLocales,
-} from "@cmssy/react";
+import { resolveSiteLocales, splitLocaleFromPath } from "@cmssy/react";
 import type { CmssyConfig } from "@cmssy/core";
 import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
 /**
- * Resolves the active locale from a pathname's leading segment. Uses the
- * config's static `defaultLocale` + `enabledLocales` when both are set (no
- * network); otherwise fetches the workspace locales (cached).
+ * Resolves the active locale from a pathname's leading segment, against the
+ * workspace locales (fetched, cached 60s).
  */
 export async function resolveLocaleFromPathname(
   config: CmssyConfig,
   pathname: string,
 ): Promise<string> {
   const segments = pathname.split("/").filter(Boolean);
-  const hasStaticLocales = !!config.enabledLocales?.length;
-  // Mirror createCmssyPage: config.defaultLocale / config.enabledLocales each
-  // override the fetched workspace value independently. Skip the fetch only when
-  // both are statically configured.
-  const fetched =
-    config.defaultLocale && hasStaticLocales
-      ? null
-      : await resolveSiteLocales({
-          apiUrl: config.apiUrl,
-          org: config.org,
-          workspaceSlug: config.workspaceSlug,
-        });
-  const siteLocales: CmssySiteLocales = {
-    defaultLocale: config.defaultLocale ?? fetched!.defaultLocale,
-    locales: hasStaticLocales ? config.enabledLocales! : fetched!.locales,
-  };
+  const siteLocales = await resolveSiteLocales({
+    apiUrl: config.apiUrl,
+    org: config.org,
+    workspaceSlug: config.workspaceSlug,
+  });
   return splitLocaleFromPath(segments, siteLocales).locale;
 }
 

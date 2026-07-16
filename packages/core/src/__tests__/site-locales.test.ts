@@ -1,9 +1,35 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  localesFromSiteConfig,
   resolveSiteLocales,
   splitLocaleFromPath,
   type CmssySiteLocales,
 } from "../data/site-locales";
+
+describe("localesFromSiteConfig", () => {
+  it("maps the workspace languages", () => {
+    expect(
+      localesFromSiteConfig({
+        defaultLanguage: "pl",
+        enabledLanguages: ["pl", "en"],
+      }),
+    ).toEqual({ defaultLocale: "pl", locales: ["pl", "en"] });
+  });
+
+  it("falls back to [default] when no languages are enabled", () => {
+    expect(localesFromSiteConfig({ defaultLanguage: "no" })).toEqual({
+      defaultLocale: "no",
+      locales: ["no"],
+    });
+  });
+
+  it("degrades to en for a missing site config", () => {
+    expect(localesFromSiteConfig(null)).toEqual({
+      defaultLocale: "en",
+      locales: ["en"],
+    });
+  });
+});
 
 describe("splitLocaleFromPath", () => {
   const site: CmssySiteLocales = { defaultLocale: "pl", locales: ["pl", "en"] };
