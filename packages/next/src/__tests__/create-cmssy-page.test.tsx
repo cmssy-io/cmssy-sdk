@@ -15,6 +15,7 @@ let draftEnabled = false;
 
 vi.mock("next/headers", () => ({
   draftMode: vi.fn(async () => ({ isEnabled: draftEnabled })),
+  headers: vi.fn(async () => new Headers({ host: "localhost:3000" })),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -412,6 +413,95 @@ describe("createCmssyPage", () => {
         searchParams: searchParams({ cmssyEdit: "1", cmssySecret: "wrong" }),
       }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
+  it("renders diagnostics in development for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: { body: string }) => {
+        const body = JSON.parse(init.body) as { query: string };
+        return {
+          ok: true,
+          status: 200,
+          json: async () =>
+            body.query.includes("draftSecretValid")
+              ? { data: { public: { draftSecretValid: false } } }
+              : {
+                  data: {
+                    public: {
+                      siteConfig: { previewUrl: "http://localhost:3000" },
+                    },
+                  },
+                },
+        };
+      }),
+    );
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = (await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: "1", cmssySecret: "wrong" }),
+    })) as { props: { dangerouslySetInnerHTML: { __html: string } } };
+    const html = element.props.dangerouslySetInnerHTML.__html;
+
+    expect(html).toContain("cmssy editor diagnostics");
+    expect(html).toContain("acme/pilot");
+    expect(html).toContain("does not match");
+    expect(html).toContain("frame-ancestors");
+    expect(html).not.toContain(CONFIG.draftSecret);
+    expect(fetchPage).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("renders diagnostics in development for a bare cmssyEdit without the secret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: { public: { siteConfig: { previewUrl: null } } },
+        }),
+      })),
+    );
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = (await Page({
+      params: params(["about"]),
+      searchParams: searchParams({ cmssyEdit: "1" }),
+    })) as { props: { dangerouslySetInnerHTML: { __html: string } } };
+    const html = element.props.dangerouslySetInnerHTML.__html;
+
+    expect(html).toContain("no cmssySecret");
+    vi.unstubAllGlobals();
+  });
+
+  it("still 404s in production for a wrong cmssySecret", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    await expect(
+      Page({
+        params: params(["about"]),
+        searchParams: searchParams({ cmssyEdit: "1", cmssySecret: "wrong" }),
+      }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
+  it("renders the editor in development with the right secret", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params(["about"]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    );
+    expect(element.type).toBe(Editor);
   });
 
   it("calls notFound when the page is missing", async () => {

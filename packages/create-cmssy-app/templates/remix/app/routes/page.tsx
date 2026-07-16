@@ -12,8 +12,19 @@ export const loader = createCmssyLoader(cmssy);
 export const headers = createCmssyHeaders(cmssy);
 
 export default function CmssyPage({ loaderData }: Route.ComponentProps) {
-  const { page, locale, defaultLocale, enabledLocales, isEdit, editorOrigin } =
-    loaderData;
+  const {
+    page,
+    locale,
+    defaultLocale,
+    enabledLocales,
+    isEdit,
+    editorOrigin,
+    diagnostics,
+  } = loaderData;
+
+  if (diagnostics) {
+    return <div dangerouslySetInnerHTML={{ __html: diagnostics }} />;
+  }
 
   // A verified editor request renders the same page through the edit bridge.
   // No separate route: a React Router page always sees its query string.
@@ -29,7 +40,12 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     );
   }
 
-  if (!page) return <main><h1>Not found</h1></main>;
+  if (!page)
+    return (
+      <main>
+        <h1>Not found</h1>
+      </main>
+    );
 
   const blockMap = buildBlockMap(blocks);
   const context = buildBlockContext(locale, defaultLocale, enabledLocales);
