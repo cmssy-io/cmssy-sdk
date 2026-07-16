@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/remix",
-  "version": "9.1.0",
+  "version": "9.1.1",
   "description": "React Router 7 bindings for cmssy headless sites: page loader, framing CSP, sitemap and robots.",
   "keywords": [
     "cmssy",
