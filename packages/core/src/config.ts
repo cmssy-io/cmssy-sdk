@@ -77,9 +77,11 @@ export interface CmssyConfig {
    */
   siteUrl?: string;
   auth?: CmssyAuthConfig;
-  defaultLocale?: string;
-  /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
-  enabledLocales?: string[];
+  /**
+   * Fallback locale resolver for a site whose URLs carry no language (e.g. a
+   * cookie or Accept-Language strategy). The workspace site config remains the
+   * source of truth for the default and enabled languages.
+   */
   resolveLocale?: () => string | Promise<string>;
 }
 

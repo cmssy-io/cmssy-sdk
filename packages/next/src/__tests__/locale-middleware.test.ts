@@ -17,18 +17,10 @@ import {
 } from "../locale-middleware";
 import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
 
-const STATIC = {
+const CONFIG = {
   apiUrl: "https://api.test/graphql",
-  org: "acme", workspaceSlug: "ws",
-  draftSecret: "x",
-  editorOrigin: "https://cmssy.io",
-  defaultLocale: "pl",
-  enabledLocales: ["pl", "en"],
-};
-
-const DYNAMIC = {
-  apiUrl: "https://api.test/graphql",
-  org: "acme", workspaceSlug: "ws",
+  org: "acme",
+  workspaceSlug: "ws",
   draftSecret: "x",
   editorOrigin: "https://cmssy.io",
 };
@@ -43,31 +35,23 @@ beforeEach(() => {
 });
 
 describe("resolveLocaleFromPathname", () => {
-  it("uses static config without a network fetch", async () => {
-    expect(await resolveLocaleFromPathname(STATIC, "/en/about")).toBe("en");
-    expect(resolveSiteLocales).not.toHaveBeenCalled();
-  });
-
-  it("returns default for an unprefixed path", async () => {
-    expect(await resolveLocaleFromPathname(STATIC, "/about")).toBe("pl");
-  });
-
-  it("fetches workspace locales when config is not static", async () => {
-    expect(await resolveLocaleFromPathname(DYNAMIC, "/en/x")).toBe("en");
+  it("reads the locale from the path prefix against the workspace locales", async () => {
+    expect(await resolveLocaleFromPathname(CONFIG, "/en/about")).toBe("en");
     expect(resolveSiteLocales).toHaveBeenCalledOnce();
   });
 
-  it("applies config.defaultLocale over the fetched default when enabledLocales is absent", async () => {
-    // fetched default is "pl"; config overrides it to "en"
-    const config = { ...DYNAMIC, defaultLocale: "en" };
-    expect(await resolveLocaleFromPathname(config, "/")).toBe("en");
-    expect(resolveSiteLocales).toHaveBeenCalledOnce();
+  it("returns the workspace default for an unprefixed path", async () => {
+    expect(await resolveLocaleFromPathname(CONFIG, "/about")).toBe("pl");
+  });
+
+  it("treats a prefix outside the workspace locales as content, not language", async () => {
+    expect(await resolveLocaleFromPathname(CONFIG, "/de/about")).toBe("pl");
   });
 });
 
 describe("createCmssyLocaleMiddleware", () => {
   it("forwards the resolved locale as the x-cmssy-locale request header", async () => {
-    const middleware = createCmssyLocaleMiddleware(STATIC);
+    const middleware = createCmssyLocaleMiddleware(CONFIG);
     await middleware({
       nextUrl: { pathname: "/en/about" },
       headers: new Headers(),
