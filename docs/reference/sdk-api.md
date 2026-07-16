@@ -187,8 +187,8 @@ interface CmssyConfig {
   devToken?: string; // cs_… API token; opts into editor-controlled dev preview (development only)
   siteUrl?: string;
   auth?: { modelSlug: string; sessionSecret: string };
-  defaultLocale?: string;
-  enabledLocales?: string[];
+  defaultLocale?: string; // static override; workspace defaultLanguage is the source of truth - prefer omitting
+  enabledLocales?: string[]; // static override of workspace enabledLanguages - prefer omitting
   resolveLocale?: () => string | Promise<string>;
 }
 ```

@@ -32,8 +32,8 @@ export const cmssy = defineCmssyConfig({
   org: process.env.CMSSY_ORG_SLUG,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
   draftSecret: process.env.CMSSY_DRAFT_SECRET, // edit-mode preview handshake
-  defaultLocale: "en",
   // apiUrl + editorOrigin default to cmssy cloud; set them only for self-host/staging.
+  // Locales come from the workspace site config - no need to repeat them here.
 });
 ```
 
