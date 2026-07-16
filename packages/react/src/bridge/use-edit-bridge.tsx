@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   PROTOCOL_VERSION,
+  type AppToEditorMessage,
   type BlockMeta,
   type BlockRect,
   type BlockSchema,
@@ -155,6 +156,16 @@ export function useEditBridge(
         "[cmssy] editorOrigin '*' disables origin checks - dev only, do not use in production",
       );
     }
+    const postSafe = (message: AppToEditorMessage) => {
+      try {
+        postToEditor(window.parent, postTarget, message);
+      } catch (error) {
+        if (typeof console !== "undefined") {
+          console.debug("[cmssy] post to editor failed", message.type, error);
+        }
+      }
+    };
+
     const sendReady = () => {
       try {
         const rects = collectRects();
@@ -249,21 +260,24 @@ export function useEditBridge(
       const target = event.target as HTMLElement | null;
       const el = target?.closest?.("[data-block-id]") as HTMLElement | null;
       const id = el?.getAttribute("data-block-id");
-      if (!id || !el) return;
+      if (!id || !el) {
+        if (!selectedIdRef.current) return;
+        if (target?.closest?.("a[href],button")) return;
+        selectedIdRef.current = null;
+        setSelected(null);
+        postSafe({ type: "cmssy:deselect" });
+        return;
+      }
       selectedIdRef.current = id;
       if (target?.closest?.("a[href]")) event.preventDefault();
       const r = el.getBoundingClientRect();
       const layoutPosition = el.getAttribute("data-layout-position");
-      try {
-        postToEditor(window.parent, postTarget, {
-          type: "cmssy:click",
-          blockId: id,
-          rect: { x: r.x, y: r.y, width: r.width, height: r.height },
-          ...(layoutPosition !== null ? { layoutPosition } : {}),
-        });
-      } catch {
-        // editor frame may reject during teardown; ignore
-      }
+      postSafe({
+        type: "cmssy:click",
+        blockId: id,
+        rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        ...(layoutPosition !== null ? { layoutPosition } : {}),
+      });
     };
 
     let boundsRaf = 0;
@@ -279,15 +293,11 @@ export function useEditBridge(
         const el = findBlockEl(id);
         if (!el) return;
         const r = el.getBoundingClientRect();
-        try {
-          postToEditor(window.parent, postTarget, {
-            type: "cmssy:bounds",
-            blockId: id,
-            rect: { x: r.x, y: r.y, width: r.width, height: r.height },
-          });
-        } catch {
-          // editor frame may reject during teardown; ignore
-        }
+        postSafe({
+          type: "cmssy:bounds",
+          blockId: id,
+          rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        });
       });
     };
 
