@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/next",
-  "version": "9.2.0",
+  "version": "9.3.0",
   "description": "Next.js App Router bindings for cmssy headless sites (createCmssyPage + draft preview)",
   "keywords": [
     "cmssy",

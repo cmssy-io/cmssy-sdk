@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/cli",
-  "version": "9.2.0",
+  "version": "9.3.0",
   "description": "One command to connect an app to a cmssy workspace: `cmssy link` writes .env.local, sets the preview URL and verifies the editor wiring.",
   "keywords": [
     "cmssy",
