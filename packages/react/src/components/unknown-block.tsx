@@ -9,7 +9,7 @@ export function UnknownBlock({ type }: UnknownBlockProps) {
   if (typeof window !== "undefined" && !warned.has(type)) {
     if (warned.size >= WARN_CAP) warned.clear();
     warned.add(type);
-    console.warn(`[cmssy] no component registered for block type "${type}"`);
+    console.error(`[cmssy] no component registered for block type "${type}"`);
   }
   return <div data-cmssy-unknown-block={type} />;
 }

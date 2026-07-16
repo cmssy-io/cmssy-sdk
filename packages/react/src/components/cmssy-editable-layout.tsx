@@ -56,6 +56,7 @@ export function CmssyEditableLayout({
           defaultLocale={defaultLocale}
           blockMap={blockMap}
           patchedContent={patches[block.id]}
+          editMode
           layoutPosition={position}
           context={context}
           data={data?.[block.id]}

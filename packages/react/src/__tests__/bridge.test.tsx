@@ -434,7 +434,7 @@ describe("edit bridge (blocks-driven)", () => {
     expect(mockParent.postMessage).toHaveBeenCalledTimes(2);
   });
 
-  it("hides a block whose type is absent from the array", () => {
+  it("renders an error card for a block whose type is absent from the array", () => {
     const orphan = {
       id: "po",
       blocks: [{ id: "bx", type: "missing", content: { en: {} } }],
@@ -450,7 +450,10 @@ describe("edit bridge (blocks-driven)", () => {
     const wrapper = container.querySelector(
       '[data-block-id="bx"]',
     ) as HTMLElement | null;
-    expect(wrapper?.style.display).toBe("none");
+    expect(wrapper?.style.display).not.toBe("none");
+    const card = wrapper?.querySelector("[data-cmssy-block-error]");
+    expect(card?.getAttribute("data-cmssy-block-error")).toBe("unregistered");
+    expect(card?.textContent).toContain("missing");
   });
 
   it("prevents default for a link click inside a block but still selects it", () => {

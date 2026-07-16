@@ -6,7 +6,26 @@ import type {
 } from "@cmssy/core";
 import { buildBlockContext } from "@cmssy/core";
 import { buildLoaderMap, type BlockDefinition } from "../registry";
-import { resolveBlocks } from "./resolve-blocks";
+import { markBlockError } from "./block-error";
+import { resolveBlocks, type ResolvedBlock } from "./resolve-blocks";
+
+function collectBlockData(
+  blocks: { id: string }[],
+  resolved: ResolvedBlock[],
+  isPreview: boolean,
+): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+  blocks.forEach((block, index) => {
+    const entry = resolved[index];
+    if (!entry) return;
+    if (entry.error && isPreview) {
+      data[block.id] = markBlockError(entry.error);
+    } else if (entry.data !== undefined) {
+      data[block.id] = entry.data;
+    }
+  });
+  return data;
+}
 
 export interface ResolveBlockDataOptions {
   page: CmssyPageData | null;
@@ -44,12 +63,7 @@ export async function resolveBlockData({
     context,
     enabledLocales,
   );
-  const data: Record<string, unknown> = {};
-  page.blocks.forEach((block, index) => {
-    const value = resolved[index]?.data;
-    if (value !== undefined) data[block.id] = value;
-  });
-  return data;
+  return collectBlockData(page.blocks, resolved, isPreview);
 }
 
 export interface ResolveLayoutBlockDataOptions {
@@ -97,10 +111,5 @@ export async function resolveLayoutBlockData({
     context,
     enabledLocales,
   );
-  const data: Record<string, unknown> = {};
-  layoutBlocks.forEach((block, index) => {
-    const value = resolved[index]?.data;
-    if (value !== undefined) data[block.id] = value;
-  });
-  return data;
+  return collectBlockData(layoutBlocks, resolved, isPreview);
 }
