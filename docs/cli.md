@@ -12,7 +12,7 @@ wiring works.
 
 ```bash
 npx @cmssy/cli link
-cmssy link --token cs_... --workspace acme/shop --preview-url http://localhost:3000
+cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.example.com
 ```
 
 ## What it does
@@ -26,9 +26,11 @@ cmssy link --token cs_... --workspace acme/shop --preview-url http://localhost:3
 3. Reads the workspace's draft secret (the token's user needs the
    `PAGES_EDIT` permission - a missing permission is reported as exactly
    that).
-4. Sets the workspace preview URL - the origin the editor frames your app at -
-   from `--preview-url`, or `http://localhost:3000` after a confirmation
-   prompt. Without a flag and without a terminal it leaves the value
+4. Sets the workspace preview URL - the origin the editor frames your app at
+   for EVERYONE in the workspace - only when `--preview-url` names your
+   deployed site. A localhost value is rejected: for local development, toggle
+   dev mode in the cmssy editor and enter your local host there - that target
+   is per user and touches nothing shared. Without the flag the value is left
    unchanged.
 5. Writes `CMSSY_ORG_SLUG`, `CMSSY_WORKSPACE_SLUG` and `CMSSY_DRAFT_SECRET`
    into `.env.local`, merging with what is already there - existing lines,
@@ -52,7 +54,7 @@ Every failure prints a concrete fix instruction, never a stacktrace.
 $ cmssy link --token cs_... --workspace acme/shop
 ✓ linking to Shop (acme/shop)
 ✓ fetched the draft secret
-✓ set the workspace preview URL to http://localhost:3000
+? preview URL left unchanged - pass --preview-url <deployed origin> to set it; for localhost use the editor dev-mode switch
 ✓ wrote CMSSY_ORG_SLUG, CMSSY_WORKSPACE_SLUG and CMSSY_DRAFT_SECRET to .env.local
 ✓ workspace acme/shop is reachable
 ✓ the draft secret is valid
