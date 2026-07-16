@@ -157,9 +157,9 @@ describe("runLink", () => {
     expect(output).toContain("acme/blog");
   });
 
-  it("prompts for the workspace and preview URL on a terminal", async () => {
+  it("prompts for the workspace on a terminal and never offers localhost as preview URL", async () => {
     const { fetch, calls } = adminFetch();
-    const answers = ["2", ""];
+    const answers = ["2"];
     const { deps, lines } = makeDeps(fetch, {
       isTty: true,
       ask: () => Promise.resolve(answers.shift() ?? ""),
@@ -167,13 +167,10 @@ describe("runLink", () => {
     const code = await runLink({ token: "cs_test" }, deps);
     expect(code).toBe(0);
     expect(lines.join("\n")).toContain("Blog (acme/blog)");
-    const update = calls.find((call) =>
-      call.query.includes("CliSetPreviewUrl"),
+    expect(calls.some((call) => call.query.includes("CliSetPreviewUrl"))).toBe(
+      false,
     );
-    expect(update?.variables).toEqual({
-      input: { previewUrl: "http://localhost:3000" },
-    });
-    expect(update?.headers["x-workspace-id"]).toBe("w2");
+    expect(lines.join("\n")).toContain("dev-mode switch");
   });
 
   it("sets the preview URL from the flag without prompting", async () => {
@@ -183,7 +180,7 @@ describe("runLink", () => {
       {
         token: "cs_test",
         workspace: "shop",
-        previewUrl: "http://localhost:4321/some/path",
+        previewUrl: "https://shop.example.com/some/path",
       },
       deps,
     );
@@ -192,8 +189,28 @@ describe("runLink", () => {
       call.query.includes("CliSetPreviewUrl"),
     );
     expect(update?.variables).toEqual({
-      input: { previewUrl: "http://localhost:4321" },
+      input: { previewUrl: "https://shop.example.com" },
     });
+  });
+
+  it("rejects a localhost preview URL and points at the editor dev mode", async () => {
+    const { fetch, calls } = adminFetch();
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink(
+      {
+        token: "cs_test",
+        workspace: "shop",
+        previewUrl: "http://localhost:3000",
+      },
+      deps,
+    );
+    expect(code).toBe(1);
+    expect(calls.some((call) => call.query.includes("CliSetPreviewUrl"))).toBe(
+      false,
+    );
+    const output = lines.join("\n");
+    expect(output).toContain("DEPLOYED site");
+    expect(output).toContain("dev mode");
   });
 
   it("leaves the preview URL unchanged when there is no flag and no terminal", async () => {

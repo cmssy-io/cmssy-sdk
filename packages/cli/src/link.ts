@@ -21,7 +21,6 @@ import { mergeEnvContent } from "./env-write";
 import { formatEditorLink, formatResult } from "./format";
 
 const ENV_FILES = [".env.local", ".env"];
-const DEFAULT_PREVIEW_URL = "http://localhost:3000";
 
 export interface LinkOptions {
   token?: string;
@@ -119,25 +118,25 @@ async function selectWorkspace(
   return selected;
 }
 
-async function resolvePreviewUrl(
-  options: LinkOptions,
-  deps: LinkDeps,
-): Promise<string | null> {
-  if (options.previewUrl) {
-    try {
-      return new URL(options.previewUrl).origin;
-    } catch {
-      throw new CliError(
-        `"${options.previewUrl}" is not a valid URL`,
-        "pass --preview-url with a full origin, e.g. --preview-url http://localhost:3000",
-      );
-    }
+function resolvePreviewUrl(options: LinkOptions): string | null {
+  if (!options.previewUrl) return null;
+  let origin: string;
+  try {
+    origin = new URL(options.previewUrl).origin;
+  } catch {
+    throw new CliError(
+      `"${options.previewUrl}" is not a valid URL`,
+      "pass --preview-url with your DEPLOYED site origin, e.g. --preview-url https://example.com",
+    );
   }
-  if (!deps.isTty) return null;
-  const answer = await deps.ask(
-    `Set the workspace preview URL to ${DEFAULT_PREVIEW_URL}? (Y/n) `,
-  );
-  return /^(y(es)?)?$/i.test(answer.trim()) ? DEFAULT_PREVIEW_URL : null;
+  const { hostname } = new URL(origin);
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    throw new CliError(
+      "the workspace preview URL is the DEPLOYED site every editor in the workspace previews - not your localhost",
+      "for local development, toggle dev mode in the cmssy editor and enter your local host there (per user, nothing shared)",
+    );
+  }
+  return origin;
 }
 
 function writeEnvLocal(cwd: string, updates: Record<string, string>): void {
@@ -182,7 +181,7 @@ export async function runLink(
     });
     log(formatResult({ status: "ok", message: "fetched the draft secret" }));
 
-    const previewUrl = await resolvePreviewUrl(options, deps);
+    const previewUrl = resolvePreviewUrl(options);
     if (previewUrl) {
       await setPreviewUrl(previewUrl, { ...admin, workspaceId: workspace.id });
       log(
@@ -195,7 +194,8 @@ export async function runLink(
       log(
         formatResult({
           status: "unknown",
-          message: `preview URL left unchanged - pass --preview-url to set it`,
+          message:
+            "preview URL left unchanged - pass --preview-url <deployed origin> to set it; for localhost use the editor dev-mode switch",
         }),
       );
     }
