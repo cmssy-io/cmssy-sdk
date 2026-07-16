@@ -24,6 +24,7 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 | `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                                              |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                                                 |
+| `@cmssy/cli`           | [`cmssy link`](docs/cli.md) - connects an app to a workspace: writes .env.local, sets the preview URL, verifies the wiring.                  |
 | `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                                                     |
 
 ## Docs
