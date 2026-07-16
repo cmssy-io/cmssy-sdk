@@ -1,7 +1,10 @@
 import {
   CMSSY_EDIT_HEADER,
+  CMSSY_EDIT_QUERY_PARAM,
   CMSSY_LOCALE_HEADER,
+  CMSSY_SECRET_QUERY_PARAM,
   applyCmssyCsp,
+  isDevelopment,
   isVerifiedEditUrl,
   localeForPathname,
   resolveSiteLocales,
@@ -57,17 +60,35 @@ export function cmssyMiddleware(
     const locale = await localeForPathname(config, pathname);
     context.request.headers.set(CMSSY_LOCALE_HEADER, locale);
 
-    if (
-      !pathname.startsWith(CMSSY_EDIT_PATH_PREFIX) &&
-      (await isVerifiedEditUrl(context.url, config))
-    ) {
-      context.request.headers.set(CMSSY_EDIT_HEADER, "1");
-      const target = `${CMSSY_EDIT_PATH_PREFIX}${
-        pathname === "/" ? "" : pathname
-      }${context.url.search}`;
-      const response = await context.rewrite(target);
-      applyCmssyCsp(response, { editorOrigin: config.editorOrigin });
-      return response;
+    const editRequested = context.url.searchParams
+      .getAll(CMSSY_EDIT_QUERY_PARAM)
+      .includes("1");
+    if (editRequested) {
+      const verified = await isVerifiedEditUrl(context.url, config);
+      if (verified && !pathname.startsWith(CMSSY_EDIT_PATH_PREFIX)) {
+        context.request.headers.set(CMSSY_EDIT_HEADER, "1");
+        const target = `${CMSSY_EDIT_PATH_PREFIX}${
+          pathname === "/" ? "" : pathname
+        }${context.url.search}`;
+        const response = await context.rewrite(target);
+        applyCmssyCsp(response, { editorOrigin: config.editorOrigin });
+        return response;
+      }
+      if (!verified && isDevelopment()) {
+        const { collectEditDiagnostics, renderEditDiagnosticsDocument } =
+          await import("@cmssy/core/preflight");
+        const diagnostics = await collectEditDiagnostics({
+          config,
+          providedSecret: context.url.searchParams.get(
+            CMSSY_SECRET_QUERY_PARAM,
+          ),
+          devOrigin: context.url.origin,
+        });
+        return new Response(renderEditDiagnosticsDocument(diagnostics), {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
     }
 
     if (options.stripLocalePrefix && pathname.startsWith(`/${locale}`)) {

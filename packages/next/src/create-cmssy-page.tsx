@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { draftMode } from "next/headers";
+import { draftMode, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   createCmssyClient,
@@ -151,6 +151,9 @@ function buildCmssyPageRenderer(
       const query = searchParams ? await searchParams : {};
       editorActive = await resolveEditorRequest(query, config.draftSecret);
       if (!editorActive) {
+        if (isDevelopment()) {
+          return renderEditDiagnosticsPage(config, query);
+        }
         notFound();
       }
     }
@@ -277,6 +280,37 @@ function buildCmssyPageRenderer(
       </CmssyLocaleProvider>
     );
   };
+}
+
+async function renderEditDiagnosticsPage(
+  config: CmssyConfig,
+  query: SearchParams,
+) {
+  const { collectEditDiagnostics, renderEditDiagnostics } = await import(
+    "@cmssy/core/preflight"
+  );
+  const diagnostics = await collectEditDiagnostics({
+    config,
+    providedSecret: firstValue(query[CMSSY_SECRET_QUERY_PARAM]) ?? null,
+    devOrigin: await resolveDevOrigin(),
+  });
+  return (
+    <div
+      dangerouslySetInnerHTML={{ __html: renderEditDiagnostics(diagnostics) }}
+    />
+  );
+}
+
+async function resolveDevOrigin(): Promise<string | undefined> {
+  try {
+    const requestHeaders = await headers();
+    const host = requestHeaders.get("host");
+    if (!host) return undefined;
+    const proto = requestHeaders.get("x-forwarded-proto") ?? "http";
+    return `${proto}://${host}`;
+  } catch {
+    return undefined;
+  }
 }
 
 function resolveBridgeOrigin(
