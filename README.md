@@ -9,8 +9,14 @@ rendering - the data layer, the config, the editor protocol - lives in
 `@cmssy/core`, which imports no framework at all. A test fails the build if that
 ever stops being true.
 
+cmssy never scaffolds your app. Create it with your framework's own CLI, then
+wire cmssy into it:
+
 ```bash
-npx create-cmssy-app my-site --framework next   # or: astro, remix
+npx create-next-app@latest my-site   # or: npm create astro@latest / npx create-react-router@latest
+cd my-site
+npx @cmssy/cli init   # generates the cmssy wiring for the detected framework
+npx @cmssy/cli link   # connects it to your workspace
 ```
 
 ## Packages
@@ -24,8 +30,7 @@ npx create-cmssy-app my-site --framework next   # or: astro, remix
 | `@cmssy/astro`         | Astro bindings: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                                              |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                                                 |
-| `@cmssy/cli`           | [`cmssy link`](docs/cli.md) - connects an app to a workspace: writes .env.local, sets the preview URL, verifies the wiring.                  |
-| `create-cmssy-app`     | A starter that works, is editable, and proves it with `pnpm smoke:edit`.                                                                     |
+| `@cmssy/cli`           | [`cmssy init`](docs/cli.md) generates the cmssy wiring into an existing app; [`cmssy link`](docs/cli.md) connects it to a workspace.         |
 
 ## Docs
 

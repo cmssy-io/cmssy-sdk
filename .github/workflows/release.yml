@@ -38,7 +38,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix; do
             v=$(node -p "require('./packages/$pkg/package.json').version")
             if [ "$tag" != "$v" ]; then
               echo "::error::tag v$tag does not match @cmssy/$pkg@$v"
@@ -56,15 +56,15 @@ jobs:
 
       - run: pnpm -r test
 
-      # Publish in dependency order (core, then the renderers, then the adapter,
-      # then the starter). Skips a package whose current version is already on
-      # npm, so re-runs are safe.
+      # Publish in dependency order (core, then the renderers, then the
+      # adapters). Skips a package whose current version is already on npm, so
+      # re-runs are safe.
       - name: Publish packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
-          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix; do
             cd "packages/$pkg"
             name=$(node -p "require('./package.json').name")
             version=$(node -p "require('./package.json').version")
@@ -91,7 +91,7 @@ jobs:
         run: |
           set -e
           failed=0
-          for pkg in core eslint-plugin codemod cli react next astro remix create-cmssy-app; do
+          for pkg in core eslint-plugin codemod cli react next astro remix; do
             name=$(node -p "require('./packages/$pkg/package.json').name")
             version=$(node -p "require('./packages/$pkg/package.json').version")
             code=$(curl -s -o /dev/null -w '%{http_code}' \
