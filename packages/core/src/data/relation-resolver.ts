@@ -63,6 +63,45 @@ function collectRefs(
   return refs;
 }
 
+function isResolvedRecord(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { data?: unknown }).data === "object"
+  );
+}
+
+function isListShaped(field: FieldDefinition): boolean {
+  return (
+    field.relationMode === "all" ||
+    field.relationType === "hasMany" ||
+    field.multiple === true
+  );
+}
+
+/**
+ * The editor canvas renders stored content without the server-side resolve, so
+ * a relation field there holds raw ids - or the "" a freshly inserted block is
+ * seeded with. A component is typed against resolved records, so anything that
+ * is not one is coerced to the safe empty shape instead of reaching it.
+ */
+export function normalizeRelationContent(
+  content: Record<string, unknown>,
+  schema: Record<string, FieldDefinition>,
+): void {
+  for (const [key, field] of Object.entries(schema)) {
+    if (field.type !== "relation") continue;
+    const value = content[key];
+    if (isListShaped(field)) {
+      content[key] = Array.isArray(value) ? value.filter(isResolvedRecord) : [];
+    } else if (!isResolvedRecord(value)) {
+      delete content[key];
+    }
+  }
+}
+
 function collectionKey(ref: RelationRef): string {
   return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join("\u0000");
 }
