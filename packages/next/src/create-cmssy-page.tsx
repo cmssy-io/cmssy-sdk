@@ -223,6 +223,7 @@ function buildCmssyPageRenderer(
         enabledLocales,
         forms,
         isPreview: true,
+        config,
       });
       return (
         <CmssyLocaleProvider value={localeContext}>
@@ -273,6 +274,7 @@ function buildCmssyPageRenderer(
           locale={locale}
           defaultLocale={defaultLocale}
           enabledLocales={enabledLocales}
+          config={config}
           forms={forms}
           auth={auth}
           workspace={workspace}

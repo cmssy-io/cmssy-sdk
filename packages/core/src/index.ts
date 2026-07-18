@@ -67,6 +67,14 @@ export {
   FORM_QUERY,
   SUBMIT_FORM_MUTATION,
 } from "./data/queries";
+export {
+  RECORDS_BY_IDS_QUERY,
+  resolveRelationContent,
+} from "./data/relation-resolver";
+export type {
+  BlockSchemaMap,
+  RelationContentEntry,
+} from "./data/relation-resolver";
 export type {
   CmssySiteConfig,
   CmssyBranding,
