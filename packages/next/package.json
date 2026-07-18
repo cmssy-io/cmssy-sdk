@@ -78,8 +78,8 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@cmssy/types": "0.28.0",
     "@cmssy/core": "workspace:*",
+    "@cmssy/types": "0.29.0",
     "server-only": "^0.0.1"
   }
 }

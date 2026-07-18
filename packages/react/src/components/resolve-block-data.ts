@@ -1,11 +1,16 @@
 import type {
+  CmssyClientConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
   CmssyPageData,
   RawLayoutBlock,
 } from "@cmssy/core";
 import { buildBlockContext } from "@cmssy/core";
-import { buildLoaderMap, type BlockDefinition } from "../registry";
+import {
+  blocksToSchemas,
+  buildLoaderMap,
+  type BlockDefinition,
+} from "../registry";
 import { markBlockError } from "./block-error";
 import { resolveBlocks, type ResolvedBlock } from "./resolve-blocks";
 
@@ -35,6 +40,8 @@ export interface ResolveBlockDataOptions {
   enabledLocales?: string[];
   forms?: Record<string, CmssyFormDefinition>;
   isPreview?: boolean;
+  /** Workspace the relation records are read from. No config, no resolution. */
+  config?: CmssyClientConfig;
 }
 
 export async function resolveBlockData({
@@ -45,6 +52,7 @@ export async function resolveBlockData({
   enabledLocales,
   forms,
   isPreview = false,
+  config,
 }: ResolveBlockDataOptions): Promise<Record<string, unknown>> {
   if (!page) return {};
   const loaderMap = buildLoaderMap(blocks);
@@ -62,6 +70,7 @@ export async function resolveBlockData({
     defaultLocale,
     context,
     enabledLocales,
+    { schemas: blocksToSchemas(blocks), config },
   );
   return collectBlockData(page.blocks, resolved, isPreview);
 }
@@ -75,6 +84,8 @@ export interface ResolveLayoutBlockDataOptions {
   enabledLocales?: string[];
   forms?: Record<string, CmssyFormDefinition>;
   isPreview?: boolean;
+  /** Workspace the relation records are read from. No config, no resolution. */
+  config?: CmssyClientConfig;
 }
 
 export async function resolveLayoutBlockData({
@@ -86,6 +97,7 @@ export async function resolveLayoutBlockData({
   enabledLocales,
   forms,
   isPreview = false,
+  config,
 }: ResolveLayoutBlockDataOptions): Promise<Record<string, unknown>> {
   const group = groups.find((g) => g.position === position);
   const layoutBlocks: RawLayoutBlock[] = group
@@ -110,6 +122,7 @@ export async function resolveLayoutBlockData({
     defaultLocale,
     context,
     enabledLocales,
+    { schemas: blocksToSchemas(blocks), config },
   );
   return collectBlockData(layoutBlocks, resolved, isPreview);
 }

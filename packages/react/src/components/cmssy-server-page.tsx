@@ -1,6 +1,7 @@
 import type { CmssyClientConfig, CmssyPageData } from "@cmssy/core";
 import type { CmssyFormDefinition } from "@cmssy/core";
 import {
+  blocksToSchemas,
   buildBlockMap,
   buildLoaderMap,
   type BlockDefinition,
@@ -77,6 +78,7 @@ export async function CmssyServerPage({
     defaultLocale,
     context,
     enabledLocales,
+    { schemas: blocksToSchemas(blocks), config },
   );
 
   return (
