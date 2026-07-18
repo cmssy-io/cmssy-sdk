@@ -1,11 +1,13 @@
 import type {
   BlockPropsSchema,
+  CmssyModelRecord,
   FieldControl,
   FieldOptions,
   FieldType,
   FieldTypeValueMap,
   FieldDefinition,
   InferBlockContent,
+  RelationMode,
   TypedField,
 } from "@cmssy/types";
 
@@ -32,6 +34,33 @@ type RepeaterValue<O> = O extends {
 }
   ? InferBlockContent<Schema>[]
   : Record<string, unknown>[];
+
+/**
+ * The value a relation field holds AFTER server-side resolution: the SDK
+ * replaces the stored record id(s) with the records themselves before the
+ * component renders. `mode: "all"` and `multiple: true` yield a list; the
+ * default is a single record - `undefined` when the reference dangles, which
+ * no `required` flag can rule out.
+ */
+type RelationValue<O> = O extends { mode: "all" } | { multiple: true }
+  ? CmssyModelRecord[]
+  : CmssyModelRecord | undefined;
+
+interface RelationFieldOptions extends Omit<
+  FieldOptions,
+  "options" | "itemSchema"
+> {
+  /** Slug of the model the field points at. */
+  model: string;
+  /**
+   * "all" binds the field to every record of the model (no editor picking;
+   * `sort`/`limit` shape the list). Omit it for editor-picked record id(s).
+   */
+  mode?: RelationMode;
+  multiple?: boolean;
+  sort?: string;
+  limit?: number;
+}
 
 function build(type: FieldType, opts: FieldOptions): FieldDefinition {
   return { type, label: opts.label ?? "", ...opts } as FieldDefinition;
@@ -82,4 +111,14 @@ export const fields = {
 
   repeater: <const O extends FieldOptions>(opts: O) =>
     build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,
+
+  relation: <const O extends RelationFieldOptions>(opts: O) => {
+    const { model, mode, ...rest } = opts;
+    return build("relation", {
+      ...rest,
+      relationTo: `model:${model}`,
+      relationType: mode === "all" || opts.multiple ? "hasMany" : "hasOne",
+      relationMode: mode ?? "picked",
+    }) as TypedField<RelationValue<O>, Declared<O>>;
+  },
 };

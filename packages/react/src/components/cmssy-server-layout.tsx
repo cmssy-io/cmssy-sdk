@@ -4,6 +4,7 @@ import type {
   RawLayoutBlock,
 } from "@cmssy/core";
 import {
+  blocksToSchemas,
   buildBlockMap,
   buildLoaderMap,
   type BlockDefinition,
@@ -69,6 +70,7 @@ export async function CmssyServerLayout({
     defaultLocale,
     context,
     enabledLocales,
+    { schemas: blocksToSchemas(blocks), config },
   );
   return (
     <>
