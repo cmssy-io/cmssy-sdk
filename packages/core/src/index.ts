@@ -69,6 +69,7 @@ export {
 } from "./data/queries";
 export {
   RECORDS_BY_IDS_QUERY,
+  normalizeRelationContent,
   resolveRelationContent,
 } from "./data/relation-resolver";
 export type {

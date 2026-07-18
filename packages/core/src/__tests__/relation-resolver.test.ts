@@ -3,6 +3,7 @@ import type { FetchLike } from "../content/content-client";
 import { fields } from "../fields";
 import {
   RECORDS_BY_IDS_QUERY,
+  normalizeRelationContent,
   resolveRelationContent,
   type BlockSchemaMap,
 } from "../data/relation-resolver";
@@ -191,6 +192,30 @@ describe("resolveRelationContent", () => {
     expect(content.pick).toEqual([]);
     expect(content).not.toHaveProperty("author");
     expect(collection.items).toEqual([]);
+  });
+
+  it("normalizeRelationContent coerces raw editor values to safe shapes", () => {
+    const schema = {
+      items: fields.relation({ model: "faq-item", mode: "all" }),
+      pick: fields.relation({ model: "testimonial", multiple: true }),
+      author: fields.relation({ model: "author" }),
+    };
+    const resolved = record("a1", { name: "Ann" });
+    const content: Record<string, unknown> = {
+      items: "",
+      pick: ["raw-id", resolved],
+      author: "raw-id",
+      heading: "Untouched",
+    };
+    normalizeRelationContent(content, schema);
+    expect(content.items).toEqual([]);
+    expect(content.pick).toEqual([resolved]);
+    expect(content).not.toHaveProperty("author");
+    expect(content.heading).toBe("Untouched");
+
+    const kept: Record<string, unknown> = { author: resolved };
+    normalizeRelationContent(kept, schema);
+    expect(kept.author).toBe(resolved);
   });
 
   it("does not touch the network when no block declares a relation", async () => {
