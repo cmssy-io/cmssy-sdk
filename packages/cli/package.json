@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/cli",
-  "version": "9.6.1",
+  "version": "9.7.0",
   "description": "The cmssy CLI: `cmssy init` wires cmssy into an existing Next.js, Astro or React Router app; `cmssy link` connects it to a workspace and verifies the editor wiring.",
   "keywords": [
     "cmssy",
