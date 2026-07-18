@@ -218,6 +218,29 @@ describe("resolveRelationContent", () => {
     expect(kept.author).toBe(resolved);
   });
 
+  it("normalizeRelationContent falls back to server-resolved values when raw content clobbers them", () => {
+    const schema = {
+      items: fields.relation({ model: "faq-item", mode: "all" }),
+      author: fields.relation({ model: "author" }),
+    };
+    const faq = record("f1", { question: "Q" });
+    const ann = record("a1", { name: "Ann" });
+    const resolved = { items: [faq], author: ann };
+
+    const clobbered: Record<string, unknown> = {
+      items: [{ question: "stale repeater row" }],
+      author: "raw-id",
+    };
+    normalizeRelationContent(clobbered, schema, resolved);
+    expect(clobbered.items).toEqual([faq]);
+    expect(clobbered.author).toBe(ann);
+
+    const cleared: Record<string, unknown> = { items: [], author: null };
+    normalizeRelationContent(cleared, schema, resolved);
+    expect(cleared.items).toEqual([]);
+    expect(cleared).not.toHaveProperty("author");
+  });
+
   it("does not touch the network when no block declares a relation", async () => {
     const { fetch, calls } = routerFetch({});
     await resolveRelationContent(

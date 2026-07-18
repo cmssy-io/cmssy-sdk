@@ -85,19 +85,36 @@ function isListShaped(field: FieldDefinition): boolean {
  * The editor canvas renders stored content without the server-side resolve, so
  * a relation field there holds raw ids - or the "" a freshly inserted block is
  * seeded with. A component is typed against resolved records, so anything that
- * is not one is coerced to the safe empty shape instead of reaching it.
+ * is not one falls back to the server-resolved value for that key (the admin
+ * hydrates the canvas with raw stored content, clobbering it), and only then
+ * to the safe empty shape.
  */
 export function normalizeRelationContent(
   content: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
+  resolved?: Record<string, unknown>,
 ): void {
   for (const [key, field] of Object.entries(schema)) {
     if (field.type !== "relation") continue;
     const value = content[key];
+    const fallback = resolved?.[key];
     if (isListShaped(field)) {
-      content[key] = Array.isArray(value) ? value.filter(isResolvedRecord) : [];
+      if (Array.isArray(value)) {
+        const records = value.filter(isResolvedRecord);
+        if (records.length > 0 || value.length === 0) {
+          content[key] = records;
+          continue;
+        }
+      }
+      content[key] = Array.isArray(fallback)
+        ? fallback.filter(isResolvedRecord)
+        : [];
     } else if (!isResolvedRecord(value)) {
-      delete content[key];
+      if (value != null && value !== "" && isResolvedRecord(fallback)) {
+        content[key] = fallback;
+      } else {
+        delete content[key];
+      }
     }
   }
 }
