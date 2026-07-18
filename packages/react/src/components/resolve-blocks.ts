@@ -19,6 +19,8 @@ export interface ResolveBlocksOptions {
   schemas?: BlockSchemaMap;
   /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
+  /** Already-resolved workspace id; saves the resolver a lookup request. */
+  workspaceId?: string;
 }
 
 export async function resolveBlocks(
@@ -45,6 +47,7 @@ export async function resolveBlocks(
       blocks.map((block, i) => ({ type: block.type, content: contents[i]! })),
       options.schemas,
       locale,
+      options.workspaceId ? { workspaceId: options.workspaceId } : {},
     );
   }
 

@@ -39,11 +39,12 @@ type RepeaterValue<O> = O extends {
  * The value a relation field holds AFTER server-side resolution: the SDK
  * replaces the stored record id(s) with the records themselves before the
  * component renders. `mode: "all"` and `multiple: true` yield a list; the
- * default is a single record, absent when the reference dangles.
+ * default is a single record - `undefined` when the reference dangles, which
+ * no `required` flag can rule out.
  */
 type RelationValue<O> = O extends { mode: "all" } | { multiple: true }
   ? CmssyModelRecord[]
-  : CmssyModelRecord;
+  : CmssyModelRecord | undefined;
 
 interface RelationFieldOptions extends Omit<
   FieldOptions,

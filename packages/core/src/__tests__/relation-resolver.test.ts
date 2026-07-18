@@ -172,20 +172,25 @@ describe("resolveRelationContent", () => {
     expect(calls.filter((c) => c.query.includes("PublicModelRecords"))).toHaveLength(1);
   });
 
-  it("degrades to no value when the fetch fails", async () => {
+  it("degrades on fetch failure: lists become empty, singles disappear", async () => {
     const fetch: FetchLike = async () => {
       throw new Error("network down");
     };
     const content: Record<string, unknown> = { pick: ["a"], author: "a1" };
+    const collection: Record<string, unknown> = {};
     await resolveRelationContent(
       config,
-      [{ type: "featured", content }],
+      [
+        { type: "featured", content },
+        { type: "testimonials", content: collection },
+      ],
       schemas,
       "en",
       { fetch, workspaceId: "ws1" },
     );
-    expect(content).not.toHaveProperty("pick");
+    expect(content.pick).toEqual([]);
     expect(content).not.toHaveProperty("author");
+    expect(collection.items).toEqual([]);
   });
 
   it("does not touch the network when no block declares a relation", async () => {

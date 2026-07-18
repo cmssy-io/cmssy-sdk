@@ -78,7 +78,7 @@ export async function CmssyServerPage({
     defaultLocale,
     context,
     enabledLocales,
-    { schemas: blocksToSchemas(blocks), config },
+    { schemas: blocksToSchemas(blocks), config, workspaceId: workspace?.id },
   );
 
   return (

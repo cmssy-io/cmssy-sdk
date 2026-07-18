@@ -114,7 +114,16 @@ export async function resolveRelationContent(
     if (typeof console !== "undefined") {
       console.error("[cmssy] relation resolution failed", err);
     }
-    for (const ref of refs) delete ref.content[ref.key];
+    for (const ref of refs) {
+      if (
+        ref.field.relationMode === "all" ||
+        Array.isArray(ref.content[ref.key])
+      ) {
+        ref.content[ref.key] = [];
+      } else {
+        delete ref.content[ref.key];
+      }
+    }
     return;
   }
 
