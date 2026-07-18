@@ -138,6 +138,7 @@ function EditableBlocks({
           patchedContent={patches[block.id]}
           patchedStyle={patchesStyle[block.id]}
           patchedAdvanced={patchesAdvanced[block.id]}
+          schema={bridgeConfig.schemas?.[block.type]}
           blockMap={blockMap}
           editable
           context={context}

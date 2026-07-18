@@ -1,6 +1,11 @@
 import { createElement, type ReactNode } from "react";
+import type { FieldDefinition } from "@cmssy/types";
 import type { BlockMap } from "../registry";
-import { asBucket, getBlockContentForLanguage } from "@cmssy/core";
+import {
+  asBucket,
+  getBlockContentForLanguage,
+  normalizeRelationContent,
+} from "@cmssy/core";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
 import { BlockErrorBoundary } from "@cmssy/react/block-error-boundary";
@@ -16,6 +21,8 @@ export interface CmssyBlockProps {
   patchedContent?: Record<string, unknown>;
   patchedStyle?: Record<string, unknown>;
   patchedAdvanced?: Record<string, unknown>;
+  /** The block's field schema; lets the client render coerce raw relation values. */
+  schema?: Record<string, FieldDefinition>;
   editable?: boolean;
   editMode?: boolean;
   layoutPosition?: string;
@@ -31,6 +38,7 @@ export function CmssyBlock({
   patchedContent,
   patchedStyle,
   patchedAdvanced,
+  schema,
   editable,
   editMode,
   layoutPosition,
@@ -80,6 +88,7 @@ export function CmssyBlock({
 
   const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
+  if (schema) normalizeRelationContent(content, schema);
   const style = patchedStyle
     ? { ...asBucket(block.style), ...patchedStyle }
     : asBucket(block.style);
