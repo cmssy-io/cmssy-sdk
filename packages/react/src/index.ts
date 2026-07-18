@@ -14,10 +14,17 @@ export {
 export type { BlockDefinition, BlockMap, BlockProps } from "./registry";
 export { CmssyServerPage } from "./components/cmssy-server-page";
 export type { CmssyServerPageProps } from "./components/cmssy-server-page";
-export { resolveBlockData } from "./components/resolve-block-data";
-export type { ResolveBlockDataOptions } from "./components/resolve-block-data";
-export { resolveLayoutBlockData } from "./components/resolve-block-data";
-export type { ResolveLayoutBlockDataOptions } from "./components/resolve-block-data";
+export {
+  resolveBlockData,
+  resolveEditorBlockData,
+  resolveLayoutBlockData,
+  resolveEditorLayoutBlockData,
+} from "./components/resolve-block-data";
+export type {
+  EditorBlockData,
+  ResolveBlockDataOptions,
+  ResolveLayoutBlockDataOptions,
+} from "./components/resolve-block-data";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";

@@ -14,6 +14,7 @@ export interface CmssyLazyLayoutProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   data?: Record<string, unknown>;
+  resolvedContent?: Record<string, Record<string, unknown>>;
   load: () => Promise<{ blocks: BlockDefinition[] }>;
 }
 

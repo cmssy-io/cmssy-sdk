@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import {
   CmssyServerLayout,
   fetchLayouts,
-  resolveLayoutBlockData,
+  resolveEditorLayoutBlockData,
   resolveSiteLocales,
   type BlockDefinition,
   type CmssyLayoutGroup,
@@ -35,6 +35,7 @@ export interface CmssyLayoutSlotProps {
     enabledLocales: string[];
     edit: { editorOrigin: string };
     data?: Record<string, unknown>;
+    resolvedContent?: Record<string, Record<string, unknown>>;
   }>;
 }
 
@@ -70,7 +71,7 @@ export async function CmssyLayoutSlot({
   if (editMode && editable) {
     const origin = resolveEditorOrigin(config.editorOrigin);
     const Editable = editable;
-    const data = await resolveLayoutBlockData({
+    const editorData = await resolveEditorLayoutBlockData({
       groups,
       blocks,
       position,
@@ -78,6 +79,7 @@ export async function CmssyLayoutSlot({
       defaultLocale: siteLocales.defaultLocale,
       enabledLocales: siteLocales.locales,
       isPreview: true,
+      config,
     });
     return (
       <Editable
@@ -89,7 +91,8 @@ export async function CmssyLayoutSlot({
         edit={{
           editorOrigin: (Array.isArray(origin) ? origin[0] : origin) ?? "",
         }}
-        data={data}
+        data={editorData.data}
+        resolvedContent={editorData.content}
       />
     );
   }
@@ -102,6 +105,7 @@ export async function CmssyLayoutSlot({
       locale={locale}
       defaultLocale={siteLocales.defaultLocale}
       enabledLocales={siteLocales.locales}
+      config={config}
       editMode={editMode}
     />
   );

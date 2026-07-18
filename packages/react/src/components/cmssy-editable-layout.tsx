@@ -2,7 +2,11 @@
 
 import { useMemo } from "react";
 import type { CmssyLayoutGroup, RawLayoutBlock } from "@cmssy/core";
-import { buildBlockMap, type BlockDefinition } from "../registry";
+import {
+  blocksToSchemas,
+  buildBlockMap,
+  type BlockDefinition,
+} from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
 import { buildBlockContext } from "@cmssy/core";
@@ -17,6 +21,7 @@ export interface CmssyEditableLayoutProps {
   enabledLocales?: string[];
   edit: EditBridgeConfig;
   data?: Record<string, unknown>;
+  resolvedContent?: Record<string, Record<string, unknown>>;
 }
 
 export function CmssyEditableLayout({
@@ -28,8 +33,13 @@ export function CmssyEditableLayout({
   enabledLocales,
   edit,
   data,
+  resolvedContent,
 }: CmssyEditableLayoutProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
+  const schemas = useMemo(
+    () => edit.schemas ?? blocksToSchemas(blocks),
+    [edit.schemas, blocks],
+  );
   const layoutBlocks = useMemo<RawLayoutBlock[]>(() => {
     const group = groups.find((g) => g.position === position);
     return group
@@ -56,6 +66,8 @@ export function CmssyEditableLayout({
           defaultLocale={defaultLocale}
           blockMap={blockMap}
           patchedContent={patches[block.id]}
+          resolvedContent={resolvedContent?.[block.id]}
+          schema={schemas[block.type]}
           editMode
           layoutPosition={position}
           context={context}
