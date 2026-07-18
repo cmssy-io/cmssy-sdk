@@ -93,7 +93,7 @@ export function CmssyBlock({
     ? { ...resolvedContent }
     : getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
-  if (schema) normalizeRelationContent(content, schema);
+  if (schema) normalizeRelationContent(content, schema, resolvedContent);
   const style = patchedStyle
     ? { ...asBucket(block.style), ...patchedStyle }
     : asBucket(block.style);
