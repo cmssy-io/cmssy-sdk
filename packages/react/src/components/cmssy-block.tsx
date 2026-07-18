@@ -21,6 +21,8 @@ export interface CmssyBlockProps {
   patchedContent?: Record<string, unknown>;
   patchedStyle?: Record<string, unknown>;
   patchedAdvanced?: Record<string, unknown>;
+  /** Server-resolved content for this block (locale flattened, relations resolved). */
+  resolvedContent?: Record<string, unknown>;
   /** The block's field schema; lets the client render coerce raw relation values. */
   schema?: Record<string, FieldDefinition>;
   editable?: boolean;
@@ -38,6 +40,7 @@ export function CmssyBlock({
   patchedContent,
   patchedStyle,
   patchedAdvanced,
+  resolvedContent,
   schema,
   editable,
   editMode,
@@ -86,7 +89,9 @@ export function CmssyBlock({
     );
   }
 
-  const base = getBlockContentForLanguage(block.content, locale, defaultLocale);
+  const base = resolvedContent
+    ? { ...resolvedContent }
+    : getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
   if (schema) normalizeRelationContent(content, schema);
   const style = patchedStyle

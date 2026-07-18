@@ -302,3 +302,55 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     expect(html).toContain("from-loader");
   });
 });
+
+describe("CmssyBlock resolvedContent (CMS-1025)", () => {
+  it("renders from server-resolved content instead of stored content", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{ id: "b1", type: "hero", content: { en: { heading: "Stored" } } }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={buildBlockMap([heroBlock])}
+        resolvedContent={{ heading: "Resolved" }}
+      />,
+    );
+    expect(html).toContain("Resolved");
+    expect(html).not.toContain("Stored");
+  });
+
+  it("overlays editor patches on top of resolved content", () => {
+    const html = renderToStaticMarkup(
+      <CmssyBlock
+        block={{ id: "b1", type: "hero", content: {} }}
+        locale="en"
+        defaultLocale="en"
+        blockMap={buildBlockMap([heroBlock])}
+        resolvedContent={{ heading: "Resolved" }}
+        patchedContent={{ heading: "Patched" }}
+      />,
+    );
+    expect(html).toContain("Patched");
+  });
+});
+
+describe("resolveEditorBlockData content map (CMS-1025)", () => {
+  it("returns the resolved content per block id alongside loader data", async () => {
+    const { resolveEditorBlockData } = await import(
+      "../components/resolve-block-data"
+    );
+    const result = await resolveEditorBlockData({
+      page: {
+        id: "p1",
+        slug: "/",
+        blocks: [
+          { id: "b1", type: "hero", content: { en: { heading: "Hi" } } },
+        ],
+      } as never,
+      blocks: [heroBlock],
+      locale: "en",
+      defaultLocale: "en",
+    });
+    expect(result.content.b1).toEqual({ heading: "Hi" });
+    expect(result.data).toEqual({});
+  });
+});
