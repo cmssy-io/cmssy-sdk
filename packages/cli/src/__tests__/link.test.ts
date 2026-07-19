@@ -289,4 +289,31 @@ describe("runLink", () => {
       "https://www.cmssy.io/dashboard/organizations/acme/workspaces/shop/editor",
     );
   });
+
+  it("prints the draft preview URL when the workspace reports a preview URL", async () => {
+    const { fetch } = adminFetch();
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    const output = lines.join("\n");
+    expect(output).toContain("Preview drafts without the editor");
+    expect(output).toContain(
+      "http://localhost:3000/api/draft?secret=s3cret&redirect=%2F",
+    );
+    expect(output).toContain(
+      "exit draft mode: http://localhost:3000/api/draft?disable=1",
+    );
+  });
+
+  it("skips the draft preview URL when the workspace has no preview URL", async () => {
+    const { fetch } = adminFetch({
+      siteConfig: {
+        data: { public: { siteConfig: { previewUrl: null } } },
+      },
+    });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    expect(lines.join("\n")).not.toContain("Preview drafts without the editor");
+  });
 });
