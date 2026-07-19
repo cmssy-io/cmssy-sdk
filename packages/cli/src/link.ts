@@ -18,7 +18,11 @@ import {
 } from "./admin-client";
 import { applyEnv, parseEnvFile } from "./env-file";
 import { mergeEnvContent } from "./env-write";
-import { formatEditorLink, formatResult } from "./format";
+import {
+  formatDraftPreviewLink,
+  formatEditorLink,
+  formatResult,
+} from "./format";
 
 const ENV_FILES = [".env.local", ".env"];
 
@@ -59,6 +63,29 @@ function resolveToken(options: LinkOptions, deps: LinkDeps): string {
 function describeWorkspace(workspace: CliWorkspace): string {
   const org = workspace.organizationSlug ?? "?";
   return `${workspace.name} (${org}/${workspace.slug})`;
+}
+
+function draftRouteBase(previewUrl: string): string | null {
+  try {
+    const base = new URL(previewUrl);
+    const basePath = base.pathname.replace(/\/+$/, "");
+    return `${base.origin}${basePath}/api/draft`;
+  } catch {
+    return null;
+  }
+}
+
+export function buildDraftPreviewUrls(
+  previewUrl: string,
+  draftSecret: string,
+): { draftUrl: string; exitUrl: string } | null {
+  const base = draftRouteBase(previewUrl);
+  if (!base) return null;
+  const params = new URLSearchParams({ secret: draftSecret, redirect: "/" });
+  return {
+    draftUrl: `${base}?${params.toString()}`,
+    exitUrl: `${base}?disable=1`,
+  };
 }
 
 async function selectWorkspace(
@@ -225,6 +252,15 @@ export async function runLink(
     const secretResult = await checkDraftSecret(preflight);
     log(formatResult(secretResult));
     log(formatEditorLink(buildEditorUrl(preflight)));
+    if (reachable.previewUrl && secretResult.status !== "fail") {
+      const draftUrls = buildDraftPreviewUrls(
+        reachable.previewUrl,
+        draftSecret,
+      );
+      if (draftUrls) {
+        log(formatDraftPreviewLink(draftUrls.draftUrl, draftUrls.exitUrl));
+      }
+    }
 
     return reachable.status === "fail" || secretResult.status === "fail"
       ? 1
