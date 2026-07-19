@@ -1,6 +1,6 @@
 ---
 title: The cmssy CLI
-description: cmssy init generates the cmssy wiring into an existing app; cmssy link connects it to a workspace - fetches the slugs and the draft secret, writes .env.local, sets the preview URL and verifies the wiring.
+description: cmssy init generates the cmssy wiring into an existing app; cmssy add block scaffolds and registers a new block; cmssy link connects the app to a workspace - fetches the slugs and the draft secret, writes .env.local, sets the preview URL and verifies the wiring.
 ---
 
 # `cmssy init` (@cmssy/cli)
@@ -49,6 +49,44 @@ overwrites existing wiring files.
 
 Then connect the app to a workspace:
 
+# `cmssy add block` (@cmssy/cli)
+
+Every block after the generated `hero` used to mean hand-copying its files and
+remembering the registry edit. `cmssy add block <name>` scaffolds the next
+block the same way `init` scaffolded the first one: the schema, the component,
+and the registration - already wired, compiling, and visible to the editor on
+the next dev-server start.
+
+```bash
+cmssy add block pricing-table
+cmssy add block faq-list --dir ../my-site
+```
+
+## What it does
+
+1. Detects the framework the same way `init` does and derives every name from
+   the kebab-case block name: `pricing-table` becomes type `pricing-table`,
+   label `Pricing Table`, component `PricingTable`, and export
+   `pricingTableBlock`.
+2. Writes the block files for that framework - Next.js gets
+   `blocks/pricing-table/block.ts` + `blocks/pricing-table/PricingTable.tsx`
+   (under `src/` when the app uses one); Astro and React Router get a single
+   `cmssy/pricing-table.tsx` next to the registry.
+3. Registers the block in `cmssy/blocks.ts`: adds the import and appends it to
+   the `blocks` array (plus the `defineBlock` call on Astro/React Router, where
+   the definition lives in the registry). Your formatting and existing entries
+   are preserved.
+4. Refuses to touch anything ambiguous: an invalid name, a block that is
+   already registered, existing files, or a registry without an
+   `export const blocks = [...]` array are loud failures with the manual step
+   spelled out - never a silent partial write.
+
+The generated block starts with a required `heading` text field and an optional
+`text` textarea - edit the props and markup, restart the dev server, and the
+editor picks the new type up from the manifest handshake.
+
+Flags: `--dir <path>` targets an app outside the working directory.
+
 # `cmssy link` (@cmssy/cli)
 
 Connecting an app to a workspace used to mean hand-copying five values between
@@ -88,11 +126,11 @@ Every failure prints a concrete fix instruction, never a stacktrace.
 
 ## The checks
 
-| Check               | What it verifies                                                                                         | On failure                                                                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Workspace reachable | `public.siteConfig` answers for the linked org + workspace - the slugs exist and the delivery API is up. | Distinguishes wrong slugs, network problems, and a workspace over its delivery limit.                                          |
-| Draft secret        | The backend confirms the written secret matches the workspace (`public.draftSecretValid`).               | Tells you to copy the secret from Settings → Headless. On a platform without the field yet, reports `?` unknown and continues. |
-| Editor deep link    | Always printed: `https://www.cmssy.io/dashboard/organizations/{org}/workspaces/{workspace}/editor`.      | -                                                                                                                              |
+| Check               | What it verifies                                                                                                                                                                                                                            | On failure                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace reachable | `public.siteConfig` answers for the linked org + workspace - the slugs exist and the delivery API is up.                                                                                                                                    | Distinguishes wrong slugs, network problems, and a workspace over its delivery limit.                                          |
+| Draft secret        | The backend confirms the written secret matches the workspace (`public.draftSecretValid`).                                                                                                                                                  | Tells you to copy the secret from Settings → Headless. On a platform without the field yet, reports `?` unknown and continues. |
+| Editor deep link    | Always printed: `https://www.cmssy.io/dashboard/organizations/{org}/workspaces/{workspace}/editor`.                                                                                                                                         | -                                                                                                                              |
 | Draft preview link  | Printed when the workspace reports a preview URL: `{previewUrl}/api/draft?secret=...&redirect=/` opens the site in draft mode without the editor; the same `/api/draft` path works on a local dev server. Exit with `/api/draft?disable=1`. | Skipped when no preview URL is set.                                                                                            |
 
 ## Example output

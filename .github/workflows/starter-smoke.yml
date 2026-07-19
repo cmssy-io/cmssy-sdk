@@ -63,6 +63,11 @@ jobs:
       - name: Run the built cmssy init on it
         run: node packages/cli/dist/index.js init --dir /tmp/app
 
+      # The generated block has to survive the framework's own build, not just
+      # our unit tests - this is the same honesty rule as running init itself.
+      - name: Run the built cmssy add block on it
+        run: node packages/cli/dist/index.js add block smoke-card --dir /tmp/app
+
       # cmssy init pins the version it ships with, which is not on npm yet -
       # and asking npm for it would test the last release, not this diff. Pack
       # the packages and install the tarballs: that is the artifact users get,
