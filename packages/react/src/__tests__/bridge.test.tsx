@@ -485,6 +485,101 @@ describe("edit bridge (blocks-driven)", () => {
     );
   });
 
+  it("stops a block link click in the capture phase so SPA router handlers never run", () => {
+    const Linked = () => <a href="/somewhere">go</a>;
+    const linkedBlocks = [
+      defineBlock({ type: "linked", component: Linked, props: {} }),
+    ];
+    const linkedPage = {
+      id: "pl",
+      blocks: [{ id: "lb", type: "linked", content: {} }],
+    };
+    const { container } = render(
+      <CmssyEditablePage
+        page={linkedPage}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={linkedBlocks}
+      />,
+    );
+    const link = container.querySelector("a")!;
+    const routerHandler = vi.fn();
+    link.addEventListener("click", routerHandler);
+    const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+    act(() => {
+      link.dispatchEvent(ev);
+    });
+    expect(routerHandler).not.toHaveBeenCalled();
+    expect(ev.defaultPrevented).toBe(true);
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:click", blockId: "lb" }),
+      editorOrigin,
+    );
+  });
+
+  it("posts cmssy:deselect on pagehide while a block is selected", () => {
+    const { container } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    act(() => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      { type: "cmssy:deselect" },
+      editorOrigin,
+    );
+  });
+
+  it("posts cmssy:deselect when the bridge unmounts while a block is selected", () => {
+    const { container, unmount } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    act(() => {
+      container
+        .querySelector("h1")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    mockParent.postMessage.mockClear();
+    unmount();
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      { type: "cmssy:deselect" },
+      editorOrigin,
+    );
+  });
+
+  it("does not post cmssy:deselect on unmount when nothing is selected", () => {
+    const { unmount } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    mockParent.postMessage.mockClear();
+    unmount();
+    expect(mockParent.postMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "cmssy:deselect" }),
+      expect.anything(),
+    );
+  });
+
   it("posts cmssy:click with the block id and rect on click", () => {
     const { container } = render(
       <CmssyEditablePage
