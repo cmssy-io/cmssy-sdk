@@ -40,5 +40,5 @@ export function formatDraftPreviewLink(
   exitUrl: string,
   colored = useColor(),
 ): string {
-  return `\nPreview drafts without the editor (the /api/draft path also works on your local dev server):\n  ${paint(draftUrl, CYAN, colored)}\n  exit draft mode: ${exitUrl}\n`;
+  return `\nPreview drafts without the editor (the /api/draft path also works on your local dev server):\n  ${paint(draftUrl, CYAN, colored)}\n  exit draft mode: ${paint(exitUrl, CYAN, colored)}\n`;
 }

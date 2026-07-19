@@ -252,7 +252,7 @@ export async function runLink(
     const secretResult = await checkDraftSecret(preflight);
     log(formatResult(secretResult));
     log(formatEditorLink(buildEditorUrl(preflight)));
-    if (reachable.previewUrl) {
+    if (reachable.previewUrl && secretResult.status !== "fail") {
       const draftUrls = buildDraftPreviewUrls(
         reachable.previewUrl,
         draftSecret,

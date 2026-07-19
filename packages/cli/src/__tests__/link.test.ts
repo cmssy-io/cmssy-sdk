@@ -305,6 +305,18 @@ describe("runLink", () => {
     );
   });
 
+  it("skips the draft preview URL when the draft secret check fails", async () => {
+    const { fetch } = adminFetch({
+      draftSecretValid: {
+        data: { public: { draftSecretValid: false } },
+      },
+    });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).not.toContain("Preview drafts without the editor");
+  });
+
   it("skips the draft preview URL when the workspace has no preview URL", async () => {
     const { fetch } = adminFetch({
       siteConfig: {
