@@ -129,12 +129,16 @@ describe("runAddBlock", () => {
     expect(registry).toContain("  heroBlock,\n  faqListBlock,\n];");
   });
 
-  it("fails loud when the registry has no blocks array", () => {
+  it("fails loud when the registry has no blocks array and writes nothing", () => {
     const { deps, cwd, lines } = initApp({ dependencies: { next: "^16.0.0" } });
     writeFileSync(join(cwd, "cmssy/blocks.ts"), "export const other = 1;\n");
     const code = runAddBlock({ name: "faq" }, deps);
     expect(code).toBe(1);
     expect(lines.join("\n")).toContain("could not find `export const blocks");
+    expect(existsSync(join(cwd, "blocks/faq"))).toBe(false);
+    expect(readFileSync(join(cwd, "cmssy/blocks.ts"), "utf8")).toBe(
+      "export const other = 1;\n",
+    );
   });
 
   it("scaffolds and registers an astro block in the registry file", () => {

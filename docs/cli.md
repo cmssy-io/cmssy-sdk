@@ -47,7 +47,7 @@ overwrites existing wiring files.
 | Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`, robots + sitemap.                                                                            |
 | React Router 7 | `cmssy.config.ts`, `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`, robots + sitemap. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                     |
 
-Then connect the app to a workspace:
+Then add your blocks and connect the app to a workspace:
 
 # `cmssy add block` (@cmssy/cli)
 
