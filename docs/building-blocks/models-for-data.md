@@ -35,7 +35,7 @@ fields.relation({
   label: "Testimonials",
   model: "testimonial", // the model's slug (required)
   mode: "all", // bind every record of the model; omit for editor-picked
-  sort: "order_asc", // collection order, <fieldKey>_asc | <fieldKey>_desc
+  sort: "order_asc", // passed through to the delivery API; cmssy accepts <fieldKey>_asc / <fieldKey>_desc
   limit: 12, // collection cap (default 50)
   multiple: true, // picked mode: pick many instead of one
 });
@@ -59,7 +59,7 @@ sees ids:
 | Schema                      | `content` type                  |
 | --------------------------- | ------------------------------- |
 | `mode: "all"` or `multiple` | `CmssyModelRecord[]`            |
-| picked single               | `CmssyModelRecord \| undefined` |
+| picked single               | `CmssyModelRecord` or `undefined` |
 
 A record's fields live under `record.data` as a `fieldKey → value` map typed
 `Record<string, unknown>` - narrow each value before rendering, and use
