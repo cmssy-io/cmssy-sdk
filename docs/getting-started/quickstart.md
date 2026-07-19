@@ -128,6 +128,12 @@ import { cmssy } from "@/cmssy.config";
 export const GET = createDraftRoute(cmssy);
 ```
 
+This route also lets you **preview drafts without the editor**: open
+`/api/draft?secret=<your CMSSY_DRAFT_SECRET>&redirect=/` on any host running
+your app - the deployed site or `localhost` during development - and the site
+renders draft content until you exit with `/api/draft?disable=1`. `cmssy link`
+prints this URL ready to open.
+
 ## 6. Let the editor frame your app
 
 ```ts

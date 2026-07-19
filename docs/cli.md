@@ -82,7 +82,7 @@ cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.examp
    into `.env.local`, merging with what is already there - existing lines,
    comments and unrelated variables are preserved.
 6. Runs the preflight checks and prints one line per check.
-7. Prints the editor deep link.
+7. Prints the editor deep link and, when the workspace has a preview URL, a ready-to-open draft preview link.
 
 Every failure prints a concrete fix instruction, never a stacktrace.
 
@@ -93,6 +93,7 @@ Every failure prints a concrete fix instruction, never a stacktrace.
 | Workspace reachable | `public.siteConfig` answers for the linked org + workspace - the slugs exist and the delivery API is up. | Distinguishes wrong slugs, network problems, and a workspace over its delivery limit.                                          |
 | Draft secret        | The backend confirms the written secret matches the workspace (`public.draftSecretValid`).               | Tells you to copy the secret from Settings → Headless. On a platform without the field yet, reports `?` unknown and continues. |
 | Editor deep link    | Always printed: `https://www.cmssy.io/dashboard/organizations/{org}/workspaces/{workspace}/editor`.      | -                                                                                                                              |
+| Draft preview link  | Printed when the workspace reports a preview URL: `{previewUrl}/api/draft?secret=...&redirect=/` opens the site in draft mode without the editor; the same `/api/draft` path works on a local dev server. Exit with `/api/draft?disable=1`. | Skipped when no preview URL is set.                                                                                            |
 
 ## Example output
 
@@ -107,6 +108,10 @@ $ cmssy link --token cs_... --workspace acme/shop
 
 Edit this site visually:
   https://www.cmssy.io/dashboard/organizations/acme/workspaces/shop/editor
+
+Preview drafts without the editor (the /api/draft path also works on your local dev server):
+  https://shop.example.com/api/draft?secret=...&redirect=%2F
+  exit draft mode: https://shop.example.com/api/draft?disable=1
 ```
 
 Statuses:
