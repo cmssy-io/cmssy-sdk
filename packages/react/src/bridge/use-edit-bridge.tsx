@@ -129,6 +129,7 @@ export function useEditBridge(
   const [order, setOrder] = useState<string[] | null>(null);
   const [removed, setRemoved] = useState<string[]>([]);
   const selectedIdRef = useRef<string | null>(null);
+  const postSafeRef = useRef<(message: AppToEditorMessage) => void>(() => {});
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
@@ -255,6 +256,7 @@ export function useEditBridge(
         sendReady();
       }
     };
+    postSafeRef.current = postSafe;
 
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
@@ -269,7 +271,10 @@ export function useEditBridge(
         return;
       }
       selectedIdRef.current = id;
-      if (target?.closest?.("a[href]")) event.preventDefault();
+      if (target?.closest?.("a[href]")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       const r = el.getBoundingClientRect();
       const layoutPosition = el.getAttribute("data-layout-position");
       postSafe({
@@ -302,7 +307,7 @@ export function useEditBridge(
     };
 
     window.addEventListener("message", handler);
-    document.addEventListener("click", onClick);
+    document.addEventListener("click", onClick, { capture: true });
     window.addEventListener("scroll", emitSelectedBounds, {
       capture: true,
       passive: true,
@@ -312,13 +317,27 @@ export function useEditBridge(
     return () => {
       if (boundsRaf) cancelAnimationFrame(boundsRaf);
       window.removeEventListener("message", handler);
-      document.removeEventListener("click", onClick);
+      document.removeEventListener("click", onClick, { capture: true });
       window.removeEventListener("scroll", emitSelectedBounds, {
         capture: true,
       });
       window.removeEventListener("resize", emitSelectedBounds);
     };
   }, [config.editorOrigin, pageId, blocksKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || window.parent === window) return;
+    const notifySelectionGone = () => {
+      if (!selectedIdRef.current) return;
+      selectedIdRef.current = null;
+      postSafeRef.current({ type: "cmssy:deselect" });
+    };
+    window.addEventListener("pagehide", notifySelectionGone);
+    return () => {
+      window.removeEventListener("pagehide", notifySelectionGone);
+      notifySelectionGone();
+    };
+  }, []);
 
   return {
     patches,
