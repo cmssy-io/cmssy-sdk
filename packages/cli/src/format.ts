@@ -34,3 +34,11 @@ export function formatResult(
 export function formatEditorLink(url: string, colored = useColor()): string {
   return `\nEdit this site visually:\n  ${paint(url, CYAN, colored)}\n`;
 }
+
+export function formatDraftPreviewLink(
+  draftUrl: string,
+  exitUrl: string,
+  colored = useColor(),
+): string {
+  return `\nPreview drafts without the editor (the /api/draft path also works on your local dev server):\n  ${paint(draftUrl, CYAN, colored)}\n  exit draft mode: ${paint(exitUrl, CYAN, colored)}\n`;
+}

@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/core",
-  "version": "9.7.2",
+  "version": "9.8.0",
   "description": "Framework-agnostic cmssy client: content, commerce, config, editor protocol. No React, no Next.",
   "keywords": [
     "cmssy",
