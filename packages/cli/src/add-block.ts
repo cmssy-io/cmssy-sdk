@@ -253,6 +253,8 @@ export function runAddBlock(
       }
     }
 
+    const updatedRegistry = layout.registerInRegistry(registry, names);
+
     log(
       formatResult({
         status: "ok",
@@ -265,7 +267,7 @@ export function runAddBlock(
       writeFileSync(target, file.content);
       log(formatResult({ status: "ok", message: `wrote ${file.path}` }));
     }
-    writeFileSync(registryFile, layout.registerInRegistry(registry, names));
+    writeFileSync(registryFile, updatedRegistry);
     log(
       formatResult({
         status: "ok",
