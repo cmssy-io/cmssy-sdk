@@ -43,12 +43,12 @@ npx @cmssy/cli link   # connects it to your workspace
 | `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                      |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                         |
-| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy link` connects it to a workspace.               |
+| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace.               |
 
 ## Documentation map
 
 - **Getting Started** - [Quickstart](./getting-started/quickstart.md): a working headless project end to end.
-- **CLI** - [`cmssy init` + `cmssy link`](./cli.md): generate the wiring, then connect a workspace without hand-copying secrets.
+- **CLI** - [`cmssy init` + `cmssy add block` + `cmssy link`](./cli.md): generate the wiring, scaffold blocks, then connect a workspace without hand-copying secrets.
 - **Architecture** - [What lives where, and why](./architecture.md): the layering, and the two outages that forced it.
 - **Frameworks**
   - [Next.js wiring](./wiring.md) - the complete, correct way to mount cmssy. Copy it whole.
