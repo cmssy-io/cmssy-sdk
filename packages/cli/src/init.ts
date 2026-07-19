@@ -12,82 +12,18 @@ import type { PreflightResult } from "@cmssy/core/preflight";
 
 import { CliError } from "./admin-client";
 import { formatResult } from "./format";
+import {
+  detectFramework,
+  nextSrcPrefix,
+  readPackageJson,
+  type FrameworkDef,
+  type PackageManifest,
+} from "./framework";
 
 const ASSETS_DIR = fileURLToPath(new URL("../assets/init", import.meta.url));
 const CLI_PACKAGE_JSON = fileURLToPath(
   new URL("../package.json", import.meta.url),
 );
-
-type FrameworkName = "next" | "astro" | "remix";
-
-interface FrameworkDef {
-  name: FrameworkName;
-  label: string;
-  createCommand: string;
-  detect: string[];
-  dependencies: string[];
-  files: string[];
-}
-
-const FRAMEWORKS: FrameworkDef[] = [
-  {
-    name: "next",
-    label: "Next.js",
-    createCommand: "npx create-next-app@latest",
-    detect: ["next"],
-    dependencies: ["@cmssy/next", "@cmssy/react"],
-    files: [
-      "cmssy.config.ts",
-      "proxy.ts",
-      "cmssy/blocks.ts",
-      "cmssy/editor.tsx",
-      "cmssy/editable-layout.tsx",
-      "blocks/hero/block.ts",
-      "blocks/hero/Hero.tsx",
-      "app/[[...path]]/page.tsx",
-      "app/cmssy-edit/[[...path]]/page.tsx",
-      "app/api/draft/route.ts",
-      "app/robots.ts",
-      "app/sitemap.ts",
-    ],
-  },
-  {
-    name: "astro",
-    label: "Astro",
-    createCommand: "npm create astro@latest",
-    detect: ["astro"],
-    dependencies: ["@cmssy/astro", "@cmssy/react", "@cmssy/core"],
-    files: [
-      "src/cmssy.config.ts",
-      "src/middleware.ts",
-      "src/cmssy/blocks.ts",
-      "src/cmssy/editor.tsx",
-      "src/cmssy/hero.tsx",
-      "src/components/Blocks.tsx",
-      "src/pages/[...path].astro",
-      "src/pages/cmssy-edit/[...path].astro",
-      "src/pages/robots.txt.ts",
-      "src/pages/sitemap.xml.ts",
-    ],
-  },
-  {
-    name: "remix",
-    label: "React Router 7 / Remix",
-    createCommand: "npx create-react-router@latest",
-    detect: ["react-router", "@react-router/dev", "@remix-run/react"],
-    dependencies: ["@cmssy/remix", "@cmssy/react", "@cmssy/core"],
-    files: [
-      "cmssy.config.ts",
-      "app/routes.ts",
-      "app/cmssy/blocks.ts",
-      "app/cmssy/editor.tsx",
-      "app/cmssy/hero.tsx",
-      "app/routes/page.tsx",
-      "app/routes/robots.ts",
-      "app/routes/sitemap.ts",
-    ],
-  },
-];
 
 export interface InitOptions {
   dir?: string;
@@ -104,49 +40,8 @@ interface InitFile {
   target: string;
 }
 
-interface PackageManifest {
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-}
-
-function readPackageJson(root: string): PackageManifest {
-  const path = join(root, "package.json");
-  if (!existsSync(path)) {
-    throw new CliError(
-      `no package.json in ${root}`,
-      "cmssy init wires cmssy into an EXISTING app - create one first, then rerun inside it",
-    );
-  }
-  try {
-    return JSON.parse(readFileSync(path, "utf8")) as PackageManifest;
-  } catch {
-    throw new CliError(`${path} is not valid JSON`);
-  }
-}
-
-function detectFramework(pkg: PackageManifest): FrameworkDef {
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  const match = FRAMEWORKS.find((framework) =>
-    framework.detect.some((name) => deps[name] !== undefined),
-  );
-  if (!match) {
-    const hints = FRAMEWORKS.map(
-      (framework) =>
-        `${framework.label}: create the app with \`${framework.createCommand}\`, then rerun cmssy init inside it`,
-    );
-    throw new CliError(
-      "no supported framework in package.json (looked for next, astro, react-router)",
-      hints.join("\n       "),
-    );
-  }
-  return match;
-}
-
 function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
-  const srcPrefix =
-    framework.name === "next" && existsSync(join(root, "src", "app"))
-      ? "src/"
-      : "";
+  const srcPrefix = framework.name === "next" ? nextSrcPrefix(root) : "";
   return [
     { asset: "env.example", target: ".env.example" },
     ...framework.files.map((path) => ({
@@ -210,8 +105,7 @@ function frameworkNotes(
 ): PreflightResult[] {
   const notes: PreflightResult[] = [];
   if (framework.name === "next") {
-    const srcPrefix = existsSync(join(root, "src", "app")) ? "src/" : "";
-    const home = `${srcPrefix}app/page.tsx`;
+    const home = `${nextSrcPrefix(root)}app/page.tsx`;
     if (existsSync(join(root, home))) {
       notes.push({
         status: "unknown",

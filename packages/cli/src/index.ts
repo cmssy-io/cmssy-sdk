@@ -1,11 +1,13 @@
 import { createInterface } from "node:readline/promises";
 
+import { runAddBlock } from "./add-block";
 import { runInit } from "./init";
 import { runLink } from "./link";
 
 const USAGE = [
   "usage: cmssy <command>",
   "  cmssy init [--dir <path>] [--force]",
+  "  cmssy add block <name> [--dir <path>]",
   "  cmssy link [--token <cs_...>] [--workspace <slug>] [--preview-url <url>]",
 ].join("\n");
 
@@ -49,6 +51,19 @@ async function main(): Promise<void> {
   if (command === "init") {
     process.exitCode = runInit(
       { dir: flagValue(args, "--dir"), force: hasFlag(args, "--force") },
+      { cwd: process.cwd(), log: (line) => console.log(line) },
+    );
+    return;
+  }
+  if (command === "add") {
+    const [kind, name, ...rest] = args;
+    if (kind !== "block" || name === undefined || name.startsWith("--")) {
+      console.error(USAGE);
+      process.exitCode = 1;
+      return;
+    }
+    process.exitCode = runAddBlock(
+      { name, dir: flagValue(rest, "--dir") },
       { cwd: process.cwd(), log: (line) => console.log(line) },
     );
     return;
