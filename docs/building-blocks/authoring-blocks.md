@@ -90,6 +90,7 @@ from the schema:
 | `fields.repeater`     | Repeatable group          | array of its `itemSchema` | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible` |
 | `fields.pageSelector` | Page picker               | `PageRef[]`               | `pageType`, `multiple`                                           |
 | `fields.json`         | JSON                      | `JsonValue`               | -                                                                |
+| `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit` - see [Models for data](./models-for-data.md) |
 
 Every control accepts `label`, `helperText`, and `required`.
 

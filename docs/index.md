@@ -57,6 +57,7 @@ npx @cmssy/cli link   # connects it to your workspace
 - **Building Blocks**
   - [Authoring a block](./building-blocks/authoring-blocks.md) - `defineBlock`, `fields`, the component contract.
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.
+  - [Models for data, blocks for view](./building-blocks/models-for-data.md) - workspace models + `fields.relation`, and why record collections never live in repeaters.
   - [Block recipes](./building-blocks/recipes.md) - rich text, listing child pages, forms, SEO.
 - **Auth** - [Member auth](./auth/member-auth.md): secure httpOnly-cookie sign-in/register/sessions.
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
