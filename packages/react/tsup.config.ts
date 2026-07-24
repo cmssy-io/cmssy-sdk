@@ -15,6 +15,7 @@ export default defineConfig({
     "src/index.ts",
     "src/client.ts",
     "src/internal.ts",
+    "src/internal-server.ts",
     "src/block-error-boundary.ts",
   ],
   format: ["esm", "cjs"],

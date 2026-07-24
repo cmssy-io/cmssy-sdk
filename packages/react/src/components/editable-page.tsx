@@ -12,7 +12,7 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
-import { buildBlockContext } from "@cmssy/core";
+import { buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {

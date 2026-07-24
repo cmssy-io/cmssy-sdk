@@ -9,10 +9,10 @@ export type { CmssyPageResult } from "./page";
 export {
   defineCmssyConfig,
   createCmssyClient,
-  buildBlockContext,
   CMSSY_EDIT_HEADER,
+  localizeHref,
+  CMSSY_LOCALE_HEADER,
 } from "@cmssy/core";
-export { localizeHref, CMSSY_LOCALE_HEADER } from "@cmssy/core/internal";
 export type {
   CmssyConfig,
   CmssyEnvConfig,

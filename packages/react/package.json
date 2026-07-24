@@ -38,6 +38,11 @@
       "import": "./dist/internal.js",
       "require": "./dist/internal.cjs"
     },
+    "./internal-server": {
+      "types": "./dist/internal-server.d.ts",
+      "import": "./dist/internal-server.js",
+      "require": "./dist/internal-server.cjs"
+    },
     "./block-error-boundary": {
       "types": "./dist/block-error-boundary.d.ts",
       "import": "./dist/block-error-boundary.js",
