@@ -5,7 +5,7 @@ import type {
   CmssyPageData,
   RawLayoutBlock,
 } from "@cmssy/core";
-import { buildBlockContext } from "@cmssy/core";
+import { buildBlockContext } from "@cmssy/core/internal";
 import {
   blocksToSchemas,
   buildLoaderMap,

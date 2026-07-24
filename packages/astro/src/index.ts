@@ -9,18 +9,10 @@ export type { CmssyPageResult } from "./page";
 export {
   defineCmssyConfig,
   createCmssyClient,
-  buildBlockContext,
   CMSSY_EDIT_HEADER,
-} from "@cmssy/core";
-export {
-  fetchPage,
-  fetchPages,
-  fetchPageMeta,
-  fetchLayouts,
-  resolveSiteLocales,
   localizeHref,
   CMSSY_LOCALE_HEADER,
-} from "@cmssy/core/internal";
+} from "@cmssy/core";
 export type {
   CmssyConfig,
   CmssyEnvConfig,
