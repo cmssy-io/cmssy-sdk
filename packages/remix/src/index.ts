@@ -6,14 +6,10 @@ export type { CmssyRouteData } from "./loader";
 export {
   defineCmssyConfig,
   createCmssyClient,
-  buildBlockContext,
   isVerifiedEditUrl,
-} from "@cmssy/core";
-export {
   localizeHref,
-  localizedPath,
   CMSSY_LOCALE_HEADER,
-} from "@cmssy/core/internal";
+} from "@cmssy/core";
 export type {
   CmssyConfig,
   CmssyEnvConfig,

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import {
   createCmssyClient,
   CmssyServerPage,
-  resolveEditorBlockData,
   type BlockDefinition,
   type CmssyBlockAuthContext,
   type CmssyBlockWorkspace,
@@ -14,6 +13,7 @@ import {
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/internal";
+import { resolveEditorBlockData } from "@cmssy/react/internal-server";
 import {
   fetchPage,
   resolveForms,

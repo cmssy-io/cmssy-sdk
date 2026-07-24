@@ -67,7 +67,7 @@ prefix hrefs yourself with `localizeHref` and pass the result to `next/link`:
 ```tsx
 // any block component
 import Link from "next/link";
-import { localizeHref } from "@cmssy/react";
+import { localizeHref } from "@cmssy/next";
 
 <Link href={localizeHref("/about", locale)}>About</Link>; // → /en/about while EN is active
 ```
@@ -88,9 +88,8 @@ export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
 On Next.js 15, name the file `middleware.ts` and rename the export to
 `middleware` (`export const middleware = createCmssyLocaleMiddleware(cmssy)`).
 
-Language switcher and raw markup helpers live in `@cmssy/react`:
-`buildLocaleSwitchHref(target, pathname, locale)`, `localizeHref(href, locale)`,
-`localizeHtmlLinks(html, locale)`.
+`localizeHref(href, locale)` and the `CMSSY_LOCALE_HEADER` constant are
+re-exported from `@cmssy/next` (and `@cmssy/core`).
 
 ## Exports
 

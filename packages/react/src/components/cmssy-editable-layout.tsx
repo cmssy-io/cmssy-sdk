@@ -9,7 +9,7 @@ import {
 } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
-import { buildBlockContext } from "@cmssy/core";
+import { buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditableLayoutProps {

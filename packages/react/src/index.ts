@@ -40,20 +40,14 @@ export type {
   InferBlockContent,
   TypedField,
 } from "@cmssy/core";
-export {
-  defineBlock,
-  buildBlockMap,
-  blocksToSchemas,
-  blocksToMeta,
-} from "./registry";
+export { defineBlock, buildBlockMap } from "./registry";
 export type { BlockDefinition, BlockMap, BlockProps } from "./registry";
-export { evaluateFieldConditionGroup } from "@cmssy/types";
 export type {
   FieldCondition,
   FieldConditionGroup,
   FieldConditionLogic,
 } from "@cmssy/types";
-export { buildBlockContext } from "@cmssy/core";
+export { buildBlockContext } from "@cmssy/core/internal";
 export type {
   CmssyBlockContext,
   CmssyLocaleContext,
@@ -66,12 +60,6 @@ export type {
 // Server rendering
 export { CmssyServerPage } from "./components/cmssy-server-page";
 export type { CmssyServerPageProps } from "./components/cmssy-server-page";
-export {
-  resolveBlockData,
-  resolveEditorBlockData,
-  resolveLayoutBlockData,
-  resolveEditorLayoutBlockData,
-} from "./components/resolve-block-data";
 export type {
   EditorBlockData,
   ResolveBlockDataOptions,
@@ -86,11 +74,7 @@ export type { UnknownBlockProps } from "./components/unknown-block";
 
 // Editor bridge (protocol)
 export { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
-export {
-  postToEditor,
-  parseEditorMessage,
-  normalizeOrigin,
-} from "@cmssy/core";
+export { postToEditor, parseEditorMessage, normalizeOrigin } from "@cmssy/core";
 export type { PostTarget } from "@cmssy/core";
 export type {
   FieldType,

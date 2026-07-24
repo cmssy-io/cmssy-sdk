@@ -13,7 +13,10 @@ export {
   resolveApiUrl,
   resolvePublicUrl,
 } from "./content/content-client";
-export { getBlockContentForLanguage, asBucket } from "./content/get-block-content";
+export {
+  getBlockContentForLanguage,
+  asBucket,
+} from "./content/get-block-content";
 
 export {
   fetchSiteConfig,
@@ -57,6 +60,7 @@ export {
   splitCmssyLocale,
 } from "./locale";
 export { localizedPath } from "./seo-paths";
+export { buildBlockContext } from "./block-context";
 
 export { resolveInitialTarget } from "./bridge/messages";
 export { cmssySecretsMatch } from "./secret-match";
