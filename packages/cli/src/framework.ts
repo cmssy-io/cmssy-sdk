@@ -32,8 +32,6 @@ export const FRAMEWORKS: FrameworkDef[] = [
       "app/[[...path]]/page.tsx",
       "app/cmssy-edit/[[...path]]/page.tsx",
       "app/api/draft/route.ts",
-      "app/robots.ts",
-      "app/sitemap.ts",
     ],
   },
   {
@@ -51,8 +49,6 @@ export const FRAMEWORKS: FrameworkDef[] = [
       "src/components/Blocks.tsx",
       "src/pages/[...path].astro",
       "src/pages/cmssy-edit/[...path].astro",
-      "src/pages/robots.txt.ts",
-      "src/pages/sitemap.xml.ts",
     ],
   },
   {
@@ -68,8 +64,6 @@ export const FRAMEWORKS: FrameworkDef[] = [
       "app/cmssy/editor.tsx",
       "app/cmssy/hero.tsx",
       "app/routes/page.tsx",
-      "app/routes/robots.ts",
-      "app/routes/sitemap.ts",
     ],
   },
 ];
