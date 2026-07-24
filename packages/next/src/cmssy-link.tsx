@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import { localizeHref, type CmssyLocaleContext } from "@cmssy/react";
-import { useCmssyLocale } from "@cmssy/react/client";
+import { localizeHref } from "@cmssy/core/internal";
+import type { CmssyLocaleContext } from "@cmssy/react";
+import { useCmssyLocale } from "@cmssy/react/internal";
 
 export interface CmssyLinkProps extends Omit<
   ComponentProps<typeof Link>,

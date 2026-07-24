@@ -6,11 +6,8 @@ import {
   type BlockRect,
   type BlockSchema,
 } from "@cmssy/core";
-import {
-  parseEditorMessage,
-  postToEditor,
-  resolveInitialTarget,
-} from "@cmssy/core";
+import { parseEditorMessage, postToEditor } from "@cmssy/core";
+import { resolveInitialTarget } from "@cmssy/core/internal";
 
 export interface EditBridgeConfig {
   editorOrigin: string | string[];

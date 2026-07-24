@@ -1,5 +1,5 @@
 import { createElement, type ReactNode } from "react";
-import { asBucket, getBlockContentForLanguage } from "@cmssy/core";
+import { asBucket, getBlockContentForLanguage } from "@cmssy/core/internal";
 import type { RawBlock } from "@cmssy/core";
 import type { BlockMap } from "../registry";
 import type { CmssyBlockContext } from "@cmssy/core";

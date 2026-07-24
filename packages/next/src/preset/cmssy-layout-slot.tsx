@@ -1,12 +1,11 @@
 import type { ComponentType } from "react";
 import {
   CmssyServerLayout,
-  fetchLayouts,
   resolveEditorLayoutBlockData,
-  resolveSiteLocales,
   type BlockDefinition,
   type CmssyLayoutGroup,
 } from "@cmssy/react";
+import { fetchLayouts, resolveSiteLocales } from "@cmssy/core/internal";
 import { resolveEditorOrigin, type CmssyConfig } from "@cmssy/core";
 import { isCmssyEditMode } from "../edit-mode";
 import { getCmssyLocale } from "../locale";

@@ -10,19 +10,19 @@ export type { CmssySitemapEntry, CmssySitemapOptions } from "./seo";
 // one import path for the common case.
 export {
   defineCmssyConfig,
+  createCmssyClient,
+  buildBlockContext,
+  CMSSY_EDIT_HEADER,
+} from "@cmssy/core";
+export {
   fetchPage,
   fetchPages,
   fetchPageMeta,
   fetchLayouts,
-  fetchProducts,
-  fetchProduct,
-  createCmssyClient,
   resolveSiteLocales,
   localizeHref,
-  buildBlockContext,
-  CMSSY_EDIT_HEADER,
   CMSSY_LOCALE_HEADER,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
 export type {
   CmssyConfig,
   CmssyEnvConfig,

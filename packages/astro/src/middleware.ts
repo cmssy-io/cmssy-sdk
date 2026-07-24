@@ -1,15 +1,17 @@
 import {
   CMSSY_EDIT_HEADER,
   CMSSY_EDIT_QUERY_PARAM,
-  CMSSY_LOCALE_HEADER,
   CMSSY_SECRET_QUERY_PARAM,
   applyCmssyCsp,
-  isDevelopment,
   isVerifiedEditUrl,
-  localeForPathname,
-  resolveSiteLocales,
   type CmssyConfig,
 } from "@cmssy/core";
+import {
+  CMSSY_LOCALE_HEADER,
+  isDevelopment,
+  localeForPathname,
+  resolveSiteLocales,
+} from "@cmssy/core/internal";
 
 export const CMSSY_EDIT_PATH_PREFIX = "/cmssy-edit";
 

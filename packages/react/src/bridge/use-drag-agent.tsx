@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { PROTOCOL_VERSION } from "@cmssy/core";
-import {
-  parseEditorMessage,
-  postToEditor,
-  resolveInitialTarget,
-} from "@cmssy/core";
+import { parseEditorMessage, postToEditor } from "@cmssy/core";
+import { resolveInitialTarget } from "@cmssy/core/internal";
 
 export interface DragAgentConfig {
   editorOrigin: string | string[];

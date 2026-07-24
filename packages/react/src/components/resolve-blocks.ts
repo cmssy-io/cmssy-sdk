@@ -3,7 +3,7 @@ import {
   getBlockContentForLanguage,
   resolveRelationContent,
   type BlockSchemaMap,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
 import type { LoaderMap } from "../registry";
 import type { CmssyBlockContext } from "@cmssy/core";
 import { blockErrorMessage, type CmssyBlockError } from "./block-error";

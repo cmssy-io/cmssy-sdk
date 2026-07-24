@@ -1,14 +1,16 @@
 import {
   CMSSY_EDIT_HEADER,
+  type CmssyConfig,
+  type CmssyLayoutGroup,
+  type CmssyPageData,
+} from "@cmssy/core";
+import {
   CMSSY_LOCALE_HEADER,
   fetchLayouts,
   fetchPage,
   resolveSiteLocales,
   splitLocaleFromPath,
-  type CmssyConfig,
-  type CmssyLayoutGroup,
-  type CmssyPageData,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
 
 export interface CmssyPageResult {
   page: CmssyPageData | null;
