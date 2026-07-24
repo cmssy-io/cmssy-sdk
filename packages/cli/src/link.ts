@@ -321,7 +321,11 @@ export async function runLink(
     }
 
     log(formatEditorLink(buildEditorUrl(preflight)));
-    if (reachable.previewUrl && secretResult.status !== "fail") {
+    if (
+      reachable.previewUrl &&
+      secretResult.status !== "fail" &&
+      draftRouteResult?.status !== "fail"
+    ) {
       const draftUrls = buildDraftPreviewUrls(
         reachable.previewUrl,
         draftSecret,

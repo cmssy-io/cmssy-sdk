@@ -329,6 +329,7 @@ describe("runLink", () => {
     expect(output).toContain("the /api/draft route is not mounted");
     expect(output).toContain("app/api/draft/route.ts");
     expect(output).toContain("createDraftRoute(cmssy)");
+    expect(output).not.toContain("Preview drafts without the editor");
   });
 
   it("flags a misconfigured /api/draft route when it 500s", async () => {
