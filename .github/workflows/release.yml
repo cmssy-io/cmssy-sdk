@@ -106,8 +106,8 @@ jobs:
             for pkg in $pending; do
               name=$(node -p "require('./packages/$pkg/package.json').name")
               version=$(node -p "require('./packages/$pkg/package.json').version")
-              code=$(curl -s -o /dev/null -w '%{http_code}' \
-                "https://registry.npmjs.org/${name}/${version}")
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
+                "https://registry.npmjs.org/${name}/${version}" || echo 000)
               if [ "$code" = "200" ]; then
                 echo "ok  $name@$version"
               else
