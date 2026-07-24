@@ -32,6 +32,11 @@
       "import": "./dist/internal.js",
       "require": "./dist/internal.cjs"
     },
+    "./internal/locale": {
+      "types": "./dist/internal/locale.d.ts",
+      "import": "./dist/internal/locale.js",
+      "require": "./dist/internal/locale.cjs"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js",

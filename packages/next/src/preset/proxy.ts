@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveSiteLocales } from "@cmssy/core/internal";
+import { resolveSiteLocales } from "@cmssy/core/internal/locale";
 import type { CmssyConfig } from "@cmssy/core";
 import { applyCmssyCsp } from "@cmssy/core";
 import { CMSSY_EDIT_HEADER } from "@cmssy/core";
 import { cmssyEditRewrite } from "../edit-middleware";
-import { CMSSY_LOCALE_HEADER, localeForPathname } from "@cmssy/core/internal";
+import { CMSSY_LOCALE_HEADER, localeForPathname } from "@cmssy/core/internal/locale";
 
 export interface CmssyProxyOptions {
   /**

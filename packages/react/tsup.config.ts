@@ -4,6 +4,8 @@ import { defineConfig } from "tsup";
 const CLIENT_OUTPUTS = [
   "dist/client.js",
   "dist/client.cjs",
+  "dist/internal.js",
+  "dist/internal.cjs",
   "dist/block-error-boundary.js",
   "dist/block-error-boundary.cjs",
 ];
