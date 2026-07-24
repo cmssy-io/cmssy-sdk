@@ -94,20 +94,36 @@ jobs:
       # `npm view` runs with our credentials, so it happily finds a package
       # nobody else can install - which is exactly how 5.0.0 shipped three
       # packages that 404'd for the world. This asks the registry as a stranger.
+      # A successful publish is eventually consistent: the anonymous read
+      # replica can lag several minutes behind. Retry before failing so a
+      # propagation delay is not mistaken for a restricted package.
       - name: Verify the packages are installable by anyone
+        timeout-minutes: 25
         run: |
           set -e
-          failed=0
-          for pkg in core eslint-plugin codemod cli react next astro remix; do
-            name=$(node -p "require('./packages/$pkg/package.json').name")
-            version=$(node -p "require('./packages/$pkg/package.json').version")
-            code=$(curl -s -o /dev/null -w '%{http_code}' \
-              "https://registry.npmjs.org/${name}/${version}")
-            if [ "$code" = "200" ]; then
-              echo "ok  $name@$version"
-            else
-              echo "FAIL $name@$version — anonymous fetch returned $code"
-              failed=1
-            fi
+          pending="core eslint-plugin codemod cli react next astro remix"
+          deadline=$(( $(date +%s) + 1200 ))
+          while :; do
+            still=""
+            for pkg in $pending; do
+              name=$(node -p "require('./packages/$pkg/package.json').name")
+              version=$(node -p "require('./packages/$pkg/package.json').version")
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
+                "https://registry.npmjs.org/${name}/${version}" || echo 000)
+              if [ "$code" = "200" ]; then
+                echo "ok  $name@$version"
+              else
+                echo "waiting $name@$version — anonymous fetch returned $code"
+                still="$still $pkg"
+              fi
+            done
+            pending="$(echo $still | xargs)"
+            [ -z "$pending" ] && break
+            [ "$(date +%s)" -ge "$deadline" ] && break
+            sleep 30
           done
-          exit $failed
+          if [ -n "$pending" ]; then
+            echo "::error::still not installable by anyone (non-200) after 20m: $pending"
+            exit 1
+          fi
+          echo "all packages installable by anyone"
