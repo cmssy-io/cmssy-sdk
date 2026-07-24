@@ -9,7 +9,12 @@ const CLIENT_OUTPUTS = [
 ];
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/client.ts", "src/block-error-boundary.ts"],
+  entry: [
+    "src/index.ts",
+    "src/client.ts",
+    "src/internal.ts",
+    "src/block-error-boundary.ts",
+  ],
   format: ["esm", "cjs"],
   dts: true,
   clean: true,

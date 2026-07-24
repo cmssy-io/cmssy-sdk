@@ -6,3 +6,6 @@ dist/
 # packed SDK tarballs (vendored into consumers)
 *.tgz
 prod-schema.graphql
+
+# Local Claude tooling state
+.claude/

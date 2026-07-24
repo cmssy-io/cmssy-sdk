@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
-import { CmssyLocaleProvider } from "@cmssy/react/client";
+import { CmssyLocaleProvider } from "@cmssy/react/internal";
 
 /** createCmssyPage wraps its output in CmssyLocaleProvider; assert on the child. */
 function unwrap(element: { type: unknown; props: { children: unknown } }) {
@@ -31,24 +31,19 @@ vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<typeof import("@cmssy/react")>();
   return {
     ...actual,
-    fetchPage,
-    resolveSiteLocales,
     createCmssyClient: () => ({ resolveWorkspaceId }),
   };
 });
-
-const getCmssyUser = vi.hoisted(() => vi.fn());
-vi.mock("../auth-server", () => ({
-  getCmssyUser,
-  getCmssyAccessToken: vi.fn(),
-}));
+vi.mock("@cmssy/core/internal", async (importActual) => {
+  const actual = await importActual<typeof import("@cmssy/core/internal")>();
+  return {
+    ...actual,
+    fetchPage,
+    resolveSiteLocales,
+  };
+});
 
 import { createCmssyPage, createCmssyEditPage } from "../create-cmssy-page";
-
-const AUTH_CONFIG = {
-  modelSlug: "members",
-  sessionSecret: "session-secret-with-enough-length-1234",
-};
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
@@ -93,7 +88,6 @@ describe("createCmssyPage", () => {
     });
     resolveWorkspaceId.mockReset();
     resolveWorkspaceId.mockResolvedValue("ws_123");
-    getCmssyUser.mockReset();
   });
 
   afterEach(() => {
@@ -581,42 +575,18 @@ describe("createCmssyPage", () => {
     warn.mockRestore();
   });
 
-  it("injects workspace and omits auth when auth is not configured", async () => {
+  it("injects workspace and omits auth (auth is app-owned)", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(CONFIG, BLOCKS);
     const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.props.workspace).toEqual({ id: "ws_123", slug: "pilot" });
     expect(element.props.auth).toBeUndefined();
-    expect(getCmssyUser).not.toHaveBeenCalled();
   });
 
-  it("injects authenticated member when auth is configured", async () => {
+  it("degrades workspace to undefined on failure", async () => {
     fetchPage.mockResolvedValue(PAGE);
-    getCmssyUser.mockResolvedValue({ recordId: "rec_1", email: "a@b.com" });
-    const Page = createCmssyPage({ ...CONFIG, auth: AUTH_CONFIG }, BLOCKS);
-    const element = unwrap(await Page({ params: params(["about"]) }));
-    expect(element.props.auth).toEqual({
-      isAuthenticated: true,
-      member: { recordId: "rec_1", email: "a@b.com" },
-    });
-  });
-
-  it("reports unauthenticated with a null member when no session", async () => {
-    fetchPage.mockResolvedValue(PAGE);
-    getCmssyUser.mockResolvedValue(null);
-    const Page = createCmssyPage({ ...CONFIG, auth: AUTH_CONFIG }, BLOCKS);
-    const element = unwrap(await Page({ params: params(["about"]) }));
-    expect(element.props.auth).toEqual({
-      isAuthenticated: false,
-      member: null,
-    });
-  });
-
-  it("degrades auth and workspace to undefined on failure", async () => {
-    fetchPage.mockResolvedValue(PAGE);
-    getCmssyUser.mockRejectedValue(new Error("auth boom"));
     resolveWorkspaceId.mockRejectedValue(new Error("ws boom"));
-    const Page = createCmssyPage({ ...CONFIG, auth: AUTH_CONFIG }, BLOCKS);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
     const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.props.auth).toBeUndefined();
     expect(element.props.workspace).toBeUndefined();

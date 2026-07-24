@@ -2,8 +2,8 @@ import {
   CMSSY_LOCALE_HEADER,
   localeForPath,
   resolveSiteLocales,
-  type CmssyClientConfig,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
+import type { CmssyClientConfig } from "@cmssy/core";
 
 /**
  * Resolve the active locale. Pass `options.path` (route params) wherever

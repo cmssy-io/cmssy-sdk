@@ -1,9 +1,3 @@
-import type { CmssyAuthConfig } from "@cmssy/types";
-import { MIN_SESSION_SECRET_LENGTH } from "./session";
-
-// CmssyAuthConfig lives in @cmssy/types; re-exported for consumers.
-export type { CmssyAuthConfig };
-
 export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://cmssy.io",
   "https://www.cmssy.io",
@@ -76,7 +70,6 @@ export interface CmssyConfig {
    * origin from the request `host` header at render time (multi-domain safe).
    */
   siteUrl?: string;
-  auth?: CmssyAuthConfig;
   /**
    * Fallback locale resolver for a site whose URLs carry no language (e.g. a
    * cookie or Accept-Language strategy). The workspace site config remains the
@@ -149,20 +142,4 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
     );
   }
   return resolved as CmssyConfig;
-}
-
-export function assertAuthConfig(config: CmssyConfig): CmssyAuthConfig {
-  const auth = config.auth;
-  if (!auth || typeof auth.modelSlug !== "string" || !auth.modelSlug) {
-    throw new Error("cmssy: config.auth.modelSlug is required for auth routes");
-  }
-  if (
-    typeof auth.sessionSecret !== "string" ||
-    auth.sessionSecret.length < MIN_SESSION_SECRET_LENGTH
-  ) {
-    throw new Error(
-      `cmssy: config.auth.sessionSecret must be at least ${MIN_SESSION_SECRET_LENGTH} characters`,
-    );
-  }
-  return auth;
 }

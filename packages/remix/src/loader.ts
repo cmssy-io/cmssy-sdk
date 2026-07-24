@@ -1,18 +1,20 @@
 import {
   CMSSY_EDIT_QUERY_PARAM,
-  CMSSY_LOCALE_HEADER,
   CMSSY_SECRET_QUERY_PARAM,
-  cmssyCspHeaders,
-  fetchLayouts,
-  fetchPage,
-  isDevelopment,
   isVerifiedEditUrl,
-  resolveSiteLocales,
-  splitLocaleFromPath,
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
 } from "@cmssy/core";
+import {
+  CMSSY_LOCALE_HEADER,
+  cmssyCspHeaders,
+  fetchLayouts,
+  fetchPage,
+  isDevelopment,
+  resolveSiteLocales,
+  splitLocaleFromPath,
+} from "@cmssy/core/internal";
 
 export interface CmssyRouteData {
   page: CmssyPageData | null;
