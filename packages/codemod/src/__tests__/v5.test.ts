@@ -35,6 +35,17 @@ function exportedSymbols(entry: string): string[] {
     .filter(Boolean);
 }
 
+// These were @cmssy/next root exports in 5.0 - so the v5 codemod correctly
+// leaves them on the root - but 10.0 removed them when auth left the SDK
+// (CMS-1045). They had a home in 5.0; the live root no longer lists them, so
+// the homeless check (which reads the live root) must not flag them.
+const REMOVED_AFTER_5_0 = new Set([
+  "assertAuthConfig",
+  "CmssyAuthConfig",
+  "CMSSY_SESSION_COOKIE",
+  "CMSSY_LOCALE_HEADER",
+]);
+
 describe("v5 codemod", () => {
   it("splits one import across the runtimes it actually spans", () => {
     const { code } = transform(
@@ -101,7 +112,8 @@ describe("v5 codemod", () => {
         !CLIENT_SYMBOLS.has(symbol) &&
         !CORE_SYMBOLS.has(symbol) &&
         !(symbol in RENAMES) &&
-        !rootExports.has(symbol),
+        !rootExports.has(symbol) &&
+        !REMOVED_AFTER_5_0.has(symbol),
     );
 
     expect(homeless).toEqual([]);
