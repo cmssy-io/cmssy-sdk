@@ -1,7 +1,5 @@
 export { createCmssyLoader, createCmssyHeaders } from "./loader";
 export type { CmssyRouteData } from "./loader";
-export { createCmssySitemap, createCmssyRobots } from "./seo";
-export type { CmssySitemapEntry, CmssySitemapOptions } from "./seo";
 
 // The data layer, the config and the editor protocol are not React Router's -
 // they are the same @cmssy/core every adapter uses.
