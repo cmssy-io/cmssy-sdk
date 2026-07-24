@@ -117,10 +117,10 @@ jobs:
             done
             pending="$(echo $still | xargs)"
             [ -z "$pending" ] && break
-            sleep 30
+            if [ "$attempt" -lt 40 ]; then sleep 30; fi
           done
           if [ -n "$pending" ]; then
-            echo "::error::still 404 to anonymous fetch after retries: $pending"
+            echo "::error::still not installable by anyone (non-200) after retries: $pending"
             exit 1
           fi
           echo "all packages installable by anyone"
