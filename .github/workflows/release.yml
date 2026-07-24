@@ -98,10 +98,12 @@ jobs:
       # replica can lag several minutes behind. Retry before failing so a
       # propagation delay is not mistaken for a restricted package.
       - name: Verify the packages are installable by anyone
+        timeout-minutes: 25
         run: |
           set -e
           pending="core eslint-plugin codemod cli react next astro remix"
-          for attempt in $(seq 1 40); do
+          deadline=$(( $(date +%s) + 1200 ))
+          while :; do
             still=""
             for pkg in $pending; do
               name=$(node -p "require('./packages/$pkg/package.json').name")
@@ -111,16 +113,17 @@ jobs:
               if [ "$code" = "200" ]; then
                 echo "ok  $name@$version"
               else
-                echo "waiting $name@$version — anonymous fetch returned $code (attempt $attempt/40)"
+                echo "waiting $name@$version — anonymous fetch returned $code"
                 still="$still $pkg"
               fi
             done
             pending="$(echo $still | xargs)"
             [ -z "$pending" ] && break
-            if [ "$attempt" -lt 40 ]; then sleep 30; fi
+            [ "$(date +%s)" -ge "$deadline" ] && break
+            sleep 30
           done
           if [ -n "$pending" ]; then
-            echo "::error::still not installable by anyone (non-200) after retries: $pending"
+            echo "::error::still not installable by anyone (non-200) after 20m: $pending"
             exit 1
           fi
           echo "all packages installable by anyone"
