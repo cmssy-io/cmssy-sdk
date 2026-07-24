@@ -131,7 +131,7 @@ function frameworkNotes(
     notes.push({
       status: "unknown",
       message:
-        "app/routes.ts already existed - mount routes/page.tsx (index + splat), routes/robots.ts and routes/sitemap.ts there yourself, or rerun with --force",
+        "app/routes.ts already existed - mount routes/page.tsx (index + splat) there yourself, or rerun with --force",
     });
   }
   return notes;

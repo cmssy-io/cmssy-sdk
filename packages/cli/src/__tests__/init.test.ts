@@ -34,8 +34,6 @@ const NEXT_FILES = [
   "app/[[...path]]/page.tsx",
   "app/cmssy-edit/[[...path]]/page.tsx",
   "app/api/draft/route.ts",
-  "app/robots.ts",
-  "app/sitemap.ts",
 ];
 
 function makeApp(pkg: Record<string, unknown>): {
@@ -189,8 +187,6 @@ describe("runInit", () => {
       "src/components/Blocks.tsx",
       "src/pages/[...path].astro",
       "src/pages/cmssy-edit/[...path].astro",
-      "src/pages/robots.txt.ts",
-      "src/pages/sitemap.xml.ts",
     ]) {
       expect(existsSync(join(cwd, file)), file).toBe(true);
     }
@@ -215,8 +211,6 @@ describe("runInit", () => {
       "app/cmssy/editor.tsx",
       "app/cmssy/hero.tsx",
       "app/routes/page.tsx",
-      "app/routes/robots.ts",
-      "app/routes/sitemap.ts",
     ]) {
       expect(existsSync(join(cwd, file)), file).toBe(true);
     }
