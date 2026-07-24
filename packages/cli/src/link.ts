@@ -6,6 +6,7 @@ import {
   checkDraftSecret,
   checkWorkspaceReachable,
   type PreflightConfig,
+  type PreflightResult,
 } from "@cmssy/core/preflight";
 
 import {
@@ -18,6 +19,7 @@ import {
 } from "./admin-client";
 import { applyEnv, parseEnvFile } from "./env-file";
 import { mergeEnvContent } from "./env-write";
+import { nextSrcPrefix } from "./framework";
 import {
   formatDraftPreviewLink,
   formatEditorLink,
@@ -85,6 +87,62 @@ export function buildDraftPreviewUrls(
   return {
     draftUrl: `${base}?${params.toString()}`,
     exitUrl: `${base}?disable=1`,
+  };
+}
+
+function draftRouteFix(cwd: string): string {
+  const path = `${nextSrcPrefix(cwd)}app/api/draft/route.ts`;
+  return [
+    `add ${path} so Preview can enter draft mode:`,
+    '  import { createDraftRoute } from "@cmssy/next/server";',
+    '  import { cmssy } from "@/cmssy.config";',
+    "  export const GET = createDraftRoute(cmssy);",
+  ].join("\n");
+}
+
+export async function checkDraftRouteMounted(
+  previewUrl: string,
+  fetchImpl: typeof globalThis.fetch,
+  cwd: string,
+): Promise<PreflightResult> {
+  const base = draftRouteBase(previewUrl);
+  if (!base) {
+    return {
+      status: "fail",
+      message: `the workspace preview URL ${previewUrl} is not a valid URL`,
+      fix: "set a valid deployed origin as the preview URL: cmssy link --preview-url https://your-site.com",
+    };
+  }
+  let status: number;
+  try {
+    status = (
+      await fetchImpl(base, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(5000),
+      })
+    ).status;
+  } catch {
+    return {
+      status: "unknown",
+      message: `could not reach ${base} to check the /api/draft route`,
+    };
+  }
+  if (status === 404) {
+    return {
+      status: "fail",
+      message: `the /api/draft route is not mounted at ${previewUrl} - Preview will 404`,
+      fix: draftRouteFix(cwd),
+    };
+  }
+  if (status === 500) {
+    return {
+      status: "fail",
+      message: `the /api/draft route is mounted but misconfigured at ${previewUrl} - the draft secret must be at least 16 characters`,
+    };
+  }
+  return {
+    status: "ok",
+    message: `the /api/draft route is mounted at ${previewUrl}`,
   };
 }
 
@@ -251,8 +309,23 @@ export async function runLink(
     log(formatResult(reachable));
     const secretResult = await checkDraftSecret(preflight);
     log(formatResult(secretResult));
+
+    let draftRouteResult: PreflightResult | null = null;
+    if (reachable.previewUrl) {
+      draftRouteResult = await checkDraftRouteMounted(
+        reachable.previewUrl,
+        deps.fetch,
+        cwd,
+      );
+      log(formatResult(draftRouteResult));
+    }
+
     log(formatEditorLink(buildEditorUrl(preflight)));
-    if (reachable.previewUrl && secretResult.status !== "fail") {
+    if (
+      reachable.previewUrl &&
+      secretResult.status !== "fail" &&
+      draftRouteResult?.status !== "fail"
+    ) {
       const draftUrls = buildDraftPreviewUrls(
         reachable.previewUrl,
         draftSecret,
@@ -262,9 +335,11 @@ export async function runLink(
       }
     }
 
-    return reachable.status === "fail" || secretResult.status === "fail"
-      ? 1
-      : 0;
+    const failed =
+      reachable.status === "fail" ||
+      secretResult.status === "fail" ||
+      draftRouteResult?.status === "fail";
+    return failed ? 1 : 0;
   } catch (error) {
     if (error instanceof CliError) {
       log(

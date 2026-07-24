@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -24,6 +24,11 @@ function adminFetch(overrides: Partial<Record<string, unknown>> = {}): {
 } {
   const calls: RecordedCall[] = [];
   const fetch = (async (url: unknown, init?: RequestInit) => {
+    if (new URL(String(url)).pathname.endsWith("/api/draft")) {
+      return new Response(null, {
+        status: (overrides.draftRouteStatus as number | undefined) ?? 401,
+      });
+    }
     const body = JSON.parse(String(init?.body ?? "{}")) as {
       query: string;
       variables: Record<string, unknown>;
@@ -303,6 +308,59 @@ describe("runLink", () => {
     expect(output).toContain(
       "exit draft mode: http://localhost:3000/api/draft?disable=1",
     );
+  });
+
+  it("confirms the /api/draft route is mounted when it answers 401", async () => {
+    const { fetch } = adminFetch({ draftRouteStatus: 401 });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    expect(lines.join("\n")).toContain(
+      "the /api/draft route is mounted at http://localhost:3000",
+    );
+  });
+
+  it("fails with the fix snippet when the /api/draft route 404s", async () => {
+    const { fetch } = adminFetch({ draftRouteStatus: 404 });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    const output = lines.join("\n");
+    expect(output).toContain("the /api/draft route is not mounted");
+    expect(output).toContain("app/api/draft/route.ts");
+    expect(output).toContain("createDraftRoute(cmssy)");
+    expect(output).not.toContain("Preview drafts without the editor");
+  });
+
+  it("flags a misconfigured /api/draft route when it 500s", async () => {
+    const { fetch } = adminFetch({ draftRouteStatus: 500 });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain(
+      "the /api/draft route is mounted but misconfigured",
+    );
+  });
+
+  it("points the 404 fix at src/app when the project uses the src directory", async () => {
+    const { fetch } = adminFetch({ draftRouteStatus: 404 });
+    const { deps, lines, cwd } = makeDeps(fetch);
+    mkdirSync(join(cwd, "src", "app"), { recursive: true });
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("src/app/api/draft/route.ts");
+  });
+
+  it("fails when the workspace preview URL is not a valid URL", async () => {
+    const { fetch } = adminFetch({
+      siteConfig: {
+        data: { public: { siteConfig: { previewUrl: "not-a-url" } } },
+      },
+    });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("is not a valid URL");
   });
 
   it("skips the draft preview URL when the draft secret check fails", async () => {
