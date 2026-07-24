@@ -61,18 +61,19 @@ Helpers to frame the page inside the cmssy editor only in edit mode.
 
 The active locale lives in the URL path prefix (`/en/about`; the default locale
 stays bare). `createCmssyPage` resolves it and exposes it via `CmssyLocaleProvider`.
-For the locale to survive navigation, internal links must carry the prefix - use
-`CmssyLink` instead of `next/link` / `<a>`:
+For the locale to survive navigation, internal links must carry the prefix -
+prefix hrefs yourself with `localizeHref` and pass the result to `next/link`:
 
 ```tsx
 // any block component
-import { CmssyLink } from "@cmssy/next/client";
+import Link from "next/link";
+import { localizeHref } from "@cmssy/react";
 
-<CmssyLink href="/about">About</CmssyLink>; // → /en/about while EN is active
+<Link href={localizeHref("/about", locale)}>About</Link>; // → /en/about while EN is active
 ```
 
 Add middleware so the root layout (which can't read the path) resolves the right
-locale via `getCmssyLocale`. On Next.js 16 the file is `proxy.ts` (the renamed
+locale from the path prefix. On Next.js 16 the file is `proxy.ts` (the renamed
 middleware convention); on Next.js 15 use `middleware.ts` with the same body.
 
 ```ts
@@ -95,8 +96,7 @@ Language switcher and raw markup helpers live in `@cmssy/react`:
 
 `createCmssyPage`, `createDraftRoute`, `cmssyCspHeaders` / `applyCmssyCsp`,
 `isCmssyEditRequest` / `isCmssyEditMode`, `createCmssyLocaleMiddleware` /
-`resolveLocaleFromPathname`, the `CmssyConfig` type, and from
-`@cmssy/next/client`: `CmssyLink`, `CmssyLocaleProvider`, `useCmssyLocale`.
+`resolveLocaleFromPathname`, and the `CmssyConfig` type.
 
 ## License
 
