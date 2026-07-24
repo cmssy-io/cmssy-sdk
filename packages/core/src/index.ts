@@ -58,7 +58,6 @@ export type {
   FieldConditionGroup,
   FieldConditionLogic,
 } from "@cmssy/types";
-export { buildBlockContext } from "./block-context";
 export type {
   CmssyBlockContext,
   CmssyLocaleContext,
@@ -67,6 +66,10 @@ export type {
   CmssyBlockWorkspace,
   BuildBlockContextExtra,
 } from "./block-context";
+
+// --- Localization (path-prefix helpers) ---
+export { localizeHref } from "./data/localize-href";
+export { CMSSY_LOCALE_HEADER } from "./locale";
 
 // --- Editor / edit-bridge ---
 export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";

@@ -6,11 +6,8 @@ import {
   buildLoaderMap,
   type BlockDefinition,
 } from "../registry";
-import {
-  buildBlockContext,
-  type CmssyBlockAuthContext,
-  type CmssyBlockWorkspace,
-} from "@cmssy/core";
+import { buildBlockContext } from "@cmssy/core/internal";
+import type { CmssyBlockAuthContext, CmssyBlockWorkspace } from "@cmssy/core";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
 import { resolveRenderLocale } from "./resolve-render-locale";
