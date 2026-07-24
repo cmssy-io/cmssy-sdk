@@ -6,6 +6,7 @@ import {
   checkDraftSecret,
   checkWorkspaceReachable,
   type PreflightConfig,
+  type PreflightResult,
 } from "@cmssy/core/preflight";
 
 import {
@@ -85,6 +86,52 @@ export function buildDraftPreviewUrls(
   return {
     draftUrl: `${base}?${params.toString()}`,
     exitUrl: `${base}?disable=1`,
+  };
+}
+
+const DRAFT_ROUTE_FIX = [
+  "add app/api/draft/route.ts so Preview can enter draft mode:",
+  '  import { createDraftRoute } from "@cmssy/next/server";',
+  '  import { cmssy } from "@/cmssy.config";',
+  "  export const GET = createDraftRoute(cmssy);",
+].join("\n");
+
+export async function checkDraftRouteMounted(
+  previewUrl: string,
+  fetchImpl: typeof globalThis.fetch,
+): Promise<PreflightResult> {
+  const base = draftRouteBase(previewUrl);
+  if (!base) {
+    return {
+      status: "unknown",
+      message: "could not parse the preview URL to probe the /api/draft route",
+    };
+  }
+  let status: number;
+  try {
+    status = (await fetchImpl(base, { method: "HEAD" })).status;
+  } catch {
+    return {
+      status: "unknown",
+      message: `could not reach ${base} to check the /api/draft route`,
+    };
+  }
+  if (status === 404) {
+    return {
+      status: "fail",
+      message: `the /api/draft route is not mounted at ${previewUrl} - Preview will 404`,
+      fix: DRAFT_ROUTE_FIX,
+    };
+  }
+  if (status === 500) {
+    return {
+      status: "fail",
+      message: `the /api/draft route is mounted but misconfigured at ${previewUrl} - the draft secret must be at least 16 characters`,
+    };
+  }
+  return {
+    status: "ok",
+    message: `the /api/draft route is mounted at ${previewUrl}`,
   };
 }
 
@@ -251,6 +298,16 @@ export async function runLink(
     log(formatResult(reachable));
     const secretResult = await checkDraftSecret(preflight);
     log(formatResult(secretResult));
+
+    let draftRouteResult: PreflightResult | null = null;
+    if (reachable.previewUrl) {
+      draftRouteResult = await checkDraftRouteMounted(
+        reachable.previewUrl,
+        deps.fetch,
+      );
+      log(formatResult(draftRouteResult));
+    }
+
     log(formatEditorLink(buildEditorUrl(preflight)));
     if (reachable.previewUrl && secretResult.status !== "fail") {
       const draftUrls = buildDraftPreviewUrls(
@@ -262,7 +319,9 @@ export async function runLink(
       }
     }
 
-    return reachable.status === "fail" || secretResult.status === "fail"
+    return reachable.status === "fail" ||
+      secretResult.status === "fail" ||
+      draftRouteResult?.status === "fail"
       ? 1
       : 0;
   } catch (error) {
