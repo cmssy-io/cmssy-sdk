@@ -19,6 +19,7 @@ import {
 } from "./admin-client";
 import { applyEnv, parseEnvFile } from "./env-file";
 import { mergeEnvContent } from "./env-write";
+import { nextSrcPrefix } from "./framework";
 import {
   formatDraftPreviewLink,
   formatEditorLink,
@@ -89,22 +90,27 @@ export function buildDraftPreviewUrls(
   };
 }
 
-const DRAFT_ROUTE_FIX = [
-  "add app/api/draft/route.ts so Preview can enter draft mode:",
-  '  import { createDraftRoute } from "@cmssy/next/server";',
-  '  import { cmssy } from "@/cmssy.config";',
-  "  export const GET = createDraftRoute(cmssy);",
-].join("\n");
+function draftRouteFix(cwd: string): string {
+  const path = `${nextSrcPrefix(cwd)}app/api/draft/route.ts`;
+  return [
+    `add ${path} so Preview can enter draft mode:`,
+    '  import { createDraftRoute } from "@cmssy/next/server";',
+    '  import { cmssy } from "@/cmssy.config";',
+    "  export const GET = createDraftRoute(cmssy);",
+  ].join("\n");
+}
 
 export async function checkDraftRouteMounted(
   previewUrl: string,
   fetchImpl: typeof globalThis.fetch,
+  cwd: string,
 ): Promise<PreflightResult> {
   const base = draftRouteBase(previewUrl);
   if (!base) {
     return {
-      status: "unknown",
-      message: "could not parse the preview URL to probe the /api/draft route",
+      status: "fail",
+      message: `the workspace preview URL ${previewUrl} is not a valid URL`,
+      fix: "set a valid deployed origin as the preview URL: cmssy link --preview-url https://your-site.com",
     };
   }
   let status: number;
@@ -125,7 +131,7 @@ export async function checkDraftRouteMounted(
     return {
       status: "fail",
       message: `the /api/draft route is not mounted at ${previewUrl} - Preview will 404`,
-      fix: DRAFT_ROUTE_FIX,
+      fix: draftRouteFix(cwd),
     };
   }
   if (status === 500) {
@@ -309,6 +315,7 @@ export async function runLink(
       draftRouteResult = await checkDraftRouteMounted(
         reachable.previewUrl,
         deps.fetch,
+        cwd,
       );
       log(formatResult(draftRouteResult));
     }

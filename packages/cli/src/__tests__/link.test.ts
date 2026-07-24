@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -339,6 +339,27 @@ describe("runLink", () => {
     expect(lines.join("\n")).toContain(
       "the /api/draft route is mounted but misconfigured",
     );
+  });
+
+  it("points the 404 fix at src/app when the project uses the src directory", async () => {
+    const { fetch } = adminFetch({ draftRouteStatus: 404 });
+    const { deps, lines, cwd } = makeDeps(fetch);
+    mkdirSync(join(cwd, "src", "app"), { recursive: true });
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("src/app/api/draft/route.ts");
+  });
+
+  it("fails when the workspace preview URL is not a valid URL", async () => {
+    const { fetch } = adminFetch({
+      siteConfig: {
+        data: { public: { siteConfig: { previewUrl: "not-a-url" } } },
+      },
+    });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("is not a valid URL");
   });
 
   it("skips the draft preview URL when the draft secret check fails", async () => {
