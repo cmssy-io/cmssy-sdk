@@ -88,13 +88,6 @@ jobs:
               tarball=$(pnpm pack | tail -1)
               npm publish "$tarball" --access public --provenance
             fi
-            # A first publish under this scope lands RESTRICTED even though npm
-            # reports "public access", so the package 404s for everyone who is
-            # not us. Idempotent on an already-public package, and meaningless
-            # for an unscoped one (npm rejects the command outright).
-            case "$name" in
-              @*) npm access set status=public "$name" ;;
-            esac
             cd ../..
           done
 
