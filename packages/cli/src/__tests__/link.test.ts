@@ -24,7 +24,7 @@ function adminFetch(overrides: Partial<Record<string, unknown>> = {}): {
 } {
   const calls: RecordedCall[] = [];
   const fetch = (async (url: unknown, init?: RequestInit) => {
-    if (String(url).includes("/api/draft")) {
+    if (new URL(String(url)).pathname.endsWith("/api/draft")) {
       return new Response(null, {
         status: (overrides.draftRouteStatus as number | undefined) ?? 401,
       });

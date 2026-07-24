@@ -109,7 +109,12 @@ export async function checkDraftRouteMounted(
   }
   let status: number;
   try {
-    status = (await fetchImpl(base, { method: "HEAD" })).status;
+    status = (
+      await fetchImpl(base, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(5000),
+      })
+    ).status;
   } catch {
     return {
       status: "unknown",
@@ -319,11 +324,11 @@ export async function runLink(
       }
     }
 
-    return reachable.status === "fail" ||
+    const failed =
+      reachable.status === "fail" ||
       secretResult.status === "fail" ||
-      draftRouteResult?.status === "fail"
-      ? 1
-      : 0;
+      draftRouteResult?.status === "fail";
+    return failed ? 1 : 0;
   } catch (error) {
     if (error instanceof CliError) {
       log(
