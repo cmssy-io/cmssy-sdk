@@ -1,9 +1,16 @@
 name: Release
 
-# Publishes @cmssy/react + @cmssy/next to npm.
-# Trigger by pushing a version tag (e.g. `git tag v0.1.1 && git push --tags`)
-# or manually via the Actions tab. Requires an npm Automation access token
-# (bypasses 2FA) stored as the `NPM_TOKEN` repository secret.
+# Publishes the @cmssy/* SDK packages to npm via trusted publishing (OIDC) - no
+# token. Trigger by pushing a version tag (e.g. `git tag v9.9.0 && git push
+# origin v9.9.0`) or manually via the Actions tab. Authentication comes from the
+# GitHub OIDC token, so EACH published package must have this repo + this
+# workflow registered as a Trusted Publisher (npmjs.com -> package -> Settings
+# -> Trusted Publisher).
+#
+# pnpm packs each package (rewriting workspace:* deps into the tarball); npm then
+# publishes the tarball, because this repo is pinned to pnpm 9, which predates
+# pnpm's own OIDC support. Keeping npm as the publisher also makes the OIDC path
+# identical to the single-package repos.
 
 on:
   push:
@@ -21,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Lets the job mint the OIDC token npm exchanges for publish rights.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +39,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; the node 22 image ships 10.x.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
 
       # On a tag release, the tag must match the package versions being
       # published (package.json is the source of truth). Manual dispatch
@@ -57,11 +70,11 @@ jobs:
       - run: pnpm -r test
 
       # Publish in dependency order (core, then the renderers, then the
-      # adapters). Skips a package whose current version is already on npm, so
-      # re-runs are safe.
+      # adapters). pnpm pack rewrites workspace:* deps into the tarball; npm
+      # publishes it via OIDC, with a provenance attestation (public repo).
+      # Skips a package whose current version is already on npm, so re-runs are
+      # safe.
       - name: Publish packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
           for pkg in core eslint-plugin codemod cli react next astro remix; do
@@ -72,7 +85,8 @@ jobs:
               echo "$name@$version already on npm — skipping"
             else
               echo "Publishing $name@$version"
-              pnpm publish --access public --no-git-checks
+              tarball=$(pnpm pack | tail -1)
+              npm publish "$tarball" --access public --provenance
             fi
             # A first publish under this scope lands RESTRICTED even though npm
             # reports "public access", so the package 404s for everyone who is
@@ -84,9 +98,9 @@ jobs:
             cd ../..
           done
 
-      # `npm view` runs with our token, so it happily finds a package nobody
-      # else can install - which is exactly how 5.0.0 shipped three packages
-      # that 404'd for the world. This asks the registry as a stranger.
+      # `npm view` runs with our credentials, so it happily finds a package
+      # nobody else can install - which is exactly how 5.0.0 shipped three
+      # packages that 404'd for the world. This asks the registry as a stranger.
       - name: Verify the packages are installable by anyone
         run: |
           set -e
