@@ -53,7 +53,9 @@ describe("v5 codemod", () => {
       'import { createCmssyProxy } from "@cmssy/next/preset";\nimport { CmssyLayoutSlot } from "@cmssy/next/preset";',
     );
     expect(code).toContain('from "@cmssy/next/middleware"');
-    expect(code).toContain('import { CmssyLayoutSlot } from "@cmssy/next/server";');
+    expect(code).toContain(
+      'import { CmssyLayoutSlot } from "@cmssy/next/server";',
+    );
     expect(code).not.toContain("preset");
   });
 
@@ -120,7 +122,6 @@ describe("v5 codemod", () => {
     const missing = [
       ...exportedSymbols("server.ts"),
       ...exportedSymbols("middleware.ts"),
-      ...exportedSymbols("client.ts"),
     ].filter((symbol) => !mapped.has(symbol) && !onRoot.has(symbol));
 
     expect(missing).toEqual([]);

@@ -88,12 +88,6 @@ describe("entry boundaries", () => {
     ).toEqual([]);
   });
 
-  it("the client entry reaches no server code", () => {
-    expect(
-      forbiddenImports("client.ts", [/^server-only$/, /^next\/headers$/]),
-    ).toEqual([]);
-  });
-
   it("the server entry declares itself server-only", () => {
     const code = readFileSync(resolve(SRC, "server.ts"), "utf8");
     expect(code.startsWith('import "server-only";')).toBe(true);

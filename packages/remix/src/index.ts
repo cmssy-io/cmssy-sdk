@@ -10,11 +10,6 @@ export {
   isVerifiedEditUrl,
 } from "@cmssy/core";
 export {
-  fetchPage,
-  fetchPages,
-  fetchPageMeta,
-  fetchLayouts,
-  resolveSiteLocales,
   localizeHref,
   localizedPath,
   CMSSY_LOCALE_HEADER,

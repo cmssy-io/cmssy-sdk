@@ -9,5 +9,4 @@ export type {
 export { createDraftRoute } from "./create-draft-route";
 export type { CmssyDraftRouteConfig } from "./create-draft-route";
 
-export { getCmssyLocale } from "./locale";
 export { isCmssyEditMode } from "./edit-mode";

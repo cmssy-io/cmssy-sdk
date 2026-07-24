@@ -12,15 +12,7 @@ export {
   buildBlockContext,
   CMSSY_EDIT_HEADER,
 } from "@cmssy/core";
-export {
-  fetchPage,
-  fetchPages,
-  fetchPageMeta,
-  fetchLayouts,
-  resolveSiteLocales,
-  localizeHref,
-  CMSSY_LOCALE_HEADER,
-} from "@cmssy/core/internal";
+export { localizeHref, CMSSY_LOCALE_HEADER } from "@cmssy/core/internal";
 export type {
   CmssyConfig,
   CmssyEnvConfig,
