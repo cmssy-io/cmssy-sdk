@@ -1,7 +1,13 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/testing.ts", "src/preflight.ts"],
+  entry: [
+    "src/index.ts",
+    "src/internal.ts",
+    "src/internal/locale.ts",
+    "src/testing.ts",
+    "src/preflight.ts",
+  ],
   format: ["esm", "cjs"],
   dts: true,
   clean: true,

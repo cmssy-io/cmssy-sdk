@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { collectFormIds } from "@cmssy/core";
+import { collectFormIds } from "@cmssy/core/internal";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { defineBlock, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";

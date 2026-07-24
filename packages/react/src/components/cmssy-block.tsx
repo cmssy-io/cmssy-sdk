@@ -5,7 +5,7 @@ import {
   asBucket,
   getBlockContentForLanguage,
   normalizeRelationContent,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
 import { BlockErrorBoundary } from "@cmssy/react/block-error-boundary";

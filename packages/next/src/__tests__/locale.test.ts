@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/core", async (importActual) => {
-  const actual = await importActual<typeof import("@cmssy/core")>();
+vi.mock("@cmssy/core/internal", async (importActual) => {
+  const actual = await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, resolveSiteLocales };
 });
 
@@ -14,7 +14,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { getCmssyLocale } from "../locale";
-import { CMSSY_LOCALE_HEADER } from "@cmssy/core";
+import { CMSSY_LOCALE_HEADER } from "@cmssy/core/internal";
 
 const CONFIG = {
   apiUrl: "https://api.test/graphql",

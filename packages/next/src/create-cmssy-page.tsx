@@ -3,10 +3,6 @@ import { draftMode, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   createCmssyClient,
-  fetchPage,
-  resolveForms,
-  resolveSiteLocales,
-  splitLocaleFromPath,
   CmssyServerPage,
   resolveEditorBlockData,
   type BlockDefinition,
@@ -17,16 +13,18 @@ import {
   type CmssyPageData,
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
-import { CmssyLocaleProvider } from "@cmssy/react/client";
-import { getCmssyUser } from "./auth-server";
+import { CmssyLocaleProvider } from "@cmssy/react/internal";
 import {
+  fetchPage,
+  resolveForms,
+  resolveSiteLocales,
+  splitLocaleFromPath,
   isDevelopment,
-  resolveEditorOrigin,
-  type CmssyConfig,
-} from "@cmssy/core";
-import { toCspOrigin } from "@cmssy/core";
+  toCspOrigin,
+  cmssySecretsMatch,
+} from "@cmssy/core/internal";
+import { resolveEditorOrigin, type CmssyConfig } from "@cmssy/core";
 import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
-import { cmssySecretsMatch } from "@cmssy/core";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -242,21 +240,9 @@ function buildCmssyPageRenderer(
       );
     }
 
-    // Resolve member auth (only when auth is configured) and workspace
-    // identity server-side, so blocks read them from context instead of
-    // refetching client-side. Both degrade to undefined on failure.
-    let auth: CmssyBlockAuthContext | undefined;
-    if (config.auth) {
-      try {
-        const user = await getCmssyUser(config);
-        auth = {
-          isAuthenticated: !!user,
-          member: user ? { recordId: user.recordId, email: user.email } : null,
-        };
-      } catch {
-        auth = undefined;
-      }
-    }
+    // Auth/member is app-owned (the SDK ships no auth): blocks that need a
+    // signed-in member get it from context the app populates, not from here.
+    const auth: CmssyBlockAuthContext | undefined = undefined;
 
     let workspace: CmssyBlockWorkspace | undefined;
     try {

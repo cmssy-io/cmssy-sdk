@@ -7,20 +7,20 @@ export type { CmssySitemapEntry, CmssySitemapOptions } from "./seo";
 // they are the same @cmssy/core every adapter uses.
 export {
   defineCmssyConfig,
+  createCmssyClient,
+  buildBlockContext,
+  isVerifiedEditUrl,
+} from "@cmssy/core";
+export {
   fetchPage,
   fetchPages,
   fetchPageMeta,
   fetchLayouts,
-  fetchProducts,
-  fetchProduct,
-  createCmssyClient,
   resolveSiteLocales,
   localizeHref,
   localizedPath,
-  buildBlockContext,
-  isVerifiedEditUrl,
   CMSSY_LOCALE_HEADER,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
 export type {
   CmssyConfig,
   CmssyEnvConfig,

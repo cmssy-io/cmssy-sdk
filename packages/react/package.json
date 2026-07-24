@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/react",
-  "version": "9.10.0",
+  "version": "10.0.0",
   "description": "React blocks, renderers, data client and editor bridge for cmssy headless sites",
   "keywords": [
     "cmssy",
@@ -32,6 +32,11 @@
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js",
       "require": "./dist/client.cjs"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js",
+      "require": "./dist/internal.cjs"
     },
     "./block-error-boundary": {
       "types": "./dist/block-error-boundary.d.ts",

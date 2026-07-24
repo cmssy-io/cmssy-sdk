@@ -3,8 +3,8 @@ import {
   localizedPath,
   normalizeSlug,
   resolveSiteLocales,
-  type CmssyConfig,
-} from "@cmssy/core";
+} from "@cmssy/core/internal";
+import type { CmssyConfig } from "@cmssy/core";
 
 export interface CmssySitemapEntry {
   url: string;

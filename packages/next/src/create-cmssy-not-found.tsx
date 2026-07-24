@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
 import {
-  fetchPageById,
-  fetchSiteConfig,
-  resolveForms,
-  resolveSiteLocales,
   CmssyServerPage,
   type BlockDefinition,
   type CmssyClientConfig,
 } from "@cmssy/react";
-import { CmssyLocaleProvider } from "@cmssy/react/client";
+import {
+  fetchPageById,
+  fetchSiteConfig,
+  resolveForms,
+  resolveSiteLocales,
+} from "@cmssy/core/internal";
+import { CmssyLocaleProvider } from "@cmssy/react/internal";
 import type { CmssyConfig } from "@cmssy/core";
 
 export interface CreateCmssyNotFoundOptions {

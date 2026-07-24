@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
-import { CmssyLocaleProvider } from "@cmssy/react/client";
+import { CmssyLocaleProvider } from "@cmssy/react/internal";
 
 type RenderedEl = { type: unknown; props: Record<string, unknown> };
 
@@ -15,8 +15,8 @@ const fetchSiteConfig = vi.hoisted(() => vi.fn());
 const fetchPageById = vi.hoisted(() => vi.fn());
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 const resolveForms = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/react", async (importActual) => {
-  const actual = await importActual<typeof import("@cmssy/react")>();
+vi.mock("@cmssy/core/internal", async (importActual) => {
+  const actual = await importActual<typeof import("@cmssy/core/internal")>();
   return {
     ...actual,
     fetchSiteConfig,

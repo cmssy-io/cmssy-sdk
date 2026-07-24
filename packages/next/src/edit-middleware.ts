@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
-import { cmssySecretsMatch } from "@cmssy/core";
+import { cmssySecretsMatch } from "@cmssy/core/internal";
 
 /**
  * Where the middleware rewrites editor-preview traffic. Mount the matching
