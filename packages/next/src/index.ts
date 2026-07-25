@@ -22,4 +22,5 @@ export type {
 export type {
   CmssyEditorProps,
   CreateCmssyPageOptions,
+  CmssyAppContext,
 } from "./create-cmssy-page";

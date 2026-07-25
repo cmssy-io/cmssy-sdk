@@ -35,11 +35,30 @@ export interface CmssyEditorProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
+  appContext?: Record<string, unknown>;
 }
+
+/**
+ * What the app wants its blocks to see, beyond the content: a signed-in member,
+ * a feature flag, the active path. Given a function it is called per request
+ * with the page being rendered, which is the useful form - a value fixed at
+ * module scope cannot vary by visitor.
+ *
+ * Whatever it returns lands on `context.app`, untouched, on the deployed page
+ * and in the editor alike.
+ */
+export type CmssyAppContext =
+  | Record<string, unknown>
+  | ((args: {
+      page: CmssyPageData;
+      locale: string;
+      path: string[];
+    }) => Record<string, unknown> | Promise<Record<string, unknown>>);
 
 export interface CreateCmssyPageOptions {
   editor?: ComponentType<CmssyEditorProps>;
   path?: string;
+  appContext?: CmssyAppContext;
 }
 
 interface CatchAllParams {
@@ -212,6 +231,13 @@ function buildCmssyPageRenderer(
       enabled: enabledLocales,
     };
 
+    // Resolved once and handed to both paths, so the editor canvas and the
+    // deployed page see the same thing.
+    const appContext =
+      typeof options?.appContext === "function"
+        ? await options.appContext({ page, locale, path: pagePath ?? [] })
+        : options?.appContext;
+
     if (editorActive && Editor) {
       const bridgeOrigin = resolveBridgeOrigin(config.editorOrigin);
       const editorData = await resolveEditorBlockData({
@@ -223,6 +249,7 @@ function buildCmssyPageRenderer(
         forms,
         isPreview: true,
         config,
+        appContext,
       });
       return (
         <CmssyLocaleProvider value={localeContext}>
@@ -235,6 +262,7 @@ function buildCmssyPageRenderer(
             forms={forms}
             data={editorData.data}
             resolvedContent={editorData.content}
+            appContext={appContext}
           />
         </CmssyLocaleProvider>
       );
@@ -266,6 +294,7 @@ function buildCmssyPageRenderer(
           forms={forms}
           auth={auth}
           workspace={workspace}
+          appContext={appContext}
           editMode={editMode}
         />
       </CmssyLocaleProvider>

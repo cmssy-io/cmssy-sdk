@@ -21,24 +21,6 @@ export type {
   BuildBlockContextExtra,
 };
 
-/**
- * The identity half of a fetched page, for `context.page`.
- *
- * A page fetched by an older SDK - or by a consumer that builds `CmssyPageData`
- * itself - has no slug, and then a block gets no `page` at all rather than one
- * with a hole in it: `context.page ? … : …` is a question a block can answer.
- */
-export function blockPageOf(
-  page: CmssyPageData | null | undefined,
-): CmssyBlockPage | undefined {
-  if (!page?.slug) return undefined;
-  return {
-    id: page.id,
-    slug: page.slug,
-    pageType: page.pageType ?? null,
-  };
-}
-
 export function buildBlockContext(
   locale: string,
   defaultLocale: string,
@@ -60,6 +42,19 @@ export function buildBlockContext(
     forms,
     ...(extra?.auth ? { auth: extra.auth } : {}),
     ...(extra?.workspace ? { workspace: extra.workspace } : {}),
-    ...(extra?.page ? { page: extra.page } : {}),
+    // Identity only, and only when the page has one. A page fetched by an older
+    // SDK has no slug, and then a block gets no `page` at all rather than one
+    // with a hole in it: "I don't know where I am" has to stay distinguishable
+    // from "I am at /".
+    ...(extra?.page?.slug
+      ? {
+          page: {
+            id: extra.page.id,
+            slug: extra.page.slug,
+            pageType: extra.page.pageType ?? null,
+          },
+        }
+      : {}),
+    ...(extra?.app ? { app: extra.app } : {}),
   };
 }
