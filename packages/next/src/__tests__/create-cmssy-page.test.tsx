@@ -583,6 +583,41 @@ describe("createCmssyPage", () => {
     expect(element.props.auth).toBeUndefined();
   });
 
+  it("calls appContext per request with the page being rendered", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const appContext = vi.fn(
+      ({ page, locale, path }: { page: { id: string }; locale: string; path: string[] }) => ({
+        pageId: page.id,
+        locale,
+        activePath: "/" + path.join("/"),
+      }),
+    );
+    const Page = createCmssyPage(CONFIG, BLOCKS, { appContext });
+    const element = unwrap(await Page({ params: params(["about"]) }));
+    expect(appContext).toHaveBeenCalledTimes(1);
+    expect(element.props.appContext).toEqual({
+      pageId: PAGE.id,
+      locale: "en",
+      activePath: "/about",
+    });
+  });
+
+  it("accepts a plain object as appContext", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS, {
+      appContext: { flags: { beta: true } },
+    });
+    const element = unwrap(await Page({ params: params(["about"]) }));
+    expect(element.props.appContext).toEqual({ flags: { beta: true } });
+  });
+
+  it("passes nothing when the app configured nothing", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = unwrap(await Page({ params: params(["about"]) }));
+    expect(element.props.appContext).toBeUndefined();
+  });
+
   it("degrades workspace to undefined on failure", async () => {
     fetchPage.mockResolvedValue(PAGE);
     resolveWorkspaceId.mockRejectedValue(new Error("ws boom"));

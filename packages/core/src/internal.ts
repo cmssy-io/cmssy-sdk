@@ -60,7 +60,7 @@ export {
   splitCmssyLocale,
 } from "./locale";
 export { localizedPath } from "./seo-paths";
-export { buildBlockContext, blockPageOf } from "./block-context";
+export { buildBlockContext } from "./block-context";
 
 export { resolveInitialTarget } from "./bridge/messages";
 export { cmssySecretsMatch } from "./secret-match";

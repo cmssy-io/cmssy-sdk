@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { blockPageOf, buildBlockContext } from "../block-context";
+import { buildBlockContext } from "../block-context";
 
 describe("buildBlockContext", () => {
   it("uses the provided enabled locales", () => {
@@ -48,9 +48,14 @@ describe("buildBlockContext", () => {
     expect(ctx.workspace).toEqual({ id: "ws_1", slug: "acme" });
   });
 
-  it("injects the page the block is rendered on", () => {
+  it("keeps the page's identity and drops the rest", () => {
     const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
-      page: { id: "page_1", slug: "/docs/blocks", pageType: "page" },
+      page: {
+        id: "page_1",
+        slug: "/docs/blocks",
+        pageType: "page",
+        blocks: [{ id: "b1", type: "hero", content: {} }],
+      },
     });
     expect(ctx.page).toEqual({
       id: "page_1",
@@ -58,31 +63,32 @@ describe("buildBlockContext", () => {
       pageType: "page",
     });
   });
-});
-
-describe("blockPageOf", () => {
-  it("keeps identity and nothing else", () => {
-    expect(
-      blockPageOf({
-        id: "page_1",
-        slug: "/blog/hello",
-        pageType: "post",
-        blocks: [{ id: "b1", type: "hero", content: {} }],
-      }),
-    ).toEqual({ id: "page_1", slug: "/blog/hello", pageType: "post" });
-  });
 
   it("reports no page rather than one without a slug", () => {
-    expect(blockPageOf(null)).toBeUndefined();
-    expect(blockPageOf(undefined)).toBeUndefined();
-    // A page built by an older SDK, or by hand: identity is unknown, and a
-    // block must be able to tell that apart from "I am at /".
-    expect(blockPageOf({ id: "page_1", blocks: [] })).toBeUndefined();
+    // A page built by hand, or fetched by an older SDK: identity is unknown,
+    // and a block must be able to tell that apart from "I am at /".
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      page: { id: "page_1", blocks: [] },
+    });
+    expect("page" in ctx).toBe(false);
   });
 
   it("normalizes a missing page type to null", () => {
-    expect(
-      blockPageOf({ id: "p", slug: "/", blocks: [] })?.pageType,
-    ).toBeNull();
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      page: { id: "p", slug: "/", blocks: [] },
+    });
+    expect(ctx.page?.pageType).toBeNull();
+  });
+
+  it("passes the app channel through untouched", () => {
+    const app = { member: { id: "m1" }, flags: { beta: true }, path: "/x" };
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      app,
+    });
+    expect(ctx.app).toBe(app);
+  });
+
+  it("omits the app channel when the app passes nothing", () => {
+    expect("app" in buildBlockContext("en", "en")).toBe(false);
   });
 });

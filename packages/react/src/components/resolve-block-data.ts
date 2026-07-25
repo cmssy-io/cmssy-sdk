@@ -5,7 +5,7 @@ import type {
   CmssyPageData,
   RawLayoutBlock,
 } from "@cmssy/core";
-import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
+import { buildBlockContext } from "@cmssy/core/internal";
 import {
   blocksToSchemas,
   buildLoaderMap,
@@ -49,6 +49,8 @@ export interface ResolveBlockDataOptions {
   isPreview?: boolean;
   /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
+  /** Passed to loaders as context.app, exactly as on the deployed page. */
+  appContext?: Record<string, unknown>;
 }
 
 export async function resolveEditorBlockData({
@@ -60,6 +62,7 @@ export async function resolveEditorBlockData({
   forms,
   isPreview = false,
   config,
+  appContext,
 }: ResolveBlockDataOptions): Promise<EditorBlockData> {
   if (!page) return { data: {}, content: {} };
   const loaderMap = buildLoaderMap(blocks);
@@ -69,7 +72,7 @@ export async function resolveEditorBlockData({
     enabledLocales,
     isPreview,
     forms,
-    { page: blockPageOf(page) },
+    { page, app: appContext },
   );
   const resolved = await resolveBlocks(
     page.blocks,

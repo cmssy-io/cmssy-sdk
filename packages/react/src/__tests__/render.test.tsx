@@ -218,6 +218,59 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     expect(html).toContain("does-not-know");
   });
 
+  it("hands the app's own context to blocks, untouched", async () => {
+    const seen: unknown[] = [];
+    const appAware = defineBlock({
+      type: "app-aware",
+      props: {},
+      loader: async ({ context }) => {
+        seen.push(context?.app);
+        return { flag: (context?.app?.flags as Record<string, boolean>)?.beta };
+      },
+      component: ({ context, data }) => (
+        <span>
+          {String(data?.flag)}|{String(context?.app?.activePath)}
+        </span>
+      ),
+    });
+    const app = { flags: { beta: true }, activePath: "/pricing" };
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: {
+          id: "p",
+          slug: "/pricing",
+          blocks: [{ id: "b1", type: "app-aware", content: {} }],
+        },
+        blocks: [appAware],
+        locale: "en",
+        appContext: app,
+      }),
+    );
+    expect(seen).toEqual([app]);
+    expect(html).toContain("true|/pricing");
+  });
+
+  it("omits context.app when the app passes nothing", async () => {
+    const appAware = defineBlock({
+      type: "app-absent",
+      props: {},
+      component: ({ context }) => (
+        <span>{context?.app ? "has-app" : "no-app"}</span>
+      ),
+    });
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: {
+          id: "p",
+          blocks: [{ id: "b1", type: "app-absent", content: {} }],
+        },
+        blocks: [appAware],
+        locale: "en",
+      }),
+    );
+    expect(html).toContain("no-app");
+  });
+
   it("passes undefined data to blocks without a loader", async () => {
     const noLoaderBlock = defineBlock({
       type: "noloader",
