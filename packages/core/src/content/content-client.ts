@@ -86,6 +86,8 @@ export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slu
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
         id
+        slug
+        pageType
         blocks { id type content style advanced }
         publishedBlocks { id type content style advanced }
       }
@@ -98,6 +100,8 @@ export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, 
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
         id
+        slug
+        pageType
         blocks { id type content style advanced }
         publishedBlocks { id type content style advanced }
       }
@@ -110,6 +114,8 @@ export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: Str
     page {
       getById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
         id
+        slug
+        pageType
         publishedBlocks { id type content style advanced }
       }
     }
@@ -187,6 +193,8 @@ export async function fetchPage(
       page?: {
         get?: {
           id: string;
+          slug?: string | null;
+          pageType?: string | null;
           blocks?: RawBlock[] | null;
           publishedBlocks?: RawBlock[] | null;
         } | null;
@@ -215,7 +223,14 @@ export async function fetchPage(
   if (!page) return null;
   const draft = previewSecret !== null || devPreview;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
-  return { id: page.id, blocks };
+  // The slug the CMS knows the page by - the query asked for one path, but the
+  // answer is the page's own, so a block never has to guess where it stands.
+  return {
+    id: page.id,
+    blocks,
+    slug: page.slug ?? slug,
+    pageType: page.pageType ?? null,
+  };
 }
 
 export async function fetchPageById(
@@ -228,6 +243,8 @@ export async function fetchPageById(
       page?: {
         getById?: {
           id: string;
+          slug?: string | null;
+          pageType?: string | null;
           publishedBlocks?: RawBlock[] | null;
         } | null;
       } | null;
@@ -247,7 +264,12 @@ export async function fetchPageById(
   );
   const page = data?.public?.page?.getById;
   if (!page) return null;
-  return { id: page.id, blocks: page.publishedBlocks ?? [] };
+  return {
+    id: page.id,
+    blocks: page.publishedBlocks ?? [],
+    ...(page.slug ? { slug: page.slug } : {}),
+    pageType: page.pageType ?? null,
+  };
 }
 
 export async function fetchPages(

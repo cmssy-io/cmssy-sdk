@@ -6,7 +6,7 @@ import {
   buildLoaderMap,
   type BlockDefinition,
 } from "../registry";
-import { buildBlockContext } from "@cmssy/core/internal";
+import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
 import type { CmssyBlockAuthContext, CmssyBlockWorkspace } from "@cmssy/core";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
@@ -65,7 +65,7 @@ export async function CmssyServerPage({
     enabledLocales,
     false,
     forms,
-    { auth, workspace },
+    { auth, workspace, page: blockPageOf(page) },
   );
 
   const resolved = await resolveBlocks(

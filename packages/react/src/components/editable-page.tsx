@@ -12,7 +12,7 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
-import { buildBlockContext } from "@cmssy/core/internal";
+import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
@@ -88,9 +88,14 @@ function EditableBlocks({
   resolvedContent,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
+  // Same identity the deployed page gets, so a block that reads context.page
+  // renders the same thing in the editor as on the site.
   const context = useMemo(
-    () => buildBlockContext(locale, defaultLocale, enabledLocales, true, forms),
-    [locale, defaultLocale, enabledLocales, forms],
+    () =>
+      buildBlockContext(locale, defaultLocale, enabledLocales, true, forms, {
+        page: blockPageOf(page),
+      }),
+    [locale, defaultLocale, enabledLocales, forms, page],
   );
 
   const bridgeConfig = useMemo<EditBridgeConfig>(
