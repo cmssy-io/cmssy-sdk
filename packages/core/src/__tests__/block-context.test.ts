@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBlockContext } from "../block-context";
+import { blockPageOf, buildBlockContext } from "../block-context";
 
 describe("buildBlockContext", () => {
   it("uses the provided enabled locales", () => {
@@ -26,10 +26,11 @@ describe("buildBlockContext", () => {
     expect(buildBlockContext("en", "en", undefined, true).isPreview).toBe(true);
   });
 
-  it("omits auth and workspace when no extra is provided", () => {
+  it("omits auth, workspace and page when no extra is provided", () => {
     const ctx = buildBlockContext("en", "en");
     expect("auth" in ctx).toBe(false);
     expect("workspace" in ctx).toBe(false);
+    expect("page" in ctx).toBe(false);
   });
 
   it("injects auth and workspace from the extra argument", () => {
@@ -45,5 +46,43 @@ describe("buildBlockContext", () => {
       member: { recordId: "rec_1", email: "a@b.com" },
     });
     expect(ctx.workspace).toEqual({ id: "ws_1", slug: "acme" });
+  });
+
+  it("injects the page the block is rendered on", () => {
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      page: { id: "page_1", slug: "/docs/blocks", pageType: "page" },
+    });
+    expect(ctx.page).toEqual({
+      id: "page_1",
+      slug: "/docs/blocks",
+      pageType: "page",
+    });
+  });
+});
+
+describe("blockPageOf", () => {
+  it("keeps identity and nothing else", () => {
+    expect(
+      blockPageOf({
+        id: "page_1",
+        slug: "/blog/hello",
+        pageType: "post",
+        blocks: [{ id: "b1", type: "hero", content: {} }],
+      }),
+    ).toEqual({ id: "page_1", slug: "/blog/hello", pageType: "post" });
+  });
+
+  it("reports no page rather than one without a slug", () => {
+    expect(blockPageOf(null)).toBeUndefined();
+    expect(blockPageOf(undefined)).toBeUndefined();
+    // A page built by an older SDK, or by hand: identity is unknown, and a
+    // block must be able to tell that apart from "I am at /".
+    expect(blockPageOf({ id: "page_1", blocks: [] })).toBeUndefined();
+  });
+
+  it("normalizes a missing page type to null", () => {
+    expect(
+      blockPageOf({ id: "p", slug: "/", blocks: [] })?.pageType,
+    ).toBeNull();
   });
 });
