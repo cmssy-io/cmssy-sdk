@@ -115,6 +115,42 @@ describe("fetchPage", () => {
     expect(page?.blocks[0]?.type).toBe("hero");
   });
 
+  it("returns the page's own identity, so a block knows where it stands", async () => {
+    const fetch = mockFetch({
+      data: {
+        public: {
+          page: {
+            get: {
+              id: "p1",
+              slug: "/docs/blocks/define",
+              pageType: "page",
+              blocks: [],
+              publishedBlocks: [],
+            },
+          },
+        },
+      },
+    });
+    const page = await fetchPage(config, ["docs", "blocks", "define"], {
+      fetch,
+    });
+    expect(page?.slug).toBe("/docs/blocks/define");
+    expect(page?.pageType).toBe("page");
+  });
+
+  it("falls back to the requested path when the API returns no slug", async () => {
+    const fetch = mockFetch({
+      data: {
+        public: {
+          page: { get: { id: "p1", blocks: [], publishedBlocks: [] } },
+        },
+      },
+    });
+    const page = await fetchPage(config, ["home"], { fetch });
+    expect(page?.slug).toBe("/home");
+    expect(page?.pageType).toBeNull();
+  });
+
   it("posts to the org-scoped public delivery path", async () => {
     let sentUrl: string | undefined;
     const fetch: FetchLike = async (url) => {

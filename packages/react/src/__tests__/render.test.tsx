@@ -166,6 +166,58 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
     expect(html).toContain("from-loader");
   });
 
+  it("tells a block which page it is on, in the loader and in the component", async () => {
+    const seen: unknown[] = [];
+    const pageAware = defineBlock({
+      type: "page-aware",
+      props: {},
+      loader: async ({ context }) => {
+        seen.push(context?.page);
+        return { slug: context?.page?.slug ?? "unknown" };
+      },
+      component: ({ context, data }) => (
+        <span>
+          {data?.slug}|{context?.page?.pageType ?? "unknown"}
+        </span>
+      ),
+    });
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: {
+          id: "p",
+          slug: "/blog/hello",
+          pageType: "post",
+          blocks: [{ id: "b1", type: "page-aware", content: {} }],
+        },
+        blocks: [pageAware],
+        locale: "en",
+      }),
+    );
+    expect(seen).toEqual([{ id: "p", slug: "/blog/hello", pageType: "post" }]);
+    expect(html).toContain("/blog/hello|post");
+  });
+
+  it("reports no page rather than a made-up one when the page has no slug", async () => {
+    const pageUnknown = defineBlock({
+      type: "page-unknown",
+      props: {},
+      component: ({ context }) => (
+        <span>{context?.page ? "knows" : "does-not-know"}</span>
+      ),
+    });
+    const html = renderToStaticMarkup(
+      await CmssyServerPage({
+        page: {
+          id: "p",
+          blocks: [{ id: "b1", type: "page-unknown", content: {} }],
+        },
+        blocks: [pageUnknown],
+        locale: "en",
+      }),
+    );
+    expect(html).toContain("does-not-know");
+  });
+
   it("passes undefined data to blocks without a loader", async () => {
     const noLoaderBlock = defineBlock({
       type: "noloader",
@@ -307,7 +359,11 @@ describe("CmssyBlock resolvedContent (CMS-1025)", () => {
   it("renders from server-resolved content instead of stored content", () => {
     const html = renderToStaticMarkup(
       <CmssyBlock
-        block={{ id: "b1", type: "hero", content: { en: { heading: "Stored" } } }}
+        block={{
+          id: "b1",
+          type: "hero",
+          content: { en: { heading: "Stored" } },
+        }}
         locale="en"
         defaultLocale="en"
         blockMap={buildBlockMap([heroBlock])}
@@ -335,9 +391,8 @@ describe("CmssyBlock resolvedContent (CMS-1025)", () => {
 
 describe("resolveEditorBlockData content map (CMS-1025)", () => {
   it("returns the resolved content per block id alongside loader data", async () => {
-    const { resolveEditorBlockData } = await import(
-      "../components/resolve-block-data"
-    );
+    const { resolveEditorBlockData } =
+      await import("../components/resolve-block-data");
     const result = await resolveEditorBlockData({
       page: {
         id: "p1",
