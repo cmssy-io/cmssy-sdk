@@ -5,7 +5,7 @@ import type {
   CmssyPageData,
   RawLayoutBlock,
 } from "@cmssy/core";
-import { buildBlockContext } from "@cmssy/core/internal";
+import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
 import {
   blocksToSchemas,
   buildLoaderMap,
@@ -69,6 +69,7 @@ export async function resolveEditorBlockData({
     enabledLocales,
     isPreview,
     forms,
+    { page: blockPageOf(page) },
   );
   const resolved = await resolveBlocks(
     page.blocks,

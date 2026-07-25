@@ -64,6 +64,7 @@ export type {
   CmssyBlockMember,
   CmssyBlockAuthContext,
   CmssyBlockWorkspace,
+  CmssyBlockPage,
   BuildBlockContextExtra,
 } from "./block-context";
 
