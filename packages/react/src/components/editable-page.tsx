@@ -12,7 +12,7 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
-import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
+import { buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
 
 export interface CmssyEditablePageProps {
@@ -26,6 +26,8 @@ export interface CmssyEditablePageProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
+  /** Same channel the deployed page gets, so the canvas shows the same thing. */
+  appContext?: Record<string, unknown>;
 }
 
 export function CmssyEditablePage({
@@ -39,6 +41,7 @@ export function CmssyEditablePage({
   forms,
   data,
   resolvedContent,
+  appContext,
 }: CmssyEditablePageProps) {
   if (!Array.isArray(blocks)) {
     throw new Error(
@@ -58,6 +61,7 @@ export function CmssyEditablePage({
       forms={forms}
       data={data}
       resolvedContent={resolvedContent}
+      appContext={appContext}
     />
   );
 }
@@ -73,6 +77,8 @@ interface EditableBlocksProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
+  /** Same channel the deployed page gets, so the canvas shows the same thing. */
+  appContext?: Record<string, unknown>;
 }
 
 function EditableBlocks({
@@ -86,6 +92,7 @@ function EditableBlocks({
   forms,
   data,
   resolvedContent,
+  appContext,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
   // Same identity the deployed page gets, so a block that reads context.page
@@ -93,9 +100,10 @@ function EditableBlocks({
   const context = useMemo(
     () =>
       buildBlockContext(locale, defaultLocale, enabledLocales, true, forms, {
-        page: blockPageOf(page),
+        page,
+        app: appContext,
       }),
-    [locale, defaultLocale, enabledLocales, forms, page],
+    [locale, defaultLocale, enabledLocales, forms, page, appContext],
   );
 
   const bridgeConfig = useMemo<EditBridgeConfig>(

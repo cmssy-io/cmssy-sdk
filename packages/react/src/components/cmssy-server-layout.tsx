@@ -28,6 +28,12 @@ export interface CmssyServerLayoutProps {
    * Without it the SDK has to guess, and its guess is "en".
    */
   config?: CmssyClientConfig;
+  /**
+   * Anything the app wants its layout blocks to see, exposed as context.app.
+   * A header that highlights the active link reads it from here - the SDK does
+   * not know the app's routing.
+   */
+  appContext?: Record<string, unknown>;
   editMode?: boolean;
 }
 
@@ -44,6 +50,7 @@ export async function CmssyServerLayout({
   defaultLocale: defaultLocaleProp,
   enabledLocales: enabledLocalesProp,
   config,
+  appContext,
   editMode,
 }: CmssyServerLayoutProps) {
   const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
@@ -62,7 +69,14 @@ export async function CmssyServerLayout({
   if (layoutBlocks.length === 0) return null;
   const map = buildBlockMap(blocks);
   const loaderMap = buildLoaderMap(blocks);
-  const context = buildBlockContext(locale, defaultLocale, enabledLocales);
+  const context = buildBlockContext(
+    locale,
+    defaultLocale,
+    enabledLocales,
+    false,
+    undefined,
+    { app: appContext },
+  );
   const resolved = await resolveBlocks(
     layoutBlocks,
     loaderMap,

@@ -6,7 +6,7 @@ import {
   buildLoaderMap,
   type BlockDefinition,
 } from "../registry";
-import { blockPageOf, buildBlockContext } from "@cmssy/core/internal";
+import { buildBlockContext } from "@cmssy/core/internal";
 import type { CmssyBlockAuthContext, CmssyBlockWorkspace } from "@cmssy/core";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
@@ -30,6 +30,12 @@ export interface CmssyServerPageProps {
   auth?: CmssyBlockAuthContext;
   /** Workspace identity, exposed via context.workspace. Resolved by createCmssyPage. */
   workspace?: CmssyBlockWorkspace;
+  /**
+   * Anything the app wants its blocks to see, exposed as context.app and passed
+   * through untouched. The escape hatch: a block needing something cmssy does
+   * not model is answered here instead of by a new field in the SDK.
+   */
+  appContext?: Record<string, unknown>;
   editMode?: boolean;
 }
 
@@ -48,6 +54,7 @@ export async function CmssyServerPage({
   forms,
   auth,
   workspace,
+  appContext,
   editMode,
 }: CmssyServerPageProps) {
   if (!page) return null;
@@ -65,7 +72,7 @@ export async function CmssyServerPage({
     enabledLocales,
     false,
     forms,
-    { auth, workspace, page: blockPageOf(page) },
+    { auth, workspace, page, app: appContext },
   );
 
   const resolved = await resolveBlocks(
