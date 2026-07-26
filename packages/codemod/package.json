@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/codemod",
-  "version": "10.4.0",
+  "version": "10.5.0",
   "description": "Rewrites cmssy imports across major versions, so a breaking release costs minutes instead of an afternoon.",
   "keywords": [
     "cmssy",
