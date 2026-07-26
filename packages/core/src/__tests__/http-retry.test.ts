@@ -39,19 +39,53 @@ describe("postGraphql retry", () => {
     expect(doFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("honors Retry-After seconds (capped by maxDelayMs)", async () => {
+  it("waits exactly as long as the server asked, when that is short", async () => {
     const started = Date.now();
     const doFetch = vi
       .fn()
-      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "600" }))
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "0" }))
       .mockResolvedValueOnce(res(200, OK_BODY));
 
     await postGraphql(URL_, "q", {}, {
       fetch: doFetch,
-      retry: { maxDelayMs: 20, baseDelayMs: 1 },
+      retry: { baseDelayMs: 1 },
       label: "test",
     });
     expect(Date.now() - started).toBeLessThan(500);
+    expect(doFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops immediately when the server asks for longer than we will wait", async () => {
+    // Clamping a ten-minute Retry-After down to the backoff cap used to burn
+    // every attempt in a few hundred ms against something already rate-limited,
+    // and reported a bare 429 (CMS-1054).
+    const doFetch = vi
+      .fn()
+      .mockResolvedValue(res(429, {}, { "Retry-After": "600" }));
+
+    const err = await postGraphql(URL_, "q", {}, {
+      fetch: doFetch,
+      retry: { baseDelayMs: 1 },
+      label: "page fetch",
+    }).catch((e: unknown) => e);
+
+    expect(doFetch).toHaveBeenCalledTimes(1);
+    expect(err).toBeInstanceOf(CmssyRequestError);
+    expect((err as CmssyRequestError).retryAfterMs).toBe(600_000);
+    expect((err as Error).message).toContain("retry after 600s");
+  });
+
+  it("keeps retrying a long Retry-After when the caller says it may wait", async () => {
+    const doFetch = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "0" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+
+    await postGraphql(URL_, "q", {}, {
+      fetch: doFetch,
+      retry: { baseDelayMs: 1, maxRetryAfterMs: 60_000 },
+      label: "test",
+    });
     expect(doFetch).toHaveBeenCalledTimes(2);
   });
 
