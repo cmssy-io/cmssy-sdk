@@ -7,6 +7,9 @@ const SECRET = "draft-secret-1234";
 const PUBLIC_HTML = "<html><header>MACHTEC</header><main>hi</main></html>";
 const EDITOR = '<div data-cmssy-editor="1" hidden></div>';
 const EDIT_HTML = '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
+/** What an edit route with a mounted layout slot serves (see CmssyLazyLayout). */
+const EDIT_HTML_WITH_SLOT =
+  '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" hidden></div><main>hi</main></html>';
 
 /** Serves a body per URL; anything unrouted 404s, which the check reports. */
 function serve(routes: Record<string, string>) {
@@ -169,7 +172,7 @@ describe("checkCmssyEditMode with a workspace", () => {
     return fetchStub;
   }
 
-  it("fails an app that renders no layout blocks when the workspace has them", async () => {
+  it("fails an app that mounts no editable layout slot when the workspace has blocks", async () => {
     serveWithWorkspace(
       {
         [`${BASE}/`]: NO_LAYOUT_HTML,
@@ -186,7 +189,7 @@ describe("checkCmssyEditMode with a workspace", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.failures.join("\n")).toMatch(/renders none/);
+    expect(result.failures.join("\n")).toMatch(/no editable layout slot/);
   });
 
   it("passes the same app once it mounts the layout slot", async () => {
@@ -194,7 +197,7 @@ describe("checkCmssyEditMode with a workspace", () => {
       {
         [`${BASE}/`]: PUBLIC_HTML,
         [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-        [verifiedUrl()]: EDIT_HTML,
+        [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
       },
       [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
     );
