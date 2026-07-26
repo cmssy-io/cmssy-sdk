@@ -16,6 +16,8 @@ export interface CmssyLazyEditorProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
+  /** Forwarded untouched to the block context as `context.app`. */
+  appContext?: Record<string, unknown>;
   load: () => Promise<{ blocks: BlockDefinition[]; category?: string }>;
 }
 
