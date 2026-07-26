@@ -17,7 +17,7 @@ import {
   type AdminRequestOptions,
   type CliWorkspace,
 } from "./admin-client";
-import { applyEnv, parseEnvFile } from "./env-file";
+import { loadEnvFiles } from "./env-load";
 import { mergeEnvContent } from "./env-write";
 import { nextSrcPrefix } from "./framework";
 import {
@@ -25,8 +25,6 @@ import {
   formatEditorLink,
   formatResult,
 } from "./format";
-
-const ENV_FILES = [".env.local", ".env"];
 
 export interface LinkOptions {
   token?: string;
@@ -41,14 +39,6 @@ export interface LinkDeps {
   fetch: typeof globalThis.fetch;
   isTty: boolean;
   ask: (question: string) => Promise<string>;
-}
-
-function loadEnvFiles(cwd: string, env: Record<string, string | undefined>) {
-  for (const file of ENV_FILES) {
-    const path = join(cwd, file);
-    if (!existsSync(path)) continue;
-    applyEnv(parseEnvFile(readFileSync(path, "utf8")), env);
-  }
 }
 
 function resolveToken(options: LinkOptions, deps: LinkDeps): string {
