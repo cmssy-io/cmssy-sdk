@@ -27,3 +27,8 @@ jobs:
       - run: pnpm -r typecheck
 
       - run: pnpm -r test
+
+      # Prose has no compiler, so it drifts silently: 10.0 removed ~90 symbols
+      # and every guide kept teaching them for six releases. This reads the code
+      # blocks against the BUILT types.
+      - run: pnpm check-docs

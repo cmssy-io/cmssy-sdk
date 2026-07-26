@@ -150,7 +150,17 @@ jobs:
             process.exit(1);
           }
 
-          const result = await checkCmssyEditMode({ baseUrl, secret });
+          // Passing the workspace lets the check tell "this app renders no
+          // header" from "this workspace has no header" - the difference that
+          // let a scaffold with no layout slot ship green.
+          const result = await checkCmssyEditMode({
+            baseUrl,
+            secret,
+            workspace: {
+              org: process.env.CMSSY_ORG_SLUG,
+              workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
+            },
+          });
 
           if (!result.ok) {
             console.error("Editor smoke test FAILED:");
