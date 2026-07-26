@@ -136,11 +136,11 @@ export const blogIndexBlock = defineBlock({
   label: "Blog index",
   component: BlogIndex,
   props: {
-    parentSlug: fields.singleLine({
+    parentSlug: fields.text({
       label: "Parent slug",
       placeholder: "/blog",
     }),
-    postsPerPage: fields.numeric({ label: "Posts per page", defaultValue: 9 }),
+    postsPerPage: fields.number({ label: "Posts per page", defaultValue: 9 }),
   },
   loader: async ({ content }) => {
     const parentSlug =
@@ -158,9 +158,9 @@ both the variable and the `x-workspace-id` header - you never pass it yourself.
 ## Submit a form
 
 The Form Builder owns validation, storage, email, and webhooks. Your block
-renders the form definition (injected into `context.forms`) and submits with the
-exported `SUBMIT_FORM_MUTATION`. The submit runs server-side so it is never
-spoofable from the client.
+renders the form definition (injected into `context.forms`) and submits with
+your own mutation - like every other write since 10.0. The submit runs
+server-side, so it is never spoofable from the client.
 
 ```ts
 // blocks/contact/block.ts
@@ -172,7 +172,7 @@ export const contactBlock = defineBlock({
   label: "Contact",
   component: Contact,
   props: {
-    formId: fields.singleLine({ label: "Form ID" }),
+    formId: fields.text({ label: "Form ID" }),
   },
 });
 ```
@@ -180,19 +180,25 @@ export const contactBlock = defineBlock({
 ```ts
 // blocks/contact/actions.ts
 "use server";
-import {
-  createCmssyClient,
-  SUBMIT_FORM_MUTATION,
-  type CmssyFormSubmitResponse,
-} from "@cmssy/react";
+import { createCmssyClient, type CmssyFormSubmitResponse } from "@cmssy/react";
 import { cmssy } from "@/cmssy.config";
+
+const SUBMIT_FORM = `mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
+  public {
+    form {
+      submit(formId: $formId, input: $input) {
+        success message submissionId redirectUrl
+      }
+    }
+  }
+}`;
 
 const client = createCmssyClient(cmssy);
 
 export async function submitForm(formId: string, data: Record<string, string>) {
   const res = await client.queryScoped<{
     public: { form: { submit: CmssyFormSubmitResponse } };
-  }>(SUBMIT_FORM_MUTATION, { formId, input: { data } });
+  }>(SUBMIT_FORM, { formId, input: { data } });
   return res.public.form.submit; // { success, message, submissionId, ... }
 }
 ```
