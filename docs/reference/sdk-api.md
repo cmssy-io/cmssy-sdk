@@ -1,6 +1,6 @@
 ---
 title: API reference
-description: Every public export of @cmssy/core, @cmssy/react and @cmssy/next - the delivery client, block authoring, page/SEO/draft helpers, auth, locale, commerce - with signatures.
+description: Every public export of @cmssy/core, @cmssy/react and @cmssy/next - the gateway, block authoring, the page route and the editor bridge - with signatures.
 ---
 
 # API reference
@@ -8,172 +8,256 @@ description: Every public export of @cmssy/core, @cmssy/react and @cmssy/next - 
 The public surface of the SDK, grouped by use. Signatures match the source; if
 something here disagrees with the installed package, the package wins.
 
-**Where things live.** `@cmssy/core` is the foundation: the delivery client, the
-config, the editor protocol, webhooks, `checkCmssyEditMode` - no framework, no
-Node built-ins. `@cmssy/react` renders. `@cmssy/next`, `@cmssy/astro` and
-`@cmssy/remix` are adapters over both. `@cmssy/react` and `@cmssy/next` re-export
-the common core symbols, so a simple app needs one import path.
+**What the SDK is, since 10.0.** Three things: a **gateway** to the delivery API,
+the **editor/preview wiring**, and **block authoring**. Anything expressible as a
+GraphQL query is your app's query, not an SDK helper - so there are no SEO, auth,
+commerce, or fetch-wrapper exports. See
+[migrating from v9](../migrations/v9-to-v10.md) if you are coming from an older
+version, and the
+[starter](https://github.com/cmssy-io/cmssy-next-starter) for what the app side
+of that looks like.
+
+**Where things live.** `@cmssy/core` is the foundation: config, the gateway, the
+editor protocol, webhooks - no framework, no Node built-ins. `@cmssy/react`
+renders. `@cmssy/next`, `@cmssy/astro` and `@cmssy/remix` are adapters over both.
+`@cmssy/react` and `@cmssy/next` re-export the common core symbols, so a simple
+app needs one import path.
+
+**`/internal` subpaths are not public API.** `@cmssy/core/internal`,
+`@cmssy/react/internal` and `@cmssy/react/internal-server` exist for the
+first-party adapters. They ship types and they work, but they change without a
+major version. Two of them are documented below because the removal of
+`CmssyLayoutSlot` left apps with no public way to render editable layout blocks;
+everything else there should be treated as private.
 
 ## @cmssy/core
 
-Everything below under "@cmssy/react → Delivery client / data" and the config,
-session, webhook and secret helpers live here. They are re-exported from the
-adapters for convenience; import them from `@cmssy/core` in a Vue, Astro or
-plain-Node consumer.
+### Config
 
-## @cmssy/react
+| Export               | Signature                             | Notes                                                          |
+| -------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `defineCmssyConfig`  | `(config: CmssyEnvConfig) => CmssyConfig` | Validates env-sourced values; throws naming every missing one. |
+| `CmssyConfig`        | type                                  | The validated config (see [below](#config-types)).             |
+| `CmssyEnvConfig`     | type                                  | The same with the required fields widened to `\| undefined`.    |
 
-The core: block authoring, the delivery client, and the server renderers.
-
-### Block authoring
-
-| Export            | Signature                                 | Notes                                                                                                                                            |
-| ----------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `defineBlock`     | `(definition) => BlockDefinition`         | Declares a block; optional async `loader`. Optional `description` (one-line) is surfaced to the AI page composer to guide block selection/order. |
-| `fields`          | object of field builders                  | `singleLine`, `multiLine`, `richText`, `numeric`, `date`, `media`, `link`, `select`, `multiselect`, `boolean`, `color`, `repeater`.              |
-| `buildBlockMap`   | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                                                          |
-| `blocksToSchemas` | `(blocks) => BlockSchema[]`               | Editor schema metadata.                                                                                                                          |
-| `blocksToMeta`    | `(blocks) => BlockMeta[]`                 | Editor block-picker metadata.                                                                                                                    |
-
-See [Authoring a block](../building-blocks/authoring-blocks.md). There is **no**
-rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/recipes.md).
-
-### Delivery client
+### Gateway
 
 ```ts
 createCmssyClient(config: CmssyClientConfig): CmssyClient;
+graphqlRequest<T>(config, query, variables, options?, label?): Promise<T>;
 ```
+
+**Pass a typed document.** `query` / `queryScoped` still take a query string,
+but hand them a document that carries its types - what graphql-codegen emits, in
+either mode - and the variables are checked and the result inferred, with no
+generic to repeat, no `print()`, no cast:
+
+```ts
+const data = await client.query(PublicPageMetaDocument, {
+  workspaceSlug: cmssy.workspaceSlug,
+  slug,
+});
+data.public.page.get?.seoTitle; // typed; a wrong variable name is a build error
+
+await client.queryScoped(PublicModelRecordsDocument, { modelSlug: "product" });
+```
+
+A `TypedDocumentNode` (AST), a `TypedDocumentString` and a plain string all
+work, so an app never needs `graphql` at runtime just to print a document it
+already generated.
 
 `CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string }` -
 `apiUrl` [defaults to cmssy cloud](./delivery-api.md); `org` + `workspaceSlug`
 form the org-scoped delivery path `{apiBase}/public/{org}/{workspaceSlug}/graphql`,
 where `apiBase` is `apiUrl` with its trailing `/graphql` stripped (default
 `https://api.cmssy.io`). A workspace slug only needs to be unique within its
-organization. The client has exactly three members:
+organization. The client has exactly three members (`query` and `queryScoped` each with a typed and a string form):
 
 ```ts
 interface CmssyClient {
   readonly config: CmssyClientConfig;
-  query<T>(document, variables?, options?): Promise<T>;
-  queryScoped<T>(document, variables?, options?): Promise<T>; // auto-injects workspaceId
+  // Typed document: variables checked, result inferred.
+  query<R, V>(document: CmssyTypedDocument<R, V>, variables: V, options?): Promise<R>;
+  queryScoped<R, V>(document, variables: Omit<V, "workspaceId">, options?): Promise<R>;
+  // Query string: your own generic, as before.
+  query<T>(document: string, variables?, options?): Promise<T>;
+  queryScoped<T>(document: string, variables?, options?): Promise<T>;
   resolveWorkspaceId(options?): Promise<string>;
 }
 ```
 
-There is **no** `client.graphqlRequest()` and **no** `client.form()`. For a raw
-request without a client, use the standalone `graphqlRequest`:
+`GraphqlRequestOptions`:
 
-```ts
-graphqlRequest<T>(config, query, variables, options?, label?): Promise<T>;
-```
+| Option    | Meaning                                                                                                                                |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `public`  | Route through the org-scoped public delivery path. Set it for unauthenticated reads.                                                    |
+| `retry`   | Retry 429/503, honoring `Retry-After`. **Off by default** - this function also carries mutations. Read-only callers opt in with `{}`.   |
+| `headers` | Extra request headers (e.g. an `authorization` bearer for a signed-in member).                                                          |
+| `fetch`   | Custom fetch. `signal` for cancellation.                                                                                                |
 
-| Export               | Signature                                                           |
-| -------------------- | ------------------------------------------------------------------- |
-| `createCmssyClient`  | `(config) => CmssyClient`                                           |
-| `graphqlRequest`     | `(config, query, variables, options?, label?) => Promise<T>`        |
-| `fetchPage`          | `(config, path, options?) => Promise<CmssyPageData \| null>`        |
-| `fetchPageById`      | `(config, pageId, options?) => Promise<CmssyPageData \| null>`      |
-| `fetchPages`         | `(config, options?) => Promise<CmssyPageSummary[]>`                 |
-| `fetchPageMeta`      | `(config, path, options?) => Promise<CmssyPageMeta \| null>`        |
-| `fetchLayouts`       | `(config, path, options?) => Promise<CmssyLayoutGroup[]>`           |
-| `fetchSiteConfig`    | `(config) => Promise<CmssySiteConfig>`                              |
-| `resolveWorkspaceId` | `(config) => Promise<string>`                                       |
-| `resolveSiteLocales` | `(config) => Promise<CmssySiteLocales>`                             |
-| `collectFormIds`     | `(blocks) => string[]`                                              |
-| `resolveForms`       | `(client, formIds) => Promise<Record<string, CmssyFormDefinition>>` |
-| `resolveApiUrl`      | `(apiUrl?) => string`                                               |
-| `normalizeSlug`      | `(path) => string`                                                  |
+Errors are `CmssyRequestError`. `DEFAULT_CMSSY_API_URL` is exported for a
+self-hosted endpoint check.
 
-Exported query/mutation constants (use with `query` / `queryScoped`):
-`SITE_CONFIG_QUERY`, `MODEL_DEFINITIONS_QUERY`, `MODEL_RECORDS_QUERY`,
-`FORM_QUERY`, `SUBMIT_FORM_MUTATION`. Plus `DEFAULT_CMSSY_API_URL`. See the
-[Delivery API](./delivery-api.md) for what each returns.
+There is no `fetchPage` / `fetchPages` / `fetchSiteConfig` in the public surface:
+write the query. The starter's
+[`services/`](https://github.com/cmssy-io/cmssy-next-starter/tree/main/services)
+folder is a working example, `codegen` included.
 
-### Server renderers & block context
+### Blocks & fields
 
-| Export                       | Purpose                                          |
-| ---------------------------- | ------------------------------------------------ |
-| `CmssyServerPage`            | Renders a page's blocks server-side.             |
-| `CmssyServerLayout`          | Renders layout-position blocks (header/footer).  |
-| `CmssyBlock`                 | Renders a single block instance.                 |
-| `buildBlockContext`          | Builds the `CmssyBlockContext` passed to blocks. |
-| `getBlockContentForLanguage` | Resolves a block's content for a locale.         |
+| Export                        | Signature                                  | Notes                                                                     |
+| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
+| `fields`                      | object of field builders                   | See the list below.                                                       |
+| `FieldDefinition` `TypedField` | types                                     | What a builder returns.                                                   |
+| `InferBlockContent`           | type                                       | Schema → the `content` object a component receives.                       |
+| `evaluateFieldConditionGroup` | `(group, values) => boolean`               | Conditional-field (`showWhen`) evaluation, for a custom renderer.         |
 
-Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockAuthContext`,
-`CmssyBlockMember`, `CmssyBlockWorkspace`, `CmssyClientConfig`, `RawBlock`,
-`CmssyPageData`, `CmssyPageSummary`, `CmssyPageMeta`, `CmssyLayoutGroup`,
-`CmssyFormDefinition`, `CmssyFormField`, `CmssyFormSettings`,
-`CmssyFormSubmitResponse`, `CmssySiteConfig`, `CmssyModelDefinition`,
-`CmssyModelRecord`, `CmssyProduct`, `CmssyOrder`, and more.
+`fields.` builders: `text`, `textarea`, `richText`, `markdown`, `number`, `date`,
+`datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,
+`pageSelector`, `select`, `radio`, `multiselect`, `media`, `repeater`, `relation`.
 
-### `@cmssy/react/client`
+### Editor protocol, edit mode & CSP
 
-Client-only helpers for the editor bridge and providers: `CmssyLazyEditor`,
-`CmssyLazyLayout`, `CmssyLocaleProvider` / `useCmssyLocale`, `useEditBridge`,
-`CmssyAuthProvider` / `useCmssyUser`, `CmssyCommerceProvider` / `useCart`,
-`useCmssyOrders`, and currency helpers (`formatPrice`, `toMinorUnits`,
-`fromMinorUnits`, `fractionDigits`).
+| Export                                     | Signature                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `PROTOCOL_VERSION` / `isProtocolCompatible` | `number` / `(version) => boolean`                                |
+| `parseEditorMessage`                       | `(data, origin, expectedOrigin) => EditorToAppMessage \| null`    |
+| `postToEditor`                             | `(target, editorOrigin, message) => void`                         |
+| `applyCmssyCsp`                            | `(response, options?) => response` - sets `frame-ancestors`       |
+| `resolveEditorOrigin`                      | `(editorOrigin?) => string \| string[]` - defaults to cmssy admin |
+| `DEFAULT_CMSSY_EDITOR_ORIGINS`             | `string[]`                                                        |
+| `isVerifiedEditUrl`                        | `(url, config) => Promise<boolean>`                               |
+| `CMSSY_EDIT_HEADER` `CMSSY_EDIT_QUERY_PARAM` `CMSSY_SECRET_QUERY_PARAM` | constants                             |
 
-## @cmssy/next
-
-The Next.js App Router adapter: page route, SEO, draft mode, auth, locale, CSP.
-
-### Pages, SEO & draft
-
-| Export                | Signature                                           | Use in                     |
-| --------------------- | --------------------------------------------------- | -------------------------- |
-| `createCmssyPage`     | `(config, blocks, options?) => PageComponent`       | `app/[[...path]]/page.tsx` |
-| `createCmssyNotFound` | `(config, options?) => NotFoundComponent`           | `app/not-found.tsx`        |
-| `buildCmssyMetadata`  | `(config, path?, options?) => Promise<Metadata>`    | `generateMetadata`         |
-| `createCmssyRobots`   | `(config, options?) => () => MetadataRoute.Robots`  | `app/robots.ts`            |
-| `createCmssySitemap`  | `(config, options?) => () => MetadataRoute.Sitemap` | `app/sitemap.ts`           |
-| `createDraftRoute`    | `(config) => (request) => Promise<Response>`        | `app/api/draft/route.ts`   |
-
-### Edit mode & CSP
-
-| Export                | Signature                                                         |
-| --------------------- | ----------------------------------------------------------------- |
-| `isCmssyEditMode`     | `() => Promise<boolean>` (server component)                       |
-| `isCmssyEditRequest`  | `(request) => boolean` (middleware)                               |
-| `CMSSY_EDIT_HEADER`   | `"x-cmssy-edit"`                                                  |
-| `applyCmssyCsp`       | `(response, options?) => response` - sets `frame-ancestors`       |
-| `cmssyCspHeaders`     | `(options?) => Record<string, string>`                            |
-| `resolveEditorOrigin` | `(editorOrigin?) => string \| string[]` - defaults to cmssy admin |
-
-`CmssyCspOptions.editorOrigin` is optional; it
-[defaults](./delivery-api.md) to `https://www.cmssy.io`.
+Message types: `AppToEditorMessage`, `EditorToAppMessage`, `ReadyMessage`,
+`SelectMessage`, `PatchMessage`, `ClickMessage`, `BoundsMessage`,
+`ParentReadyMessage`.
 
 ### Locale
 
-`getCmssyLocale(config)`, `createCmssyLocaleMiddleware(config)`,
-`localeForPathname(config, pathname)`, `splitCmssyLocale(config, path?)`,
-`resolveLocaleFromPathname(config, pathname)`, and the `CMSSY_LOCALE_HEADER`
-(`"x-cmssy-locale"`) constant.
+`localizeHref(href, locale)` prefixes an internal href with the active language;
+`CMSSY_LOCALE_HEADER` (`"x-cmssy-locale"`) is the header the middleware sets. The
+language **set** lives in the workspace site config - query it (see
+[Delivery API](./delivery-api.md)).
 
-### Member auth
+### Webhooks
 
-| Export                      | Signature                                          |
-| --------------------------- | -------------------------------------------------- |
-| `createCmssyAuthRoute`      | `(config) => { POST, GET }`                        |
-| `createCmssyAuthMiddleware` | `(config) => (request) => Promise<NextResponse>`   |
-| `getCmssyUser`              | `(config) => Promise<{ recordId, email } \| null>` |
-| `getCmssyAccessToken`       | `(config) => Promise<string \| null>`              |
-| `assertAuthConfig`          | `(config) => CmssyAuthConfig` (throws if unset)    |
+`verifyCmssyWebhook(event, options?)`, `CmssyWebhookError`,
+`VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`, `CmssyWebhookOrder`.
 
-See [Member auth](../auth/member-auth.md). Session internals
-(`CMSSY_SESSION_COOKIE`, `sealSession`, `openSession`, …) are also exported for
-advanced use.
+### `@cmssy/core/testing` and `/preflight`
 
-### Commerce & webhooks
+`checkCmssyEditMode({ baseUrl, secret })` proves a deployed site can still be
+**edited** - see [testing](../testing.md). `/preflight` holds the diagnostics the
+CLI renders: `collectEditDiagnostics`, `checkWorkspaceReachable`,
+`checkDraftSecret`, `checkPreviewUrl`, `checkFrameAncestors`, `buildEditorUrl`.
 
-`fetchProducts(config, { modelSlug, filter?, limit? })`,
-`fetchProduct(config, { modelSlug, slug, slugField? })`,
-`createCmssyCartRoute(config)`, `createCmssyOrdersRoute(config)`,
-`verifyCmssyWebhook(event, options?)` / `CmssyWebhookError`.
+## @cmssy/react
 
-### `@cmssy/next/client`
+Block authoring and the server renderers. Re-exports the core symbols above.
 
-`CmssyLink` - locale-aware internal navigation (wraps `next/link`).
+### Block authoring
+
+| Export          | Signature                                 | Notes                                                                                                   |
+| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `defineBlock`   | `(definition) => BlockDefinition`         | Declares a block; optional async server `loader`. Optional one-line `description` guides the AI composer. |
+| `BlockProps`    | type: `BlockProps<typeof props, Data?>`   | Types a component **from its schema** - a renamed field becomes a compile error.                          |
+| `buildBlockMap` | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                  |
+
+See [Authoring a block](../building-blocks/authoring-blocks.md). There is **no**
+rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/recipes.md).
+
+### Server renderers & block context
+
+| Export              | Purpose                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `CmssyServerPage`   | Renders a page's blocks server-side, running each block's loader.    |
+| `CmssyServerLayout` | The same for layout-position blocks (header/footer).                 |
+| `CmssyBlock`        | Renders a single block instance.                                     |
+| `UnknownBlock`      | Placeholder for a block type the registry does not know.             |
+| `buildBlockContext` | Builds the `CmssyBlockContext` passed to blocks.                     |
+
+Both renderers take `appContext`: whatever your app hands them (a member, a
+feature flag, the active path) reaches every block as `context.app`, untouched.
+
+Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
+`CmssyClientConfig`, `RawBlock`, `RawLayoutBlock`, `CmssyPageData`,
+`CmssyPageSummary`, `CmssyPageMeta`, `CmssyLayoutGroup`, `CmssySiteConfig`,
+`CmssyModelDefinition`, `CmssyModelRecord`, `CmssyFormDefinition`, and more.
+
+### `@cmssy/react/client`
+
+Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
+`CmssyEditablePage`, `CmssyEditableLayout`, `useEditBridge`, `EditBridgeConfig`.
+
+### `@cmssy/react/internal-server`
+
+First-party, but the only way to feed the editor bridge server-resolved content:
+`resolveEditorBlockData`, `resolveEditorLayoutBlockData` (return
+`{ data, content }`), `resolveBlockData`, `resolveLayoutBlockData`. The canvas
+renders stored content, and a relation field there is raw ids - these resolve
+them. See [wiring §5](../wiring.md).
+
+## @cmssy/next
+
+The Next.js App Router adapter: the page route, the edit route, draft mode and
+the middleware preset.
+
+### `@cmssy/next/server`
+
+| Export                | Signature                                       | Use in                          |
+| --------------------- | ----------------------------------------------- | ------------------------------- |
+| `createCmssyPage`     | `(config, blocks, options?) => PageComponent`   | `app/[[...path]]/page.tsx`      |
+| `createCmssyEditPage` | `(config, blocks, options?) => PageComponent`   | `app/cmssy-edit/[[...path]]/`   |
+| `createDraftRoute`    | `(config) => (request) => Promise<Response>`    | `app/api/draft/route.ts`        |
+| `isCmssyEditMode`     | `() => Promise<boolean>`                        | a server component              |
+
+```ts
+interface CreateCmssyPageOptions {
+  editor?: ComponentType<CmssyEditorProps>;
+  path?: string; // pin the route to one slug (e.g. "/" for a dedicated home page)
+  appContext?:
+    | Record<string, unknown>
+    | ((args: { page: CmssyPageData; locale: string; path: string[] }) =>
+        | Record<string, unknown>
+        | Promise<Record<string, unknown>>);
+}
+```
+
+`createCmssyPage` is statically renderable: it never reads `searchParams` or
+`headers()`. Prefer the function form of `appContext` - a value fixed at module
+scope cannot vary by visitor.
+
+### `@cmssy/next/middleware`
+
+| Export                     | Signature                                                       |
+| -------------------------- | ---------------------------------------------------------------- |
+| `createCmssyProxy`         | `(config, options?) => (request) => Promise<NextResponse>`      |
+| `cmssyProxyMatcher`        | `string[]` - copy the value into your literal `config.matcher`  |
+| `cmssyEditRewrite`         | `(request, config, options?) => Promise<NextResponse \| null>`  |
+| `createCmssyEditMiddleware` | `(config) => (request) => Promise<NextResponse>`                |
+| `isCmssyEditRequest`       | `(request, config) => Promise<boolean>`                         |
+| `applyCmssyCsp`            | re-exported from core                                            |
+| `CMSSY_EDIT_PATH_PREFIX`   | `"/cmssy-edit"`                                                  |
+
+`createCmssyProxy` is the whole middleware, in the order it has to happen:
+resolve the language, rewrite verified editor traffic onto `/cmssy-edit` carrying
+that language and the edit flag, apply the CSP, and strip the language prefix if
+`stripLocalePrefix` is set. Compose it yourself with `cmssyEditRewrite` +
+`applyCmssyCsp` only when your app has middleware of its own (session refresh,
+cookies) - see [cmssy-demo's `proxy.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/proxy.ts).
+
+### `@cmssy/next` (root)
+
+`defineCmssyConfig`, `localizeHref`, `resolveEditorOrigin`,
+`DEFAULT_CMSSY_EDITOR_ORIGINS`, the `CMSSY_LOCALE_HEADER` / `CMSSY_EDIT_*`
+constants, and the `CmssyEditorProps` / `CreateCmssyPageOptions` types. This
+module reads server env - never import a **value** from it into a `"use client"`
+component (types are erased, values are not).
+
+### `@cmssy/next/testing`
+
+`checkCmssyEditMode`, re-exported from core.
 
 ## Config types
 
@@ -185,8 +269,7 @@ interface CmssyConfig {
   apiUrl?: string; // default https://api.cmssy.io/graphql
   editorOrigin?: string | string[]; // default https://www.cmssy.io
   devToken?: string; // cs_… API token; opts into editor-controlled dev preview (development only)
-  siteUrl?: string;
-  auth?: { modelSlug: string; sessionSecret: string };
-  resolveLocale?: () => string | Promise<string>; // fallback for URLs that carry no language; workspace site config owns the locale set
+  siteUrl?: string; // canonical origin, for your own SEO code
+  resolveLocale?: () => string | Promise<string>; // fallback for URLs that carry no language; the workspace owns the locale set
 }
 ```

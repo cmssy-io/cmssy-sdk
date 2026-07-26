@@ -44,12 +44,25 @@ adapter is for.
 
 ## SEO
 
+The adapter ships no sitemap or robots helper (10.0 removed them): both are a
+query plus a transformation, so they are your app's.
+
 ```ts
 // app/routes/sitemap.ts
-export const loader = createCmssySitemap(cmssy);
+export const loader = async () => {
+  const data = await graphqlRequest(
+    cmssy,
+    PAGES_QUERY,
+    { workspaceSlug: cmssy.workspaceSlug },
+    { public: true, retry: {} },
+  );
+  // …one <url> per language version, drafts and the 404 page filtered out
+};
 ```
 
-One `<url>` per language: a translated page is not a duplicate.
+One `<url>` per language: a translated page is not a duplicate. The
+[Next starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts)
+has the full logic, framework aside.
 
 ## Prove the editor works
 
