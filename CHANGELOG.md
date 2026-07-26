@@ -6,6 +6,61 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.6.0
+
+**Nothing to do.** Two additions, both opt-in.
+
+`client.query` / `client.queryScoped` now accept a **typed document** - what
+graphql-codegen emits, in either mode - alongside the query string they always
+took:
+
+```ts
+const data = await client.query(PublicPageMetaDocument, { workspaceSlug, slug });
+```
+
+The variables are checked and the result inferred, so the repeated generic, the
+`.toString()` and the `print()` all go away. A query string behaves exactly as
+before. The client still has three members; the public surface grows by one type
+(`CmssyTypedDocument`). Apps no longer need `graphql` at runtime just to print a
+document they generated.
+
+**`cmssy types`** writes TypeScript for the workspace's models, so a record's
+`data` is a typed object instead of `unknown`:
+
+```bash
+npx @cmssy/cli types            # writes cmssy/models.ts
+```
+
+Required → non-optional, localized → `CmssyLocalized`, select → the union of the
+configured options, relation → the ids it stores, object and repeater inlined.
+It reads the public delivery path with the slugs the app already has, so no API
+token and it runs in CI.
+
+**Fixed:** `cmssy init` scaffolded `cmssy/editable-layout.tsx` with nothing
+mounting it, so a freshly initialised app had a header the editor could select
+and not fill. It now writes `cmssy/layout-slot.tsx` and mounts it in both page
+templates. Existing apps: copy that file from the starter.
+
+## 10.0.0 - 10.5.2
+
+**Breaking, and you have to do something.** The SDK stopped mirroring the graph:
+anything expressible as a GraphQL query is now your app's query. Removed:
+`buildCmssyMetadata`, `createCmssySitemap` / `createCmssyRobots`,
+`createCmssyNotFound`, `CmssyLayoutSlot`, `CmssyLink`, `getCmssyLocale`, member
+auth (routes, session helpers, `config.auth`), commerce (cart/orders routes,
+`fetchProducts`, the product/cart/checkout blocks), the provider hooks, and the
+`fetchPage` / `fetchLayouts` / `fetchSiteConfig` family. ~110 public symbols
+became ~22.
+
+10.3.0 replaced the growing typed block context with one open channel:
+`appContext` on `createCmssyPage` and the renderers reaches every block as
+`context.app`. `blockPageOf` is gone.
+
+[The v9 → v10 guide](docs/migrations/v9-to-v10.md) lists every removed symbol
+next to its replacement, plus the three things that break silently once you
+write that replacement yourself (language-keyed fields, the routed path, one
+`<url>` per language).
+
 ## 9.0.0
 
 **The config locale override is gone.** `CmssyConfig.defaultLocale` and
