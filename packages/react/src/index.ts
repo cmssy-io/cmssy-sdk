@@ -4,7 +4,11 @@ export type { GraphqlRequestOptions } from "@cmssy/core";
 export { CmssyRequestError } from "@cmssy/core";
 export type { RetryPolicy } from "@cmssy/core";
 export { createCmssyClient } from "@cmssy/core";
-export type { CmssyClient, QueryScopedOptions } from "@cmssy/core";
+export type {
+  CmssyClient,
+  CmssyTypedDocument,
+  QueryScopedOptions,
+} from "@cmssy/core";
 export type {
   CmssyClientConfig,
   FetchPageOptions,

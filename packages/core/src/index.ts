@@ -15,6 +15,7 @@ export { CmssyRequestError } from "./data/http";
 export type { RetryPolicy } from "./data/http";
 export { createCmssyClient } from "./data/client";
 export type { CmssyClient, QueryScopedOptions } from "./data/client";
+export type { CmssyTypedDocument } from "./data/document";
 export { DEFAULT_CMSSY_API_URL } from "./content/content-client";
 export type {
   CmssyClientConfig,
