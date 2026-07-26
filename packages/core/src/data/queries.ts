@@ -39,6 +39,7 @@ export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!
       branding {
         brandName
         logoUrl
+        logoDarkUrl
         faviconUrl
         ogImageUrl
       }
