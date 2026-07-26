@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, relative, resolve as resolvePath } from "node:path";
 
 import { DEFAULT_CMSSY_API_URL } from "@cmssy/core";
 
@@ -165,7 +165,13 @@ export async function runTypes(
       return 0;
     }
 
-    const outPath = join(deps.cwd, options.out?.trim() || DEFAULT_OUT);
+    // resolve, not join: an absolute --out is a path, not a suffix.
+    const requested = options.out?.trim() || DEFAULT_OUT;
+    const outPath = resolvePath(deps.cwd, requested);
+    // Inside the app it reads as a repo path; outside it, "../../.." helps
+    // nobody - say where the file actually went.
+    const inside = relative(deps.cwd, outPath);
+    const shown = inside && !inside.startsWith("..") ? inside : outPath;
     const source = generateModelTypes(models, { workspace });
 
     // Writing an identical file would churn the mtime and, in a watcher, the
@@ -177,7 +183,7 @@ export async function runTypes(
       previous = null;
     }
     if (previous === source) {
-      deps.log(`cmssy: ${options.out ?? DEFAULT_OUT} is up to date`);
+      deps.log(`cmssy: ${shown} is up to date`);
       return 0;
     }
 
@@ -189,7 +195,7 @@ export async function runTypes(
       0,
     );
     deps.log(
-      `cmssy: wrote ${options.out ?? DEFAULT_OUT} - ${models.length} model${
+      `cmssy: wrote ${shown} - ${models.length} model${
         models.length === 1 ? "" : "s"
       }, ${fieldCount} field${fieldCount === 1 ? "" : "s"}`,
     );

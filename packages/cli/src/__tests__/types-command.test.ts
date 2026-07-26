@@ -1,4 +1,9 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -90,6 +95,17 @@ describe("runTypes", () => {
     expect(calls).toHaveLength(2);
     expect(calls[0]?.url).toBe("https://api.cmssy.io/public/acme/shop/graphql");
     expect(calls[1]?.body.variables).toEqual({ workspaceId: "ws_1" });
+  });
+
+  it("writes an absolute --out where it says, not under the app", async () => {
+    const { deps, lines, cwd } = makeDeps();
+    const target = join(mkdtempSync(join(tmpdir(), "cmssy-out-")), "models.ts");
+
+    await runTypes({ out: target }, deps);
+
+    expect(readFileSync(target, "utf8")).toContain("ProductData");
+    expect(existsSync(join(cwd, target))).toBe(false);
+    expect(lines.join("\n")).toContain(target);
   });
 
   it("honours --out", async () => {
