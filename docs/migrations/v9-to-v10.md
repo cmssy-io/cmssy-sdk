@@ -72,18 +72,31 @@ services/site.ts …        what the app actually asks for
 
 With `graphql-codegen` the generated document types the variables **and** the
 result, so a field the API does not have is a build error rather than a runtime
-`undefined`:
+`undefined`. Since 10.6 `query` / `queryScoped` take those documents directly -
+same two methods, no new API:
+
+```ts
+const client = createCmssyClient(cmssy);
+
+const data = await client.query(PublicPageMetaDocument, {
+  workspaceSlug: cmssy.workspaceSlug,
+  slug,
+});
+```
+
+A `TypedDocumentNode`, a `TypedDocumentString` or a string all work, so the
+codegen mode is yours to pick and `graphql` stays a dev dependency.
+`queryScoped` injects the workspace id. When you need per-call options -
+`{ public: true, retry: {} }` for an unauthenticated read, an `authorization`
+header for a member read - wrap it once:
 
 ```ts
 export function publicRequest<Result, Variables>(
-  document: TypedDocumentNode<Result, Variables>,
+  document: CmssyTypedDocument<Result, Variables>,
   variables: Variables,
-  label?: string,
 ): Promise<Result> {
-  return graphqlRequest<Result>(cmssy, print(document), variables, {
-    public: true,
-    retry: {}, // reads only - graphqlRequest also carries mutations
-  }, label);
+  // reads only: the gateway also carries mutations, so retry stays opt-in
+  return client.query(document, variables, { public: true, retry: {} });
 }
 ```
 

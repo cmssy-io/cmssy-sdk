@@ -47,18 +47,41 @@ createCmssyClient(config: CmssyClientConfig): CmssyClient;
 graphqlRequest<T>(config, query, variables, options?, label?): Promise<T>;
 ```
 
+**Pass a typed document.** `query` / `queryScoped` still take a query string,
+but hand them a document that carries its types - what graphql-codegen emits, in
+either mode - and the variables are checked and the result inferred, with no
+generic to repeat, no `print()`, no cast:
+
+```ts
+const data = await client.query(PublicPageMetaDocument, {
+  workspaceSlug: cmssy.workspaceSlug,
+  slug,
+});
+data.public.page.get?.seoTitle; // typed; a wrong variable name is a build error
+
+await client.queryScoped(PublicModelRecordsDocument, { modelSlug: "product" });
+```
+
+A `TypedDocumentNode` (AST), a `TypedDocumentString` and a plain string all
+work, so an app never needs `graphql` at runtime just to print a document it
+already generated.
+
 `CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string }` -
 `apiUrl` [defaults to cmssy cloud](./delivery-api.md); `org` + `workspaceSlug`
 form the org-scoped delivery path `{apiBase}/public/{org}/{workspaceSlug}/graphql`,
 where `apiBase` is `apiUrl` with its trailing `/graphql` stripped (default
 `https://api.cmssy.io`). A workspace slug only needs to be unique within its
-organization. The client has exactly three members:
+organization. The client has exactly three members (`query` and `queryScoped` each with a typed and a string form):
 
 ```ts
 interface CmssyClient {
   readonly config: CmssyClientConfig;
-  query<T>(document, variables?, options?): Promise<T>;
-  queryScoped<T>(document, variables?, options?): Promise<T>; // auto-injects workspaceId
+  // Typed document: variables checked, result inferred.
+  query<R, V>(document: CmssyTypedDocument<R, V>, variables: V, options?): Promise<R>;
+  queryScoped<R, V>(document, variables: Omit<V, "workspaceId">, options?): Promise<R>;
+  // Query string: your own generic, as before.
+  query<T>(document: string, variables?, options?): Promise<T>;
+  queryScoped<T>(document: string, variables?, options?): Promise<T>;
   resolveWorkspaceId(options?): Promise<string>;
 }
 ```
