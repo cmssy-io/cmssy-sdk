@@ -9,3 +9,6 @@ prod-schema.graphql
 
 # Local Claude tooling state
 .claude/
+
+# local worktrees
+.worktrees/
