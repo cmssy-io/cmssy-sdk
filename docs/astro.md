@@ -64,16 +64,30 @@ common way to break a cmssy app, on any framework.
 
 ## SEO
 
+The adapter ships no sitemap or robots helper (10.0 removed them): both are a
+query plus a transformation, so they are your app's. Query `public.page.list`
+through the gateway and emit the XML from an endpoint:
+
 ```ts
 // src/pages/sitemap.xml.ts
-import { createCmssySitemap } from "@cmssy/astro";
+import { graphqlRequest } from "@cmssy/core";
 import { cmssy } from "../cmssy.config";
 
-export const GET = createCmssySitemap(cmssy);
+export const GET = async () => {
+  const data = await graphqlRequest(
+    cmssy,
+    PAGES_QUERY,
+    { workspaceSlug: cmssy.workspaceSlug },
+    { public: true, retry: {} },
+  );
+  // …one <url> per language version, drafts and the 404 page filtered out
+};
 ```
 
 One `<url>` per language: a translated page is not a duplicate, and telling
-Google it is keeps the translation out of the index.
+Google it is keeps the translation out of the index. The
+[Next starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts)
+has the full logic, framework aside.
 
 ## Rendering blocks
 
