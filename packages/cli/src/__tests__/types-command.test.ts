@@ -11,17 +11,17 @@ import { describe, expect, it } from "vitest";
 
 import { runTypes, type TypesDeps } from "../types-command";
 
-const MODELS = [
-  {
-    slug: "product",
-    name: "Product",
-    displayField: "title",
-    fields: [
-      { key: "title", type: "text", required: true, localized: true },
-      { key: "price", type: "number", required: true },
-    ],
-  },
-];
+const PRODUCT = {
+  slug: "product",
+  name: "Product",
+  displayField: "title",
+  fields: [
+    { key: "title", type: "text", required: true, localized: true },
+    { key: "price", type: "number", required: true },
+  ],
+};
+
+const MODELS = [PRODUCT];
 
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -149,6 +149,66 @@ describe("runTypes", () => {
     const code = await runTypes({}, deps);
     expect(code).toBe(1);
     expect(lines.join("\n")).toContain("boom");
+  });
+
+  describe("--check", () => {
+    it("passes when the file matches the workspace", async () => {
+      const { deps, lines } = makeDeps();
+      await runTypes({}, deps);
+
+      const code = await runTypes({ check: true }, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).toContain("is up to date");
+    });
+
+    it("fails, names the drift and writes nothing when a model changed", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      await runTypes({}, deps);
+      const before = readFileSync(join(cwd, "cmssy/models.ts"), "utf8");
+
+      const drifted = makeDeps({
+        definitions: {
+          data: {
+            public: {
+              model: {
+                definitions: [
+                  {
+                    ...PRODUCT,
+                    fields: [
+                      ...PRODUCT.fields,
+                      { key: "sku", type: "text", required: true },
+                    ],
+                  },
+                  { slug: "review", fields: [{ key: "body", type: "text" }] },
+                ],
+              },
+            },
+          },
+        },
+      });
+      // Same app directory, a workspace that moved on.
+      drifted.deps.cwd = cwd;
+
+      const code = await runTypes({ check: true }, drifted.deps);
+
+      expect(code).toBe(1);
+      const output = drifted.lines.join("\n");
+      expect(output).toContain("out of date");
+      expect(output).toContain("+ models: Review");
+      expect(output).toContain("+ fields: sku");
+      expect(output).toContain("run `cmssy types`");
+      expect(readFileSync(join(cwd, "cmssy/models.ts"), "utf8")).toBe(before);
+    });
+
+    it("fails when the file was never generated", async () => {
+      const { deps, lines } = makeDeps();
+
+      const code = await runTypes({ check: true }, deps);
+
+      expect(code).toBe(1);
+      expect(lines.join("\n")).toContain("is missing");
+    });
   });
 
   it("says so when the workspace has no models yet", async () => {
