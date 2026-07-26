@@ -1,3 +1,5 @@
+import { graphqlRequest } from "../data/graphql-request";
+
 export interface EditSmokeOptions {
   /** A running build of the consumer app, e.g. http://localhost:3000. */
   baseUrl: string;
@@ -18,6 +20,17 @@ export interface EditSmokeOptions {
    * path segment, which IS the language on a prefixed site.
    */
   localizedLocale?: string;
+  /**
+   * The workspace the app is pointed at. Given it, the check asks the delivery
+   * API whether the workspace HAS header/footer blocks - and if it does, an app
+   * that renders none is a failure rather than a site that simply has none.
+   *
+   * That distinction is the whole point. `cmssy init` once scaffolded the
+   * editable-layout wrapper with nothing mounting it, so the app rendered no
+   * header at all - and this check, unable to tell "none configured" from "none
+   * rendered", stayed green.
+   */
+  workspace?: { org: string; workspaceSlug: string; apiUrl?: string };
 }
 
 export interface EditSmokeResult {
@@ -40,16 +53,64 @@ async function html(url: string): Promise<{ status: number; body: string }> {
   return { status: response.status, body: await response.text() };
 }
 
+const LAYOUT_BLOCKS_QUERY = `query CmssySmokeLayouts($workspaceSlug: String!, $pageSlug: String!) {
+  public {
+    page {
+      layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug) {
+        position
+        blocks { id isActive }
+      }
+    }
+  }
+}`;
+
+interface LayoutProbe {
+  public?: {
+    page?: {
+      layouts?: Array<{ blocks?: Array<{ isActive?: boolean | null }> }> | null;
+    } | null;
+  } | null;
+}
+
+/**
+ * Whether the workspace defines any active layout block for the page.
+ * `null` means the question could not be answered - an unreachable API is not
+ * the app's fault, so it must not turn into a failure about the app.
+ */
+async function workspaceHasLayoutBlocks(
+  workspace: NonNullable<EditSmokeOptions["workspace"]>,
+  pageSlug: string,
+): Promise<boolean | null> {
+  try {
+    const data = await graphqlRequest<LayoutProbe>(
+      workspace,
+      LAYOUT_BLOCKS_QUERY,
+      { workspaceSlug: workspace.workspaceSlug, pageSlug },
+      { public: true, retry: {} },
+      "edit smoke: layout blocks",
+    );
+    const groups = data.public?.page?.layouts ?? [];
+    return groups.some((group) =>
+      (group.blocks ?? []).some((block) => block.isActive !== false),
+    );
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Proves a consumer app's EDIT path still works - the path a build cannot check,
  * because the site compiles and serves fine while being uneditable.
  *
- * It asserts three independent things:
+ * It asserts four independent things:
  *   1. the public page renders WITHOUT the editor, header and footer server-rendered;
  *   2. a bare `?cmssyEdit=1` does NOT enter edit mode (an unverified pair must
  *      not open the door - CMS-948);
  *   3. a verified `cmssyEdit=1` + `cmssySecret` renders the editor AND moves the
- *      header and footer onto the edit bridge.
+ *      header and footer onto the edit bridge;
+ *   4. given `workspace`, that an app whose workspace HAS layout blocks renders
+ *      them at all - the one thing "no header anywhere" and "no header
+ *      configured" otherwise look alike.
  *
  * Run it against a started production build:
  *
@@ -71,9 +132,20 @@ export async function checkCmssyEditMode(
     failures.push(`public ${path}: the editor is mounted on a public page`);
   }
   // A site with no layout blocks is perfectly valid, so their absence is not a
-  // failure. What matters is the CHANGE: a header that is server-rendered publicly
-  // must move to the edit bridge in edit mode.
+  // failure on its own. What matters is the CHANGE: a header that is
+  // server-rendered publicly must move to the edit bridge in edit mode.
   const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
+
+  // Unless the workspace says otherwise. Then "renders none" is a bug, and the
+  // one this check exists to catch.
+  const configured = options.workspace
+    ? await workspaceHasLayoutBlocks(options.workspace, path)
+    : null;
+  if (configured === true && !hasServerLayoutBlocks) {
+    failures.push(
+      `public ${path}: the workspace defines layout blocks and the page renders none - is a layout slot mounted? (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
+    );
+  }
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {

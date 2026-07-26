@@ -49,6 +49,12 @@ export interface TypesOptions {
   out?: string;
   org?: string;
   workspace?: string;
+  /**
+   * Verify instead of write: exit non-zero when the file on disk is not what
+   * the workspace's models would generate. For CI, where a model changed in the
+   * CMS and nobody re-ran the command is otherwise found at runtime.
+   */
+  check?: boolean;
 }
 
 export interface TypesDeps {
@@ -107,6 +113,34 @@ async function request<T>(
   }
   if (!body.data) throw new CliError("the delivery API returned no data");
   return body.data;
+}
+
+/**
+ * What changed, in the terms the reader cares about - the models and fields the
+ * CMS has and the file does not, or the other way round. A character diff would
+ * be noise: the generator's formatting is not what anyone needs to see.
+ */
+function describeDrift(previous: string, next: string): string[] {
+  const declared = (source: string, pattern: RegExp) =>
+    new Set([...source.matchAll(pattern)].map((match) => match[1] ?? ""));
+
+  // The slug map at the end lists every model again; scanning it would report
+  // a "field" for each one.
+  const body = (source: string) => source.split("/** Every model in the")[0] ?? source;
+  const models = /export interface (\w+)Data/g;
+  const fields = /^\s{2}(\w+)\??:/gm;
+
+  const lines: string[] = [];
+  const report = (label: string, before: Set<string>, after: Set<string>) => {
+    const added = [...after].filter((name) => !before.has(name));
+    const removed = [...before].filter((name) => !after.has(name));
+    if (added.length) lines.push(`+ ${label}: ${added.join(", ")}`);
+    if (removed.length) lines.push(`- ${label}: ${removed.join(", ")}`);
+  };
+
+  report("models", declared(previous, models), declared(next, models));
+  report("fields", declared(body(previous), fields), declared(body(next), fields));
+  return lines.length ? lines : ["the generated output differs"];
 }
 
 function resolve(
@@ -185,6 +219,19 @@ export async function runTypes(
     if (previous === source) {
       deps.log(`cmssy: ${shown} is up to date`);
       return 0;
+    }
+
+    if (options.check) {
+      deps.log(
+        previous === null
+          ? `cmssy: ${shown} is missing - run \`cmssy types\` and commit it`
+          : `cmssy: ${shown} is out of date with the "${workspace}" workspace`,
+      );
+      if (previous !== null) {
+        for (const line of describeDrift(previous, source)) deps.log(`  ${line}`);
+      }
+      deps.log("  run `cmssy types` and commit the result");
+      return 1;
     }
 
     mkdirSync(dirname(outPath), { recursive: true });

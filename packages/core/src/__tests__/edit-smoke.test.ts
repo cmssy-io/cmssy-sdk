@@ -134,3 +134,116 @@ describe("checkCmssyEditMode", () => {
     expect(result.failures).toEqual([]);
   });
 });
+
+describe("checkCmssyEditMode with a workspace", () => {
+  const WORKSPACE = { org: "acme", workspaceSlug: "shop" };
+  const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
+  const NO_LAYOUT_HTML = "<html><main>hi</main></html>";
+
+  /** Serves pages by URL and answers the layout probe with the given groups. */
+  function serveWithWorkspace(
+    routes: Record<string, string>,
+    layouts: unknown,
+  ) {
+    const fetchStub = vi.fn(async (url: string, init?: { body?: string }) => {
+      if (url === DELIVERY) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () =>
+            layouts instanceof Error
+              ? { errors: [{ message: String(layouts.message) }] }
+              : { data: { public: { page: { layouts } } } },
+          text: async () => "",
+        };
+      }
+      const body = routes[url];
+      return {
+        ok: body !== undefined,
+        status: body === undefined ? 404 : 200,
+        text: async () => body ?? "",
+        json: async () => ({}),
+      };
+    });
+    vi.stubGlobal("fetch", fetchStub);
+    return fetchStub;
+  }
+
+  it("fails an app that renders no layout blocks when the workspace has them", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: NO_LAYOUT_HTML,
+        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+      },
+      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/renders none/);
+  });
+
+  it("passes the same app once it mounts the layout slot", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+      },
+      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("does not fault an app whose workspace has no layout blocks", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: NO_LAYOUT_HTML,
+        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+      },
+      [{ position: "header", blocks: [{ id: "b1", isActive: false }] }],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("stays silent about layouts when the delivery API cannot answer", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: NO_LAYOUT_HTML,
+        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+      },
+      new Error("upstream is down"),
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    // The API being unreachable is not the app's fault.
+    expect(result.failures).toEqual([]);
+  });
+});
