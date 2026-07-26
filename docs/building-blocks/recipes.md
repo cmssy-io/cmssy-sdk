@@ -221,14 +221,13 @@ from `FORM_QUERY` / `context.forms` - see the [Delivery API](../reference/delive
 
 ## SEO metadata
 
-Export `generateMetadata` from your catch-all route and delegate to
-`buildCmssyMetadata` - it fetches the page's SEO fields from the delivery API and
-returns a Next.js `Metadata` object.
+SEO is your app's: a query plus a transformation, both of which your app already
+does. Export `generateMetadata` from the catch-all and build it from the page's
+SEO fields:
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { buildCmssyMetadata } from "@cmssy/next/server";
-import { cmssy } from "@/cmssy.config";
+import { buildPageMetadata } from "@/services/seo";
 
 export async function generateMetadata({
   params,
@@ -236,10 +235,25 @@ export async function generateMetadata({
   params: Promise<{ path?: string[] }>;
 }) {
   const { path } = await params;
-  return buildCmssyMetadata(cmssy, path);
+  // As routed, language prefix and all: the prefix IS the language, and the
+  // canonical has to be built for THAT language.
+  return buildPageMetadata(path);
 }
 ```
 
-For a sitemap and robots file, use `createCmssySitemap(cmssy)` and
-`createCmssyRobots(cmssy)` as the default exports of `app/sitemap.ts` and
-`app/robots.ts`. See the [API reference](../reference/sdk-api.md).
+```ts
+// services/seo.ts - the query behind it
+const data = await graphqlRequest(
+  cmssy,
+  PAGE_META_QUERY, // public { page { get(workspaceSlug, slug) { seoTitle … } } }
+  { workspaceSlug: cmssy.workspaceSlug, slug },
+  { public: true, retry: {} },
+);
+```
+
+Two details the delivery API forces on you: translatable fields come back
+language-keyed (`{ en: "…" }`) once a workspace has more than one language, and
+`page.list` includes drafts and the workspace's 404 page - filter both out of a
+sitemap. Working versions of the metadata builder, the sitemap and the robots
+file are in the
+[starter](https://github.com/cmssy-io/cmssy-next-starter/tree/main/services).

@@ -221,12 +221,14 @@ There is no URL flag - the editor is the single control, per user.
 
 - [Authoring a block](../building-blocks/authoring-blocks.md) - build your own components.
 - [Server loaders](../building-blocks/server-loaders.md) - fetch block data during SSR.
-- [Member auth](../auth/member-auth.md) - sign-in, register, sessions.
-- SEO: `buildCmssyMetadata`, `createCmssyRobots`, `createCmssySitemap`.
-- i18n: locale middleware + `getCmssyLocale`.
+- [Member auth](../auth/member-auth.md) - sign-in, register, sessions (app-owned since 10.0).
+- SEO - your own `generateMetadata`, `app/sitemap.ts` and `app/robots.ts`: see the
+  [recipe](../building-blocks/recipes.md#seo-metadata).
+- i18n - `createCmssyProxy` resolves the language; the routed path carries it.
 
 ## Runnable example
 
 [cmssy-next-starter](https://github.com/cmssy-io/cmssy-next-starter) is a complete, deployable
-Next.js app wired with this SDK (catch-all page, draft route, edit-mode proxy, block registry) plus
-example blocks. Clone it or use the 1-click Vercel deploy as a starting point.
+Next.js app wired with this SDK (catch-all page, draft route, edit-mode proxy, block registry,
+layout slot) plus example blocks and the `graphql/` → codegen → `services/` data layer the SDK
+expects you to own. Clone it or use the 1-click Vercel deploy as a starting point.
