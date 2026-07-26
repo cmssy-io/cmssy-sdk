@@ -43,10 +43,16 @@ export interface EditSmokeResult {
 // is matching whatever the bundler happened to emit, which passed on two
 // frameworks by luck and failed on the third for no reason.
 const EDITOR_MARKER = /data-cmssy-editor/;
-/** Layout blocks rendered server-side. In edit mode they move to the edit bridge
- *  and mount on the client, so their absence from the SSR HTML is what proves
- *  the header and footer are editable blocks rather than plain markup. */
-const SERVER_LAYOUT_BLOCKS = /<header|<footer/;
+/**
+ * Layout blocks rendered server-side. In edit mode they move to the edit bridge
+ * and mount on the client, so their absence from the SSR HTML is what proves
+ * the header and footer are editable blocks rather than plain markup.
+ *
+ * `data-cmssy-unknown-block` counts: an app whose registry does not know the
+ * workspace's header type still RENDERED the layout group, which is what this
+ * asks about. Matching only `<header>` would call a mounted slot missing.
+ */
+const SERVER_LAYOUT_BLOCKS = /<header|<footer|data-cmssy-unknown-block/;
 
 async function html(url: string): Promise<{ status: number; body: string }> {
   const response = await fetch(url, { redirect: "manual" });
