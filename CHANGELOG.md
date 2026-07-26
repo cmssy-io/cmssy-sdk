@@ -6,6 +6,40 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.7.0
+
+**Nothing to do.** Two guards, both opt-in, both closing a hole that let a real
+regression ship with green CI.
+
+`cmssy types --check` fails when the generated model types differ from the
+workspace, naming what moved:
+
+```
+cmssy: graphql/models.ts is out of date with the "shop" workspace
+  + models: Review
+  + fields: sku
+  run `cmssy types` and commit the result
+```
+
+Put it in CI and a model edited in the CMS stops being a runtime `undefined`.
+It writes nothing in check mode.
+
+`checkCmssyEditMode` takes a `workspace` now:
+
+```ts
+await checkCmssyEditMode({
+  baseUrl,
+  secret,
+  workspace: { org, workspaceSlug },
+});
+```
+
+Given it, the check asks the delivery API whether the workspace HAS layout
+blocks - so an app that renders no header stops looking like a workspace that
+has none. That ambiguity is why the smoke test stayed green while `cmssy init`
+scaffolded an editable-layout wrapper with nothing mounting it. An unreachable
+API degrades to "unknown" and is never reported as a fault of the app.
+
 ## 10.6.1
 
 **Nothing to do.** `cmssy types --out /abs/path.ts` wrote to
