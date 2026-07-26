@@ -62,19 +62,26 @@ because the order is what makes it correct.
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { buildCmssyMetadata, createCmssyPage } from "@cmssy/next/server";
+import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
+import { buildPageMetadata } from "@/services/seo";
 
 export async function generateMetadata({ params }) {
   const { path } = await params;
   // As routed, prefix and all: the prefix IS the language.
-  return buildCmssyMetadata(cmssy, path);
+  return buildPageMetadata(path);
 }
 
 export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 ```
+
+`buildPageMetadata` is **your** function - since 10.0 the SDK ships no page-SEO
+helper (see [§7](#7-seo)). The rule it has to keep is the one above: pass the
+segments as routed. Strip the language prefix first and every translation gets
+the default language's title and a canonical pointing at the default language's
+URL, which tells Google the translation is a duplicate.
 
 ## 4. The edit route
 
@@ -110,17 +117,43 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 }
 ```
 
-```tsx
-// app/layout.tsx
-import { CmssyLayoutSlot } from "@cmssy/next/server";
+The slot that mounts them is yours (10.0 removed `CmssyLayoutSlot`, which fetched
+and rendered them for you). It has three jobs, and each one is a way to break the
+editor silently:
 
-<CmssyLayoutSlot config={cmssy} blocks={blocks} position="header" editable={EditableLayout} />
-<main>{children}</main>
-<CmssyLayoutSlot config={cmssy} blocks={blocks} position="footer" editable={EditableLayout} />
+```tsx
+// cmssy/layout-slot.tsx
+export async function CmssyLayoutSlot({ position, path }) {
+  const editMode = await isCmssyEditMode();
+
+  // 1. In edit mode, fetch with the preview secret - otherwise the editor shows
+  //    the PUBLISHED header while you edit the draft one.
+  const groups = await fetchChromeLayouts(
+    "/",
+    editMode ? cmssy.draftSecret : undefined,
+  );
+
+  // 2. The language comes from the routed path. Reading it from the request
+  //    header instead forces every page dynamic and gives up ISR.
+  const { locale } = splitLocaleFromPath(path, siteLocales);
+
+  if (!editMode) {
+    return <CmssyServerLayout groups={groups} blocks={blocks} position={position} … />;
+  }
+
+  // 3. In edit mode they go through the bridge, with the server-resolved
+  //    content - the canvas renders stored content, and a relation field there
+  //    is raw ids. Server-rendered instead, the editor can select the header
+  //    and has no fields to show for it.
+  const data = await resolveEditorLayoutBlockData({ groups, blocks, position, … });
+  return <EditableLayout groups={groups} position={position} data={data.data}
+    resolvedContent={data.content} … />;
+}
 ```
 
-`CmssyLayoutSlot` renders them server-side for visitors, and through the edit bridge
-(with the draft, behind the preview secret) in the editor.
+Mount it in the routes (which know their path), not in `app/layout.tsx`. The
+complete file is in
+[cmssy-next-starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/cmssy/layout-slot.tsx).
 
 ## 6. The editor bridge
 
@@ -140,17 +173,34 @@ server-side and read the config) never reach the browser bundle.
 
 ## 7. SEO
 
-```ts
-// app/sitemap.ts
-export default createCmssySitemap(cmssy);
+SEO is the app's, not the SDK's: metadata, `app/sitemap.ts` and `app/robots.ts`
+are queries plus transformation, and both are things your app already does. The
+SDK gives you the gateway and stops:
 
-// app/robots.ts
-export default createCmssyRobots(cmssy);
+```ts
+// services/seo.ts
+const data = await graphqlRequest(
+  cmssy,
+  PAGE_META_QUERY,
+  { workspaceSlug: cmssy.workspaceSlug, slug },
+  { public: true, retry: {} },
+);
 ```
 
-Rendering products or categories from model records? They are not pages, so add
-them through `extra` - it receives the same `baseUrl` and locales the page
-entries use, so the two cannot disagree.
+Three things are easy to get wrong and worth copying from the starter's
+[`services/seo.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/services/seo.ts)
+and [`app/sitemap.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts):
+
+- **Localized fields.** `seoTitle` comes back language-keyed once a workspace has
+  more than one language. Rendering it raw prints `[object Object]`.
+- **One `<url>` per language**, each listing all of them plus `x-default`. Listing
+  only the default language and hanging the translations off it as alternates
+  leaves the translated URLs out of the sitemap entirely.
+- **The 404 page is a published page.** Exclude it by `siteConfig.notFoundPageId`,
+  and drop drafts (`page.list` returns them too).
+
+Rendering products or categories from model records? They are not pages, so query
+the model and append their URLs with the same `baseUrl` and locales.
 
 ## 8. Prove the editor still works
 

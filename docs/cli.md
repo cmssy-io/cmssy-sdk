@@ -1,6 +1,6 @@
 ---
 title: The cmssy CLI
-description: cmssy init generates the cmssy wiring into an existing app; cmssy add block scaffolds and registers a new block; cmssy link connects the app to a workspace - fetches the slugs and the draft secret, writes .env.local, sets the preview URL and verifies the wiring.
+description: cmssy init generates the cmssy wiring into an existing app; cmssy add block scaffolds and registers a new block; cmssy link connects the app to a workspace; cmssy types generates TypeScript for the workspace models, so a record is typed instead of unknown.
 ---
 
 # `cmssy init` (@cmssy/cli)
@@ -43,9 +43,14 @@ overwrites existing wiring files.
 
 | Framework      | Wiring                                                                                                                                                                                                                                    |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout), `blocks/hero/`, `app/[[...path]]/`, `app/cmssy-edit/[[...path]]/`, `app/api/draft/`, `app/robots.ts`, `app/sitemap.ts` - under `src/` when the app uses one. |
-| Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`, robots + sitemap.                                                                            |
-| React Router 7 | `cmssy.config.ts`, `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`, robots + sitemap. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                     |
+| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout, layout slot), `blocks/hero/`, `app/[[...path]]/`, `app/cmssy-edit/[[...path]]/`, `app/api/draft/` - under `src/` when the app uses one. |
+| Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`.                                                                        |
+| React Router 7 | `cmssy.config.ts`, `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                 |
+
+SEO (metadata, sitemap, robots) is deliberately not scaffolded: since 10.0 it is
+the app's own query plus its own transformation. The
+[starter](https://github.com/cmssy-io/cmssy-next-starter) has a working version
+to copy.
 
 Then add your blocks and connect the app to a workspace:
 
@@ -190,3 +195,67 @@ against the platform" when the platform cannot confirm it), plus the preview
 URL comparison and the origins `frame-ancestors` must allow. The page shows the
 workspace slug and which check failed, never a secret value. In production the
 edit route keeps serving a 404, exactly as before.
+
+# `cmssy types` (@cmssy/cli)
+
+A model record comes over the wire as a JSON blob, so without this every read is
+`unknown` and every field access is a hand-written cast - `str(data.title)`,
+`data.specs as Specs`. The CMS already knows the shape. This makes it say so:
+
+```bash
+npx @cmssy/cli types                  # writes cmssy/models.ts
+npx @cmssy/cli types --out types/cms.ts
+```
+
+It reads the workspace's model definitions over the **public** delivery path -
+the same `CMSSY_ORG_SLUG` / `CMSSY_WORKSPACE_SLUG` your app uses, loaded from
+`.env.local` / `.env` like `cmssy link` does. No API token, so it runs in CI.
+
+For a `product` model it writes:
+
+```ts
+export interface ProductData {
+  /** Title */
+  title: CmssyLocalized;
+  slug: string;
+  price: number;
+  /** Unit */
+  unit?: "pcs" | "set" | "m" | "kg" | "pair";
+  /** Category - Record id(s) from `category`. */
+  category?: string;
+  specs?: { material?: string; weightKg?: number };
+}
+
+export type ProductRecord = CmssyRecordOf<ProductData>;
+export interface CmssyModels { product: ProductData; /* … */ }
+```
+
+What the mapping preserves, and what a hand-written type usually loses:
+
+- **Required** fields are non-optional; everything else is `?`.
+- **Localized** fields are `CmssyLocalized` (`string | Record<string, string>`),
+  which is what the API actually returns once a workspace has two languages -
+  the single most common source of `[object Object]` on a page.
+- **select / radio / multiselect** become the union of the configured options,
+  so a typo in a filter is a compile error.
+- **relation** is typed as the record id(s) it stores, with the target model
+  named in the doc comment.
+- **object** and **repeater** fields are inlined, nested fields and all.
+- Hidden fields are left out; models are emitted in slug order, so re-running
+  the command produces no diff unless the CMS changed.
+
+Use it with the delivery query you already have:
+
+```ts
+const data = await client.queryScoped<{
+  public: { model: { records: CmssyRecordList<"product"> } };
+}>(PRODUCTS_QUERY, { modelSlug: "product", limit: 24 });
+
+for (const record of data.public.model.records.items) {
+  record.data.price; // number, not unknown
+}
+```
+
+Commit the generated file and re-run the command after changing a model in the
+CMS - a field you removed there becomes a compile error here, which is the whole
+point.

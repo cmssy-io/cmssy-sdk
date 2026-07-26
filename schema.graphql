@@ -3113,6 +3113,7 @@ type SiteConfig {
 }
 
 type SiteConfigMutations {
+  clearCart(force: Boolean): SiteConfig!
   update(input: UpdateSiteConfigInput!): SiteConfig!
   updateCart(input: CartConfigInput!): SiteConfig!
   updateMemberAuth(input: MemberAuthConfigInput!): SiteConfig!

@@ -1,6 +1,8 @@
+import { parse } from "graphql";
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import { createCmssyClient } from "../data/client";
+import type { CmssyTypedDocument } from "../data/document";
 import {
   FORM_QUERY,
   MODEL_RECORDS_QUERY,
@@ -216,5 +218,76 @@ describe("createCmssyClient().resolveWorkspaceId", () => {
     await expect(client.resolveWorkspaceId({ fetch })).rejects.toThrow(
       /could not resolve workspaceId/,
     );
+  });
+});
+
+describe("createCmssyClient().query (typed document)", () => {
+  // What graphql-codegen emits: the AST inlined, `loc` stripped, cast to a
+  // TypedDocumentNode carrying the result and variable types.
+  const PRODUCTS = JSON.parse(
+    JSON.stringify(
+      parse(
+        `query Products($workspaceId: String!, $modelSlug: String!, $limit: Int) {
+          public { model { records(workspaceId: $workspaceId, modelSlug: $modelSlug, limit: $limit) { total } } }
+        }`,
+      ),
+    ),
+  ) as CmssyTypedDocument<
+    { public: { model: { records: { total: number } } } },
+    { workspaceId: string; modelSlug: string; limit?: number }
+  >;
+
+  it("prints the document and returns the typed result", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { model: { records: { total: 7 } } } },
+    });
+    const client = createCmssyClient(config);
+
+    const data = await client.query(
+      PRODUCTS,
+      { workspaceId: "w1", modelSlug: "product", limit: 10 },
+      { fetch },
+    );
+
+    // No generic passed, no `.toString()`, no cast: `total` is a number here.
+    expect(data.public.model.records.total).toBe(7);
+    expect(calls[0]?.query).toContain("query Products(");
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      modelSlug: "product",
+      limit: 10,
+    });
+  });
+
+  it("queryScoped injects the workspace id the caller never has to carry", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { model: { records: { total: 0 } } } },
+    });
+    const client = createCmssyClient(config);
+
+    await client.queryScoped(
+      PRODUCTS,
+      { modelSlug: "product" },
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
+    expect(calls[0]?.variables).toEqual({
+      modelSlug: "product",
+      workspaceId: "w1",
+    });
+  });
+
+  it("takes a TypedDocumentString too", async () => {
+    const { fetch, calls } = capturingFetch({ data: { ok: true } });
+    const client = createCmssyClient(config);
+    const document = {
+      toString: () => "query Ok { ok }",
+    } as CmssyTypedDocument<{ ok: boolean }, Record<string, never>>;
+
+    const data = await client.query(document, {}, { fetch });
+
+    expect(data.ok).toBe(true);
+    expect(calls[0]?.query).toBe("query Ok { ok }");
   });
 });

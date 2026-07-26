@@ -3,12 +3,14 @@ import { createInterface } from "node:readline/promises";
 import { runAddBlock } from "./add-block";
 import { runInit } from "./init";
 import { runLink } from "./link";
+import { runTypes } from "./types-command";
 
 const USAGE = [
   "usage: cmssy <command>",
   "  cmssy init [--dir <path>] [--force]",
   "  cmssy add block <name> [--dir <path>]",
   "  cmssy link [--token <cs_...>] [--workspace <slug>] [--preview-url <url>]",
+  "  cmssy types [--out <path>] [--org <slug>] [--workspace <slug>]",
 ].join("\n");
 
 function flagValue(args: string[], name: string): string | undefined {
@@ -70,6 +72,22 @@ async function main(): Promise<void> {
   }
   if (command === "link") {
     process.exitCode = await runLinkCommand(args);
+    return;
+  }
+  if (command === "types") {
+    process.exitCode = await runTypes(
+      {
+        out: flagValue(args, "--out"),
+        org: flagValue(args, "--org"),
+        workspace: flagValue(args, "--workspace"),
+      },
+      {
+        cwd: process.cwd(),
+        env: process.env,
+        log: (line) => console.log(line),
+        fetch: globalThis.fetch,
+      },
+    );
     return;
   }
   console.error(USAGE);

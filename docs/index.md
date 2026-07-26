@@ -59,10 +59,10 @@ npx @cmssy/cli link   # connects it to your workspace
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.
   - [Models for data, blocks for view](./building-blocks/models-for-data.md) - workspace models + `fields.relation`, and why record collections never live in repeaters.
   - [Block recipes](./building-blocks/recipes.md) - rich text, listing child pages, forms, SEO.
-- **Auth** - [Member auth](./auth/member-auth.md): secure httpOnly-cookie sign-in/register/sessions.
+- **Auth** - [Member auth](./auth/member-auth.md): the `siteMember` mutations and the rules that keep tokens out of the browser. App-owned since 10.0.
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
 - **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.
-- **Migrating** - [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
+- **Migrating** - [v9 → v10](./migrations/v9-to-v10.md) · [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
 - **Reference**
   - [API reference](./reference/sdk-api.md) - every export.
   - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.

@@ -159,9 +159,10 @@ Exported as `SUBMIT_FORM_MUTATION`; pass `{ formId, input: { data } }`.
 
 The `siteMember { ... }` mutations (`siteMember.login`, `siteMember.register`,
 `siteMember.refresh`, `siteMember.logout`, `siteMember.forgotPassword`,
-`siteMember.resetPassword`, `siteMember.verifyEmail`) back the auth flow. **Do not
-call them directly** - mount [`createCmssyAuthRoute`](../auth/member-auth.md),
-which handles them server-side and seals the session cookie.
+`siteMember.resetPassword`, `siteMember.verifyEmail`) back the auth flow. Since
+10.0 you call them yourself - **server-side only**, sealing the returned tokens
+into an httpOnly cookie. Never from the browser: the response carries a refresh
+token. See [Member auth](../auth/member-auth.md).
 
 ## Notes
 
