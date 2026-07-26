@@ -103,6 +103,8 @@ export interface ResolveLayoutBlockDataOptions {
   isPreview?: boolean;
   /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
+  /** Passed to loaders as context.app, exactly as on the deployed layout. */
+  appContext?: Record<string, unknown>;
 }
 
 export async function resolveEditorLayoutBlockData({
@@ -115,6 +117,7 @@ export async function resolveEditorLayoutBlockData({
   forms,
   isPreview = false,
   config,
+  appContext,
 }: ResolveLayoutBlockDataOptions): Promise<EditorBlockData> {
   const group = groups.find((g) => g.position === position);
   const layoutBlocks: RawLayoutBlock[] = group
@@ -131,6 +134,7 @@ export async function resolveEditorLayoutBlockData({
     enabledLocales,
     isPreview,
     forms,
+    { app: appContext },
   );
   const resolved = await resolveBlocks(
     layoutBlocks,
