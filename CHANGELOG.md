@@ -6,6 +6,13 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.6.1
+
+**Nothing to do.** `cmssy types --out /abs/path.ts` wrote to
+`<cwd>/abs/path.ts` while reporting the absolute one - the path was joined onto
+the working directory instead of resolved against it. Relative paths were
+unaffected.
+
 ## 10.6.0
 
 **Nothing to do.** Two additions, both opt-in.
