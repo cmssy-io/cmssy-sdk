@@ -22,6 +22,8 @@ export interface CmssyEditableLayoutProps {
   edit: EditBridgeConfig;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
+  /** Same channel the deployed layout gets, so the canvas shows the same thing. */
+  appContext?: Record<string, unknown>;
 }
 
 export function CmssyEditableLayout({
@@ -34,6 +36,7 @@ export function CmssyEditableLayout({
   edit,
   data,
   resolvedContent,
+  appContext,
 }: CmssyEditableLayoutProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
   const schemas = useMemo(
@@ -51,8 +54,11 @@ export function CmssyEditableLayout({
   }, [groups, position]);
   const patches = useLayoutPatchBridge(position, edit);
   const context = useMemo(
-    () => buildBlockContext(locale, defaultLocale, enabledLocales, true),
-    [locale, defaultLocale, enabledLocales],
+    () =>
+      buildBlockContext(locale, defaultLocale, enabledLocales, true, undefined, {
+        app: appContext,
+      }),
+    [locale, defaultLocale, enabledLocales, appContext],
   );
 
   if (layoutBlocks.length === 0) return null;
