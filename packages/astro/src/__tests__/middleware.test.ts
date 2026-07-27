@@ -42,7 +42,12 @@ function contextFor(href: string) {
   return {
     url,
     request: new Request(href),
-    rewrite: vi.fn(async (path: string) => new Response(`rewritten:${path}`)),
+    rewrite: vi.fn(
+      async (target: string | URL | Request) =>
+        new Response(
+          `rewritten:${target instanceof Request ? target.url : String(target)}`,
+        ),
+    ),
   };
 }
 
@@ -71,11 +76,15 @@ describe("cmssyMiddleware", () => {
 
     const response = await cmssyMiddleware(CONFIG)(context, next);
 
-    expect(context.rewrite).toHaveBeenCalledWith(
-      expect.stringContaining("/cmssy-edit/no/about"),
-    );
-    expect(context.request.headers.get("x-cmssy-edit")).toBe("1");
-    expect(context.request.headers.get("x-cmssy-locale")).toBe("no");
+    // The rewrite must carry a Request, not a path: with a path Astro builds a
+    // fresh request for the rewritten route, the headers below never arrive,
+    // and the edit page runs with isEdit false - the editor then shows the
+    // published page while claiming to edit the draft.
+    const rewritten = context.rewrite.mock.calls[0]![0] as Request;
+    expect(rewritten).toBeInstanceOf(Request);
+    expect(new URL(rewritten.url).pathname).toBe("/cmssy-edit/no/about");
+    expect(rewritten.headers.get("x-cmssy-edit")).toBe("1");
+    expect(rewritten.headers.get("x-cmssy-locale")).toBe("no");
     // Without this the admin cannot frame the site and the editor shows nothing.
     expect(response.headers.get("content-security-policy")).toContain(
       "frame-ancestors",
@@ -151,9 +160,9 @@ describe("cmssyMiddleware", () => {
 
     await cmssyMiddleware(CONFIG)(context, next);
 
-    expect(context.rewrite).toHaveBeenCalledWith(
-      expect.stringContaining("/cmssy-edit/about"),
-    );
+    const rewrittenDev = context.rewrite.mock.calls[0]![0] as Request;
+    expect(new URL(rewrittenDev.url).pathname).toBe("/cmssy-edit/about");
+    expect(rewrittenDev.headers.get("x-cmssy-edit")).toBe("1");
     expect(context.request.headers.get("x-cmssy-edit")).toBe("1");
     expect(next).not.toHaveBeenCalled();
   });

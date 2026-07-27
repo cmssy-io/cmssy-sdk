@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.1.1
+
+**The Astro editor was never in edit mode.** The middleware set the edit header
+and then rewrote onto `/cmssy-edit` with a path string, so Astro built a fresh
+request for the rewritten route and the header never arrived. `loadCmssyPage`
+therefore ran with `isEdit: false`, which means it fetched **without the preview
+secret** - the editor showed the published page while claiming to edit the
+draft - and, since 11.1.0, resolved no editor data either.
+
+Nothing reported it: the edit page passes `edit={{ editorOrigin }}` regardless,
+so the bridge mounted and the smoke test's markup marker appeared either way.
+
+- the middleware rewrites with a `Request`, so the headers it sets survive;
+- `loadCmssyPage` also accepts a verified edit URL as the signal, which is what
+  the React Router loader has always done and what survives any rewrite.
+
+Verified on a scaffolded app: `isEdit` true, and the canvas receives
+`resolvedContent` for the header and the footer separately.
+
 ## 11.1.0
 
 **Astro and React Router get the layout guarantees Next already had.** Both

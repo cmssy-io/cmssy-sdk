@@ -2,11 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CMSSY_EDIT_HEADER } from "@cmssy/core";
 import { loadCmssyPage } from "../page";
 
+const DRAFT_SECRET = "draft-secret-1234";
 const CONFIG = {
   apiUrl: "https://api.test/graphql",
   org: "acme",
   workspaceSlug: "ws",
-  draftSecret: "draft-secret-1234",
+  draftSecret: DRAFT_SECRET,
 } as never;
 
 const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
@@ -94,5 +95,49 @@ describe("loadCmssyPage", () => {
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
     });
+  });
+});
+
+describe("loadCmssyPage edit-mode detection", () => {
+  it("treats a verified edit URL as edit mode, with no header at all", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+
+    // No x-cmssy-edit header: this is the edit page after Astro's rewrite,
+    // which builds a fresh request and drops whatever the middleware set. The
+    // URL is the signal that survives.
+    const url = new URL(
+      "https://site.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    const result = await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+    });
+
+    expect(result.isEdit).toBe(true);
+    // The whole point: without edit mode the page and layouts are fetched
+    // without the preview secret, so the editor shows the published site.
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: DRAFT_SECRET,
+    });
+    expect(result.editorData?.header).toBeDefined();
+  });
+
+  it("does not open edit mode for an unverified URL", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+
+    const url = new URL(
+      "https://site.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=wrong",
+    );
+    const result = await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+    });
+
+    expect(result.isEdit).toBe(false);
+    expect(result.editorData).toBeUndefined();
   });
 });

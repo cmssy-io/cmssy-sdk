@@ -27,7 +27,7 @@ export interface CmssyMiddlewareOptions {
 interface AstroContextLike {
   url: URL;
   request: Request;
-  rewrite: (path: string) => Promise<Response> | Response;
+  rewrite: (target: string | URL | Request) => Promise<Response> | Response;
 }
 
 /**
@@ -72,7 +72,12 @@ export function cmssyMiddleware(
         const target = `${CMSSY_EDIT_PATH_PREFIX}${
           pathname === "/" ? "" : pathname
         }${context.url.search}`;
-        const response = await context.rewrite(target);
+        // A Request, not a string: with a string target Astro builds a fresh
+        // request for the rewritten route and the headers set above never
+        // arrive - which is how the edit page came to run with isEdit false.
+        const response = await context.rewrite(
+          new Request(new URL(target, context.url), context.request),
+        );
         applyCmssyCsp(response, { editorOrigin: config.editorOrigin });
         return response;
       }
