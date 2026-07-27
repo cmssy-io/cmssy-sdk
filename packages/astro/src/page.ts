@@ -1,5 +1,6 @@
 import {
   CMSSY_EDIT_HEADER,
+  isVerifiedEditUrl,
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
@@ -61,7 +62,14 @@ export async function loadCmssyPage(
   url: URL,
   options: LoadCmssyPageOptions = {},
 ): Promise<CmssyPageResult> {
-  const isEdit = request.headers.get(CMSSY_EDIT_HEADER) === "1";
+  // Two signals, because one of them does not survive the trip. The middleware
+  // sets the header and rewrites onto /cmssy-edit, and Astro builds a fresh
+  // request for the rewritten route - so on the edit page the header is gone.
+  // Verifying the URL is what React Router has always done; the header stays
+  // for anything that reaches this without a rewrite.
+  const isEdit =
+    request.headers.get(CMSSY_EDIT_HEADER) === "1" ||
+    (await isVerifiedEditUrl(url, config));
 
   const segments = url.pathname
     .replace(/^\/cmssy-edit/, "")
