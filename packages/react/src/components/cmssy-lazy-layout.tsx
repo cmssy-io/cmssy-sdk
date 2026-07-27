@@ -47,6 +47,14 @@ export function CmssyLazyLayout({ load, ...props }: CmssyLazyLayoutProps) {
     };
   }, [load]);
 
-  if (!blocks) return null;
-  return <CmssyEditableLayout {...props} blocks={blocks} />;
+  // The blocks arrive on the client, so nothing below this component is in the
+  // server HTML - which left no way to tell a mounted slot from a missing one
+  // until the browser ran. This marker is server-rendered, hidden, and is what
+  // `checkCmssyEditMode` reads to prove the header is editable at all.
+  return (
+    <>
+      <div data-cmssy-layout-slot={props.position} hidden />
+      {blocks ? <CmssyEditableLayout {...props} blocks={blocks} /> : null}
+    </>
+  );
 }

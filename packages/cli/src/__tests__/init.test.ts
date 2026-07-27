@@ -184,6 +184,7 @@ describe("runInit", () => {
       "src/middleware.ts",
       "src/cmssy/blocks.ts",
       "src/cmssy/editor.tsx",
+      "src/cmssy/layout-slot.tsx",
       "src/cmssy/hero.tsx",
       "src/components/Blocks.tsx",
       "src/pages/[...path].astro",
@@ -210,6 +211,7 @@ describe("runInit", () => {
       "cmssy.config.ts",
       "app/cmssy/blocks.ts",
       "app/cmssy/editor.tsx",
+      "app/cmssy/layout-slot.tsx",
       "app/cmssy/hero.tsx",
       "app/routes/page.tsx",
     ]) {

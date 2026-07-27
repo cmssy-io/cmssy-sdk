@@ -2,12 +2,13 @@
 import { loadCmssyPage } from "@cmssy/astro";
 import { cmssy } from "../../cmssy.config";
 import CmssyEditor from "../../cmssy/editor";
+import LayoutSlot from "../../cmssy/layout-slot";
 
 // The editor iframe lands here (the middleware rewrites verified requests). It
 // must be dynamic: a prerendered page never sees the query string.
 export const prerender = false;
 
-const { page, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
+const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
   cmssy,
   Astro.request,
   Astro.url,
@@ -21,9 +22,27 @@ const editorOrigin = cmssy.editorOrigin ?? "*";
     <title>cmssy editor</title>
   </head>
   <body>
+    <LayoutSlot
+      client:load
+      groups={layouts}
+      position="header"
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+      edit={{ editorOrigin }}
+    />
     <CmssyEditor
       client:load
       page={page}
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+      edit={{ editorOrigin }}
+    />
+    <LayoutSlot
+      client:load
+      groups={layouts}
+      position="footer"
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
