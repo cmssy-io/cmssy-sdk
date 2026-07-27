@@ -213,6 +213,7 @@ the middleware preset.
 | `createCmssyPage`     | `(config, blocks, options?) => PageComponent`   | `app/[[...path]]/page.tsx`      |
 | `createCmssyEditPage` | `(config, blocks, options?) => PageComponent`   | `app/cmssy-edit/[[...path]]/`   |
 | `createDraftRoute`    | `(config) => (request) => Promise<Response>`    | `app/api/draft/route.ts`        |
+| `CmssyLayoutSlot`     | `(props) => Promise<JSX>` - header/footer blocks | any route                     |
 | `isCmssyEditMode`     | `() => Promise<boolean>`                        | a server component              |
 
 ```ts

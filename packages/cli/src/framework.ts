@@ -27,7 +27,6 @@ export const FRAMEWORKS: FrameworkDef[] = [
       "cmssy/blocks.ts",
       "cmssy/editor.tsx",
       "cmssy/editable-layout.tsx",
-      "cmssy/layout-slot.tsx",
       "blocks/hero/block.ts",
       "blocks/hero/Hero.tsx",
       "app/[[...path]]/page.tsx",
