@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
+[
+  "CMSSY_LOCALE_HEADER",
+  "createCmssyClient",
+  "createCmssyHeaders",
+  "createCmssyLoader",
+  "defineCmssyConfig",
+  "isVerifiedEditUrl",
+  "localizeHref",
+]
+`;

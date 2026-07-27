@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@cmssy/next public surface > exports exactly these names from /middleware 1`] = `
+[
+  "CMSSY_EDIT_HEADER",
+  "CMSSY_EDIT_PATH_PREFIX",
+  "applyCmssyCsp",
+  "cmssyEditRewrite",
+  "cmssyProxyMatcher",
+  "createCmssyEditMiddleware",
+  "createCmssyProxy",
+  "isCmssyEditRequest",
+]
+`;
+
+exports[`@cmssy/next public surface > exports exactly these names from /server 1`] = `
+[
+  "CmssyLayoutSlot",
+  "createCmssyEditPage",
+  "createCmssyPage",
+  "createDraftRoute",
+  "isCmssyEditMode",
+]
+`;
+
+exports[`@cmssy/next public surface > exports exactly these names from the root 1`] = `
+[
+  "CMSSY_EDIT_HEADER",
+  "CMSSY_EDIT_QUERY_PARAM",
+  "CMSSY_LOCALE_HEADER",
+  "CMSSY_SECRET_QUERY_PARAM",
+  "DEFAULT_CMSSY_EDITOR_ORIGINS",
+  "defineCmssyConfig",
+  "localizeHref",
+  "resolveEditorOrigin",
+]
+`;

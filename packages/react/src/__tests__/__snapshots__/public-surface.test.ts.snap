@@ -1,0 +1,26 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@cmssy/react public surface > exports exactly these names 1`] = `
+[
+  "CmssyBlock",
+  "CmssyRequestError",
+  "CmssyServerLayout",
+  "CmssyServerPage",
+  "PROTOCOL_VERSION",
+  "UnknownBlock",
+  "buildBlockContext",
+  "buildBlockMap",
+  "createCmssyClient",
+  "defineBlock",
+  "fields",
+  "graphqlRequest",
+  "isProtocolCompatible",
+  "layoutPositionValues",
+  "normalizeOrigin",
+  "parseEditorMessage",
+  "postToEditor",
+  "resolveCmssyLayoutSlot",
+  "resolveEditorBlockData",
+  "resolveEditorLayoutBlockData",
+]
+`;

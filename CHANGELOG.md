@@ -6,6 +6,28 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.2.0
+
+**The editor smoke check can now tell a real editor from one that only looks
+alive.** It asserted that a layout slot was mounted - which every scaffold
+renders whether or not the request was verified. That is how the Astro adapter
+ran with edit mode permanently off for months, and how 11.1.0 shipped a fix that
+was inert on the framework it was written for, both with this check green.
+
+- `CmssyLazyLayout`'s server-rendered marker now also reports how many blocks it
+  resolved content for (`data-cmssy-editor-content`).
+- `checkCmssyEditMode` fails when every slot reports zero, with the diagnosis
+  spelled out: not in edit mode, no preview secret, editing the published page.
+  Only when `workspace` is passed - an empty position legally resolves to zero.
+- A consumer on an older `@cmssy/react` gets a distinct failure naming the
+  version, rather than a confusing zero.
+
+Also: a relation field in a layout block is now covered end to end - ids in,
+records out - which was the acceptance criterion for 11.1.0 that no live
+workspace could demonstrate, and every package snapshots its public exports, so
+"the surface grows by one function" is a diff rather than a sentence in a pull
+request.
+
 ## 11.1.1
 
 **The Astro editor was never in edit mode.** The middleware set the edit header

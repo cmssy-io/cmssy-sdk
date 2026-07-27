@@ -128,3 +128,42 @@ describe("CmssyLazyLayout", () => {
     await waitFor(() => expect(load2).toHaveBeenCalledTimes(1));
   });
 });
+
+describe("editor-content marker", () => {
+  it("reports how many blocks the editor actually got", async () => {
+    const { container } = render(
+      <CmssyLazyLayout
+        groups={groups}
+        position="header"
+        locale="en"
+        defaultLocale="en"
+        edit={{ editorOrigin }}
+        resolvedContent={{ h1: { brand: "Acme" } }}
+        load={async () => ({ blocks })}
+      />,
+    );
+
+    const marker = container.querySelector("[data-cmssy-layout-slot]");
+    expect(marker?.getAttribute("data-cmssy-editor-content")).toBe("1");
+  });
+
+  it("reports zero when the slot rendered outside edit mode", async () => {
+    const { container } = render(
+      <CmssyLazyLayout
+        groups={groups}
+        position="header"
+        locale="en"
+        defaultLocale="en"
+        edit={{ editorOrigin }}
+        load={async () => ({ blocks })}
+      />,
+    );
+
+    // The mounted-slot marker alone says nothing: it is here either way. Zero
+    // is what an adapter looks like when its edit signal never arrived - the
+    // state that shipped undetected because only the marker was asserted.
+    const marker = container.querySelector("[data-cmssy-layout-slot]");
+    expect(marker).not.toBeNull();
+    expect(marker?.getAttribute("data-cmssy-editor-content")).toBe("0");
+  });
+});

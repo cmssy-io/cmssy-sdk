@@ -50,10 +50,25 @@ export function CmssyLazyLayout({ load, ...props }: CmssyLazyLayoutProps) {
   // The blocks arrive on the client, so nothing below this component is in the
   // server HTML - which left no way to tell a mounted slot from a missing one
   // until the browser ran. This marker is server-rendered, hidden, and is what
-  // `checkCmssyEditMode` reads to prove the header is editable at all.
+  // `checkCmssyEditMode` reads.
+  //
+  // The count is the second half, and it is the half that matters. A mounted
+  // slot proves nothing about edit mode: every scaffold renders one whether or
+  // not the request was verified. That is how the Astro adapter shipped with
+  // `isEdit` permanently false - fetching without the preview secret, resolving
+  // no content - while the marker above reported a healthy editor. A non-zero
+  // count is reachable only if the slot really was resolved for the editor.
+  const resolvedCount = props.resolvedContent
+    ? Object.keys(props.resolvedContent).length
+    : 0;
+
   return (
     <>
-      <div data-cmssy-layout-slot={props.position} hidden />
+      <div
+        data-cmssy-layout-slot={props.position}
+        data-cmssy-editor-content={resolvedCount}
+        hidden
+      />
       {blocks ? <CmssyEditableLayout {...props} blocks={blocks} /> : null}
     </>
   );
