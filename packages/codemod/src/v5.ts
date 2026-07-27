@@ -38,6 +38,7 @@ export const MIDDLEWARE_SYMBOLS = new Set([
   "createCmssyProxy",
   "cmssyProxyMatcher",
   "CmssyProxyOptions",
+  "CmssyProxyCookie",
   "cmssyEditRewrite",
   "createCmssyEditMiddleware",
   "CMSSY_EDIT_PATH_PREFIX",

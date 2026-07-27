@@ -6,6 +6,36 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.9.0
+
+**Nothing to do.** Two things an app had to work around are now supported.
+
+**The editor-data resolvers are public.** `resolveEditorBlockData` and
+`resolveEditorLayoutBlockData` moved from `@cmssy/react/internal-server` onto
+`@cmssy/react`. Every app that wanted an editable header had to import from a
+subpath with no semver promise - while the types (`EditorBlockData`,
+`ResolveLayoutBlockDataOptions`) were public all along. The old path still
+works.
+
+```diff
+- import { resolveEditorLayoutBlockData } from "@cmssy/react/internal-server";
++ import { resolveEditorLayoutBlockData } from "@cmssy/react";
+```
+
+**`createCmssyProxy` takes cookies.** An app with a session to refresh or a
+cart id to mint used to re-implement the entire preset - locale, edit rewrite
+and CSP - to add one cookie:
+
+```ts
+export const proxy = createCmssyProxy(cmssy, {
+  cookies: async (request) => [...(await refreshSession(request))],
+});
+```
+
+They are set on the response **and** merged into the cookie header the app is
+rendered with, so a refreshed session does not first render signed out. An
+empty value deletes the cookie.
+
 ## 10.8.0
 
 **Nothing to do, but re-run `cmssy init` (or copy one file) if your Astro or

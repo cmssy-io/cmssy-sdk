@@ -70,6 +70,15 @@ export type {
   ResolveBlockDataOptions,
   ResolveLayoutBlockDataOptions,
 } from "./components/resolve-block-data";
+// Editor wiring, which the SDK owns: the canvas renders STORED content, so a
+// block's loader has not run and a relation field is still record ids. These
+// resolve both halves for it. They lived in /internal-server, which left every
+// app reaching into a subpath with no semver promise just to make its header
+// editable - while the types were public here all along.
+export {
+  resolveEditorBlockData,
+  resolveEditorLayoutBlockData,
+} from "./components/resolve-block-data";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { CmssyBlock } from "./components/cmssy-block";

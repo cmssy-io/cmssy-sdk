@@ -1,5 +1,5 @@
 export { createCmssyProxy, cmssyProxyMatcher } from "./preset/proxy";
-export type { CmssyProxyOptions } from "./preset/proxy";
+export type { CmssyProxyCookie, CmssyProxyOptions } from "./preset/proxy";
 export {
   CMSSY_EDIT_PATH_PREFIX,
   cmssyEditRewrite,
