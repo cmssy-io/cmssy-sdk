@@ -43,10 +43,23 @@ export interface EditSmokeResult {
 // is matching whatever the bundler happened to emit, which passed on two
 // frameworks by luck and failed on the third for no reason.
 const EDITOR_MARKER = /data-cmssy-editor/;
-/** Layout blocks rendered server-side. In edit mode they move to the edit bridge
- *  and mount on the client, so their absence from the SSR HTML is what proves
- *  the header and footer are editable blocks rather than plain markup. */
+/**
+ * Layout blocks rendered server-side. In edit mode they move to the edit bridge
+ * and mount on the client, so their absence from the SSR HTML is what proves
+ * the header and footer are editable blocks rather than plain markup.
+ *
+ * `data-cmssy-unknown-block` counts: an app whose registry does not know the
+ * workspace's header type still RENDERED the layout group, which is what this
+ * asks about. Matching only `<header>` would call a mounted slot missing.
+ */
 const SERVER_LAYOUT_BLOCKS = /<header|<footer/;
+/**
+ * The editable layout slot renders this server-side (see CmssyLazyLayout). Its
+ * blocks mount on the client, so this marker is the only thing in the edit
+ * route's HTML that says a slot is mounted at all - which is exactly what
+ * "the editor lets me select the header but shows no fields" comes down to.
+ */
+const EDITABLE_LAYOUT_SLOT = /data-cmssy-layout-slot/;
 
 async function html(url: string): Promise<{ status: number; body: string }> {
   const response = await fetch(url, { redirect: "manual" });
@@ -136,16 +149,10 @@ export async function checkCmssyEditMode(
   // server-rendered publicly must move to the edit bridge in edit mode.
   const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
 
-  // Unless the workspace says otherwise. Then "renders none" is a bug, and the
-  // one this check exists to catch.
+  // Whether the workspace has any header/footer to render in the first place.
   const configured = options.workspace
     ? await workspaceHasLayoutBlocks(options.workspace, path)
     : null;
-  if (configured === true && !hasServerLayoutBlocks) {
-    failures.push(
-      `public ${path}: the workspace defines layout blocks and the page renders none - is a layout slot mounted? (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
-    );
-  }
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {
@@ -168,6 +175,14 @@ export async function checkCmssyEditMode(
   if (hasServerLayoutBlocks && SERVER_LAYOUT_BLOCKS.test(verified.body)) {
     failures.push(
       `edit ${path}: the header and footer are still server-rendered - the editor will let you select them but show no fields (is CMSSY_EDIT_HEADER set on the rewrite?)`,
+    );
+  }
+  // The workspace has layout blocks and the edit route mounts no slot for them:
+  // the editor will show a page with no header to edit. This is the check that
+  // an app scaffolded without a layout slot fails.
+  if (configured === true && !EDITABLE_LAYOUT_SLOT.test(verified.body)) {
+    failures.push(
+      `edit ${path}: the workspace defines layout blocks and no editable layout slot is mounted - the header and footer cannot be edited (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
     );
   }
 

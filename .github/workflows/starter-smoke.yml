@@ -15,12 +15,17 @@ on:
 jobs:
   starter:
     runs-on: ubuntu-latest
-    # The `secrets` context is not available in a step `if`, so it is lifted into
-    # env once and the steps branch on that.
+    # No secrets, on purpose. The published demo workspace is public, and edit
+    # mode is verified by comparing the URL's cmssySecret to the app's OWN
+    # draftSecret (cmssySecretsMatch, no backend call) - so any string works as
+    # long as both sides use the same one. Secrets would only have bought draft
+    # PREVIEW, which this job does not check, at the price of a job that cannot
+    # run on a fork's pull request. Override via secrets to point at your own
+    # workspace.
     env:
-      CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG }}
-      CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG }}
-      CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET }}
+      CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG || 'cmssy' }}
+      CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG || 'cmssy-demo' }}
+      CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET || 'smoke-placeholder-draft-secret' }}
     strategy:
       fail-fast: false
       matrix:
@@ -123,18 +128,15 @@ jobs:
         working-directory: /tmp/app
         run: npx astro add react node --yes
 
-      # The Next build reads the workspace (sitemap, page data), so without the
-      # secrets there is nothing honest to build against.
+      # The build reads the workspace (page data, layout blocks) - published
+      # content, which the public delivery path serves without a token.
       - name: Build
-        if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
         run: pnpm build
 
       # A build proves the app compiles. The editor is the path it cannot check,
-      # and that needs a running server and a real workspace. Without the
-      # secrets, say so - a green check that verifies nothing is worse than none.
+      # so this starts the server and asks the running site.
       - name: Editor smoke test
-        if: env.CMSSY_DRAFT_SECRET != ''
         working-directory: /tmp/app
         env:
           SMOKE_BASE_URL: http://localhost:${{ matrix.framework == 'astro' && '4321' || '3000' }}
@@ -177,11 +179,3 @@ jobs:
           npx --yes wait-on "$SMOKE_BASE_URL" --timeout 90000
           node smoke-edit.mjs
 
-      # A green check that verifies nothing is worse than no check, so say it out
-      # loud rather than let the job look like it proved something.
-      - name: No workspace secrets - NOTHING was verified
-        if: env.CMSSY_DRAFT_SECRET == ''
-        run: |
-          echo "::warning::CMSSY_ORG_SLUG / CMSSY_WORKSPACE_SLUG / CMSSY_DRAFT_SECRET" \
-               "are not set on this repo, so the ${{ matrix.framework }} app was" \
-               "scaffolded and wired but NEITHER built NOR checked. This job proved nothing."
