@@ -61,6 +61,21 @@ const SERVER_LAYOUT_BLOCKS = /<header|<footer/;
  */
 const EDITABLE_LAYOUT_SLOT = /data-cmssy-layout-slot/;
 
+/**
+ * How many layout blocks the slot actually resolved content for.
+ *
+ * The marker above proves a slot is mounted and nothing else: every scaffold
+ * renders one whether or not the request was verified. That is how an adapter
+ * ran with edit mode permanently off - fetching without the preview secret,
+ * handing the canvas nothing - while this check stayed green for months. A
+ * count above zero is reachable only through a real editor render.
+ */
+const EDITOR_CONTENT_COUNT = /data-cmssy-editor-content="(\d+)"/g;
+
+function resolvedContentCounts(body: string): number[] {
+  return [...body.matchAll(EDITOR_CONTENT_COUNT)].map((m) => Number(m[1]));
+}
+
 async function html(url: string): Promise<{ status: number; body: string }> {
   const response = await fetch(url, { redirect: "manual" });
   return { status: response.status, body: await response.text() };
@@ -184,6 +199,23 @@ export async function checkCmssyEditMode(
     failures.push(
       `edit ${path}: the workspace defines layout blocks and no editable layout slot is mounted - the header and footer cannot be edited (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
     );
+  }
+
+  // A mounted slot that resolved nothing is a slot rendered outside edit mode:
+  // the page looks editable and the canvas has no content to show. Only assert
+  // it when the workspace is known to have blocks - an empty position legally
+  // resolves to zero.
+  if (configured === true && EDITABLE_LAYOUT_SLOT.test(verified.body)) {
+    const counts = resolvedContentCounts(verified.body);
+    if (counts.length === 0) {
+      failures.push(
+        `edit ${path}: the layout slot reports no editor-content marker - @cmssy/react is older than 11.2.0, or the slot is not CmssyLazyLayout`,
+      );
+    } else if (counts.every((count) => count === 0)) {
+      failures.push(
+        `edit ${path}: every layout slot resolved 0 blocks for the editor. The slot is mounted but was not rendered in edit mode - the canvas gets nothing and the fetch ran without the preview secret, so you are editing the published page. Check that the verified request reaches the edit route with its edit signal intact.`,
+      );
+    }
   }
 
   const { localizedPath } = options;

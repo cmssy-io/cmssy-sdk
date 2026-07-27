@@ -9,6 +9,14 @@ const EDITOR = '<div data-cmssy-editor="1" hidden></div>';
 const EDIT_HTML = '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
 /** What an edit route with a mounted layout slot serves (see CmssyLazyLayout). */
 const EDIT_HTML_WITH_SLOT =
+  '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" data-cmssy-editor-content="2" hidden></div><main>hi</main></html>';
+
+/** A slot that is mounted and resolved nothing: rendered outside edit mode. */
+const EDIT_HTML_SLOT_EMPTY =
+  '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" data-cmssy-editor-content="0" hidden></div><main>hi</main></html>';
+
+/** A slot from a consumer still on an older @cmssy/react: no count at all. */
+const EDIT_HTML_SLOT_NO_COUNT =
   '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" hidden></div><main>hi</main></html>';
 
 /** Serves a body per URL; anything unrouted 404s, which the check reports. */
@@ -209,6 +217,48 @@ describe("checkCmssyEditMode with a workspace", () => {
     });
 
     expect(result.failures).toEqual([]);
+  });
+
+  it("fails a slot that is mounted but resolved nothing - it is not in edit mode", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML_SLOT_EMPTY,
+      },
+      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    // This is the state the Astro adapter shipped in: the slot renders, the
+    // marker is there, and the editor is looking at the published page. The
+    // old check passed it.
+    expect(result.ok).toBe(false);
+    expect(result.failures.join("\n")).toMatch(/resolved 0 blocks/);
+  });
+
+  it("fails a consumer whose slot emits no count at all", async () => {
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML_SLOT_NO_COUNT,
+      },
+      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures.join("\n")).toMatch(/no editor-content marker/);
   });
 
   it("does not fault an app whose workspace has no layout blocks", async () => {

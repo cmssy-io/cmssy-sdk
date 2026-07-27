@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
+[
+  "CMSSY_EDIT_HEADER",
+  "CMSSY_EDIT_PATH_PREFIX",
+  "CMSSY_LOCALE_HEADER",
+  "cmssyMiddleware",
+  "createCmssyClient",
+  "defineCmssyConfig",
+  "loadCmssyPage",
+  "localizeHref",
+]
+`;

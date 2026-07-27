@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/astro",
-  "version": "11.1.1",
+  "version": "11.2.0",
   "description": "Astro bindings for cmssy headless sites: middleware, page loader, sitemap and robots.",
   "keywords": [
     "cmssy",
@@ -45,7 +45,7 @@
   },
   "peerDependencies": {
     "astro": ">=4",
-    "@cmssy/react": "^11.1.1"
+    "@cmssy/react": "^11.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -34,7 +34,40 @@ in the first place.
    request must never open the door.
 3. A verified `cmssyEdit=1` + `cmssySecret` renders the editor **and** moves the
    header and footer onto the edit bridge.
-4. Optionally: the localized preview **declares** the language its URL asks for (`<html lang>`).
+4. When you pass `workspace`: the layout slot is mounted **and it resolved
+   content for the editor**. See below - this is the assertion that catches the
+   editor that only looks alive.
+5. Optionally: the localized preview **declares** the language its URL asks for (`<html lang>`).
+
+## The one that matters: a slot that resolved nothing
+
+Every scaffold renders its layout slot whether or not the request was verified.
+So "a slot is mounted" was never evidence of edit mode - and an adapter shipped
+with edit mode permanently off, fetching without the preview secret, handing the
+canvas nothing, while this check stayed green.
+
+Since 11.2.0 the slot also reports how many blocks it resolved content for
+(`data-cmssy-editor-content`), and the check fails when every slot reports zero:
+
+```
+edit /: every layout slot resolved 0 blocks for the editor. The slot is mounted
+but was not rendered in edit mode - the canvas gets nothing and the fetch ran
+without the preview secret, so you are editing the published page.
+```
+
+It needs `workspace` to know the site has layout blocks at all - an empty
+position legally resolves to zero:
+
+```ts
+const result = await checkCmssyEditMode({
+  baseUrl,
+  secret: process.env.CMSSY_DRAFT_SECRET!,
+  workspace: {
+    org: process.env.CMSSY_ORG_SLUG!,
+    workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
+  },
+});
+```
 
 ## Why "no `<header>` in the SSR" means success
 
