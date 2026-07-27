@@ -6,6 +6,14 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.9.2
+
+**Nothing to do unless you delete cookies through the proxy.** A
+`CmssyProxyCookie` with an empty value is a deletion, but the caller's `options`
+were applied last - and those are the options the cookie was written with,
+`maxAge` included. The cookie came back emptied and alive instead of removed.
+Deletion wins now.
+
 ## 10.9.1
 
 **Nothing to do.** The `cmssy init` template still imported
