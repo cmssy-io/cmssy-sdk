@@ -6,6 +6,12 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.9.1
+
+**Nothing to do.** The `cmssy init` template still imported
+`resolveEditorLayoutBlockData` from `@cmssy/react/internal-server`, which 10.9.0
+had just made unnecessary.
+
 ## 10.9.0
 
 **Nothing to do.** Two things an app had to work around are now supported.
