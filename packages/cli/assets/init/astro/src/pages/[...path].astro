@@ -2,10 +2,11 @@
 import { loadCmssyPage } from "@cmssy/astro";
 import { cmssy } from "../cmssy.config";
 import { Blocks } from "../components/Blocks";
+import LayoutSlot from "../cmssy/layout-slot";
 
 export const prerender = false;
 
-const { page, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
+const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
   cmssy,
   Astro.request,
   Astro.url,
@@ -22,6 +23,13 @@ if (!page) {
     <title>{page?.seoTitle?.[locale] ?? page?.displayName?.[locale] ?? "cmssy on Astro"}</title>
   </head>
   <body>
+    <LayoutSlot
+      groups={layouts}
+      position="header"
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+    />
     {
       page ? (
         <Blocks
@@ -34,5 +42,12 @@ if (!page) {
         <main><h1>Not found</h1></main>
       )
     }
+    <LayoutSlot
+      groups={layouts}
+      position="footer"
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+    />
   </body>
 </html>
