@@ -97,8 +97,11 @@ export function createCmssyProxy(
       for (const write of writes) {
         response.cookies.set(write.name, write.value, {
           ...DEFAULT_COOKIE_OPTIONS,
-          ...(write.value ? {} : { maxAge: 0 }),
           ...write.options,
+          // Deletion wins over the caller's options. They will be the same
+          // options the cookie was written with, maxAge included, and honoring
+          // that here would keep an emptied cookie alive instead of removing it.
+          ...(write.value ? {} : { maxAge: 0 }),
         });
       }
       return response;

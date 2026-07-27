@@ -149,6 +149,22 @@ describe("createCmssyProxy cookies", () => {
     expect(forwarded(response, "cookie") ?? "").not.toContain("session=stale");
   });
 
+  it("deletes even when the caller passes the options it was written with", async () => {
+    stubSiteConfig();
+    const incoming = request("/about");
+    incoming.headers.set("cookie", "session=stale");
+    const proxy = createCmssyProxy(CONFIG, {
+      // What a real app passes: the same options used to set the cookie.
+      cookies: () => [
+        { name: "session", value: "", options: { maxAge: 60 * 60 * 24 } },
+      ],
+    });
+
+    const response = await proxy(incoming);
+
+    expect(response.cookies.get("session")?.maxAge).toBe(0);
+  });
+
   it("carries them onto the editor rewrite too", async () => {
     stubSiteConfig();
     const proxy = createCmssyProxy(CONFIG, {
