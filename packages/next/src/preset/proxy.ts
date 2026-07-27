@@ -6,6 +6,14 @@ import { CMSSY_EDIT_HEADER } from "@cmssy/core";
 import { cmssyEditRewrite } from "../edit-middleware";
 import { CMSSY_LOCALE_HEADER, localeForPathname } from "@cmssy/core/internal/locale";
 
+/** A cookie the proxy writes on this request. An empty value deletes it. */
+export interface CmssyProxyCookie {
+  name: string;
+  value: string;
+  /** Passed to `response.cookies.set`; defaults to httpOnly + sameSite lax. */
+  options?: Omit<Parameters<NextResponse["cookies"]["set"]>[2], "name" | "value">;
+}
+
 export interface CmssyProxyOptions {
   /**
    * Strip the language prefix before the app sees it, so static routes like
@@ -13,6 +21,42 @@ export interface CmssyProxyOptions {
    * that reads the language off the path itself.
    */
   stripLocalePrefix?: boolean;
+  /**
+   * Cookies this request has to write - a refreshed session, a freshly minted
+   * cart id. They are set on the response AND merged into the cookie header the
+   * app is about to be rendered with, so THIS render already sees them; setting
+   * them on the response alone means the value only arrives on the next
+   * navigation, which is how a signed-in visitor renders signed-out once.
+   *
+   * It is the escape hatch that keeps an app from re-implementing the whole
+   * preset - locale, edit rewrite and CSP included - to add one cookie.
+   */
+  cookies?: (
+    request: NextRequest,
+  ) => Promise<CmssyProxyCookie[]> | CmssyProxyCookie[];
+}
+
+const DEFAULT_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+} as const;
+
+/** The forwarded `cookie` header with these writes applied, so the render sees them. */
+function mergeCookieHeader(
+  header: string | null,
+  writes: CmssyProxyCookie[],
+): string {
+  const written = new Set(writes.map((write) => write.name));
+  const kept = (header ?? "")
+    .split(/; */)
+    .filter(Boolean)
+    .filter((cookie) => !written.has(cookie.split("=")[0] ?? ""));
+  const added = writes
+    .filter((write) => write.value)
+    .map((write) => `${write.name}=${write.value}`);
+  return [...kept, ...added].join("; ");
 }
 
 /**
@@ -42,6 +86,24 @@ export function createCmssyProxy(
     requestHeaders.delete(CMSSY_EDIT_HEADER);
     requestHeaders.delete(CMSSY_LOCALE_HEADER);
 
+    const writes = (await options.cookies?.(request)) ?? [];
+    if (writes.length > 0) {
+      requestHeaders.set(
+        "cookie",
+        mergeCookieHeader(requestHeaders.get("cookie"), writes),
+      );
+    }
+    const persist = <T extends NextResponse>(response: T): T => {
+      for (const write of writes) {
+        response.cookies.set(write.name, write.value, {
+          ...DEFAULT_COOKIE_OPTIONS,
+          ...(write.value ? {} : { maxAge: 0 }),
+          ...write.options,
+        });
+      }
+      return response;
+    };
+
     const locale = await localeForPathname(config, pathname);
     requestHeaders.set(CMSSY_LOCALE_HEADER, locale);
 
@@ -52,7 +114,7 @@ export function createCmssyProxy(
     });
     if (editRewrite) {
       applyCmssyCsp(editRewrite, { editorOrigin: config.editorOrigin });
-      return editRewrite;
+      return persist(editRewrite);
     }
 
     if (options.stripLocalePrefix && pathname.startsWith(`/${locale}`)) {
@@ -64,13 +126,13 @@ export function createCmssyProxy(
         // carries the app's own params.
         const url = request.nextUrl.clone();
         url.pathname = pathname.slice(locale.length + 1) || "/";
-        return NextResponse.rewrite(url, {
-          request: { headers: requestHeaders },
-        });
+        return persist(
+          NextResponse.rewrite(url, { request: { headers: requestHeaders } }),
+        );
       }
     }
 
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    return persist(NextResponse.next({ request: { headers: requestHeaders } }));
   };
 }
 

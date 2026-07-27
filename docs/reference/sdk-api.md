@@ -26,9 +26,8 @@ app needs one import path.
 **`/internal` subpaths are not public API.** `@cmssy/core/internal`,
 `@cmssy/react/internal` and `@cmssy/react/internal-server` exist for the
 first-party adapters. They ship types and they work, but they change without a
-major version. Two of them are documented below because the removal of
-`CmssyLayoutSlot` left apps with no public way to render editable layout blocks;
-everything else there should be treated as private.
+major version - treat them as private. Nothing an app needs lives there: the
+editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 
 ## @cmssy/core
 
@@ -190,13 +189,17 @@ Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
 `CmssyEditablePage`, `CmssyEditableLayout`, `useEditBridge`, `EditBridgeConfig`.
 
-### `@cmssy/react/internal-server`
+### Editor data
 
-First-party, but the only way to feed the editor bridge server-resolved content:
-`resolveEditorBlockData`, `resolveEditorLayoutBlockData` (return
-`{ data, content }`), `resolveBlockData`, `resolveLayoutBlockData`. The canvas
-renders stored content, and a relation field there is raw ids - these resolve
-them. See [wiring §5](../wiring.md).
+| Export                         | Signature                                    |
+| ------------------------------ | -------------------------------------------- |
+| `resolveEditorBlockData`       | `(options) => Promise<{ data, content }>`    |
+| `resolveEditorLayoutBlockData` | `(options) => Promise<{ data, content }>`    |
+
+The canvas renders **stored** content: a block's loader has not run and a
+relation field is still the ids it stores. These resolve both halves, and what
+they return goes to `CmssyLazyEditor` / `CmssyLazyLayout` as `data` and
+`resolvedContent`. See [wiring §5](../wiring.md).
 
 ## @cmssy/next
 
@@ -233,6 +236,7 @@ scope cannot vary by visitor.
 | Export                     | Signature                                                       |
 | -------------------------- | ---------------------------------------------------------------- |
 | `createCmssyProxy`         | `(config, options?) => (request) => Promise<NextResponse>`      |
+| `CmssyProxyOptions`        | `{ stripLocalePrefix?, cookies? }`                              |
 | `cmssyProxyMatcher`        | `string[]` - copy the value into your literal `config.matcher`  |
 | `cmssyEditRewrite`         | `(request, config, options?) => Promise<NextResponse \| null>`  |
 | `createCmssyEditMiddleware` | `(config) => (request) => Promise<NextResponse>`                |
@@ -243,9 +247,21 @@ scope cannot vary by visitor.
 `createCmssyProxy` is the whole middleware, in the order it has to happen:
 resolve the language, rewrite verified editor traffic onto `/cmssy-edit` carrying
 that language and the edit flag, apply the CSP, and strip the language prefix if
-`stripLocalePrefix` is set. Compose it yourself with `cmssyEditRewrite` +
-`applyCmssyCsp` only when your app has middleware of its own (session refresh,
-cookies) - see [cmssy-demo's `proxy.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/proxy.ts).
+`stripLocalePrefix` is set.
+
+Your app has cookies of its own to write - a refreshed session, a minted cart
+id? Pass `cookies`; they are set on the response **and** merged into the cookie
+header this render sees, so a refreshed session does not first render signed
+out:
+
+```ts
+export const proxy = createCmssyProxy(cmssy, {
+  cookies: async (request) => [...(await refreshSession(request))],
+});
+```
+
+Only reach for `cmssyEditRewrite` + `applyCmssyCsp` when you need to reorder the
+steps themselves.
 
 ### `@cmssy/next` (root)
 

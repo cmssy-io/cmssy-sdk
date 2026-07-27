@@ -145,7 +145,7 @@ export async function CmssyLayoutSlot({ position, path }) {
   //    content - the canvas renders stored content, and a relation field there
   //    is raw ids. Server-rendered instead, the editor can select the header
   //    and has no fields to show for it.
-  const data = await resolveEditorLayoutBlockData({ groups, blocks, position, … });
+  const data = await resolveEditorLayoutBlockData({ groups, blocks, position, … });  // @cmssy/react
   return <EditableLayout groups={groups} position={position} data={data.data}
     resolvedContent={data.content} … />;
 }

@@ -104,3 +104,74 @@ describe("createCmssyProxy", () => {
     expect(forwarded(response, CMSSY_LOCALE_HEADER)).toBe("no");
   });
 });
+
+describe("createCmssyProxy cookies", () => {
+  it("writes them on the response AND on the request this render sees", async () => {
+    stubSiteConfig();
+    const proxy = createCmssyProxy(CONFIG, {
+      cookies: () => [{ name: "session", value: "refreshed" }],
+    });
+
+    const response = await proxy(request("/about"));
+
+    expect(response.cookies.get("session")?.value).toBe("refreshed");
+    // Setting it on the response alone would leave THIS render signed out.
+    expect(forwarded(response, "cookie")).toContain("session=refreshed");
+  });
+
+  it("replaces the inbound value rather than sending both", async () => {
+    stubSiteConfig();
+    const incoming = request("/about");
+    incoming.headers.set("cookie", "session=stale; cart=abc");
+    const proxy = createCmssyProxy(CONFIG, {
+      cookies: () => [{ name: "session", value: "fresh" }],
+    });
+
+    const response = await proxy(incoming);
+
+    const cookie = forwarded(response, "cookie") ?? "";
+    expect(cookie).toContain("session=fresh");
+    expect(cookie).not.toContain("session=stale");
+    expect(cookie).toContain("cart=abc");
+  });
+
+  it("an empty value deletes the cookie", async () => {
+    stubSiteConfig();
+    const incoming = request("/about");
+    incoming.headers.set("cookie", "session=stale");
+    const proxy = createCmssyProxy(CONFIG, {
+      cookies: () => [{ name: "session", value: "" }],
+    });
+
+    const response = await proxy(incoming);
+
+    expect(response.cookies.get("session")?.maxAge).toBe(0);
+    expect(forwarded(response, "cookie") ?? "").not.toContain("session=stale");
+  });
+
+  it("carries them onto the editor rewrite too", async () => {
+    stubSiteConfig();
+    const proxy = createCmssyProxy(CONFIG, {
+      cookies: () => [{ name: "cart", value: "minted" }],
+    });
+
+    const response = await proxy(
+      request(`/about?cmssyEdit=1&cmssySecret=${CONFIG.draftSecret}`),
+    );
+
+    expect(rewrittenTo(response)).toContain("/cmssy-edit");
+    expect(response.cookies.get("cart")?.value).toBe("minted");
+  });
+
+  it("leaves the cookie header untouched when there is nothing to write", async () => {
+    stubSiteConfig();
+    const incoming = request("/about");
+    incoming.headers.set("cookie", "cart=abc");
+    const proxy = createCmssyProxy(CONFIG, { cookies: () => [] });
+
+    const response = await proxy(incoming);
+
+    expect(forwarded(response, "cookie")).toBe("cart=abc");
+    expect(response.cookies.getAll()).toEqual([]);
+  });
+});
