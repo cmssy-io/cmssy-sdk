@@ -6,6 +6,28 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.8.0
+
+**Nothing to do, but re-run `cmssy init` (or copy one file) if your Astro or
+React Router app has no header.**
+
+`cmssy init` scaffolded no layout slot on Astro and React Router: both loaders
+already returned the layout groups, and neither template rendered them - so a
+freshly initialised app had no header or footer, publicly or in the editor.
+Both now scaffold `cmssy/layout-slot.tsx`. Next got the same fix in 10.6.0.
+
+Found by the starter smoke test, which - it turns out - had never run: every
+meaningful step was gated on a repo secret that was never set, so it scaffolded
+an app and stopped while the check went green. It never needed a secret. Edit
+mode is verified by comparing the URL's `cmssySecret` to the app's own
+`draftSecret` (a local string comparison), and the content comes from a public
+workspace.
+
+`CmssyLazyLayout` now server-renders a hidden `data-cmssy-layout-slot` marker.
+Its blocks mount on the client, so nothing in the edit route's HTML used to say
+whether a slot was mounted at all - which is exactly what "the editor lets me
+select the header but shows no fields" means. `checkCmssyEditMode` reads it.
+
 ## 10.7.0
 
 **Nothing to do.** Two guards, both opt-in, both closing a hole that let a real
