@@ -1,7 +1,10 @@
 import { cache } from "react";
-import { CmssyServerLayout, graphqlRequest } from "@cmssy/react";
+import {
+  CmssyServerLayout,
+  graphqlRequest,
+  resolveEditorLayoutBlockData,
+} from "@cmssy/react";
 import type { CmssyLayoutGroup } from "@cmssy/react";
-import { resolveEditorLayoutBlockData } from "@cmssy/react/internal-server";
 import { resolveEditorOrigin } from "@cmssy/next";
 import { isCmssyEditMode } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
