@@ -196,6 +196,15 @@ curl -sI http://localhost:3000/ | grep -i 'cache-control\|x-nextjs-prerender'
 `dynamicParams = true` keeps pages published after the build working: the first
 request renders them and they are cached from then on.
 
+**What caching costs you, stated plainly.** With `revalidate = 3600`, an edit
+published in the CMS takes up to an hour to appear. And because an unknown path
+renders as not-found, a URL someone visited *before* you published it keeps
+serving 404 for the rest of that window - the 404 is cached like any other
+response. Both go away when publishing revalidates on demand
+(`revalidatePath` from a webhook route); until you wire that, pick `revalidate`
+as the staleness you can live with, not the largest number that still looks
+fast.
+
 Mount it per route, not in `app/layout.tsx`: a route knows its path. There are
 six positions - `top`, `header`, `sidebar_left`, `sidebar_right`, `footer`,
 `bottom` - and `LayoutPosition` / `layoutPositionValues` name them.

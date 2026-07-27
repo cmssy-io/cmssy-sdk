@@ -208,10 +208,22 @@ jobs:
           # A path nobody prerendered: first request MISS, second HIT. Asserting
           # this on a prerendered path proves nothing - its first request is
           # already a HIT.
+          #
+          # This path does not exist in the workspace, so what it proves is that
+          # `dynamicParams` responses enter the cache at all - a not-found
+          # response takes the same route through it. It does not prove that a
+          # page published after the build is cached; nothing here can, without
+          # publishing one.
           uncached="/smoke-$(date +%s)"
           first=$(curl -sI "http://localhost:3000$uncached" | grep -i "^x-nextjs-cache:" || true)
           second=$(curl -sI "http://localhost:3000$uncached" | grep -i "^x-nextjs-cache:" || true)
           echo "on-demand path: $first -> $second"
+
+          if ! grep -qi "MISS" <<<"$first"; then
+            echo "FAILED: expected a MISS on the first request to $uncached," \
+                 "got '$first' - the assertion below would pass vacuously."
+            exit 1
+          fi
 
           if ! grep -qi "HIT" <<<"$second"; then
             echo "FAILED: an on-demand path is re-rendered every request."

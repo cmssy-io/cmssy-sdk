@@ -1,4 +1,8 @@
-import { createCmssyEditPage, CmssyLayoutSlot } from "@cmssy/next/server";
+import {
+  createCmssyEditPage,
+  CmssyLayoutSlot,
+  isCmssyEditMode,
+} from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -24,13 +28,20 @@ const CmssyEditPage = createCmssyEditPage(cmssy, blocks, {
 // header missing here is a header missing in the editor.
 export default async function EditPage(props: PageProps) {
   const { path } = await props.params;
+
+  // Not a hard `true`: this route is reachable directly, and only the proxy's
+  // verified rewrite sets the edit header. Hard-coding it would fetch layouts
+  // with the draft secret for anyone who typed the URL. Reading a header costs
+  // nothing here - the route is force-dynamic either way.
+  const editMode = await isCmssyEditMode();
+
   const slot = (position: "header" | "footer") => (
     <CmssyLayoutSlot
       config={cmssy}
       blocks={blocks}
       position={position}
       path={path ?? []}
-      editMode
+      editMode={editMode}
       editable={EditableLayout}
     />
   );

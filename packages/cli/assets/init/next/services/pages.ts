@@ -35,9 +35,19 @@ const client = createCmssyClient({
  * route cacheable at all, not an optimisation on top of it.
  */
 export async function publishedPaths(): Promise<{ path: string[] }[]> {
-  const data = await client.query<PublishedPages>(PUBLISHED_PAGES, {
-    workspaceSlug: cmssy.workspaceSlug,
-  });
+  const data = await client.query<PublishedPages>(
+    PUBLISHED_PAGES,
+    { workspaceSlug: cmssy.workspaceSlug },
+    {
+      // `public` routes through the org-scoped delivery path. Without it the
+      // request lands on the base endpoint, where an unauthenticated workspace
+      // lookup is by slug alone - across every org.
+      public: true,
+      // A build reads this once. A single 429 from the delivery API would fail
+      // the whole deploy, so retry - it is a read, nothing to double-apply.
+      retry: {},
+    },
+  );
 
   const pages = data?.public?.page?.list ?? [];
   return pages
