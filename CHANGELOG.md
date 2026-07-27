@@ -6,6 +6,38 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 10.10.0
+
+**`CmssyLayoutSlot` is back.** 10.0 removed it as a helper doing the app's work.
+The evidence since says otherwise: every consumer wrote nearly the same file -
+cmssy-demo, the starter, and all three `cmssy init` templates - and two of them
+shipped an editor that could select the header and not fill it. Rendering layout
+blocks through the edit bridge is editor wiring, which the slim rule keeps in
+the SDK; removing it misapplied that rule.
+
+```tsx
+<CmssyLayoutSlot
+  config={cmssy}
+  blocks={blocks}
+  position="header"
+  path={path}
+  editable={EditableLayout}
+/>
+```
+
+It is not the old one. The version removed in 10.0 read `headers()` to find the
+language, which forced every page dynamic and gave up ISR; this one takes the
+routed `path`, and only falls back to the header when a root layout leaves it no
+params. `editable` is required rather than optional - omitting it is exactly the
+bug - and the editor gets `resolvedContent` as well as loader data.
+
+`LayoutPosition` and `layoutPositionValues` are exported now, so the other four
+positions (`top`, `sidebar_left`, `sidebar_right`, `bottom`) are discoverable
+instead of folklore.
+
+`cmssy init` no longer scaffolds a hand-written slot for Next; Astro and React
+Router keep theirs, since neither renders through this component.
+
 ## 10.9.2
 
 **Nothing to do unless you delete cookies through the proxy.** A
