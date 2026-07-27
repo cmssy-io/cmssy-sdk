@@ -1,15 +1,19 @@
 ---
 import { loadCmssyPage } from "@cmssy/astro";
 import { cmssy } from "../cmssy.config";
+import { blocks } from "../cmssy/blocks";
 import { Blocks } from "../components/Blocks";
 import LayoutSlot from "../cmssy/layout-slot";
 
 export const prerender = false;
 
+// `blocks` is what lets the loader resolve the editor's layout data. Drop it
+// and the site still renders - the editor just cannot fill the header.
 const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
   cmssy,
   Astro.request,
   Astro.url,
+  { blocks },
 );
 
 if (!page) {

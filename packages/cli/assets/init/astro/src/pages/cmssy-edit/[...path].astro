@@ -1,6 +1,7 @@
 ---
 import { loadCmssyPage } from "@cmssy/astro";
 import { cmssy } from "../../cmssy.config";
+import { blocks } from "../../cmssy/blocks";
 import CmssyEditor from "../../cmssy/editor";
 import LayoutSlot from "../../cmssy/layout-slot";
 
@@ -8,11 +9,10 @@ import LayoutSlot from "../../cmssy/layout-slot";
 // must be dynamic: a prerendered page never sees the query string.
 export const prerender = false;
 
-const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
-  cmssy,
-  Astro.request,
-  Astro.url,
-);
+// `blocks` is what resolves the editor's layout data. Without it the editor
+// can select the header and not fill it, and a relation field shows raw ids.
+const { page, layouts, locale, defaultLocale, enabledLocales, editorData } =
+  await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
 const editorOrigin = cmssy.editorOrigin ?? "*";
 ---
 
@@ -30,6 +30,8 @@ const editorOrigin = cmssy.editorOrigin ?? "*";
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
       edit={{ editorOrigin }}
+      data={editorData?.header?.data}
+      resolvedContent={editorData?.header?.resolvedContent}
     />
     <CmssyEditor
       client:load
@@ -47,6 +49,8 @@ const editorOrigin = cmssy.editorOrigin ?? "*";
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
       edit={{ editorOrigin }}
+      data={editorData?.footer?.data}
+      resolvedContent={editorData?.footer?.resolvedContent}
     />
   </body>
 </html>

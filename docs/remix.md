@@ -42,6 +42,40 @@ on the same protocol, with less machinery.
 The framework decides how much machinery the same idea costs. That is what an
 adapter is for.
 
+## The header and footer
+
+They are layout **blocks**, not markup you own, and they have to reach the
+editor filled in. `loadCmssyPage` does the work; you pass it your block
+registry:
+
+```ts
+export const loader = createCmssyLoader(cmssy, { blocks });
+```
+
+`editorData` is keyed by position, because the header and the footer hold
+different blocks and resolve to different data. Hand it to the slot:
+
+```tsx
+<LayoutSlot
+  groups={layouts}
+  position="header"
+  locale={locale}
+  defaultLocale={defaultLocale}
+  enabledLocales={enabledLocales}
+  edit={isEdit ? { editorOrigin } : undefined}
+  data={editorData?.header?.data}
+  resolvedContent={editorData?.header?.resolvedContent}
+/>
+```
+
+Skip `resolvedContent` and the canvas shows a relation field as the raw ids it
+stores: the published site looks right, and the editor cannot fill the header.
+That was this adapter's behaviour before 11.1.0.
+
+The data half - preview secret in edit mode, language, editor data - is
+`resolveCmssyLayoutSlot` in `@cmssy/react`, the same function the Next adapter
+uses. Three renderers, one set of rules.
+
 ## SEO
 
 The adapter ships no sitemap or robots helper (10.0 removed them): both are a

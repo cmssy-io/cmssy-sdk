@@ -4,13 +4,11 @@ import {
   type CmssyLayoutGroup,
   type CmssyPageData,
 } from "@cmssy/core";
+import { CMSSY_LOCALE_HEADER, fetchPage } from "@cmssy/core/internal";
 import {
-  CMSSY_LOCALE_HEADER,
-  fetchLayouts,
-  fetchPage,
-  resolveSiteLocales,
-  splitLocaleFromPath,
-} from "@cmssy/core/internal";
+  resolveCmssyLayoutSlot,
+  type BlockDefinition,
+} from "@cmssy/react";
 
 export interface CmssyPageResult {
   page: CmssyPageData | null;
@@ -20,44 +18,112 @@ export interface CmssyPageResult {
   enabledLocales: string[];
   /** True for a verified editor request. The edit route renders the bridge. */
   isEdit: boolean;
+  /**
+   * Edit mode only, and only when `blocks` was passed: what the canvas needs,
+   * **keyed by position**. The header and the footer hold different blocks, so
+   * they resolve to different data - handing the footer the header's is the
+   * quiet version of this bug.
+   *
+   * Without `resolvedContent` a relation field shows the raw ids it stores,
+   * which is what this adapter did until now.
+   */
+  editorData?: Record<string, CmssyLayoutEditorData>;
+  editorOrigin?: string | string[];
+}
+
+export interface CmssyLayoutEditorData {
+  data: Record<string, unknown>;
+  resolvedContent: Record<string, Record<string, unknown>>;
+}
+
+export interface LoadCmssyPageOptions {
+  /**
+   * The block registry. Required to resolve the editor's layout data; omit it
+   * and the layouts still render, but the editor cannot fill them.
+   */
+  blocks?: BlockDefinition[];
+  /** Which positions the editor renders. Defaults to the header and footer. */
+  positions?: string[];
+  appContext?: Record<string, unknown>;
 }
 
 /**
- * Everything a cmssy page needs, from a plain Request. No framework globals: the
- * locale comes from the header the middleware set (falling back to the path, so
- * a prerendered page still knows its language), and the editor flag comes from
- * the same signal the Next adapter uses - because it is the same protocol, not
- * a Next protocol.
+ * Everything a cmssy page needs, from a plain Request. No framework globals.
+ *
+ * The layout half is `resolveCmssyLayoutSlot` from `@cmssy/react` - the same
+ * function the Next adapter uses, so the preview secret, the language and the
+ * editor data are decided in one place for all three frameworks rather than
+ * three times with two of them wrong.
  */
 export async function loadCmssyPage(
   config: CmssyConfig,
   request: Request,
   url: URL,
+  options: LoadCmssyPageOptions = {},
 ): Promise<CmssyPageResult> {
   const isEdit = request.headers.get(CMSSY_EDIT_HEADER) === "1";
-  const siteLocales = await resolveSiteLocales(config);
 
   const segments = url.pathname
     .replace(/^\/cmssy-edit/, "")
     .split("/")
     .filter(Boolean);
-  const fromPath = splitLocaleFromPath(segments, siteLocales);
-  const locale = request.headers.get(CMSSY_LOCALE_HEADER) ?? fromPath.locale;
 
-  const path = fromPath.path;
-  const previewSecret = isEdit ? config.draftSecret : undefined;
+  const positions = options.positions ?? ["header", "footer"];
+  const blocks = options.blocks ?? [];
+  // This adapter's routes are always dynamic, so the header the middleware set
+  // IS readable here - unlike on a cached Next route. Keeping the preference it
+  // has always had; the resolver never reads a header itself.
+  const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
 
-  const [page, layouts] = await Promise.all([
-    fetchPage(config, path, { previewSecret }),
-    fetchLayouts(config, path, { previewSecret }),
-  ]);
+  const slot = await resolveCmssyLayoutSlot(config, {
+    position: positions[0] ?? "header",
+    blocks,
+    editMode: isEdit,
+    path: segments,
+    locale: headerLocale,
+    appContext: options.appContext,
+  });
+
+  const page = await fetchPage(config, slot.path, {
+    previewSecret: isEdit ? config.draftSecret : undefined,
+  });
+
+  let editorData: Record<string, CmssyLayoutEditorData> | undefined;
+  if (isEdit && slot.data && slot.resolvedContent) {
+    editorData = {
+      [positions[0] ?? "header"]: {
+        data: slot.data,
+        resolvedContent: slot.resolvedContent,
+      },
+    };
+    // Each position resolves its own blocks. One call per position, in edit
+    // mode only - the published render needs none of this.
+    for (const position of positions.slice(1)) {
+      const extra = await resolveCmssyLayoutSlot(config, {
+        position,
+        blocks,
+        editMode: true,
+        path: segments,
+        locale: headerLocale,
+        appContext: options.appContext,
+      });
+      if (extra.data && extra.resolvedContent) {
+        editorData[position] = {
+          data: extra.data,
+          resolvedContent: extra.resolvedContent,
+        };
+      }
+    }
+  }
 
   return {
     page,
-    layouts,
-    locale,
-    defaultLocale: siteLocales.defaultLocale,
-    enabledLocales: siteLocales.locales,
+    layouts: slot.groups,
+    locale: slot.locale,
+    defaultLocale: slot.defaultLocale,
+    enabledLocales: slot.enabledLocales,
     isEdit,
+    editorData,
+    editorOrigin: slot.editorOrigin,
   };
 }

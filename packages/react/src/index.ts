@@ -80,6 +80,12 @@ export {
   resolveEditorBlockData,
   resolveEditorLayoutBlockData,
 } from "./components/resolve-block-data";
+export { resolveCmssyLayoutSlot } from "./components/resolve-layout-slot";
+export type {
+  ResolveCmssyLayoutSlotOptions,
+  CmssyLayoutSlotResolution,
+  CmssyLayoutSlotLocaleSource,
+} from "./components/resolve-layout-slot";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { CmssyBlock } from "./components/cmssy-block";

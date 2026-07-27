@@ -214,6 +214,7 @@ the middleware preset.
 | `createCmssyEditPage` | `(config, blocks, options?) => PageComponent`   | `app/cmssy-edit/[[...path]]/`   |
 | `createDraftRoute`    | `(config) => (request) => Promise<Response>`    | `app/api/draft/route.ts`        |
 | `CmssyLayoutSlot`     | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale` | any route |
+| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half | any adapter |
 | `isCmssyEditMode`     | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic | `/cmssy-edit` only |
 
 ```ts

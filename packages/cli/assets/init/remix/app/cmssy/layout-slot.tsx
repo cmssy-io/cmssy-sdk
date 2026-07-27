@@ -15,6 +15,13 @@ export interface LayoutSlotProps {
   enabledLocales: string[];
   /** Set on a VERIFIED editor request; the loader reports it as `isEdit`. */
   edit?: { editorOrigin: string | string[] };
+  /**
+   * The editor's block data, both halves, straight from the loader. Without
+   * `resolvedContent` the canvas shows a relation field as the raw ids it
+   * stores - the site looks right and the editor cannot fill the header.
+   */
+  data?: Record<string, unknown>;
+  resolvedContent?: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -31,6 +38,8 @@ export function LayoutSlot({
   defaultLocale,
   enabledLocales,
   edit,
+  data,
+  resolvedContent,
 }: LayoutSlotProps) {
   if (edit) {
     return (
@@ -41,6 +50,8 @@ export function LayoutSlot({
         defaultLocale={defaultLocale}
         enabledLocales={enabledLocales}
         edit={edit}
+        data={data}
+        resolvedContent={resolvedContent}
         load={() => import("./blocks")}
       />
     );

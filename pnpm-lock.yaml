@@ -24,6 +24,9 @@ importers:
         specifier: '>=4'
         version: 7.0.9(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@20.19.41)(rollup@4.61.0)
     devDependencies:
+      '@cmssy/react':
+        specifier: workspace:*
+        version: link:../react
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.41
@@ -209,6 +212,9 @@ importers:
         specifier: '>=7'
         version: 8.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
     devDependencies:
+      '@cmssy/react':
+        specifier: workspace:*
+        version: link:../react
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.41

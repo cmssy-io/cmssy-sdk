@@ -6,6 +6,30 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.1.0
+
+**Astro and React Router get the layout guarantees Next already had.** Both
+adapters carried their own copy of the layout logic, and both were missing the
+third of its three rules: they never passed `resolvedContent` to the canvas, so
+a relation field in a header block showed the raw ids it stores. The site looked
+right; the editor could select the header and not fill it.
+
+- New `resolveCmssyLayoutSlot` in `@cmssy/react` - the framework-free half:
+  preview secret in edit mode, language, editor data. `CmssyLayoutSlot`,
+  `loadCmssyPage` and `createCmssyLoader` are now three renderers over one
+  function instead of three implementations.
+- `loadCmssyPage(config, request, url, { blocks })` and
+  `createCmssyLoader(config, { blocks })` take an options argument and return
+  `editorData`, **keyed by position** - the header and the footer resolve to
+  different data.
+- Fixed: a layout block with `isActive` unset was hidden by the SDK renderers
+  and shown by the scaffolds. `isActive` is nullable in the schema, so unset now
+  means active everywhere.
+
+Nothing is removed and no signature is broken. `cmssy init` writes the new
+wiring; an existing Astro or React Router app adds `{ blocks }` and forwards
+`editorData` to get its editor fixed.
+
 ## 11.0.0
 
 **Public routes were never cached. Now they are.** Every v10 release served

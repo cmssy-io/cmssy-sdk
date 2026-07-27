@@ -62,6 +62,41 @@ const { page, locale } = await loadCmssyPage(cmssy, Astro.request, Astro.url);
 **Skip the edit route and the editor preview is blank.** It is the single most
 common way to break a cmssy app, on any framework.
 
+## The header and footer
+
+They are layout **blocks**, not markup you own, and they have to reach the
+editor filled in. `loadCmssyPage` does the work; you pass it your block
+registry:
+
+```ts
+const { layouts, locale, defaultLocale, enabledLocales, editorData } =
+  await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
+```
+
+`editorData` is keyed by position, because the header and the footer hold
+different blocks and resolve to different data. Hand it to the slot:
+
+```tsx
+<LayoutSlot
+  groups={layouts}
+  position="header"
+  locale={locale}
+  defaultLocale={defaultLocale}
+  enabledLocales={enabledLocales}
+  edit={isEdit ? { editorOrigin } : undefined}
+  data={editorData?.header?.data}
+  resolvedContent={editorData?.header?.resolvedContent}
+/>
+```
+
+Skip `resolvedContent` and the canvas shows a relation field as the raw ids it
+stores: the published site looks right, and the editor cannot fill the header.
+That was this adapter's behaviour before 11.1.0.
+
+The data half - preview secret in edit mode, language, editor data - is
+`resolveCmssyLayoutSlot` in `@cmssy/react`, the same function the Next adapter
+uses. Three renderers, one set of rules.
+
 ## SEO
 
 The adapter ships no sitemap or robots helper (10.0 removed them): both are a
