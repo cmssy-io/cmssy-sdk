@@ -47,7 +47,7 @@ export function CmssyEditableLayout({
     const group = groups.find((g) => g.position === position);
     return group
       ? group.blocks
-          .filter((b) => b.isActive)
+          .filter((b) => b.isActive !== false)
           .slice()
           .sort((a, b) => a.order - b.order)
       : [];

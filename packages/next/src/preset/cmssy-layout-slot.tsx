@@ -1,20 +1,12 @@
 import type { ComponentType } from "react";
 import {
   CmssyServerLayout,
-  resolveEditorLayoutBlockData,
+  resolveCmssyLayoutSlot,
   type BlockDefinition,
   type CmssyLayoutGroup,
+  type ResolveCmssyLayoutSlotOptions,
 } from "@cmssy/react";
-import {
-  resolveEditorOrigin,
-  type CmssyConfig,
-  type LayoutPosition,
-} from "@cmssy/core";
-import { fetchLayouts } from "@cmssy/core/internal";
-import {
-  resolveSiteLocales,
-  splitLocaleFromPath,
-} from "@cmssy/core/internal/locale";
+import { type CmssyConfig, type LayoutPosition } from "@cmssy/core";
 
 interface CmssyLayoutSlotBaseProps {
   config: CmssyConfig;
@@ -102,15 +94,22 @@ export async function CmssyLayoutSlot({
   editable: Editable,
   appContext,
 }: CmssyLayoutSlotProps) {
-  const [groups, siteLocales] = await Promise.all([
-    fetchLayouts(config, page, {
-      previewSecret: editMode ? config.draftSecret : undefined,
-    }),
-    resolveSiteLocales(config),
-  ]);
+  // `page` stays "/" by default here, where it always has been. The resolver
+  // defaults to the routed page, which is what Astro and React Router have
+  // always done - changing this side too would be a silent content change in
+  // every Next app one release after the last one.
+  const resolved = await resolveCmssyLayoutSlot(config, {
+    position,
+    blocks,
+    editMode,
+    page,
+    appContext,
+    ...(explicitLocale !== undefined
+      ? { locale: explicitLocale }
+      : { path: path ?? [] }),
+  } as ResolveCmssyLayoutSlotOptions);
 
-  const locale =
-    explicitLocale ?? splitLocaleFromPath(path ?? [], siteLocales).locale;
+  const { groups, locale, defaultLocale, enabledLocales } = resolved;
 
   if (!editMode) {
     return (
@@ -119,37 +118,26 @@ export async function CmssyLayoutSlot({
         blocks={blocks}
         position={position}
         locale={locale}
-        defaultLocale={siteLocales.defaultLocale}
-        enabledLocales={siteLocales.locales}
+        defaultLocale={defaultLocale}
+        enabledLocales={enabledLocales}
         config={config}
         appContext={appContext}
       />
     );
   }
 
-  const origin = resolveEditorOrigin(config.editorOrigin);
-  const editorData = await resolveEditorLayoutBlockData({
-    groups,
-    blocks,
-    position,
-    locale,
-    defaultLocale: siteLocales.defaultLocale,
-    enabledLocales: siteLocales.locales,
-    isPreview: true,
-    config,
-    appContext,
-  });
+  const origin = resolved.editorOrigin;
 
   return (
     <Editable
       groups={groups}
       position={position}
       locale={locale}
-      defaultLocale={siteLocales.defaultLocale}
-      enabledLocales={siteLocales.locales}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
       edit={{ editorOrigin: (Array.isArray(origin) ? origin[0] : origin) ?? "" }}
-      data={editorData.data}
-      resolvedContent={editorData.content}
+      data={resolved.data}
+      resolvedContent={resolved.resolvedContent}
       appContext={appContext}
     />
   );

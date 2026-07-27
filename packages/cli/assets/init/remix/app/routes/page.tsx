@@ -6,7 +6,9 @@ import { CmssyEditor } from "../cmssy/editor";
 import { LayoutSlot } from "../cmssy/layout-slot";
 import type { Route } from "./+types/page";
 
-export const loader = createCmssyLoader(cmssy);
+// `blocks` is what lets the loader resolve the editor's layout data. Drop it
+// and the site still renders - the editor just cannot fill the header.
+export const loader = createCmssyLoader(cmssy, { blocks });
 
 // Without these the admin cannot frame the site, and the editor shows an empty
 // box with no error anywhere.
@@ -22,6 +24,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     isEdit,
     editorOrigin,
     diagnostics,
+    editorData,
   } = loaderData;
 
   if (diagnostics) {
@@ -38,6 +41,8 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
       edit={isEdit ? { editorOrigin } : undefined}
+      data={editorData?.[position]?.data}
+      resolvedContent={editorData?.[position]?.resolvedContent}
     />
   );
 

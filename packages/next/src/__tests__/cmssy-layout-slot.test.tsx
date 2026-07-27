@@ -15,33 +15,23 @@ const GROUPS = [{ position: "header", blocks: [{ id: "b1", type: "site-header" }
 const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
-const fetchLayouts = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
-  return { ...actual, fetchLayouts };
-});
-
-const resolveSiteLocales = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/core/internal/locale", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
-  return { ...actual, resolveSiteLocales };
-});
-
-const resolveEditorLayoutBlockData = vi.hoisted(() => vi.fn());
+// The data half lives in resolveCmssyLayoutSlot and is tested in @cmssy/react.
+// What is left here is the part that is Next's: which component renders, and
+// what reaches it.
+const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<Record<string, unknown>>();
-  return { ...actual, resolveEditorLayoutBlockData };
+  return { ...actual, resolveCmssyLayoutSlot };
 });
 
-function setup() {
-  fetchLayouts.mockResolvedValue(GROUPS);
-  resolveSiteLocales.mockResolvedValue({
+function setup(overrides: Record<string, unknown> = {}) {
+  resolveCmssyLayoutSlot.mockResolvedValue({
+    groups: GROUPS,
+    locale: "en",
     defaultLocale: "en",
-    locales: ["en", "no"],
-  });
-  resolveEditorLayoutBlockData.mockResolvedValue({
-    data: { b1: { categories: [] } },
-    content: { b1: { heading: "Shop" } },
+    enabledLocales: ["en", "no"],
+    path: [],
+    ...overrides,
   });
   headersMock.mockResolvedValue(new Headers());
 }
@@ -67,15 +57,14 @@ describe("CmssyLayoutSlot", () => {
 
     expect(element.type).toBe(CmssyServerLayout);
     expect(element.props.groups).toBe(GROUPS);
-    // No preview secret on a public render, or the site serves draft chrome.
-    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
-      previewSecret: undefined,
-    });
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ editMode: false, page: "/", path: [] }),
+    );
   });
 
   it("takes the language from the routed path, without reading headers", async () => {
-    setup();
-
+    setup({ locale: "no", path: ["about"] });
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
@@ -89,10 +78,14 @@ describe("CmssyLayoutSlot", () => {
     // Reading headers() here would make every page dynamic - the reason the
     // 10.0 version of this component was removed.
     expect(headersMock).not.toHaveBeenCalled();
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ path: ["no", "about"] }),
+    );
   });
 
   it("takes an explicit locale where there are no params to read", async () => {
-    setup();
+    setup({ locale: "no" });
 
     const element = await CmssyLayoutSlot({
       config: CONFIG,
@@ -111,7 +104,11 @@ describe("CmssyLayoutSlot", () => {
   });
 
   it("goes through the edit bridge with the draft, in edit mode", async () => {
-    setup();
+    setup({
+      data: { b1: { categories: [] } },
+      resolvedContent: { b1: { heading: "Shop" } },
+      editorOrigin: CONFIG.editorOrigin,
+    });
 
     const element = await CmssyLayoutSlot({
       config: CONFIG,
@@ -123,11 +120,8 @@ describe("CmssyLayoutSlot", () => {
     });
 
     expect(element.type).toBe(Editable);
-    // The draft, not the published header - you are editing the draft.
-    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
-      previewSecret: CONFIG.draftSecret,
-    });
-    // Both halves: the canvas renders stored content, where a relation is ids.
+    // Both halves reach the canvas: it renders stored content, where a
+    // relation field is raw ids.
     expect(element.props.data).toEqual({ b1: { categories: [] } });
     expect(element.props.resolvedContent).toEqual({ b1: { heading: "Shop" } });
     expect(element.props.edit).toEqual({ editorOrigin: CONFIG.editorOrigin });
