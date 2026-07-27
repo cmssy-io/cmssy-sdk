@@ -3,7 +3,8 @@ export { graphqlRequest } from "@cmssy/core";
 export type { GraphqlRequestOptions } from "@cmssy/core";
 export { CmssyRequestError } from "@cmssy/core";
 export type { RetryPolicy } from "@cmssy/core";
-export { createCmssyClient } from "@cmssy/core";
+export { createCmssyClient, layoutPositionValues } from "@cmssy/core";
+export type { LayoutPosition } from "@cmssy/core";
 export type {
   CmssyClient,
   CmssyTypedDocument,

@@ -117,43 +117,50 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 }
 ```
 
-The slot that mounts them is yours (10.0 removed `CmssyLayoutSlot`, which fetched
-and rendered them for you). It has three jobs, and each one is a way to break the
-editor silently:
-
 ```tsx
-// cmssy/layout-slot.tsx
-export async function CmssyLayoutSlot({ position, path }) {
-  const editMode = await isCmssyEditMode();
+// app/[[...path]]/page.tsx
+import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
 
-  // 1. In edit mode, fetch with the preview secret - otherwise the editor shows
-  //    the PUBLISHED header while you edit the draft one.
-  const groups = await fetchChromeLayouts(
-    "/",
-    editMode ? cmssy.draftSecret : undefined,
+export default async function Page(props) {
+  const { path } = await props.params;
+  const slot = (position) => (
+    <CmssyLayoutSlot
+      config={cmssy}
+      blocks={blocks}
+      position={position}
+      path={path}            // the language prefix in it IS the language
+      editable={EditableLayout}
+    />
   );
-
-  // 2. The language comes from the routed path. Reading it from the request
-  //    header instead forces every page dynamic and gives up ISR.
-  const { locale } = splitLocaleFromPath(path, siteLocales);
-
-  if (!editMode) {
-    return <CmssyServerLayout groups={groups} blocks={blocks} position={position} … />;
-  }
-
-  // 3. In edit mode they go through the bridge, with the server-resolved
-  //    content - the canvas renders stored content, and a relation field there
-  //    is raw ids. Server-rendered instead, the editor can select the header
-  //    and has no fields to show for it.
-  const data = await resolveEditorLayoutBlockData({ groups, blocks, position, … });
-  return <EditableLayout groups={groups} position={position} data={data.data}
-    resolvedContent={data.content} … />;
+  return (
+    <>
+      {slot("header")}
+      <main><CmssyPage {...props} /></main>
+      {slot("footer")}
+    </>
+  );
 }
 ```
 
-Mount it in the routes (which know their path), not in `app/layout.tsx`. The
-complete file is in
-[cmssy-next-starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/cmssy/layout-slot.tsx).
+Three things this gets right that every hand-written version got at least one of
+wrong between 10.0 and 10.9 - which is why it exists again:
+
+1. **In edit mode it fetches with the preview secret.** Otherwise you edit the
+   draft header and the editor shows you the published one.
+2. **The language comes from `path`**, not from `headers()`. The header form
+   forces every page dynamic and gives up ISR - that flaw is why the 10.0
+   version was removed.
+3. **The editor gets `resolvedContent`**, not just loader data. The canvas
+   renders stored content, and a relation field there is raw ids.
+
+`editable` is required, and a component rather than a loader: the registry is
+imported lazily on the client, and a function cannot cross the server boundary.
+Making it optional is what leaves an editor that can select the header and not
+fill it, so the type says no.
+
+Mount it per route, not in `app/layout.tsx`: a route knows its path. There are
+six positions - `top`, `header`, `sidebar_left`, `sidebar_right`, `footer`,
+`bottom` - and `LayoutPosition` / `layoutPositionValues` name them.
 
 ## 6. The editor bridge
 

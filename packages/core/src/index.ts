@@ -46,6 +46,10 @@ export type {
 
 // --- Blocks / fields ---
 export { fields } from "./fields";
+// The six positions a layout block can occupy. Apps mount header and footer
+// most often; the type is what tells a reader the other four exist.
+export { layoutPositionValues } from "@cmssy/types";
+export type { LayoutPosition } from "@cmssy/types";
 export type {
   BlockPropsSchema,
   FieldControl,
