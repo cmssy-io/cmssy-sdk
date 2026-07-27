@@ -2008,6 +2008,7 @@ type OrganizationBilling {
 type OrganizationLimits {
   canRemoveBranding: Boolean!
   canUseCart: Boolean!
+  canUseSso: Boolean!
   maxAiTokensMonth: Int!
   maxApiRequestsMonth: Int!
   maxBandwidthGbMonth: Int!
@@ -2034,6 +2035,7 @@ type OrganizationMutations {
   inviteMember(input: InviteOrganizationMemberInput!, organizationId: ID!): InviteMemberResult!
   moveWorkspace(organizationId: ID!, workspaceId: ID!): Organization!
   removeMember(organizationId: ID!, userId: ID!): Organization!
+  sso: OrganizationSsoMutations!
 
   """
   Hand the organization - and with it the permission bypass over every workspace it owns - to another active member. Owner-only.
@@ -2048,12 +2050,23 @@ type OrganizationQueries {
   get(id: ID, slug: String): Organization
   invoices(limit: Int, organizationId: ID!): [Invoice!]!
   list: [Organization!]!
+  sso: OrganizationSsoQueries!
   usageHistory(id: ID, range: UsageHistoryRange!, slug: String): UsageHistory
 }
 
 type OrganizationSettings {
   allowMemberWorkspaceCreate: Boolean!
   defaultMemberRole: String!
+}
+
+type OrganizationSsoMutations {
+  addDomain(domain: String!, organizationId: ID!): [SsoDomain!]!
+  removeDomain(domain: String!, organizationId: ID!): [SsoDomain!]!
+  verifyDomain(domain: String!, organizationId: ID!): [SsoDomain!]!
+}
+
+type OrganizationSsoQueries {
+  domains(organizationId: ID!): [SsoDomain!]!
 }
 
 type OrganizationWorkspace {
@@ -3168,6 +3181,13 @@ type SiteVerifications {
 enum SortDirection {
   asc
   desc
+}
+
+type SsoDomain {
+  domain: String!
+  verificationToken: String!
+  verified: Boolean!
+  verifiedAt: String
 }
 
 type StatusFieldConfig {
