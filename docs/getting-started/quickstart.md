@@ -161,8 +161,11 @@ export function middleware(request: NextRequest) {
 }
 ```
 
-In a server component (e.g. the root `layout.tsx`), read `isCmssyEditMode()` to
-fetch draft vs published data on the same signal.
+On the `/cmssy-edit` route - which is `force-dynamic` - read
+`isCmssyEditMode()` to fetch draft rather than published data. Do **not** read it
+on a public route: it calls `headers()`, and one such read makes the route
+uncacheable for good. Public routes pass `editMode={false}` and let the proxy
+rewrite editor traffic to `/cmssy-edit`.
 
 > **Security.** `?cmssyEdit=1` is a developer-controllable flag - any request can
 > opt into edit mode. This is not an escalation: draft **content** is still gated

@@ -41,6 +41,7 @@ npx @cmssy/cli link   # connects it to your workspace
 | [**Troubleshooting**](docs/troubleshooting.md)     | Symptom → cause. Every row cost us half a day, and none of them failed a build.            |
 | [**Testing**](docs/testing.md)                     | `checkCmssyEditMode` - the editor is the one path a build cannot check.                    |
 | [**API reference**](docs/reference/sdk-api.md)     | Every public export, with signatures. ~22 symbols: gateway, editor wiring, blocks.         |
+| [**Migrating to v11**](docs/migrations/v10-to-v11.md) | Public routes were never cached. `editMode` is now a prop, and you generate your static params. |
 | [**Migrating to v10**](docs/migrations/v9-to-v10.md) | The SDK stopped mirroring the graph. Your queries, your SEO, your auth.                  |
 | [**Migrating to v9**](docs/migrations/v8-to-v9.md) | The config locale override is gone. The workspace languages rule everywhere.               |
 | [**Migrating to v8**](docs/migrations/v7-to-v8.md) | A block's content is typed by its schema. A renamed field is now a build error.            |

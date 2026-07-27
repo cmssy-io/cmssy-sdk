@@ -20,10 +20,11 @@ export const FRAMEWORKS: FrameworkDef[] = [
     label: "Next.js",
     createCommand: "npx create-next-app@latest",
     detect: ["next"],
-    dependencies: ["@cmssy/next", "@cmssy/react"],
+    dependencies: ["@cmssy/next", "@cmssy/react", "@cmssy/core"],
     files: [
       "cmssy.config.ts",
       "proxy.ts",
+      "services/pages.ts",
       "cmssy/blocks.ts",
       "cmssy/editor.tsx",
       "cmssy/editable-layout.tsx",

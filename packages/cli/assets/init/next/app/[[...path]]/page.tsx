@@ -3,11 +3,24 @@ import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
 import { EditableLayout } from "@/cmssy/editable-layout";
+import { publishedPaths } from "@/services/pages";
 
 type PageProps = {
   params: Promise<{ path?: string[] }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+// Three lines that decide whether this site is cached at all. Without
+// generateStaticParams a catch-all is rendered on demand every time and
+// `revalidate` is ignored - the build prints a blank Revalidate column, which is
+// the only warning you get. `dynamicParams` keeps pages published after the
+// build working: first request renders them, and they cache from then on.
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return publishedPaths();
+}
 
 const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 
@@ -22,7 +35,8 @@ export default async function Page(props: PageProps) {
       config={cmssy}
       blocks={blocks}
       position={position}
-      path={path}
+      path={path ?? []}
+      editMode={false}
       editable={EditableLayout}
     />
   );
