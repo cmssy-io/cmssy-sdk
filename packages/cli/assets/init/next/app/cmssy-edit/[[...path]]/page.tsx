@@ -29,7 +29,8 @@ export default async function EditPage(props: PageProps) {
       config={cmssy}
       blocks={blocks}
       position={position}
-      path={path}
+      path={path ?? []}
+      editMode
       editable={EditableLayout}
     />
   );

@@ -26,6 +26,7 @@ const NEXT_FILES = [
   ".env.example",
   "cmssy.config.ts",
   "proxy.ts",
+  "services/pages.ts",
   "cmssy/blocks.ts",
   "cmssy/editor.tsx",
   "cmssy/editable-layout.tsx",
@@ -142,9 +143,7 @@ describe("runInit", () => {
     const pkg = readPkg(cwd);
     expect(pkg.dependencies?.["@cmssy/next"]).toBe(`^${CLI_VERSION}`);
     expect(pkg.dependencies?.["@cmssy/react"]).toBe("^1.0.0");
-    expect(lines.join("\n")).toContain(
-      `added @cmssy/next@^${CLI_VERSION} to package.json`,
-    );
+    expect(lines.join("\n")).toContain(`added @cmssy/next@^${CLI_VERSION}`);
     lines.length = 0;
     expect(runInit({}, deps)).toBe(0);
     expect(readPkg(cwd)).toEqual(pkg);

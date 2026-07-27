@@ -120,6 +120,16 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 ```tsx
 // app/[[...path]]/page.tsx
 import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
+import { publishedPaths } from "@/services/pages";
+
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+// Without this the route is served on demand every request and the
+// `revalidate` above does nothing at all - see the note below.
+export function generateStaticParams() {
+  return publishedPaths();
+}
 
 export default async function Page(props) {
   const { path } = await props.params;
@@ -128,7 +138,8 @@ export default async function Page(props) {
       config={cmssy}
       blocks={blocks}
       position={position}
-      path={path}            // the language prefix in it IS the language
+      path={path ?? []}      // the language prefix in it IS the language
+      editMode={false}       // true only on the /cmssy-edit route
       editable={EditableLayout}
     />
   );
@@ -147,9 +158,10 @@ wrong between 10.0 and 10.9 - which is why it exists again:
 
 1. **In edit mode it fetches with the preview secret.** Otherwise you edit the
    draft header and the editor shows you the published one.
-2. **The language comes from `path`**, not from `headers()`. The header form
-   forces every page dynamic and gives up ISR - that flaw is why the 10.0
-   version was removed.
+2. **The language comes from `path`**, not from `headers()`. A caller with no
+   params passes `locale` instead; there is no header fallback, because a
+   cached route never sees the header the proxy set and would render the wrong
+   language while looking like it worked.
 3. **The editor gets `resolvedContent`**, not just loader data. The canvas
    renders stored content, and a relation field there is raw ids.
 
@@ -157,6 +169,32 @@ wrong between 10.0 and 10.9 - which is why it exists again:
 imported lazily on the client, and a function cannot cross the server boundary.
 Making it optional is what leaves an editor that can select the header and not
 fill it, so the type says no.
+
+`editMode` is required for the same reason. It is a parameter rather than a
+lookup because every way of asking the request - `headers()`, `draftMode()` - is
+a dynamic API, and one read makes the whole route uncacheable. The route segment
+already knows: the public route passes `false`, `/cmssy-edit` passes `true`.
+
+### Why `generateStaticParams` is not optional
+
+A catch-all route that generates no params is rendered on demand on every
+request. `export const revalidate` is then ignored - the build prints a blank
+Revalidate column and the responses carry
+`Cache-Control: private, no-cache, no-store`. That is not a slow site; it is a
+site with no cache at all, and every visit costs a delivery API call.
+
+Check it, on a production build rather than `next dev`, which renders everything
+dynamically:
+
+```bash
+pnpm build && pnpm start
+curl -sI http://localhost:3000/ | grep -i 'cache-control\|x-nextjs-prerender'
+# x-nextjs-prerender: 1
+# Cache-Control: s-maxage=3600, stale-while-revalidate=31532400
+```
+
+`dynamicParams = true` keeps pages published after the build working: the first
+request renders them and they are cached from then on.
 
 Mount it per route, not in `app/layout.tsx`: a route knows its path. There are
 six positions - `top`, `header`, `sidebar_left`, `sidebar_right`, `footer`,

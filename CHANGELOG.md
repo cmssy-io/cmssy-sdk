@@ -6,6 +6,34 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.0.0
+
+**Public routes were never cached. Now they are.** Every v10 release served
+`Cache-Control: private, no-cache, no-store` from routes declaring
+`export const revalidate` - measured on a fresh `cmssy init` app, on
+cmssy-next-starter, and on cmssy-demo in production. Two independent causes: the
+scaffold generated no static params, and `CmssyLayoutSlot` read `headers()`.
+
+**You have to do something** - see [v10 → v11](docs/migrations/v10-to-v11.md):
+
+- `CmssyLayoutSlot` takes a required `editMode` prop: `false` on the public
+  route, `true` on `/cmssy-edit`. Required rather than defaulted because the
+  wrong value is invisible - an edit route that says `false` wraps draft content
+  in published chrome.
+- The slot's locale fallback to the request header is gone. Pass `path`
+  (preferred) or an explicit `locale`; the type takes one, never neither. A
+  cached route never sees the header the proxy set, so that fallback rendered the
+  wrong language while looking correct.
+- `cmssy init` writes `services/pages.ts` and a `generateStaticParams` in the
+  catch-all. Existing apps add their own - without it the other two changes
+  achieve nothing.
+
+`draftMode()` was never a cause; reading it does not mark a route dynamic in
+Next 16. The draft route and the proxy are unchanged.
+
+`starter-smoke` now asserts cache headers on Next. This survived ten minor
+versions because every check read markup, and markup looks identical either way.
+
 ## 10.10.0
 
 **`CmssyLayoutSlot` is back.** 10.0 removed it as a helper doing the app's work.

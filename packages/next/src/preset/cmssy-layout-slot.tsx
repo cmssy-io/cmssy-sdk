@@ -12,13 +12,11 @@ import {
 } from "@cmssy/core";
 import { fetchLayouts } from "@cmssy/core/internal";
 import {
-  CMSSY_LOCALE_HEADER,
   resolveSiteLocales,
   splitLocaleFromPath,
 } from "@cmssy/core/internal/locale";
-import { isCmssyEditMode } from "../edit-mode";
 
-export interface CmssyLayoutSlotProps {
+interface CmssyLayoutSlotBaseProps {
   config: CmssyConfig;
   blocks: BlockDefinition[];
   /**
@@ -28,16 +26,15 @@ export interface CmssyLayoutSlotProps {
    */
   position: LayoutPosition;
   /**
-   * The catch-all segments of the route rendering this slot, **as routed**.
-   * The language prefix in them IS the language, and reading it here keeps the
-   * route statically renderable.
+   * Whether to render through the edit bridge. A parameter rather than a
+   * lookup: every way of asking the request - `headers()`, `draftMode()` - is a
+   * dynamic API, and one read makes the whole route uncacheable. The route
+   * segment already knows the answer, so it passes it.
    *
-   * Omit it only where there are no params to read - a root layout - and the
-   * language falls back to the header the middleware set, which means calling
-   * `headers()` and giving up static rendering for the whole route. The version
-   * of this component removed in 10.0 had no choice about that; this one does.
+   * Required on purpose. A slot that guessed `false` in an edit route would
+   * wrap draft content in published chrome, and nothing would report it.
    */
-  path?: string[];
+  editMode: boolean;
   /** The page whose layout to render. Defaults to the site-wide header/footer. */
   page?: string;
   /**
@@ -64,6 +61,23 @@ export interface CmssyLayoutSlotProps {
 }
 
 /**
+ * Where the language comes from - one of two, never neither.
+ *
+ * `path` is the catch-all segments **as routed**: the language prefix in them
+ * IS the language, and reading it costs the route nothing. A caller with no
+ * params (a root layout) has to resolve the language itself and pass `locale`;
+ * there is deliberately no fallback to the request header, because a static
+ * route never sees the header the proxy set and would render the wrong
+ * language while looking like it worked.
+ */
+export type CmssyLayoutSlotLocaleSource =
+  | { path: string[]; locale?: never }
+  | { locale: string; path?: never };
+
+export type CmssyLayoutSlotProps = CmssyLayoutSlotBaseProps &
+  CmssyLayoutSlotLocaleSource;
+
+/**
  * The site-wide header and footer, which are layout **blocks** rather than
  * markup the app owns. Rendered the way each mode needs them:
  *
@@ -82,12 +96,12 @@ export async function CmssyLayoutSlot({
   blocks,
   position,
   path,
+  locale: explicitLocale,
+  editMode,
   page = "/",
   editable: Editable,
   appContext,
 }: CmssyLayoutSlotProps) {
-  const editMode = await isCmssyEditMode();
-
   const [groups, siteLocales] = await Promise.all([
     fetchLayouts(config, page, {
       previewSecret: editMode ? config.draftSecret : undefined,
@@ -95,9 +109,8 @@ export async function CmssyLayoutSlot({
     resolveSiteLocales(config),
   ]);
 
-  const locale = path
-    ? splitLocaleFromPath(path, siteLocales).locale
-    : await localeFromHeader(siteLocales.defaultLocale);
+  const locale =
+    explicitLocale ?? splitLocaleFromPath(path ?? [], siteLocales).locale;
 
   if (!editMode) {
     return (
@@ -140,10 +153,4 @@ export async function CmssyLayoutSlot({
       appContext={appContext}
     />
   );
-}
-
-/** The language the middleware resolved. Reading it opts the route out of static. */
-async function localeFromHeader(defaultLocale: string): Promise<string> {
-  const { headers } = await import("next/headers");
-  return (await headers()).get(CMSSY_LOCALE_HEADER) || defaultLocale;
 }

@@ -12,11 +12,6 @@ const CONFIG = {
 
 const GROUPS = [{ position: "header", blocks: [{ id: "b1", type: "site-header" }] }];
 
-let editMode = false;
-let headerLocale: string | null = null;
-
-vi.mock("../edit-mode", () => ({ isCmssyEditMode: async () => editMode }));
-
 const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
@@ -48,16 +43,12 @@ function setup() {
     data: { b1: { categories: [] } },
     content: { b1: { heading: "Shop" } },
   });
-  headersMock.mockResolvedValue(
-    new Headers(headerLocale ? { "x-cmssy-locale": headerLocale } : {}),
-  );
+  headersMock.mockResolvedValue(new Headers());
 }
 
 const Editable = () => null;
 
 afterEach(() => {
-  editMode = false;
-  headerLocale = null;
   vi.clearAllMocks();
 });
 
@@ -70,6 +61,7 @@ describe("CmssyLayoutSlot", () => {
       blocks: [],
       position: "header",
       path: [],
+      editMode: false,
       editable: Editable,
     });
 
@@ -89,6 +81,7 @@ describe("CmssyLayoutSlot", () => {
       blocks: [],
       position: "header",
       path: ["no", "about"],
+      editMode: false,
       editable: Editable,
     });
 
@@ -98,23 +91,26 @@ describe("CmssyLayoutSlot", () => {
     expect(headersMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to the middleware's header when there is no path", async () => {
-    headerLocale = "no";
+  it("takes an explicit locale where there are no params to read", async () => {
     setup();
 
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
       position: "header",
+      locale: "no",
+      editMode: false,
       editable: Editable,
     });
 
     expect(element.props.locale).toBe("no");
-    expect(headersMock).toHaveBeenCalled();
+    // A caller with no path resolves the language itself. There is no header
+    // fallback: a static route never sees the header the proxy set, so the
+    // fallback would render the wrong language and look like it worked.
+    expect(headersMock).not.toHaveBeenCalled();
   });
 
   it("goes through the edit bridge with the draft, in edit mode", async () => {
-    editMode = true;
     setup();
 
     const element = await CmssyLayoutSlot({
@@ -122,6 +118,7 @@ describe("CmssyLayoutSlot", () => {
       blocks: [],
       position: "header",
       path: [],
+      editMode: true,
       editable: Editable,
     });
 
@@ -145,17 +142,18 @@ describe("CmssyLayoutSlot", () => {
       blocks: [],
       position: "header",
       path: [],
+      editMode: false,
       editable: Editable,
       appContext,
     });
     expect(published.props.appContext).toBe(appContext);
 
-    editMode = true;
     const editing = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
       position: "header",
       path: [],
+      editMode: true,
       editable: Editable,
       appContext,
     });
