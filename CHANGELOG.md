@@ -6,6 +6,42 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.3.1
+
+**`@cmssy/next`: a site with `resolveLocale` could only edit its default
+language.** The language prefix was split off the slug only when `resolveLocale`
+was absent. With it set, `/no/about` was looked up as the slug `"/no/about"` -
+which no workspace has - so the page fell through to `notFound()`, and an editor
+sees a 404 in an iframe as a blank preview rather than an error. Such a site was
+fetching its layouts for `/about` and its page for `/no/about` in one render.
+The public route was hit by the same rule wherever it keeps the prefix in its
+URLs.
+
+`resolveLocale` decides which language renders, as before; it no longer decides
+what the slug is. A first segment that is not an enabled language stays part of
+the slug, so `/de/about` is untouched on a site with no German.
+
+Two things to check before updating, both only if you set `resolveLocale`:
+
+- **Pages slugged with a language prefix now 404.** If your workspace really has
+  a page at `no/about`, it was reachable at `/no/about` and stops being. One
+  cmssy page is one slug carrying every translation, so this should not exist -
+  but it is the one way this release can take a working URL away.
+- **`appContext` receives the stripped path.** `path` no longer carries the
+  prefix, so `"/" + path.join("/")` yields `/about`, not `/no/about`. An
+  `appContext` that builds a canonical URL from it needs the language put back,
+  or every language canonicalises to the default one. Apps without
+  `resolveLocale` always got the stripped path; this makes the two agree.
+
+Only a **non-default** language prefix is split. A site that prefixes every
+language, its default included, still looks `/en/about` up as the slug
+`en/about` - unchanged here, and the proxy declines to strip it too.
+
+Prefixed URLs whose 404 was cached stay 404 until that entry revalidates.
+
+`@cmssy/astro` and `@cmssy/remix` are unaffected: both resolve through
+`resolveCmssyLayoutSlot`, which has always split the prefix off itself.
+
 ## 11.3.0
 
 **`cmssy types` now vendors the delivery operations too.** Every cmssy app
