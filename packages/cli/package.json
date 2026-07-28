@@ -38,6 +38,7 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "graphql": "^16.10.0"
   }
 }

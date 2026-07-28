@@ -1,8 +1,8 @@
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parse } from "graphql";
+import { Kind, parse, type OperationDefinitionNode } from "graphql";
 
 import { CMSSY_DELIVERY_OPERATIONS } from "@cmssy/core/internal";
 import { generateOperationsFile, operationNames } from "../operations-file";
@@ -12,113 +12,182 @@ function app(): string {
   return mkdtempSync(join(tmpdir(), "cmssy-ops-"));
 }
 
-/** Fails the test if anything reaches the network - operations must not. */
-const noFetch = (() => {
-  throw new Error("the operations file must not need the network");
-}) as unknown as typeof globalThis.fetch;
+function write(cwd: string, file: string, body: string): void {
+  mkdirSync(join(cwd, file, ".."), { recursive: true });
+  writeFileSync(join(cwd, file), body);
+}
 
-function deps(cwd: string, lines: string[]) {
+function deps(cwd: string, lines: string[] = []) {
+  const fetchCalls: unknown[] = [];
   return {
-    cwd,
-    // No org/workspace: the models half will fail, which is the point - the
-    // operations must land anyway.
-    env: {} as Record<string, string | undefined>,
-    log: (line: string) => lines.push(line),
-    fetch: noFetch,
+    deps: {
+      cwd,
+      // No org/workspace on purpose: the models half fails, and the operations
+      // must land regardless.
+      env: {} as Record<string, string | undefined>,
+      log: (line: string) => lines.push(line),
+      fetch: ((...args: unknown[]) => {
+        fetchCalls.push(args);
+        throw new Error("the operations file must not need the network");
+      }) as unknown as typeof globalThis.fetch,
+    },
+    fetchCalls,
   };
 }
 
+function parsedNames(source: string): string[] {
+  return parse(source)
+    .definitions.filter(
+      (node): node is OperationDefinitionNode =>
+        node.kind === Kind.OPERATION_DEFINITION,
+    )
+    .map((node) => node.name?.value ?? "<anonymous>");
+}
+
+const OPS = "cmssy/operations.graphql";
+
 describe("generateOperationsFile", () => {
-  it("is the SDK's own documents, not a copy of them", () => {
+  it("contains the SDK's documents untouched", () => {
     const file = generateOperationsFile();
     for (const operation of CMSSY_DELIVERY_OPERATIONS) {
-      // Byte-for-byte: the moment the CLI starts massaging these, it owns a
-      // second version of the shape and can drift from the client that uses it.
-      expect(file).toContain(operation.document.trim());
+      // Untrimmed: asserting against `.trim()` would apply the very
+      // transformation the assertion exists to detect.
+      expect(file).toContain(operation.document);
     }
   });
 
-  it("parses as one valid GraphQL document", () => {
-    const parsed = parse(generateOperationsFile());
-    expect(parsed.definitions).toHaveLength(CMSSY_DELIVERY_OPERATIONS.length);
+  it("declares every operation exactly once", () => {
+    const names = parsedNames(generateOperationsFile());
+
+    // The design rests on this: a duplicate name is a hard error in
+    // graphql-codegen's client preset, and `parse` alone will not catch it -
+    // it is a validation rule, not a syntax one. `PublicPage` has a second,
+    // dev-only document in core that must never be added to the list.
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual(operationNames());
   });
 
-  it("does not invent PublicPagesByType", () => {
-    // Every app's version selects different fields and variables, and the SDK
-    // has no canonical one - generating it would mean writing it here.
+  it("names every document, so the log line cannot lie", () => {
+    expect(operationNames()).toHaveLength(CMSSY_DELIVERY_OPERATIONS.length);
+    expect(operationNames()).toContain("PublicSiteConfig");
+    expect(operationNames()).toContain("SubmitForm");
+    // Every app's version differs and the SDK has none to copy.
     expect(operationNames()).not.toContain("PublicPagesByType");
+  });
+
+  it("keeps each purpose on one line", () => {
+    // A newline here emits bare prose into the document and breaks parsing for
+    // every consumer.
+    for (const operation of CMSSY_DELIVERY_OPERATIONS) {
+      expect(operation.purpose).not.toMatch(/\n/);
+    }
   });
 });
 
 describe("cmssy types, operations half", () => {
-  it("writes them with no workspace and no network", async () => {
+  it("writes them without a workspace, and without touching the network", async () => {
     const cwd = app();
     const lines: string[] = [];
+    const { deps: d, fetchCalls } = deps(cwd, lines);
 
-    await runTypes({}, deps(cwd, lines));
+    const code = await runTypes({}, d);
 
-    const written = readFileSync(join(cwd, "cmssy/operations.graphql"), "utf8");
-    expect(written).toBe(generateOperationsFile());
-    expect(lines.join("\n")).toContain("7 operations");
+    const written = readFileSync(join(cwd, OPS), "utf8");
+    expect(written.startsWith("# Generated by `cmssy types`")).toBe(true);
+    expect(written).toContain("query PublicSiteConfig(");
+    expect(fetchCalls).toHaveLength(0);
+    // The models half still failed - the file lands, the command does not
+    // pretend to have succeeded.
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("10 operations");
   });
 
   it("rewrites an edited file instead of protecting it", async () => {
     const cwd = app();
-    mkdirSync(join(cwd, "cmssy"), { recursive: true });
-    writeFileSync(join(cwd, "cmssy/operations.graphql"), "query Mine { x }\n");
+    write(cwd, OPS, "query Mine { x }\n");
 
-    await runTypes({}, deps(cwd, []));
+    await runTypes({}, deps(cwd).deps);
 
-    // Vendored, not owned. Two documents cannot share an operation name under
-    // the codegen client preset anyway, so "edit the generated one" was never
-    // a workflow - a divergent app writes its own query, under its own name.
-    expect(readFileSync(join(cwd, "cmssy/operations.graphql"), "utf8")).toBe(
-      generateOperationsFile(),
-    );
+    expect(readFileSync(join(cwd, OPS), "utf8")).toBe(generateOperationsFile());
   });
 
-  it("--check fails on a missing file", async () => {
+  it("refuses to collide with operations the app already declares", async () => {
+    const cwd = app();
+    write(
+      cwd,
+      "graphql/query/site-config.graphql",
+      "query PublicSiteConfig($workspaceSlug: String!) { public { siteConfig(workspaceSlug: $workspaceSlug) { siteName } } }\n",
+    );
+    const lines: string[] = [];
+
+    await runTypes({}, deps(cwd, lines).deps);
+
+    // Two documents cannot share an operation name under the client preset.
+    // Writing the file anyway would break the app's build somewhere that says
+    // nothing about where it came from.
+    expect(existsSync(join(cwd, OPS))).toBe(false);
+    const output = lines.join("\n");
+    expect(output).toContain("would collide");
+    expect(output).toContain("graphql/query/site-config.graphql");
+    expect(output).toContain("--no-operations");
+  });
+
+  it("ignores .graphql files under node_modules", async () => {
+    const cwd = app();
+    write(
+      cwd,
+      "node_modules/some-pkg/site-config.graphql",
+      "query PublicSiteConfig { x }\n",
+    );
+
+    await runTypes({}, deps(cwd).deps);
+
+    expect(existsSync(join(cwd, OPS))).toBe(true);
+  });
+
+  it("--check fails on a missing file and writes nothing", async () => {
     const cwd = app();
     const lines: string[] = [];
 
-    const code = await runTypes({ check: true }, deps(cwd, lines));
+    const code = await runTypes({ check: true }, deps(cwd, lines).deps);
 
     expect(code).toBe(1);
     expect(lines.join("\n")).toMatch(/operations\.graphql is missing/);
+    // The one thing --check must guarantee.
+    expect(existsSync(join(cwd, OPS))).toBe(false);
   });
 
-  it("--check fails on a stale file", async () => {
+  it("--check fails on a stale file without repairing it", async () => {
     const cwd = app();
-    mkdirSync(join(cwd, "cmssy"), { recursive: true });
-    writeFileSync(
-      join(cwd, "cmssy/operations.graphql"),
-      generateOperationsFile().replace("PublicSiteConfig", "PublicSiteConfigOld"),
+    const stale = generateOperationsFile().replace(
+      "PublicSiteConfig",
+      "PublicSiteConfigOld",
     );
+    write(cwd, OPS, stale);
     const lines: string[] = [];
 
-    const code = await runTypes({ check: true }, deps(cwd, lines));
+    const code = await runTypes({ check: true }, deps(cwd, lines).deps);
 
     expect(code).toBe(1);
     expect(lines.join("\n")).toMatch(/out of date/);
+    expect(readFileSync(join(cwd, OPS), "utf8")).toBe(stale);
   });
 
   it("--no-operations leaves the app alone", async () => {
     const cwd = app();
 
-    await runTypes({ noOperations: true }, deps(cwd, []));
+    await runTypes({ noOperations: true }, deps(cwd).deps);
 
-    expect(() =>
-      readFileSync(join(cwd, "cmssy/operations.graphql"), "utf8"),
-    ).toThrow();
+    expect(existsSync(join(cwd, OPS))).toBe(false);
   });
 
-  it("honours --operations-out", async () => {
+  it("honours an absolute --operations-out", async () => {
     const cwd = app();
+    const target = join(app(), "nested/dir/cmssy.graphql");
 
-    await runTypes({ operationsOut: "graphql/cmssy.graphql" }, deps(cwd, []));
+    await runTypes({ operationsOut: target }, deps(cwd).deps);
 
-    expect(readFileSync(join(cwd, "graphql/cmssy.graphql"), "utf8")).toBe(
-      generateOperationsFile(),
-    );
+    // resolve, not join: an absolute path is a path, not a suffix.
+    expect(readFileSync(target, "utf8")).toBe(generateOperationsFile());
   });
 });
