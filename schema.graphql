@@ -1424,7 +1424,6 @@ enum MediaAcceptedType {
 """A media asset (image, video, document, audio)"""
 type MediaAsset {
   alt: JSON!
-  blurDataUrl: String
   caption: JSON
   createdAt: DateTime!
   createdBy: String!
@@ -1436,13 +1435,11 @@ type MediaAsset {
   id: String!
   mimeType: String!
   pathname: String!
-  processingStatus: String!
   size: Int!
   tags: [String!]!
   type: String!
   updatedAt: DateTime!
   url: String!
-  variants: JSON
   width: Int
 }
 
@@ -2654,7 +2651,6 @@ type PublicFormSubmissionListResult {
 
 type PublicMediaItem {
   alt: JSON!
-  blurDataUrl: String
   caption: JSON
   createdAt: DateTime!
   filename: String!
