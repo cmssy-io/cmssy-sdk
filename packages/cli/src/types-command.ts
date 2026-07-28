@@ -9,6 +9,11 @@ import {
   generateModelTypes,
   type ModelDefinition,
 } from "./model-types";
+import {
+  DEFAULT_OPERATIONS_OUT,
+  generateOperationsFile,
+  operationNames,
+} from "./operations-file";
 
 const DEFAULT_OUT = "cmssy/models.ts";
 
@@ -55,6 +60,13 @@ export interface TypesOptions {
    * CMS and nobody re-ran the command is otherwise found at runtime.
    */
   check?: boolean;
+  /**
+   * Where to vendor the delivery operations. They are the same documents the
+   * SDK uses, written as `.graphql` so the app's codegen types them.
+   */
+  operationsOut?: string;
+  /** Skip the operations file entirely - for an app with no codegen. */
+  noOperations?: boolean;
 }
 
 export interface TypesDeps {
@@ -162,12 +174,57 @@ function resolve(
  * Writes TypeScript for every model in the workspace, so a record's `data` is
  * a typed object rather than the `unknown` the JSON scalar hands back.
  */
+/**
+ * Vendors the delivery operations.
+ *
+ * Deliberately before any network call and independent of the workspace: the
+ * documents are the same for every cmssy site, so an offline or not-yet-linked
+ * repo has no reason to be denied them.
+ */
+function syncOperations(options: TypesOptions, deps: TypesDeps): number {
+  if (options.noOperations) return 0;
+
+  const requested = options.operationsOut?.trim() || DEFAULT_OPERATIONS_OUT;
+  const outPath = resolvePath(deps.cwd, requested);
+  const inside = relative(deps.cwd, outPath);
+  const shown = inside && !inside.startsWith("..") ? inside : outPath;
+  const source = generateOperationsFile();
+
+  let previous: string | null = null;
+  try {
+    previous = readFileSync(outPath, "utf8");
+  } catch {
+    previous = null;
+  }
+
+  if (previous === source) return 0;
+
+  if (options.check) {
+    deps.log(
+      previous === null
+        ? `cmssy: ${shown} is missing - run \`cmssy types\` and commit it`
+        : `cmssy: ${shown} is out of date with this CLI's delivery operations`,
+    );
+    deps.log("  run `cmssy types` and commit the result");
+    return 1;
+  }
+
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, source);
+  const names = operationNames();
+  deps.log(`cmssy: wrote ${shown} - ${names.length} operations`);
+  deps.log(`  ${names.join(", ")}`);
+  return 0;
+}
+
 export async function runTypes(
   options: TypesOptions,
   deps: TypesDeps,
 ): Promise<number> {
+  let operationsStatus = 0;
   try {
     loadEnvFiles(deps.cwd, deps.env);
+    operationsStatus = syncOperations(options, deps);
     const org = resolve(options.org, deps.env.CMSSY_ORG_SLUG, "CMSSY_ORG_SLUG");
     const workspace = resolve(
       options.workspace,
@@ -196,7 +253,7 @@ export async function runTypes(
       deps.log(
         `cmssy: the "${workspace}" workspace has no models yet - nothing to generate`,
       );
-      return 0;
+      return operationsStatus;
     }
 
     // resolve, not join: an absolute --out is a path, not a suffix.
@@ -218,7 +275,7 @@ export async function runTypes(
     }
     if (previous === source) {
       deps.log(`cmssy: ${shown} is up to date`);
-      return 0;
+      return operationsStatus;
     }
 
     if (options.check) {
@@ -249,7 +306,7 @@ export async function runTypes(
     deps.log(
       `  ${models.map((model) => model.slug).join(", ")}`,
     );
-    return 0;
+    return operationsStatus;
   } catch (error) {
     if (error instanceof CliError) {
       deps.log(`cmssy: ${error.message}`);

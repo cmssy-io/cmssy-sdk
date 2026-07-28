@@ -203,8 +203,10 @@ A model record comes over the wire as a JSON blob, so without this every read is
 `data.specs as Specs`. The CMS already knows the shape. This makes it say so:
 
 ```bash
-npx @cmssy/cli types                  # writes cmssy/models.ts
+npx @cmssy/cli types                  # cmssy/models.ts + cmssy/operations.graphql
 npx @cmssy/cli types --out types/cms.ts
+npx @cmssy/cli types --operations-out graphql/cmssy.graphql
+npx @cmssy/cli types --no-operations  # no codegen in this app
 ```
 
 It reads the workspace's model definitions over the **public** delivery path -
@@ -244,7 +246,43 @@ What the mapping preserves, and what a hand-written type usually loses:
 - Hidden fields are left out; models are emitted in slug order, so re-running
   the command produces no diff unless the CMS changed.
 
-Use it with the delivery query you already have:
+## The delivery operations
+
+The same command vendors `cmssy/operations.graphql`: the delivery reads every
+cmssy app performs, as `.graphql` documents your own codegen types like any
+other file.
+
+```graphql
+query PublicSiteConfig($workspaceSlug: String!) { … }
+query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) { … }
+query PublicPages($workspaceSlug: String!) { … }
+query PublicPageMeta($workspaceSlug: String!, $slug: String!) { … }
+query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) { … }
+query PublicModelRecords($workspaceId: String!, $modelSlug: String!, …) { … }
+query PublicForm($formId: ID!) { … }
+```
+
+These are not a template the CLI carries - they are the constants `@cmssy/core`
+itself queries with, exported and written out. A CLI-side copy would be one more
+place for the shape to drift from the client that uses it, which is the problem
+this solves rather than repeats.
+
+**The file is vendored, not yours.** Every run rewrites it, so editing it is
+pointless rather than dangerous. Need a different selection set? Write your own
+query under your own operation name - two documents cannot share one name under
+graphql-codegen's client preset anyway, so editing the generated one was never a
+workflow that worked.
+
+**`PublicPagesByType` is deliberately absent.** Every app that has one selects
+different fields and different variables, and the SDK has no version of it -
+generating one would mean inventing it. That query is yours.
+
+It needs no workspace and no network - the documents are the same for every
+cmssy site - so it is written before the model half runs and works in a repo
+that has not been linked yet. `--check` covers it exactly as it covers the
+models: CI fails when the file on disk is not what this CLI would write.
+
+Use the models with the delivery query you already have:
 
 ```ts
 const data = await client.queryScoped<{

@@ -10,7 +10,8 @@ const USAGE = [
   "  cmssy init [--dir <path>] [--force]",
   "  cmssy add block <name> [--dir <path>]",
   "  cmssy link [--token <cs_...>] [--workspace <slug>] [--preview-url <url>]",
-  "  cmssy types [--out <path>] [--check] [--org <slug>] [--workspace <slug>]",
+  "  cmssy types [--out <path>] [--operations-out <path>] [--no-operations]",
+  "              [--check] [--org <slug>] [--workspace <slug>]",
 ].join("\n");
 
 function flagValue(args: string[], name: string): string | undefined {
@@ -81,6 +82,8 @@ async function main(): Promise<void> {
         org: flagValue(args, "--org"),
         workspace: flagValue(args, "--workspace"),
         check: hasFlag(args, "--check"),
+        operationsOut: flagValue(args, "--operations-out"),
+        noOperations: hasFlag(args, "--no-operations"),
       },
       {
         cwd: process.cwd(),
