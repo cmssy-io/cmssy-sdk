@@ -211,8 +211,26 @@ jobs:
               const name = "@cmssy/" + file.replace(/^cmssy-/, "").replace(/-\d+\.\d+\.\d+.*$/, "");
               overrides[name] = "file:/tmp/pkgs/" + file;
             }
-            pkg.pnpm = { ...pkg.pnpm, overrides };
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+
+            // pnpm 10 moved overrides out of package.json and into
+            // pnpm-workspace.yaml; every example here declares pnpm 11, where
+            // the package.json field is read by nothing. Writing only there
+            // left the transitive @cmssy/core to resolve from npm, which does
+            // not have the version being tested - the install failed with
+            // ERR_PNPM_NO_MATCHING_VERSION on exactly the release this
+            // workflow exists to check.
+            const yaml = fs.existsSync("pnpm-workspace.yaml")
+              ? fs.readFileSync("pnpm-workspace.yaml", "utf8").replace(/\n*$/, "\n")
+              : "";
+            const lines = Object.entries(overrides).map(
+              ([name, spec]) => `  "${name}": "${spec}"`,
+            );
+            fs.writeFileSync(
+              "pnpm-workspace.yaml",
+              `${yaml}overrides:\n${lines.join("\n")}\n`,
+            );
+
             console.log("linked:", linked.join(", ") || "(none)");
             if (skipped.length) console.log("left on npm:", skipped.join(", "));
           '
