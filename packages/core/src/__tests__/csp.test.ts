@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { applyCmssyCsp, cmssyCspHeaders } from "../csp";
 
 describe("cmssyCspHeaders", () => {
@@ -27,10 +27,18 @@ describe("cmssyCspHeaders", () => {
     });
   });
 
-  it("preserves the wildcard", () => {
+  it("preserves the wildcard in development", () => {
+    vi.stubEnv("NODE_ENV", "development");
     expect(cmssyCspHeaders({ editorOrigin: "*" })).toEqual({
       "Content-Security-Policy": "frame-ancestors *",
     });
+    vi.unstubAllEnvs();
+  });
+
+  it("refuses the wildcard outside development (CMS-1092)", () => {
+    expect(() => cmssyCspHeaders({ editorOrigin: "*" })).toThrow(
+      /only allowed in development/,
+    );
   });
 
   it("rejects an origin with header-injection characters", () => {

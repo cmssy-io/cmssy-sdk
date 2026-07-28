@@ -99,15 +99,31 @@ describe("createCmssyLoader", () => {
     expect(data.editorOrigin).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
   });
 
-  it("keeps an explicit editorOrigin", async () => {
+  it("does not widen editorOrigin on a verified edit request either (CMS-1092)", async () => {
     vi.stubEnv("NODE_ENV", "production");
     stubApi();
-    const data = await createCmssyLoader({
-      ...(CONFIG as object),
-      editorOrigin: "https://editor.example",
-    } as never)({ request: new Request("https://shop.test/about") });
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+      ),
+    });
 
-    expect(data.editorOrigin).toBe("https://editor.example");
+    expect(data.isEdit).toBe(true);
+    expect(data.editorOrigin).not.toBe("*");
+    expect(data.editorOrigin).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("refuses an explicit wildcard outside development (CMS-1092)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const load = createCmssyLoader({
+      ...(CONFIG as Record<string, unknown>),
+      editorOrigin: "*",
+    } as never);
+
+    await expect(
+      load({ request: new Request("https://shop.test/about") }),
+    ).rejects.toThrow(/only allowed in development/);
   });
 
   it("rejects a wrong secret", async () => {
