@@ -241,9 +241,9 @@ const data = await graphqlRequest(
 );
 ```
 
-Three things are easy to get wrong and worth copying from the starter's
-[`services/seo.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/services/seo.ts)
-and [`app/sitemap.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts):
+Three things are easy to get wrong and worth copying from the simple-blog example's
+[`services/seo.ts`](https://github.com/cmssy-io/examples/blob/main/simple-blog/services/seo.ts)
+and [`app/sitemap.ts`](https://github.com/cmssy-io/examples/blob/main/simple-blog/app/sitemap.ts):
 
 - **Localized fields.** `seoTitle` comes back language-keyed once a workspace has
   more than one language. Rendering it raw prints `[object Object]`.

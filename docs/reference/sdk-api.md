@@ -14,7 +14,7 @@ GraphQL query is your app's query, not an SDK helper - so there are no SEO, auth
 commerce, or fetch-wrapper exports. See
 [migrating from v9](../migrations/v9-to-v10.md) if you are coming from an older
 version, and the
-[starter](https://github.com/cmssy-io/cmssy-next-starter) for what the app side
+[simple-blog example](https://github.com/cmssy-io/examples/tree/main/simple-blog) for what the app side
 of that looks like.
 
 **Where things live.** `@cmssy/core` is the foundation: config, the gateway, the
@@ -98,8 +98,8 @@ Errors are `CmssyRequestError`. `DEFAULT_CMSSY_API_URL` is exported for a
 self-hosted endpoint check.
 
 There is no `fetchPage` / `fetchPages` / `fetchSiteConfig` in the public surface:
-write the query. The starter's
-[`services/`](https://github.com/cmssy-io/cmssy-next-starter/tree/main/services)
+write the query. The example's
+[`services/`](https://github.com/cmssy-io/examples/tree/main/simple-blog/services)
 folder is a working example, `codegen` included.
 
 ### Blocks & fields
