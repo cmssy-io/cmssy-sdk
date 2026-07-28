@@ -56,6 +56,34 @@ env:
   EXAMPLES_REPO: cmssy-io/examples
 
 jobs:
+  pack:
+    # Packing is the SDK's job, with the SDK's pnpm. Doing it inside the matrix
+    # built the whole SDK once per example, and forced the examples to install
+    # under whatever pnpm this repo pins - which is a different major from the
+    # one they declare.
+    runs-on: ubuntu-latest
+    if: github.event_name != 'repository_dispatch' && github.event.inputs.source != 'npm'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - name: Pack every published package
+        run: |
+          mkdir -p /tmp/pkgs
+          for pkg in core eslint-plugin codemod cli react next astro remix; do
+            (cd "packages/$pkg" && pnpm pack --pack-destination /tmp/pkgs)
+          done
+          ls /tmp/pkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cmssy-tarballs
+          path: /tmp/pkgs
+          retention-days: 1
+
   discover:
     runs-on: ubuntu-latest
     outputs:
@@ -115,7 +143,10 @@ jobs:
           echo "$matrix"
 
   example:
-    needs: discover
+    needs: [discover, pack]
+    # `pack` is skipped in npm mode; `always()` keeps this from being skipped
+    # with it, and the explicit result check still fails the job if packing broke.
+    if: always() && needs.discover.result == 'success' && needs.pack.result != 'failure'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -124,34 +155,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: sdk
-      - uses: actions/checkout@v4
-        with:
           repository: ${{ env.EXAMPLES_REPO }}
           ref: ${{ needs.discover.outputs.sha }}
           path: examples
 
-      # Both checkouts use `path:`, so the workspace root has no package.json
-      # and the action cannot find the pnpm version to install. Point it at the
-      # SDK's.
+      # The example declares its own packageManager - it is a standalone app and
+      # this repo's pin is none of its business.
       - uses: pnpm/action-setup@v4
         with:
-          package_json_file: sdk/package.json
+          package_json_file: examples/${{ matrix.dir }}/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Pack this checkout
+      - uses: actions/download-artifact@v4
         if: needs.discover.outputs.source == 'tarballs'
-        working-directory: sdk
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm -r build
-          mkdir -p /tmp/pkgs
-          for pkg in core eslint-plugin codemod cli react next astro remix; do
-            (cd "packages/$pkg" && pnpm pack --pack-destination /tmp/pkgs)
-          done
-          ls /tmp/pkgs
+        with:
+          name: cmssy-tarballs
+          path: /tmp/pkgs
 
       # Rewrite every @cmssy/* dependency to the packed tarball, transitive ones
       # included - @cmssy/next asks npm for a @cmssy/core version that is not
@@ -208,9 +229,7 @@ jobs:
       # These are not secrets. The demo workspace is public and its published
       # content needs no token; edit mode compares the URL's secret to the app's
       # own, so a placeholder is enough for anything this job checks. Draft
-      # preview is not checked and not claimed. They are set per step rather
-      # than workflow-wide so that install lifecycle scripts from another repo
-      # do not see them by default.
+      # preview is not checked and not claimed.
       - name: Build
         working-directory: examples/${{ matrix.dir }}
         env:
@@ -225,7 +244,7 @@ jobs:
         run: eval "$BUILD"
 
       # Astro reads configuration from process.env, not from a .env file, so the
-      # step env above and below is what reaches it. Nothing copies .env.example.
+      # step env is what reaches it. Nothing copies .env.example.
       - name: Assert the example renders what the workspace sends
         if: ${{ !matrix.buildOnly }}
         working-directory: examples/${{ matrix.dir }}
