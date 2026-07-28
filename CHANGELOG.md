@@ -6,6 +6,46 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.3.2
+
+**`@cmssy/astro`: a language-prefixed URL rendered in the default language.**
+`context.rewrite` re-runs the entire middleware chain on the rewritten URL -
+Astro builds a fresh `AstroMiddleware` for it. The second pass saw `/shop`
+rather than `/no/shop`, resolved the language from that, and overwrote what the
+first pass had set. Measured on a built Astro 7 app: one request to `/no/blog`
+entered the middleware twice and the page received `en`.
+
+There is no second pass any more. The rewrite payload goes to `next`, which
+Astro applies and renders without building a new middleware chain, rather than
+to `context.rewrite`, which runs the chain again from the top. Measured on the
+same app: one middleware entry per request, for the editor rewrite as well.
+
+**The `astro` peer range is now `>=4.16`.** `next(payload)` is accepted from
+4.13, but until 4.16 it swapped the route without swapping the request: the
+`/shop` component rendered while `Astro.url` still said `/no/shop`, so the page
+fetched the wrong slug. The old `>=4` was untrue anyway - `context.rewrite` does
+not exist before 4.12 - but it failed loudly. Narrowing it keeps a version that
+would silently render the wrong page from installing.
+
+Both prefixes match a path segment now rather than a string: a page slugged
+`november` under `/no` cannot become `/vember`, and `/cmssy-editorial` is a page
+rather than the edit route. A stripped path also has its duplicate slashes
+collapsed - `/no//evil.com/x` is protocol-relative, and resolving it would have
+put the render on that origin. Astro does this itself only from 6.1.
+
+The editor diagnostics page carries the framing CSP too, and renders rather than
+throwing when the configured `editorOrigin` is too malformed to build one from -
+which is among the things it exists to report.
+
+This retires a blind spot too. The tests drove a mock whose `rewrite` merely
+returned a response, so none could observe a second pass - which is how two
+releases shipped locale fixes that a second pass undid. That mock now throws:
+reaching for `context.rewrite` is the mistake, and a test says so.
+
+Unchanged, and still unsupported: a site with `base` set. The strip reads the
+full pathname, so the prefix is not found under a base - as in every release
+before this one.
+
 ## 11.3.1
 
 **`@cmssy/next`: a site with `resolveLocale` could only edit its default

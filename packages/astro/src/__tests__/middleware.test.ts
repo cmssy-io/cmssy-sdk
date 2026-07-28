@@ -6,6 +6,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { cmssyMiddleware } from "../middleware";
 
+const CMSSY_LOCALE_HEADER = "x-cmssy-locale";
+const CMSSY_EDIT_HEADER = "x-cmssy-edit";
+
+/** `resolveSiteLocales` caches per workspace, so a shared slug leaks a stub. */
+const configFor = (workspaceSlug: string) =>
+  ({
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug,
+    draftSecret: "draft-secret-1234",
+  }) as never;
+
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const CONFIG = {
@@ -37,17 +49,58 @@ function stubSiteConfig(defaultLanguage = "en", enabled = ["en", "no"]) {
   );
 }
 
+/**
+ * `context.rewrite` throws here on purpose. Both it and `next(payload)` reach
+ * `applyRewriteToState`, but `context.rewrite` builds a fresh `AstroMiddleware`
+ * and runs the chain again on the rewritten URL - the second pass this file
+ * exists to keep from coming back.
+ */
 function contextFor(href: string) {
   const url = new URL(href);
   return {
     url,
     request: new Request(href),
-    rewrite: vi.fn(
-      async (target: string | URL | Request) =>
-        new Response(
-          `rewritten:${target instanceof Request ? target.url : String(target)}`,
-        ),
-    ),
+    rewrite: vi.fn(() => {
+      throw new Error("context.rewrite re-runs the middleware; use next()");
+    }),
+  };
+}
+
+interface MiddlewareRun {
+  /** What the middleware handed `next`, if anything. */
+  routedTo: string | null;
+  locale: string | null;
+  edit: string | null;
+  response: Response;
+}
+
+async function run(
+  middleware: (context: never, next: never) => Promise<Response>,
+  href: string,
+  headers: Record<string, string> = {},
+): Promise<MiddlewareRun> {
+  const context = contextFor(href);
+  for (const [name, value] of Object.entries(headers)) {
+    context.request.headers.set(name, value);
+  }
+
+  let routedTo: string | null = null;
+  const next = async (payload?: string | URL | Request) => {
+    if (payload !== undefined) {
+      routedTo =
+        payload instanceof Request
+          ? new URL(payload.url).pathname + new URL(payload.url).search
+          : String(payload);
+    }
+    return new Response("page");
+  };
+
+  const response = await middleware(context as never, next as never);
+  return {
+    routedTo,
+    locale: context.request.headers.get(CMSSY_LOCALE_HEADER),
+    edit: context.request.headers.get(CMSSY_EDIT_HEADER),
+    response,
   };
 }
 
@@ -59,128 +112,256 @@ afterEach(() => {
 describe("cmssyMiddleware", () => {
   it("tells the page which language it is rendering", async () => {
     stubSiteConfig();
-    const context = contextFor("https://shop.test/no/about");
-    const next = vi.fn(async () => new Response("ok"));
 
-    await cmssyMiddleware(CONFIG)(context, next);
+    const result = await run(
+      cmssyMiddleware(configFor("lang")) as never,
+      "https://shop.test/no/about",
+    );
 
-    expect(context.request.headers.get("x-cmssy-locale")).toBe("no");
+    expect(result.locale).toBe("no");
   });
 
   it("routes a VERIFIED editor request to the edit page, carrying the language", async () => {
     stubSiteConfig();
-    const context = contextFor(
+
+    const result = await run(
+      cmssyMiddleware(configFor("edit")) as never,
       "https://shop.test/no/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
     );
-    const next = vi.fn(async () => new Response("ok"));
 
-    const response = await cmssyMiddleware(CONFIG)(context, next);
-
-    // The rewrite must carry a Request, not a path: with a path Astro builds a
-    // fresh request for the rewritten route, the headers below never arrive,
-    // and the edit page runs with isEdit false - the editor then shows the
-    // published page while claiming to edit the draft.
-    const rewritten = context.rewrite.mock.calls[0]![0] as Request;
-    expect(rewritten).toBeInstanceOf(Request);
-    expect(new URL(rewritten.url).pathname).toBe("/cmssy-edit/no/about");
-    expect(rewritten.headers.get("x-cmssy-edit")).toBe("1");
-    expect(rewritten.headers.get("x-cmssy-locale")).toBe("no");
+    expect(result.routedTo).toBe(
+      "/cmssy-edit/no/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    expect(result.edit).toBe("1");
+    expect(result.locale).toBe("no");
     // Without this the admin cannot frame the site and the editor shows nothing.
-    expect(response.headers.get("content-security-policy")).toContain(
+    expect(result.response.headers.get("content-security-policy")).toContain(
       "frame-ancestors",
     );
-    expect(next).not.toHaveBeenCalled();
   });
 
   it("does NOT open the editor for a bare cmssyEdit=1 (CMS-948)", async () => {
     stubSiteConfig();
-    const context = contextFor("https://shop.test/about?cmssyEdit=1");
-    const next = vi.fn(async () => new Response("ok"));
 
-    await cmssyMiddleware(CONFIG)(context, next);
+    const result = await run(
+      cmssyMiddleware(configFor("bare")) as never,
+      "https://shop.test/about?cmssyEdit=1",
+    );
 
-    expect(context.rewrite).not.toHaveBeenCalled();
-    expect(context.request.headers.get("x-cmssy-edit")).toBeNull();
-    expect(next).toHaveBeenCalled();
+    expect(result.routedTo).toBeNull();
+    expect(result.edit).toBeNull();
   });
 
   it("refuses a forged edit header from the client", async () => {
     stubSiteConfig();
-    const context = contextFor("https://shop.test/about");
-    context.request.headers.set("x-cmssy-edit", "1");
-    const next = vi.fn(async () => new Response("ok"));
 
-    await cmssyMiddleware(CONFIG)(context, next);
+    const result = await run(
+      cmssyMiddleware(configFor("forged")) as never,
+      "https://shop.test/about",
+      { "x-cmssy-edit": "1" },
+    );
 
-    expect(context.request.headers.get("x-cmssy-edit")).toBeNull();
+    expect(result.edit).toBeNull();
   });
 
   it("renders diagnostics in development for a wrong cmssySecret", async () => {
     vi.stubEnv("NODE_ENV", "development");
     stubSiteConfig();
-    const context = contextFor(
+
+    const result = await run(
+      cmssyMiddleware(CONFIG) as never,
       "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
     );
-    const next = vi.fn(async () => new Response("ok"));
 
-    const response = await cmssyMiddleware(CONFIG)(context, next);
-
-    expect(response.headers.get("content-type")).toContain("text/html");
-    const body = await response.text();
+    expect(result.response.headers.get("content-type")).toContain("text/html");
+    const body = await result.response.text();
     expect(body).toContain("cmssy editor diagnostics");
     expect(body).toContain("acme/ws");
     expect(body).toContain("frame-ancestors");
     expect(body).not.toContain("draft-secret-1234");
-    expect(context.rewrite).not.toHaveBeenCalled();
-    expect(next).not.toHaveBeenCalled();
+    // Diagnostics the admin cannot frame are a blank iframe - the symptom they
+    // exist to explain.
+    expect(result.response.headers.get("content-security-policy")).toContain(
+      "frame-ancestors",
+    );
+    expect(result.routedTo).toBeNull();
   });
 
   it("keeps the production behavior for a wrong cmssySecret", async () => {
     vi.stubEnv("NODE_ENV", "production");
     stubSiteConfig();
-    const context = contextFor(
+
+    const result = await run(
+      cmssyMiddleware(configFor("prodwrong")) as never,
       "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
     );
-    const next = vi.fn(async () => new Response("ok"));
 
-    await cmssyMiddleware(CONFIG)(context, next);
-
-    expect(context.rewrite).not.toHaveBeenCalled();
-    expect(context.request.headers.get("x-cmssy-edit")).toBeNull();
-    expect(next).toHaveBeenCalled();
+    expect(result.routedTo).toBeNull();
+    expect(result.edit).toBeNull();
   });
 
   it("still routes a verified editor request in development", async () => {
     vi.stubEnv("NODE_ENV", "development");
     stubSiteConfig();
-    const context = contextFor(
+
+    const result = await run(
+      cmssyMiddleware(configFor("devedit")) as never,
       "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
     );
-    const next = vi.fn(async () => new Response("ok"));
 
-    await cmssyMiddleware(CONFIG)(context, next);
-
-    const rewrittenDev = context.rewrite.mock.calls[0]![0] as Request;
-    expect(new URL(rewrittenDev.url).pathname).toBe("/cmssy-edit/about");
-    expect(rewrittenDev.headers.get("x-cmssy-edit")).toBe("1");
-    expect(context.request.headers.get("x-cmssy-edit")).toBe("1");
-    expect(next).not.toHaveBeenCalled();
+    expect(result.routedTo).toBe(
+      "/cmssy-edit/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    expect(result.edit).toBe("1");
   });
 
   it("strips the language prefix when asked, but never the default language's", async () => {
     stubSiteConfig("en", ["en", "no"]);
-    const noContext = contextFor("https://shop.test/no/shop");
-    await cmssyMiddleware(CONFIG, { stripLocalePrefix: true })(
-      noContext,
-      async () => new Response("ok"),
-    );
-    expect(noContext.rewrite).toHaveBeenCalledWith("/shop");
 
-    const enContext = contextFor("https://shop.test/shop");
-    const next = vi.fn(async () => new Response("ok"));
-    await cmssyMiddleware(CONFIG, { stripLocalePrefix: true })(enContext, next);
-    expect(enContext.rewrite).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalled();
+    const prefixed = await run(
+      cmssyMiddleware(configFor("strip"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/no/shop",
+    );
+    expect(prefixed.routedTo).toBe("/shop");
+    expect(prefixed.locale).toBe("no");
+
+    const bare = await run(
+      cmssyMiddleware(configFor("strip"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/shop",
+    );
+    expect(bare.routedTo).toBeNull();
+    expect(bare.locale).toBe("en");
+  });
+
+  it("strips the prefix without eating the page's own slug", async () => {
+    // Measured on a built Astro 7 app: routing twice - once per middleware pass
+    // - served /vember for this URL, and 508 for the one below.
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("november"), {
+        stripLocalePrefix: true,
+      }) as never,
+      "https://shop.test/no/november",
+    );
+
+    expect(result.routedTo).toBe("/november");
+    expect(result.locale).toBe("no");
+  });
+
+  it("survives a page slugged like its own language", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("nono"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/no/no/nope",
+    );
+
+    expect(result.routedTo).toBe("/no/nope");
+    expect(result.locale).toBe("no");
+  });
+
+  it("leaves a path that merely starts with the language alone", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("nope"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/nope",
+    );
+
+    expect(result.routedTo).toBeNull();
+    expect(result.locale).toBe("en");
+  });
+
+  it("never routes to a protocol-relative path", async () => {
+    // `//evil.com/x` resolves to a URL on THAT origin, and the render would run
+    // there. Astro collapses the slashes itself only from 6.1, so leaving it to
+    // Astro reopens this across the whole supported range.
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("slashes"), {
+        stripLocalePrefix: true,
+      }) as never,
+      "https://shop.test/no//evil.com/pwned",
+    );
+
+    expect(result.routedTo).toBe("/evil.com/pwned");
+    expect(new URL(String(result.routedTo), "https://shop.test").origin).toBe(
+      "https://shop.test",
+    );
+  });
+
+  it("collapses a doubled slash inside the path too", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("innerslash"), {
+        stripLocalePrefix: true,
+      }) as never,
+      "https://shop.test/no/a//b",
+    );
+
+    expect(result.routedTo).toBe("/a/b");
+  });
+
+  it("renders diagnostics even when the editorOrigin cannot build a CSP", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    stubSiteConfig();
+
+    const result = await run(
+      cmssyMiddleware({
+        apiUrl: "https://api.test/graphql",
+        org: "acme",
+        workspaceSlug: "badorigin",
+        draftSecret: "draft-secret-1234",
+        editorOrigin: "cmssy.io",
+      } as never) as never,
+      "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
+    );
+
+    // A malformed editorOrigin is one of the things this page reports; a 500
+    // replaces the explanation with nothing.
+    expect(result.response.status).toBe(200);
+    expect(await result.response.text()).toContain("cmssy editor diagnostics");
+  });
+
+  it("edits a page whose slug starts with the edit prefix", async () => {
+    // `/cmssy-editorial` is a page, not the edit route.
+    stubSiteConfig();
+
+    const result = await run(
+      cmssyMiddleware(configFor("editorial")) as never,
+      "https://shop.test/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+
+    expect(result.routedTo).toBe(
+      "/cmssy-edit/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    expect(result.edit).toBe("1");
+  });
+
+  it("carries the query string across the strip", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("query"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/no/shop?page=2",
+    );
+
+    expect(result.routedTo).toBe("/shop?page=2");
+  });
+
+  it("routes the language root to the site root", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("root"), { stripLocalePrefix: true }) as never,
+      "https://shop.test/no",
+    );
+
+    expect(result.routedTo).toBe("/");
+    expect(result.locale).toBe("no");
   });
 });
 
@@ -208,4 +389,3 @@ describe("framework boundary", () => {
     expect(offenders).toEqual([]);
   });
 });
-

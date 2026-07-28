@@ -15,6 +15,13 @@ import {
 
 export const CMSSY_EDIT_PATH_PREFIX = "/cmssy-edit";
 
+/**
+ * `//evil.com/x` is protocol-relative: resolved against a base it lands on that
+ * origin. Astro collapses this itself only from 6.1.
+ */
+const withoutDuplicateSlashes = (pathname: string) =>
+  pathname.replace(/\/{2,}/g, "/") || "/";
+
 export interface CmssyMiddlewareOptions {
   /**
    * Strip the language prefix before the app sees it, so a static route like
@@ -27,8 +34,18 @@ export interface CmssyMiddlewareOptions {
 interface AstroContextLike {
   url: URL;
   request: Request;
-  rewrite: (target: string | URL | Request) => Promise<Response> | Response;
 }
+
+/**
+ * The rewrite payload goes to `next`, not to `context.rewrite`. Both reach
+ * `applyRewriteToState`, but `context.rewrite` builds a fresh `AstroMiddleware`
+ * and runs this whole chain again on the rewritten URL - where the language
+ * prefix it just removed is gone, so a second pass resolved the default
+ * language and overwrote the first pass's answer.
+ */
+type CmssyNext = (
+  payload?: string | URL | Request,
+) => Promise<Response> | Response;
 
 /**
  * The whole middleware a cmssy Astro app needs, in the order it has to happen:
@@ -42,8 +59,7 @@ interface AstroContextLike {
  * The order is not a detail. Resolve the locale after the rewrite and the editor
  * preview renders in the wrong language; drop the edit flag and the header and
  * footer become markup the editor can select but not fill. Both mistakes shipped
- * in the Next app before this sequence existed - Astro gets it right the first
- * time by reusing it.
+ * in the Next app before this sequence existed.
  */
 export function cmssyMiddleware(
   config: CmssyConfig,
@@ -51,7 +67,7 @@ export function cmssyMiddleware(
 ) {
   return async function onRequest(
     context: AstroContextLike,
-    next: () => Promise<Response>,
+    next: CmssyNext,
   ): Promise<Response> {
     const { pathname } = context.url;
 
@@ -65,17 +81,19 @@ export function cmssyMiddleware(
     const editRequested = context.url.searchParams
       .getAll(CMSSY_EDIT_QUERY_PARAM)
       .includes("1");
+
+    const underEditRoute =
+      pathname === CMSSY_EDIT_PATH_PREFIX ||
+      pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`);
+
     if (editRequested) {
       const verified = await isVerifiedEditUrl(context.url, config);
-      if (verified && !pathname.startsWith(CMSSY_EDIT_PATH_PREFIX)) {
+      if (verified && !underEditRoute) {
         context.request.headers.set(CMSSY_EDIT_HEADER, "1");
         const target = `${CMSSY_EDIT_PATH_PREFIX}${
           pathname === "/" ? "" : pathname
         }${context.url.search}`;
-        // A Request, not a string: with a string target Astro builds a fresh
-        // request for the rewritten route and the headers set above never
-        // arrive - which is how the edit page came to run with isEdit false.
-        const response = await context.rewrite(
+        const response = await next(
           new Request(new URL(target, context.url), context.request),
         );
         applyCmssyCsp(response, { editorOrigin: config.editorOrigin });
@@ -91,18 +109,28 @@ export function cmssyMiddleware(
           ),
           devOrigin: context.url.origin,
         });
-        return new Response(renderEditDiagnosticsDocument(diagnostics), {
+        const page = new Response(renderEditDiagnosticsDocument(diagnostics), {
           status: 200,
           headers: { "content-type": "text/html; charset=utf-8" },
         });
+        try {
+          applyCmssyCsp(page, { editorOrigin: config.editorOrigin });
+        } catch {
+          // An editorOrigin too malformed to build a CSP from is one of the
+          // things this page reports. Throwing here replaces the explanation
+          // with a 500.
+        }
+        return page;
       }
     }
 
-    if (options.stripLocalePrefix && pathname.startsWith(`/${locale}`)) {
+    const prefix = `/${locale}`;
+    const prefixed = pathname === prefix || pathname.startsWith(`${prefix}/`);
+    if (options.stripLocalePrefix && prefixed) {
       const { defaultLocale } = await resolveSiteLocales(config);
       if (locale !== defaultLocale) {
-        const stripped = pathname.slice(locale.length + 1) || "/";
-        return context.rewrite(`${stripped}${context.url.search}`);
+        const stripped = withoutDuplicateSlashes(pathname.slice(prefix.length));
+        return next(`${stripped}${context.url.search}`);
       }
     }
 
