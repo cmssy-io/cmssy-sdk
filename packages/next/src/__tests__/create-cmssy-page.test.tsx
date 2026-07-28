@@ -516,6 +516,83 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
   });
 
+  it("still strips the language prefix off the slug when resolveLocale is set", async () => {
+    // `resolveLocale` says which language to render. It says nothing about the
+    // slug - and a site whose URLs carry the prefix has no page at "/no/about".
+    // Looking one up returned null, which is why the editor 404'd on every
+    // language but the default while the public route rendered the same page.
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en", "no"],
+    });
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, resolveLocale: () => "no" },
+      BLOCKS,
+    );
+
+    const element = unwrap(await Page({ params: params(["no", "about"]) }));
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+    });
+    // The prefix leaves the slug, not the render.
+    expect(element.props.locale).toBe("no");
+  });
+
+  it("edits a prefixed URL rather than 404ing on it", async () => {
+    // The route the bug was reported against, and the one that always sees the
+    // prefix: the proxy runs the edit rewrite BEFORE it strips, so
+    // /cmssy-edit/no/about carries it whatever the app's own routing does. The
+    // 404 landed in an iframe, where it reads as a blank preview.
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en", "no"],
+    });
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyEditPage(
+      { ...CONFIG, resolveLocale: () => "no" },
+      BLOCKS,
+      { editor: Editor },
+    );
+
+    await Page({
+      params: params(["no", "about"]),
+      searchParams: searchParams({
+        cmssyEdit: "1",
+        cmssySecret: CONFIG.draftSecret,
+      }),
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: CONFIG.draftSecret,
+      devPreview: undefined,
+      devToken: undefined,
+      workspaceId: undefined,
+    });
+  });
+
+  it("leaves a slug that only looks prefixed alone", async () => {
+    // "de" is not an enabled language here, so /de/about is a page whose slug
+    // starts with "de" - not a German URL. This one passes without the fix too:
+    // it pins the over-stripping an "always slice(1)" version would introduce.
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en", "no"],
+    });
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(
+      { ...CONFIG, resolveLocale: () => "no" },
+      BLOCKS,
+    );
+
+    await Page({ params: params(["de", "about"]) });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["de", "about"], {
+      previewSecret: undefined,
+    });
+  });
+
   it("rejects a wildcard editorOrigin in production when entering edit mode", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyEditPage({ ...CONFIG, editorOrigin: "*" }, BLOCKS, {

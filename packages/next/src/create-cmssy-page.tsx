@@ -178,22 +178,21 @@ function buildCmssyPageRenderer(
     const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
 
-    let locale: string;
-    let pagePath = path;
-
     // The workspace knows its default language, so ask it rather than assume
     // English - the lookup is cached, and a Norwegian-first site would
     // otherwise treat "no" as a non-default language and prefix every URL.
     const siteLocales = await resolveSiteLocales(clientConfig);
     const { defaultLocale, locales: enabledLocales } = siteLocales;
 
-    if (config.resolveLocale) {
-      locale = await config.resolveLocale();
-    } else {
-      const split = splitLocaleFromPath(path, siteLocales);
-      locale = split.locale;
-      pagePath = split.path;
-    }
+    // The language prefix is never part of the slug. Splitting it only when
+    // `resolveLocale` is absent is how /no/about came to be looked up as the
+    // slug "/no/about" - which no workspace has, so the editor 404'd on every
+    // language but the default while the public route rendered fine.
+    const split = splitLocaleFromPath(path, siteLocales);
+    const pagePath = split.path;
+    const locale = config.resolveLocale
+      ? await config.resolveLocale()
+      : split.locale;
 
     const devWorkspaceId = devAllowed
       ? await client.resolveWorkspaceId()
