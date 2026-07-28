@@ -66,3 +66,8 @@ export { resolveInitialTarget } from "./bridge/messages";
 export { cmssySecretsMatch } from "./secret-match";
 export { cmssyCspHeaders, toCspOrigin } from "./csp";
 export { isDevelopment } from "./config";
+
+export {
+  CMSSY_DELIVERY_OPERATIONS,
+  type CmssyDeliveryOperation,
+} from "./data/delivery-operations";

@@ -6,6 +6,38 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.3.0
+
+**`cmssy types` now vendors the delivery operations too.** Every cmssy app
+hand-wrote the same reads, so `cmssy/operations.graphql` is written next to the
+model types - ten documents, as `.graphql` your own codegen consumes:
+
+```bash
+npx @cmssy/cli types                  # models + operations
+npx @cmssy/cli types --operations-out graphql/cmssy.graphql
+npx @cmssy/cli types --no-operations
+```
+
+They are the constants `@cmssy/core` queries with, referenced rather than
+restated, so the vendored file cannot drift from what the client sends.
+
+- **Point `documents` in your `codegen.ts` at `cmssy/**/*.graphql`**, or the
+  file is written and never read.
+- **An app that already declares these names gets a refusal, not a broken
+  build.** Two documents cannot share an operation name in graphql-codegen's
+  client preset, so the CLI checks your `.graphql` files first and names the
+  conflicting file. Delete your copies, or keep them with `--no-operations`.
+- Vendored, not owned: every run rewrites the file. An app needing a different
+  selection set writes its own query under its own name.
+- No workspace, no network: written before the model half, so it lands in a
+  repo that is not linked yet - though the command still exits non-zero there,
+  because the models half failed.
+- `--check` covers it as it covers the models.
+- `PublicPagesByType` is deliberately not generated: every app's version differs
+  and the SDK has none, so generating one would mean inventing it. The dev-only
+  second `PublicPage` document is excluded for the same reason it would break a
+  build - it reuses the name.
+
 ## 11.2.0
 
 **The editor smoke check can now tell a real editor from one that only looks

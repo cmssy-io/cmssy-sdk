@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve as resolvePath } from "node:path";
 
 import { DEFAULT_CMSSY_API_URL } from "@cmssy/core";
@@ -9,6 +9,11 @@ import {
   generateModelTypes,
   type ModelDefinition,
 } from "./model-types";
+import {
+  DEFAULT_OPERATIONS_OUT,
+  generateOperationsFile,
+  operationNames,
+} from "./operations-file";
 
 const DEFAULT_OUT = "cmssy/models.ts";
 
@@ -55,6 +60,13 @@ export interface TypesOptions {
    * CMS and nobody re-ran the command is otherwise found at runtime.
    */
   check?: boolean;
+  /**
+   * Where to vendor the delivery operations. They are the same documents the
+   * SDK uses, written as `.graphql` so the app's codegen types them.
+   */
+  operationsOut?: string;
+  /** Skip the operations file entirely - for an app with no codegen. */
+  noOperations?: boolean;
 }
 
 export interface TypesDeps {
@@ -159,15 +171,135 @@ function resolve(
 }
 
 /**
+ * Vendors the delivery operations.
+ *
+ * Deliberately before any network call and independent of the workspace: the
+ * documents are the same for every cmssy site, so an offline or not-yet-linked
+ * repo has no reason to be denied them.
+ */
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "dist",
+  "build",
+  ".next",
+  ".git",
+  ".turbo",
+  ".vercel",
+]);
+const ANY_OPERATION_NAME = /^\s*(?:query|mutation|subscription)\s+([A-Za-z_]\w*)/gm;
+
+/**
+ * Operation names the app already declares in its own `.graphql` files.
+ *
+ * Two documents cannot share an operation name under graphql-codegen's client
+ * preset - it is a hard error, and one an app would meet as a broken build
+ * rather than as anything pointing back here. So the collision is found before
+ * the file is written, not after.
+ */
+function existingOperationNames(
+  cwd: string,
+  skipPath: string,
+): Map<string, string> {
+  const found = new Map<string, string>();
+  let entries: string[];
+  try {
+    entries = readdirSync(cwd, { recursive: true }) as unknown as string[];
+  } catch {
+    return found;
+  }
+
+  for (const entry of entries) {
+    if (typeof entry !== "string" || !entry.endsWith(".graphql")) continue;
+    if (entry.split(/[\\/]/).some((part) => SKIP_DIRS.has(part))) continue;
+    const full = resolvePath(cwd, entry);
+    if (full === skipPath) continue;
+    let source: string;
+    try {
+      source = readFileSync(full, "utf8");
+    } catch {
+      continue;
+    }
+    for (const match of source.matchAll(ANY_OPERATION_NAME)) {
+      const name = match[1];
+      if (name && !found.has(name)) found.set(name, entry);
+    }
+  }
+  return found;
+}
+
+function syncOperations(options: TypesOptions, deps: TypesDeps): number {
+  if (options.noOperations) return 0;
+
+  const requested = options.operationsOut?.trim() || DEFAULT_OPERATIONS_OUT;
+  const outPath = resolvePath(deps.cwd, requested);
+  const inside = relative(deps.cwd, outPath);
+  const shown = inside && !inside.startsWith("..") ? inside : outPath;
+  const source = generateOperationsFile();
+
+  let previous: string | null = null;
+  try {
+    previous = readFileSync(outPath, "utf8");
+  } catch {
+    previous = null;
+  }
+
+  const existing = existingOperationNames(deps.cwd, outPath);
+  const clashes = operationNames()
+    .map((name) => ({ name, file: existing.get(name) }))
+    .filter((clash): clash is { name: string; file: string } => !!clash.file);
+  if (clashes.length > 0) {
+    deps.log(
+      `cmssy: ${shown} would collide with operations this app already declares`,
+    );
+    for (const clash of clashes) {
+      deps.log(`  ${clash.name} - already in ${clash.file}`);
+    }
+    deps.log(
+      "  delete those documents to use the vendored ones, or pass --no-operations to keep yours",
+    );
+    return 1;
+  }
+
+  if (previous === source) return 0;
+
+  if (options.check) {
+    deps.log(
+      previous === null
+        ? `cmssy: ${shown} is missing - run \`cmssy types\` and commit it`
+        : `cmssy: ${shown} is out of date with this CLI's delivery operations`,
+    );
+    deps.log("  run `cmssy types` and commit the result");
+    return 1;
+  }
+
+  try {
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, source);
+  } catch (error) {
+    throw new CliError(
+      `could not write ${shown}: ${(error as Error).message}`,
+      "check the path is writable, or pass --operations-out",
+    );
+  }
+  const names = operationNames();
+  deps.log(`cmssy: wrote ${shown} - ${names.length} operations`);
+  deps.log(`  ${names.join(", ")}`);
+  return 0;
+}
+
+/**
  * Writes TypeScript for every model in the workspace, so a record's `data` is
- * a typed object rather than the `unknown` the JSON scalar hands back.
+ * a typed object rather than the `unknown` the JSON scalar hands back - and
+ * vendors the delivery operations alongside it.
  */
 export async function runTypes(
   options: TypesOptions,
   deps: TypesDeps,
 ): Promise<number> {
+  let operationsStatus = 0;
   try {
     loadEnvFiles(deps.cwd, deps.env);
+    operationsStatus = syncOperations(options, deps);
     const org = resolve(options.org, deps.env.CMSSY_ORG_SLUG, "CMSSY_ORG_SLUG");
     const workspace = resolve(
       options.workspace,
@@ -196,7 +328,7 @@ export async function runTypes(
       deps.log(
         `cmssy: the "${workspace}" workspace has no models yet - nothing to generate`,
       );
-      return 0;
+      return operationsStatus;
     }
 
     // resolve, not join: an absolute --out is a path, not a suffix.
@@ -218,7 +350,7 @@ export async function runTypes(
     }
     if (previous === source) {
       deps.log(`cmssy: ${shown} is up to date`);
-      return 0;
+      return operationsStatus;
     }
 
     if (options.check) {
@@ -249,11 +381,14 @@ export async function runTypes(
     deps.log(
       `  ${models.map((model) => model.slug).join(", ")}`,
     );
-    return 0;
+    return operationsStatus;
   } catch (error) {
     if (error instanceof CliError) {
       deps.log(`cmssy: ${error.message}`);
       if (error.fix) deps.log(`  ${error.fix}`);
+      // Not `operationsStatus`: the models half failed, so 1 regardless. The
+      // max() shape is kept everywhere else so a future non-1 status cannot be
+      // swallowed by whichever half happens to return first.
       return 1;
     }
     throw error;

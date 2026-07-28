@@ -203,8 +203,9 @@ A model record comes over the wire as a JSON blob, so without this every read is
 `data.specs as Specs`. The CMS already knows the shape. This makes it say so:
 
 ```bash
-npx @cmssy/cli types                  # writes cmssy/models.ts
+npx @cmssy/cli types                  # cmssy/models.ts + cmssy/operations.graphql
 npx @cmssy/cli types --out types/cms.ts
+npx @cmssy/cli types --no-operations  # no codegen in this app
 ```
 
 It reads the workspace's model definitions over the **public** delivery path -
@@ -244,7 +245,58 @@ What the mapping preserves, and what a hand-written type usually loses:
 - Hidden fields are left out; models are emitted in slug order, so re-running
   the command produces no diff unless the CMS changed.
 
-Use it with the delivery query you already have:
+## The delivery operations
+
+The same command vendors `cmssy/operations.graphql`: the delivery reads every
+cmssy app performs, as `.graphql` documents your own codegen types like any
+other file.
+
+```text
+PublicSiteConfig   PublicPage        PublicPageById    PublicPages
+PublicPageMeta     PublicPageLayouts PublicModelRecords
+PublicRecordsByIds PublicForm        SubmitForm
+```
+
+**Point your codegen at it, or nothing reads it.** The generated file lives
+outside the `graphql/` tree most apps glob:
+
+```ts
+// codegen.ts
+documents: ["graphql/**/*.graphql", "cmssy/**/*.graphql"],
+```
+
+These are not a template the CLI carries - they are the constants `@cmssy/core`
+itself queries with, exported and written out. A CLI-side copy would be one more
+place for the shape to drift from the client that uses it, which is the problem
+this solves rather than repeats.
+
+**The file is vendored, not yours.** Every run rewrites it, so editing it is
+pointless rather than dangerous. Need a different selection set? Write your own
+query under your own operation name.
+
+**Already have your own copies?** An app that hand-wrote `PublicSiteConfig` and
+friends will get a refusal naming the file, not a broken build:
+
+```
+cmssy: cmssy/operations.graphql would collide with operations this app already declares
+  PublicSiteConfig - already in graphql/query/site-config.graphql
+  delete those documents to use the vendored ones, or pass --no-operations to keep yours
+```
+
+Two documents cannot share an operation name in graphql-codegen's client preset,
+so the choice is yours to make deliberately: delete your copies, or keep them and
+skip the vendored file.
+
+**`PublicPagesByType` is deliberately absent.** Every app that has one selects
+different fields and different variables, and the SDK has no version of it -
+generating one would mean inventing it. That query is yours.
+
+The operations need no workspace and no network, so they are written before the
+model half runs and land even in a repo that is not linked yet - though the
+command still exits non-zero in that case, because the models half failed.
+`--check` covers the file exactly as it covers the models.
+
+Use the models with the vendored document:
 
 ```ts
 const data = await client.queryScoped<{
