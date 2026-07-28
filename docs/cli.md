@@ -49,7 +49,7 @@ overwrites existing wiring files.
 
 SEO (metadata, sitemap, robots) is deliberately not scaffolded: since 10.0 it is
 the app's own query plus its own transformation. The
-[starter](https://github.com/cmssy-io/cmssy-next-starter) has a working version
+[simple-blog example](https://github.com/cmssy-io/examples/tree/main/simple-blog) has a working version
 to copy.
 
 Then add your blocks and connect the app to a workspace:

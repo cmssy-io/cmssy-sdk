@@ -262,4 +262,4 @@ language-keyed (`{ en: "…" }`) once a workspace has more than one language, an
 `page.list` includes drafts and the workspace's 404 page - filter both out of a
 sitemap. Working versions of the metadata builder, the sitemap and the robots
 file are in the
-[starter](https://github.com/cmssy-io/cmssy-next-starter/tree/main/services).
+[simple-blog example](https://github.com/cmssy-io/examples/tree/main/simple-blog/services).

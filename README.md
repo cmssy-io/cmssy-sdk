@@ -73,7 +73,7 @@ The header and footer are layout **blocks**, so they need a slot of their own -
 one that fetches with the preview secret in edit mode and renders through the
 edit bridge. That slot is your app's (10.0 removed `CmssyLayoutSlot`):
 [wiring §5](docs/wiring.md) explains the three things it has to get right, and
-the [starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/cmssy/layout-slot.tsx)
+the [simple-blog example](https://github.com/cmssy-io/examples/blob/main/simple-blog/cmssy/editable-layout.tsx)
 has the file.
 
 Full version, with the reasons: [docs/wiring.md](docs/wiring.md).
@@ -95,9 +95,9 @@ const data = await graphqlRequest(
 );
 ```
 
-Two repos show the whole shape, and both build against the published packages:
+Two apps show the whole shape, and both build against the published packages:
 
-- [**cmssy-next-starter**](https://github.com/cmssy-io/cmssy-next-starter) - the
+- [**simple-blog**](https://github.com/cmssy-io/examples/tree/main/simple-blog) - the
   minimal site: four blocks, typed queries (`graphql/` → codegen → `services/`),
   metadata, sitemap, robots, the layout slot.
 - [**cmssy-demo**](https://github.com/cmssy-io/cmssy-demo) - the same plus a

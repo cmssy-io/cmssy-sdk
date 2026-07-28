@@ -121,7 +121,7 @@ export const GET = async () => {
 
 One `<url>` per language: a translated page is not a duplicate, and telling
 Google it is keeps the translation out of the index. The
-[Next starter](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts)
+[simple-blog example](https://github.com/cmssy-io/examples/blob/main/simple-blog/app/sitemap.ts)
 has the full logic, framework aside.
 
 ## Rendering blocks

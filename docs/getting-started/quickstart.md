@@ -231,7 +231,7 @@ There is no URL flag - the editor is the single control, per user.
 
 ## Runnable example
 
-[cmssy-next-starter](https://github.com/cmssy-io/cmssy-next-starter) is a complete, deployable
+[simple-blog](https://github.com/cmssy-io/examples/tree/main/simple-blog) is a complete, deployable
 Next.js app wired with this SDK (catch-all page, draft route, edit-mode proxy, block registry,
 layout slot) plus example blocks and the `graphql/` → codegen → `services/` data layer the SDK
 expects you to own. Clone it or use the 1-click Vercel deploy as a starting point.

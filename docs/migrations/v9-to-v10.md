@@ -53,10 +53,10 @@ hanging the translations off it as alternates leaves the translated URLs out of
 the sitemap entirely - a hint, not a submission. Also drop drafts and the
 workspace's 404 page (`siteConfig.notFoundPageId`): `page.list` returns both.
 
-Working versions of all three are in the starter:
-[`services/seo.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/services/seo.ts),
-[`app/sitemap.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/app/sitemap.ts),
-[`lib/locale-path.ts`](https://github.com/cmssy-io/cmssy-next-starter/blob/main/lib/locale-path.ts).
+Working versions of all three are in the simple-blog example:
+[`services/seo.ts`](https://github.com/cmssy-io/examples/blob/main/simple-blog/services/seo.ts),
+[`app/sitemap.ts`](https://github.com/cmssy-io/examples/blob/main/simple-blog/app/sitemap.ts),
+[`lib/locale-path.ts`](https://github.com/cmssy-io/examples/blob/main/simple-blog/lib/locale-path.ts).
 
 ## Suggested shape for the code you now own
 
@@ -119,7 +119,7 @@ visitor.
 1. `pnpm up @cmssy/core @cmssy/react @cmssy/next --latest`
 2. Build. Every removed symbol is now an unresolved import - that list is your
    migration.
-3. Move each one into `graphql/` + `services/` (or copy the starter's).
+3. Move each one into `graphql/` + `services/` (or copy the example's).
 4. Re-check the three silent breaks above, especially on a multi-language
    workspace.
 5. `checkCmssyEditMode({ baseUrl, secret })` - a build proves the site compiles,

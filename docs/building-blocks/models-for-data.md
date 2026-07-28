@@ -80,7 +80,7 @@ must not assume data is present.
 ## End to end: testimonials
 
 One model, one block, no loader. The live reference implementation ships in
-the [starter](https://github.com/cmssy-io/cmssy-next-starter) under
+the [simple-blog example](https://github.com/cmssy-io/examples/tree/main/simple-blog) under
 `blocks/testimonials/`.
 
 **1. The model (CMS-first).** In the admin - or over MCP with `create_model` -
