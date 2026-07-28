@@ -21,6 +21,15 @@ export function isDevelopment(): boolean {
   );
 }
 
+function rejectWildcardOutsideDevelopment(value: string | string[]): void {
+  const origins = Array.isArray(value) ? value : [value];
+  if (origins.includes("*") && !isDevelopment()) {
+    throw new Error(
+      "cmssy: editorOrigin '*' is only allowed in development; set a concrete editor origin (e.g. https://cmssy.io) for production",
+    );
+  }
+}
+
 export function resolveEditorOrigin(
   editorOrigin: string | string[] | undefined,
 ): string | string[] {
@@ -32,6 +41,7 @@ export function resolveEditorOrigin(
   if (value === undefined) {
     return isDevelopment() ? "*" : DEFAULT_CMSSY_EDITOR_ORIGINS;
   }
+  rejectWildcardOutsideDevelopment(value);
   if (Array.isArray(value)) {
     const cleaned = value.filter((o) => o && o.trim().length > 0);
     return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGINS;

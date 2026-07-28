@@ -10,5 +10,6 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "defineCmssyConfig",
   "loadCmssyPage",
   "localizeHref",
+  "resolveEditorOrigin",
 ]
 `;

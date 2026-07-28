@@ -2,6 +2,7 @@ import {
   CMSSY_EDIT_QUERY_PARAM,
   CMSSY_SECRET_QUERY_PARAM,
   isVerifiedEditUrl,
+  resolveEditorOrigin,
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
@@ -94,7 +95,7 @@ export function createCmssyLoader(
         defaultLocale: locales.defaultLocale,
         enabledLocales: locales.locales,
         isEdit: false,
-        editorOrigin: config.editorOrigin ?? "*",
+        editorOrigin: resolveEditorOrigin(config.editorOrigin),
         diagnostics: renderEditDiagnostics(diagnosed),
       };
     }
@@ -155,7 +156,7 @@ export function createCmssyLoader(
       defaultLocale: slot.defaultLocale,
       enabledLocales: slot.enabledLocales,
       isEdit,
-      editorOrigin: config.editorOrigin ?? "*",
+      editorOrigin: resolveEditorOrigin(config.editorOrigin),
       editorData,
     };
   };

@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_CMSSY_EDITOR_ORIGINS } from "@cmssy/core";
+
 import { createCmssyHeaders, createCmssyLoader } from "../loader";
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -84,6 +86,44 @@ describe("createCmssyLoader", () => {
     });
 
     expect(data.isEdit).toBe(false);
+  });
+
+  it("does not widen editorOrigin to * outside development (CMS-1092)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request("https://shop.test/about"),
+    });
+
+    expect(data.editorOrigin).not.toBe("*");
+    expect(data.editorOrigin).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("does not widen editorOrigin on a verified edit request either (CMS-1092)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+      ),
+    });
+
+    expect(data.isEdit).toBe(true);
+    expect(data.editorOrigin).not.toBe("*");
+    expect(data.editorOrigin).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("refuses an explicit wildcard outside development (CMS-1092)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const load = createCmssyLoader({
+      ...(CONFIG as Record<string, unknown>),
+      editorOrigin: "*",
+    } as never);
+
+    await expect(
+      load({ request: new Request("https://shop.test/about") }),
+    ).rejects.toThrow(/only allowed in development/);
   });
 
   it("rejects a wrong secret", async () => {
