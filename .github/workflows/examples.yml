@@ -122,6 +122,10 @@ jobs:
               if (!/^[a-z0-9][a-z0-9-]*$/.test(e.dir ?? "")) {
                 throw new Error(`bad dir: ${JSON.stringify(e.dir)}`);
               }
+              if (e.blocked) {
+                if (!e.blockedReason) throw new Error(`${e.dir}: blocked needs blockedReason`);
+                continue;
+              }
               if (e.buildOnly) {
                 if (!e.buildOnlyReason) throw new Error(`${e.dir}: buildOnly needs buildOnlyReason`);
                 continue;
@@ -169,7 +173,7 @@ jobs:
           node-version: 22
 
       - uses: actions/download-artifact@v4
-        if: needs.discover.outputs.source == 'tarballs'
+        if: ${{ !matrix.blocked && needs.discover.outputs.source == 'tarballs' }}
         with:
           name: cmssy-tarballs
           path: /tmp/pkgs
@@ -180,7 +184,7 @@ jobs:
       # Names with no tarball here (@cmssy/types lives in another repo) are left
       # to resolve from npm.
       - name: Point the example at those tarballs
-        if: needs.discover.outputs.source == 'tarballs'
+        if: ${{ !matrix.blocked && needs.discover.outputs.source == 'tarballs' }}
         working-directory: examples/${{ matrix.dir }}
         run: |
           node -e '
@@ -214,13 +218,14 @@ jobs:
           '
 
       - name: Install
+        if: ${{ !matrix.blocked }}
         working-directory: examples/${{ matrix.dir }}
         run: pnpm install --no-frozen-lockfile
 
       # In npm mode the point is what the registry serves right now, so the
       # committed lockfile resolutions have to be moved off deliberately.
       - name: Take the published packages
-        if: needs.discover.outputs.source == 'npm'
+        if: ${{ !matrix.blocked && needs.discover.outputs.source == 'npm' }}
         working-directory: examples/${{ matrix.dir }}
         run: |
           pnpm update "@cmssy/*" --latest
@@ -231,6 +236,7 @@ jobs:
       # own, so a placeholder is enough for anything this job checks. Draft
       # preview is not checked and not claimed.
       - name: Build
+        if: ${{ !matrix.blocked }}
         working-directory: examples/${{ matrix.dir }}
         env:
           BUILD: ${{ matrix.build }}
@@ -246,7 +252,7 @@ jobs:
       # Astro reads configuration from process.env, not from a .env file, so the
       # step env is what reaches it. Nothing copies .env.example.
       - name: Assert the example renders what the workspace sends
-        if: ${{ !matrix.buildOnly }}
+        if: ${{ !matrix.buildOnly && !matrix.blocked }}
         working-directory: examples/${{ matrix.dir }}
         env:
           START: ${{ matrix.start }}
@@ -272,6 +278,16 @@ jobs:
       - name: Server log
         if: ${{ failure() && !matrix.buildOnly }}
         run: cat /tmp/server.log || true
+
+      # Loud on purpose. A skipped example that says nothing is how these two
+      # drifted two majors behind without anyone noticing.
+      - name: Say why this example is not built
+        if: ${{ matrix.blocked }}
+        env:
+          DIR: ${{ matrix.dir }}
+          TICKET: ${{ matrix.blocked }}
+          REASON: ${{ matrix.blockedReason }}
+        run: printf '::warning title=%s is NOT BUILT (%s)::%s\n' "$DIR" "$TICKET" "$REASON"
 
       - name: Note why this example is only built
         if: ${{ matrix.buildOnly }}
