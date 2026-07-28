@@ -16,10 +16,10 @@ tokens scoped to a workspace. What you provide: the session cookie and the
 request wiring.
 
 A complete implementation is in
-[cmssy-demo](https://github.com/cmssy-io/cmssy-demo) -
-[`services/auth.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/services/auth.ts),
-[`lib/cmssy/session-crypto.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/lib/cmssy/session-crypto.ts),
-[`lib/actions/auth.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/lib/actions/auth.ts).
+[next-storefront](https://github.com/cmssy-io/examples/tree/main/next-storefront) -
+[`services/auth.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/services/auth.ts),
+[`lib/cmssy/session-crypto.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/lib/cmssy/session-crypto.ts),
+[`lib/actions/auth.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/lib/actions/auth.ts).
 
 ## The mutations
 
@@ -66,7 +66,7 @@ rather than reinventing:
 2. **Refresh in the middleware, not in a component.** An access token expires
    mid-session, and a proxy that refreshes it and re-writes the cookie is the
    only place that sees every request. See
-   [cmssy-demo's `proxy.ts`](https://github.com/cmssy-io/cmssy-demo/blob/main/proxy.ts).
+   [next-storefront's `proxy.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/proxy.ts).
 3. **`retry` stays off for these calls.** `graphqlRequest` does not retry by
    default precisely because it also carries mutations - a blind-retried
    `register` creates two members.

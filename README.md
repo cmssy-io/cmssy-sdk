@@ -100,7 +100,7 @@ Two apps show the whole shape, and both build against the published packages:
 - [**simple-blog**](https://github.com/cmssy-io/examples/tree/main/simple-blog) - the
   minimal site: four blocks, typed queries (`graphql/` → codegen → `services/`),
   metadata, sitemap, robots, the layout slot.
-- [**cmssy-demo**](https://github.com/cmssy-io/cmssy-demo) - the same plus a
+- [**next-storefront**](https://github.com/cmssy-io/examples/tree/main/next-storefront) - the same plus a
   storefront: sessions, cart and checkout as Server Actions.
 
 Coming from v9? [Migrating to v10](docs/migrations/v9-to-v10.md) lists every
