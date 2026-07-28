@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_CMSSY_EDITOR_ORIGINS } from "@cmssy/core";
+
 import { createCmssyHeaders, createCmssyLoader } from "../loader";
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -84,6 +86,28 @@ describe("createCmssyLoader", () => {
     });
 
     expect(data.isEdit).toBe(false);
+  });
+
+  it("does not widen editorOrigin to * outside development (CMS-1092)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request("https://shop.test/about"),
+    });
+
+    expect(data.editorOrigin).not.toBe("*");
+    expect(data.editorOrigin).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("keeps an explicit editorOrigin", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    stubApi();
+    const data = await createCmssyLoader({
+      ...(CONFIG as object),
+      editorOrigin: "https://editor.example",
+    } as never)({ request: new Request("https://shop.test/about") });
+
+    expect(data.editorOrigin).toBe("https://editor.example");
   });
 
   it("rejects a wrong secret", async () => {

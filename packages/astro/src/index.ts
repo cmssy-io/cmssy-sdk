@@ -8,6 +8,7 @@ export type { CmssyPageResult } from "./page";
 // one import path for the common case.
 export {
   defineCmssyConfig,
+  resolveEditorOrigin,
   createCmssyClient,
   CMSSY_EDIT_HEADER,
   localizeHref,
