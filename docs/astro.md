@@ -31,6 +31,23 @@ That is the adapter. It resolves the language, routes a **verified** editor
 request to `/cmssy-edit/...`, and applies the CSP that lets the admin frame your
 site - in that order, because the order is what makes it correct.
 
+### Language prefixes
+
+A catch-all route (`[...path].astro`) reads the language off the path itself and
+needs nothing more. A site built from static routes - `src/pages/shop.astro` -
+has no route for `/no/shop`, so ask for the prefix to come off before routing:
+
+```ts
+export const onRequest = cmssyMiddleware(cmssy, { stripLocalePrefix: true });
+```
+
+The language still reaches the page: `loadCmssyPage` reads it from the header
+the middleware set. Only a non-default language is prefixed, and which language
+needs no prefix comes from the workspace rather than a guess.
+
+Not supported: a site with `base` set. The prefix is looked for in the full
+pathname, so under a base it is never found.
+
 ## The pages
 
 ```astro

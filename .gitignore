@@ -12,3 +12,6 @@ prod-schema.graphql
 
 # local worktrees
 .worktrees/
+
+# astro sync output, written when measuring against a real Astro app
+.astro/
