@@ -6,6 +6,41 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.4.1
+
+**`@cmssy/core`: a comma-separated `editorOrigin` locked every editor out.**
+`CMSSY_EDITOR_ORIGIN` carries a list as one comma-separated string, and
+`resolveEditorOrigin` split it - but only on the branch that reads the env var
+itself. A config that passes `process.env.CMSSY_EDITOR_ORIGIN` in explicitly -
+what the quickstart shows - takes the other branch, so the whole string was
+treated as a single origin: `new URL()` parsed
+`https://cmssy.io,https://cmssy.dev` down to the origin `https://cmssy.io,https`,
+the CSP shipped that as `frame-ancestors`, and no editor could frame the app -
+not even the one that worked before the second origin was added. Nothing threw
+and nothing was logged. An explicit value is now split the same way the env var
+always was, including per entry inside an array.
+
+Configs written by `cmssy init` were never affected: they leave `editorOrigin`
+unset, so they always took the env branch.
+
+A wildcard hiding in such a string is caught now too. The check compared the
+unsplit string against `"*"`, so `" * "` slipped past it and went out as
+`frame-ancestors *` in production - any page could frame the app and the bridge
+accepted messages from anywhere. `"*,https://…"` was never framed that way: it
+failed the URL parse instead, with an "invalid editorOrigin" error that named
+the wrong problem. Outside development both throw the wildcard error, as a bare
+`"*"` always did.
+
+**Do I have to do anything?** No, unless you worked around this by splitting the
+value yourself before handing it to `defineCmssyConfig` - that still works and
+can now go. Passing the raw env var through is the documented shape again. A
+deploy that is throwing on start after the update was serving `frame-ancestors *`
+to the public internet; set a concrete origin.
+
+Precedence is unchanged: an explicit `editorOrigin` still decides on its own,
+and one that is blank or empty still falls back to the cmssy defaults rather
+than to the env var.
+
 ## 11.4.0
 
 **`@cmssy/next`: the site-wide header and footer could not be edited on the

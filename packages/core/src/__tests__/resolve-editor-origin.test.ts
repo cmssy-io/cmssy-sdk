@@ -24,6 +24,14 @@ describe("resolveEditorOrigin", () => {
   });
 
   it("returns the default for an empty array", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    expect(resolveEditorOrigin([])).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("returns the default for a blank value even in development", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(resolveEditorOrigin("")).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
     expect(resolveEditorOrigin([])).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
   });
 
@@ -53,6 +61,39 @@ describe("resolveEditorOrigin", () => {
       "http://localhost:3000",
       "https://cmssy.io",
     ]);
+  });
+
+  it("splits a comma-separated explicit value, the same as env", () => {
+    expect(
+      resolveEditorOrigin("https://cmssy.io, https://cmssy.dev"),
+    ).toEqual(["https://cmssy.io", "https://cmssy.dev"]);
+  });
+
+  it("splits comma-separated entries inside an array override", () => {
+    expect(
+      resolveEditorOrigin(["https://cmssy.io,https://www.cmssy.io", ""]),
+    ).toEqual(["https://cmssy.io", "https://www.cmssy.io"]);
+  });
+
+  it("keeps a single explicit origin a string, not a one-item list", () => {
+    expect(resolveEditorOrigin("https://admin.example.com,")).toBe(
+      "https://admin.example.com",
+    );
+  });
+
+  it("keeps the default over env when the explicit value is blank", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "https://cmssy.dev");
+    expect(resolveEditorOrigin("  ")).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("rejects a wildcard hidden in a list outside development", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => resolveEditorOrigin("*,https://evil.example.com")).toThrow(
+      /only allowed in development/,
+    );
+    expect(() => resolveEditorOrigin(" * ")).toThrow(
+      /only allowed in development/,
+    );
   });
 
   it("prefers an explicit value over env", () => {

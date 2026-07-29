@@ -3,15 +3,21 @@ export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://www.cmssy.io",
 ];
 
-function parseEditorOriginEnv(
-  raw: string | undefined,
+/**
+ * Accepts every shape an editor origin arrives in - one origin, a list, or the
+ * comma-separated string an env var carries - and normalises it to trimmed,
+ * non-empty entries.
+ */
+function parseEditorOrigin(
+  raw: string | string[] | undefined,
 ): string | string[] | undefined {
-  if (!raw) return undefined;
-  const parts = raw
-    .split(",")
-    .map((o) => o.trim())
-    .filter((o) => o.length > 0);
+  if (raw === undefined) return undefined;
+  const parts = (Array.isArray(raw) ? raw : [raw])
+    .flatMap((entry) => (typeof entry === "string" ? entry.split(",") : []))
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
   if (parts.length === 0) return undefined;
+  if (Array.isArray(raw)) return parts;
   return parts.length === 1 ? parts[0] : parts;
 }
 
@@ -33,20 +39,21 @@ function rejectWildcardOutsideDevelopment(value: string | string[]): void {
 export function resolveEditorOrigin(
   editorOrigin: string | string[] | undefined,
 ): string | string[] {
-  const value =
-    editorOrigin ??
-    (typeof process !== "undefined"
-      ? parseEditorOriginEnv(process.env.CMSSY_EDITOR_ORIGIN)
-      : undefined);
-  if (value === undefined) {
+  if (editorOrigin !== undefined) {
+    const explicit = parseEditorOrigin(editorOrigin);
+    if (explicit === undefined) return DEFAULT_CMSSY_EDITOR_ORIGINS;
+    rejectWildcardOutsideDevelopment(explicit);
+    return explicit;
+  }
+  const fromEnv =
+    typeof process !== "undefined"
+      ? parseEditorOrigin(process.env.CMSSY_EDITOR_ORIGIN)
+      : undefined;
+  if (fromEnv === undefined) {
     return isDevelopment() ? "*" : DEFAULT_CMSSY_EDITOR_ORIGINS;
   }
-  rejectWildcardOutsideDevelopment(value);
-  if (Array.isArray(value)) {
-    const cleaned = value.filter((o) => o && o.trim().length > 0);
-    return cleaned.length > 0 ? cleaned : DEFAULT_CMSSY_EDITOR_ORIGINS;
-  }
-  return value.trim().length > 0 ? value : DEFAULT_CMSSY_EDITOR_ORIGINS;
+  rejectWildcardOutsideDevelopment(fromEnv);
+  return fromEnv;
 }
 
 export interface CmssyConfig {
@@ -70,7 +77,9 @@ export interface CmssyConfig {
    */
   devToken?: string;
   /**
-   * Origin allowed to frame your app in the editor. Defaults to
+   * Origin(s) allowed to frame your app in the editor: one origin, a list, or
+   * the comma-separated string an env var carries - all three are accepted, so
+   * `process.env.CMSSY_EDITOR_ORIGIN` can be passed through as-is. Defaults to
    * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.
    */
   editorOrigin?: string | string[];
