@@ -24,6 +24,14 @@ describe("resolveEditorOrigin", () => {
   });
 
   it("returns the default for an empty array", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    expect(resolveEditorOrigin([])).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("returns the default for a blank value even in development", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(resolveEditorOrigin("")).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
     expect(resolveEditorOrigin([])).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
   });
 
@@ -73,9 +81,19 @@ describe("resolveEditorOrigin", () => {
     );
   });
 
-  it("falls back to env when the explicit value is blank", () => {
+  it("keeps the default over env when the explicit value is blank", () => {
     vi.stubEnv("CMSSY_EDITOR_ORIGIN", "https://cmssy.dev");
-    expect(resolveEditorOrigin("  ")).toBe("https://cmssy.dev");
+    expect(resolveEditorOrigin("  ")).toEqual(DEFAULT_CMSSY_EDITOR_ORIGINS);
+  });
+
+  it("rejects a wildcard hidden in a list outside development", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => resolveEditorOrigin("*,https://evil.example.com")).toThrow(
+      /only allowed in development/,
+    );
+    expect(() => resolveEditorOrigin(" * ")).toThrow(
+      /only allowed in development/,
+    );
   });
 
   it("prefers an explicit value over env", () => {

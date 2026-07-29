@@ -4,12 +4,9 @@ export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
 ];
 
 /**
- * A comma-separated list is what an env var can carry, and configs pass
- * `process.env.CMSSY_EDITOR_ORIGIN` straight through - so the split has to
- * happen for an explicit value too, not just for the env fallback. Parsed only
- * on the env side, a list handed over by a config went to `new URL()` whole and
- * came back as one bogus origin (`https://cmssy.io,https`), which matches no
- * editor and locks every one of them out.
+ * Accepts every shape an editor origin arrives in - one origin, a list, or the
+ * comma-separated string an env var carries - and normalises it to trimmed,
+ * non-empty entries.
  */
 function parseEditorOrigin(
   raw: string | string[] | undefined,
@@ -42,16 +39,21 @@ function rejectWildcardOutsideDevelopment(value: string | string[]): void {
 export function resolveEditorOrigin(
   editorOrigin: string | string[] | undefined,
 ): string | string[] {
-  const value =
-    parseEditorOrigin(editorOrigin) ??
-    (typeof process !== "undefined"
+  if (editorOrigin !== undefined) {
+    const explicit = parseEditorOrigin(editorOrigin);
+    if (explicit === undefined) return DEFAULT_CMSSY_EDITOR_ORIGINS;
+    rejectWildcardOutsideDevelopment(explicit);
+    return explicit;
+  }
+  const fromEnv =
+    typeof process !== "undefined"
       ? parseEditorOrigin(process.env.CMSSY_EDITOR_ORIGIN)
-      : undefined);
-  if (value === undefined) {
+      : undefined;
+  if (fromEnv === undefined) {
     return isDevelopment() ? "*" : DEFAULT_CMSSY_EDITOR_ORIGINS;
   }
-  rejectWildcardOutsideDevelopment(value);
-  return value;
+  rejectWildcardOutsideDevelopment(fromEnv);
+  return fromEnv;
 }
 
 export interface CmssyConfig {

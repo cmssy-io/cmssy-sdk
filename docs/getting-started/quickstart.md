@@ -56,7 +56,7 @@ override them only for self-hosted or staging deployments.
 | `CMSSY_WORKSPACE_SLUG` | The workspace slug (unique within the organization).                                                                                                                                                          | yes            |
 | `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work. | yes            |
 | `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                              | no (self-host) |
-| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor. Defaults to the cmssy admin.                                                                                                                                  | no (self-host) |
+| `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor, or several separated by commas (`https://admin.example.com,https://www.admin.example.com`). Setting it replaces the cmssy admin defaults, so list every origin you still need, `www` variants included. | no (self-host) |
 | `CMSSY_API_TOKEN`      | A `cs_…` API token used only in development to preview in-progress editor edits (dev drafts) on your local site. See [Dev preview](#7-dev-preview-optional). Server-only; ignored in production.              | no (dev only)  |
 
 ```ts
