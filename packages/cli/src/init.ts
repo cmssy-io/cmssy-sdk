@@ -105,11 +105,19 @@ function frameworkNotes(
 ): PreflightResult[] {
   const notes: PreflightResult[] = [];
   if (framework.name === "next") {
-    const home = `${nextSrcPrefix(root)}app/page.tsx`;
+    const prefix = nextSrcPrefix(root);
+    const home = `${prefix}app/page.tsx`;
     if (existsSync(join(root, home))) {
       notes.push({
         status: "unknown",
         message: `${home} conflicts with the cmssy catch-all route - delete it and the cmssy page serves /`,
+      });
+    }
+    const rootLayout = `${prefix}app/layout.tsx`;
+    if (existsSync(join(root, rootLayout))) {
+      notes.push({
+        status: "unknown",
+        message: `${rootLayout} outranks the cmssy root layouts, which are what set <html lang> per language - delete it, moving your global CSS import and metadata into ${prefix}app/[[...path]]/layout.tsx`,
       });
     }
   }
@@ -132,6 +140,13 @@ function frameworkNotes(
       status: "unknown",
       message:
         "app/routes.ts already existed - mount routes/page.tsx (index + splat) there yourself, or rerun with --force",
+    });
+  }
+  if (framework.name === "remix" && skipped.includes("app/root.tsx")) {
+    notes.push({
+      status: "unknown",
+      message:
+        "app/root.tsx already existed - set <html lang={useCmssyLocale()}> in its Layout yourself (import from @cmssy/remix), or the site declares one language while rendering another",
     });
   }
   return notes;

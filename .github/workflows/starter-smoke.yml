@@ -51,6 +51,7 @@ jobs:
                 --no-tailwind --no-src-dir --import-alias "@/*" \
                 --skip-install --disable-git --yes
               rm /tmp/app/app/page.tsx
+              rm /tmp/app/app/layout.tsx
               ;;
             astro)
               npm create -y astro@latest /tmp/app -- --template minimal \
@@ -61,6 +62,7 @@ jobs:
               npx --yes create-react-router@latest /tmp/app --no-install \
                 --no-git-init --yes
               rm /tmp/app/app/routes.ts
+              rm /tmp/app/app/root.tsx
               rm -rf /tmp/app/app/routes/home.tsx /tmp/app/app/welcome
               ;;
           esac
@@ -115,10 +117,36 @@ jobs:
             }
             pkg.pnpm = { ...pkg.pnpm, overrides };
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+            fs.writeFileSync(
+              "pnpm-workspace.yaml",
+              "overrides:\n" +
+                Object.entries(overrides)
+                  .map(([name, spec]) => `  "${name}": "${spec}"\n`)
+                  .join(""),
+            );
             console.log("direct:", linked.join(", "));
             console.log("overrides:", Object.keys(overrides).join(", "));
           '
           pnpm install --no-frozen-lockfile
+
+      - name: Prove every @cmssy package came from this checkout
+        working-directory: /tmp/app
+        run: |
+          set -euo pipefail
+          bad=0
+          for dir in node_modules/@cmssy/*; do
+            name="@cmssy/$(basename "$dir")"
+            version=$(node -p "require('$PWD/$dir/package.json').version")
+            expected=$(node -p "require('$GITHUB_WORKSPACE/packages/core/package.json').version")
+            if [ "$version" != "$expected" ]; then
+              echo "FAILED: $name resolved to $version, this checkout is $expected" \
+                   "- the tarball redirect did not apply and this job is testing a release."
+              bad=1
+            else
+              echo "ok: $name@$version"
+            fi
+          done
+          exit $bad
 
       # cmssy init tells the user to run this themselves - the CI does what the
       # user does. The React integration renders the blocks; the Node adapter
@@ -154,12 +182,8 @@ jobs:
 
           // Passing the workspace lets the check tell "this app renders no
           // header" from "this workspace has no header" - the difference that
-          // let a scaffold with no layout slot ship green. It is also where the
-          // second language comes from: the check asks the workspace which ones
-          // it enables rather than being told one here, so pointing this job at
-          // another workspace keeps working. Language went unchecked until now,
-          // and three releases running shipped a preview that rendered in the
-          // wrong one.
+          // let a scaffold with no layout slot ship green, and it is where the
+          // second language checked below comes from.
           const result = await checkCmssyEditMode({
             baseUrl,
             secret,

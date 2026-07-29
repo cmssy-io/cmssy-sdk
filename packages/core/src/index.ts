@@ -75,6 +75,7 @@ export type {
 
 // --- Localization (path-prefix helpers) ---
 export { localizeHref } from "./data/localize-href";
+export { resolveCmssyLocale } from "./data/site-locales";
 export { CMSSY_LOCALE_HEADER } from "./locale";
 
 // --- Editor / edit-bridge ---

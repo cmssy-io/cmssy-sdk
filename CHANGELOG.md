@@ -8,26 +8,53 @@ nowhere.
 
 ## 11.5.0
 
+**The Next and Remix scaffolds served every page as `<html lang="en">`.** A page
+at `/no` declared English while rendering Norwegian - wrong for screen readers,
+for translation, and for search engines. Only the Astro scaffold set it from the
+page's language. `cmssy init` now owns the layouts that render `<html>`:
+`app/[[...path]]/layout.tsx` and `app/cmssy-edit/[[...path]]/layout.tsx` for
+Next, `app/root.tsx` for Remix.
+
+**Do I have to do anything?** Only on an existing app, where `init` skips a file
+that is already there and tells you what to do with it. For Next, delete
+`app/layout.tsx` and move your global CSS import and metadata into
+`app/[[...path]]/layout.tsx` - the cmssy layouts must be the root layouts,
+because only a root layout may render `<html>` and only a layout under the
+catch-all knows the language. For Remix, set `<html lang={useCmssyLocale()}>` in
+your root `Layout`.
+
+The language is taken from the route, not from a request header: a root layout
+that reads a header opts every page out of static rendering, and these pages are
+prerendered.
+
+**New: `resolveCmssyLocale` (`@cmssy/core`) and `useCmssyLocale`
+(`@cmssy/remix`).** Both answer `undefined` rather than guessing when no
+language could be resolved, and React then omits the attribute. No `lang` is
+honest; a wrong one is the bug above.
+
 **`checkCmssyEditMode` now checks the preview's language, and works out which
-language to ask for by itself.** Nothing to do: pass `workspace` - which the
-scaffolded smoke test already does - and the check asks the delivery API which
-languages the workspace enables, picks one that is not the default, and proves
-the editor renders a prefixed URL in it. A workspace with one language is asked
-nothing about language, because there is no second one to render.
+language to ask for by itself.** Pass `workspace` - which the scaffolded smoke
+test already does - and it asks the delivery API which languages the workspace
+enables, picks one that is not the default, and proves the editor renders a
+prefixed URL in it. A workspace with one language is asked nothing about
+language; a workspace that cannot be reached is reported rather than skipped.
 
-Pass `localizedPath` only for a site that routes languages some other way than
-a first path segment; it overrides the derivation entirely.
+Pass `localizedPath` only for a site that routes languages some other way than a
+first path segment; it overrides the derivation entirely. Pass `editRoute:
+false` if your app serves the editor from the page rather than a `/cmssy-edit`
+route - `@cmssy/remix/testing` already does.
 
-This is the check that would have caught 11.3.1 and 11.4.2 before release
-rather than after. It was in the SDK all along and never ran: the language
-assertions were reachable only by passing `localizedPath`, and no caller did.
-The check also opens the edit route directly now, not only through the rewrite
-- the two answers disagreed for three releases and nothing looked.
+This is the check that would have caught 11.3.1 and 11.4.2 before release rather
+than after. It was in the SDK all along and never ran: the language assertions
+were reachable only by passing `localizedPath`, and no caller did. It also opens
+the edit route directly now, not only through the rewrite, and reads
+`frame-ancestors` rather than the mere presence of a CSP - an absent one
+restricts nothing.
 
 The alternative was writing a language into the CI workflow. A locale hardcoded
-in a smoke test is one workspace's content: it goes stale the day that
-workspace turns the language off, and it is wrong for anyone pointing the job
-at their own workspace.
+in a smoke test is one workspace's content: it goes stale the day that workspace
+turns the language off, and it is wrong for anyone pointing the job at their own
+workspace.
 
 ## 11.4.2
 

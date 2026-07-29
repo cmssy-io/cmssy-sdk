@@ -32,7 +32,9 @@ const NEXT_FILES = [
   "cmssy/editable-layout.tsx",
   "blocks/hero/block.ts",
   "blocks/hero/Hero.tsx",
+  "app/[[...path]]/layout.tsx",
   "app/[[...path]]/page.tsx",
+  "app/cmssy-edit/[[...path]]/layout.tsx",
   "app/cmssy-edit/[[...path]]/page.tsx",
   "app/api/draft/route.ts",
 ];

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   localesFromSiteConfig,
   resolveSiteLocales,
+  resolveCmssyLocale,
   splitLocaleFromPath,
   type CmssySiteLocales,
 } from "../data/site-locales";
@@ -101,5 +102,84 @@ describe("resolveSiteLocales", () => {
       { fetch: fetchMock as never },
     );
     expect(res).toEqual({ defaultLocale: "en", locales: ["en"] });
+  });
+});
+
+describe("resolveCmssyLocale", () => {
+  const serving = (defaultLanguage: string, enabledLanguages: string[]) =>
+    vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        data: { public: { siteConfig: { defaultLanguage, enabledLanguages } } },
+      }),
+    }));
+
+  const config = (workspaceSlug: string) => ({
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug,
+  });
+
+  it("reads the language off the first path segment", async () => {
+    const locale = await resolveCmssyLocale(
+      config("ws-c"),
+      ["no", "blog"],
+      { fetch: serving("en", ["en", "no"]) as never },
+    );
+
+    expect(locale).toBe("no");
+  });
+
+  it("answers the default for an unprefixed path", async () => {
+    const locale = await resolveCmssyLocale(
+      config("ws-d"),
+      ["about"],
+      { fetch: serving("en", ["en", "no"]) as never },
+    );
+
+    expect(locale).toBe("en");
+  });
+
+  it("answers the default for the home page, which has no segments at all", async () => {
+    const locale = await resolveCmssyLocale(config("ws-e"), undefined, {
+      fetch: serving("pl", ["pl", "en"]) as never,
+    });
+
+    expect(locale).toBe("pl");
+  });
+
+  it("names no language when the workspace's languages cannot be read", async () => {
+    const locale = await resolveCmssyLocale(config("ws-g"), ["no", "blog"], {
+      fetch: vi.fn(async () => {
+        throw new Error("upstream is down");
+      }) as never,
+    });
+
+    expect(locale).toBeUndefined();
+  });
+
+  it("does not cache a failure - the next request asks again", async () => {
+    const down = vi.fn(async () => {
+      throw new Error("upstream is down");
+    });
+    await resolveCmssyLocale(config("ws-h"), undefined, {
+      fetch: down as never,
+    });
+
+    const locale = await resolveCmssyLocale(config("ws-h"), ["no"], {
+      fetch: serving("en", ["en", "no"]) as never,
+    });
+
+    expect(locale).toBe("no");
+  });
+
+  it("does not treat the default language's own prefix as a language", async () => {
+    const locale = await resolveCmssyLocale(
+      config("ws-f"),
+      ["en", "about"],
+      { fetch: serving("en", ["en", "no"]) as never },
+    );
+
+    expect(locale).toBe("en");
   });
 });

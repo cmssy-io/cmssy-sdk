@@ -23,9 +23,7 @@ const EDIT_HTML_SLOT_NO_COUNT =
  * Serves a body per URL; anything unrouted 404s, which the check reports.
  *
  * Routes answer with a framing CSP that admits the editor, unless `blocked`
- * names them - those get the `frame-ancestors 'none'` that 11.4.1 shipped from
- * a malformed editorOrigin, which is what actually locks the admin out. An
- * absent CSP is not that: it restricts nothing.
+ * names them.
  */
 function serve(routes: Record<string, string>, blocked: string[] = []) {
   const fetchStub = vi.fn(async (url: string) => {
@@ -158,10 +156,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("fails when the edit route answers differently reached directly", async () => {
-    // Both URLs render the same page for the same editor. Until 11.4.2 the
-    // direct one resolved its language from the whole path, `cmssy-edit`
-    // included, and served the default. Nothing saw it: this check only ever
-    // went through the rewrite.
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
@@ -203,9 +197,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("does not call a route unframeable for carrying no CSP at all", async () => {
-    // An absent Content-Security-Policy restricts nothing - the admin frames
-    // such a route fine. Reading its absence as "cannot be framed" got this
-    // exactly backwards, and would have failed every correct Remix consumer.
     const noHeaders = vi.fn(async (url: string) => {
       const routes: Record<string, string> = {
         [`${BASE}/`]: PUBLIC_HTML,
@@ -233,9 +224,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("probes the edit route on a site with no localized path at all", async () => {
-    // Most consumers have one language and never pass localizedPath. The two
-    // ways into the edit route disagreed about framing regardless of language,
-    // so this must not be reachable only through the localized branch.
     serve(
       {
         [`${BASE}/`]: PUBLIC_HTML,
@@ -293,8 +281,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("reads the language of an edit-route path off the segment after the prefix", async () => {
-    // A caller who passes the edit route as `localizedPath` was told its
-    // language is `cmssy-edit`, by the check meant to catch that confusion.
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
@@ -317,10 +303,7 @@ describe("checkCmssyEditMode with a workspace", () => {
   const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
   const NO_LAYOUT_HTML = "<html><main>hi</main></html>";
 
-  /**
-   * Serves pages by URL and answers both workspace probes: the layout groups,
-   * and the site config the second language is read off.
-   */
+  /** Serves pages by URL and answers the layout and site-config probes. */
   function serveWithWorkspace(
     routes: Record<string, string>,
     layouts: unknown,
@@ -476,15 +459,11 @@ describe("checkCmssyEditMode with a workspace", () => {
       workspace: WORKSPACE,
     });
 
-    // The API being unreachable is not the app's fault, so nothing is claimed
-    // about its layouts.
+    // The API being unreachable is not the app's fault.
     expect(result.failures.join(" ")).not.toMatch(/layout/);
   });
 
   it("says so rather than passing quietly when it cannot ask about languages", async () => {
-    // The language check disappearing on an outage restores exactly the state
-    // this whole check was written against: assertions unreachable, run green,
-    // nobody notices. It has to be louder than that.
     serveWithWorkspace(
       {
         [`${BASE}/`]: NO_LAYOUT_HTML,
@@ -511,7 +490,6 @@ describe("checkCmssyEditMode language, asked of the workspace", () => {
   const WORKSPACE = { org: "acme", workspaceSlug: "shop" };
   const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
 
-  /** Answers the site-config probe with a locale set; serves pages by URL. */
   function serveLocales(
     routes: Record<string, string>,
     siteConfig: { defaultLanguage: string; enabledLanguages: string[] } | null,
@@ -607,8 +585,6 @@ describe("checkCmssyEditMode language, asked of the workspace", () => {
       workspace: WORKSPACE,
     });
 
-    // No second language exists, so there is no prefixed URL to ask for - and
-    // asking for one would 404 on a perfectly correct site.
     expect(result.failures).toEqual([]);
     const asked = fetchStub.mock.calls.map(([url]) => String(url));
     expect(asked.some((url) => url.includes("/en?"))).toBe(false);
@@ -657,5 +633,45 @@ describe("checkCmssyEditMode language, asked of the workspace", () => {
     expect(result.failures).toEqual([]);
     const asked = fetchStub.mock.calls.map(([url]) => String(url));
     expect(asked.some((url) => url.includes("/no?"))).toBe(false);
+  });
+});
+
+describe("checkCmssyEditMode on an adapter with no edit route", () => {
+  it("does not compare a page slugged like the edit path against the real one", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
+      [verifiedUrl("/cmssy-edit")]: `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+      editRoute: false,
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("still reports it for an adapter that does mount one", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+    });
+
+    expect(result.failures.join(" ")).toContain("two languages");
   });
 });

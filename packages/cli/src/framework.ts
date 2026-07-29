@@ -30,7 +30,9 @@ export const FRAMEWORKS: FrameworkDef[] = [
       "cmssy/editable-layout.tsx",
       "blocks/hero/block.ts",
       "blocks/hero/Hero.tsx",
+      "app/[[...path]]/layout.tsx",
       "app/[[...path]]/page.tsx",
+      "app/cmssy-edit/[[...path]]/layout.tsx",
       "app/cmssy-edit/[[...path]]/page.tsx",
       "app/api/draft/route.ts",
     ],
@@ -61,6 +63,7 @@ export const FRAMEWORKS: FrameworkDef[] = [
     dependencies: ["@cmssy/remix", "@cmssy/react", "@cmssy/core"],
     files: [
       "cmssy.config.ts",
+      "app/root.tsx",
       "app/routes.ts",
       "app/cmssy/blocks.ts",
       "app/cmssy/editor.tsx",
