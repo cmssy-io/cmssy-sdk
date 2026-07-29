@@ -1,6 +1,7 @@
 import { graphqlRequest } from "../data/graphql-request";
 import { localesFromSiteConfig } from "../data/site-locales";
 import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "../data/queries";
+import { checkFrameAncestors } from "../preflight";
 
 export interface EditSmokeOptions {
   /** A running build of the consumer app, e.g. http://localhost:3000. */
@@ -158,13 +159,22 @@ async function workspaceHasLayoutBlocks(
 
 /**
  * A language the workspace enables that is not its default, and the path that
- * asks for it. `null` when the workspace has one language - there is no second
- * one to render - or when the API could not answer.
+ * asks for it.
+ *
+ * "one language" and "could not ask" are told apart on purpose. Both leave the
+ * language unchecked, but only the first is a fact about the site - the second
+ * is this check going quiet, which is precisely how the language went unasserted
+ * for three releases.
  */
+type DerivedLocale =
+  | { kind: "derived"; localizedPath: string; locale: string }
+  | { kind: "none" }
+  | { kind: "unavailable" };
+
 async function derivedLocalizedPath(
   workspace: NonNullable<EditSmokeOptions["workspace"]>,
   path: string,
-): Promise<{ localizedPath: string; locale: string } | null> {
+): Promise<DerivedLocale> {
   try {
     const data = await graphqlRequest<{
       public?: { siteConfig?: CmssySiteConfig | null } | null;
@@ -179,13 +189,14 @@ async function derivedLocalizedPath(
       data.public?.siteConfig ?? null,
     );
     const locale = locales.find((candidate) => candidate !== defaultLocale);
-    if (!locale) return null;
-    return {
-      locale,
-      localizedPath: `/${locale}${path === "/" ? "" : path}`,
-    };
+    if (!locale) return { kind: "none" };
+    // A path already under a language prefix would otherwise become /no/no/x.
+    const [first] = path.split("/").filter(Boolean);
+    if (first && locales.includes(first)) return { kind: "none" };
+    const suffix = path === "/" || path === "" ? "" : path.replace(/\/+$/, "");
+    return { kind: "derived", locale, localizedPath: `/${locale}${suffix}` };
   } catch {
-    return null;
+    return { kind: "unavailable" };
   }
 }
 
@@ -281,6 +292,8 @@ export async function checkCmssyEditMode(
     }
   }
 
+  const query = `cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`;
+
   // Asked for, or asked of the workspace - never a language written down here.
   // A locale hardcoded in a smoke test is one workspace's content, and it goes
   // stale the moment that workspace turns the language off.
@@ -288,55 +301,99 @@ export async function checkCmssyEditMode(
   const derived =
     !asked && options.workspace
       ? await derivedLocalizedPath(options.workspace, path)
-      : null;
-  const localizedPath = asked ?? derived?.localizedPath;
+      : { kind: "none" as const };
+
+  if (derived.kind === "unavailable") {
+    failures.push(
+      `the delivery API would not say which languages ${options.workspace?.workspaceSlug} enables, so the preview's language went unchecked. That is the check three releases shipped a wrong-language preview past - a green run here does not mean it works.`,
+    );
+  }
+
+  const localizedPath =
+    asked ?? (derived.kind === "derived" ? derived.localizedPath : undefined);
 
   if (localizedPath) {
     const locale =
-      options.localizedLocale ?? derived?.locale ?? localeOf(localizedPath);
-    const query = `cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`;
+      options.localizedLocale ??
+      (derived.kind === "derived" ? derived.locale : localeOf(localizedPath));
 
     const localized = await html(url(`${localizedPath}?${query}`));
     if (localized.status !== 200) {
+      // Derived, this path is the SDK router's guess at how the site spells the
+      // language - a site routing it by domain or cookie is not broken for
+      // answering nothing here. Asked for, it is the caller's own claim, so a
+      // path that does not serve IS the failure.
       failures.push(
-        derived
-          ? `edit ${localizedPath}: expected 200, got ${localized.status} - the workspace enables "${locale}" and this site serves nothing under /${locale}. Pass localizedPath if it routes languages another way.`
+        derived.kind === "derived"
+          ? `edit ${localizedPath}: expected 200, got ${localized.status}. The workspace enables "${locale}", so the language went unchecked - pass localizedPath if this site spells the language some other way.`
           : `edit ${localizedPath}: expected 200, got ${localized.status}`,
       );
-      return { ok: false, failures };
-    }
-    if (!EDITOR_MARKER.test(localized.body)) {
-      failures.push(`edit ${localizedPath}: no editor in the response`);
-    }
-    const served = langOf(localized.body);
-    if (locale && served !== locale) {
-      failures.push(
-        `edit ${localizedPath}: the page reports lang="${served ?? "?"}" but the URL asks for "${locale}" - the preview renders in the wrong language`,
-      );
-    }
-
-    // The same page reached the other way: straight at the edit route, without
-    // the rewrite. Both must answer alike. This one resolved its language from
-    // the whole path - `cmssy-edit` is a segment, not a language - so it served
-    // the default one, and it went out with no framing headers at all until
-    // 11.4.0. Neither was visible to a check that only ever went through the
-    // rewrite.
-    const directPath = `${EDIT_PATH_PREFIX}${localizedPath}`;
-    const direct = await html(url(`${directPath}?${query}`));
-    if (direct.status === 200) {
-      const directLang = langOf(direct.body);
-      if (locale && directLang !== locale) {
+    } else {
+      if (!EDITOR_MARKER.test(localized.body)) {
+        failures.push(`edit ${localizedPath}: no editor in the response`);
+      }
+      const served = langOf(localized.body);
+      if (locale && served !== locale) {
         failures.push(
-          `edit ${directPath}: reached directly the page reports lang="${directLang ?? "?"}", through the rewrite it reports "${locale}" - the same page renders in two languages depending on how the editor arrives`,
+          `edit ${localizedPath}: the page reports lang="${served ?? "?"}" but the URL asks for "${locale}" - the preview renders in the wrong language`,
         );
       }
-      if (!direct.headers.get("content-security-policy")) {
-        failures.push(
-          `edit ${directPath}: no content-security-policy, so the admin cannot frame it - the editor shows a blank panel for a route that renders fine on its own`,
-        );
-      }
+      await checkDirectEditRoute(url, localizedPath, query, locale, failures);
     }
   }
 
+  // Unconditionally, and not only for a localized path: the two ways in
+  // disagreed about framing headers regardless of language, and most sites have
+  // one language and would never reach the branch above.
+  await checkDirectEditRoute(url, path, query, undefined, failures);
+
   return { ok: failures.length === 0, failures };
+}
+
+/**
+ * The edit route reached straight on, without the rewrite the editor uses. Both
+ * ways in must answer alike: until 11.4.2 the direct one resolved its language
+ * from the whole path - `cmssy-edit` is a segment, not a language - and served
+ * the default, which a check that only ever went through the rewrite could not
+ * see.
+ *
+ * A route that does not answer 200 is not probed further. Not every adapter
+ * mounts one (the Remix loader deliberately does not), and a 404 there is that,
+ * not a broken editor.
+ */
+async function checkDirectEditRoute(
+  url: (suffix: string) => string,
+  routedPath: string,
+  query: string,
+  locale: string | undefined,
+  failures: string[],
+): Promise<void> {
+  const withoutPrefix =
+    routedPath === EDIT_PATH_PREFIX ||
+    routedPath.startsWith(`${EDIT_PATH_PREFIX}/`)
+      ? routedPath.slice(EDIT_PATH_PREFIX.length) || "/"
+      : routedPath;
+  const directPath = `${EDIT_PATH_PREFIX}${withoutPrefix === "/" ? "" : withoutPrefix}`;
+
+  const direct = await html(url(`${directPath}?${query}`));
+  if (direct.status !== 200) return;
+
+  const directLang = langOf(direct.body);
+  if (locale && directLang !== locale) {
+    failures.push(
+      `edit ${directPath}: reached directly the page reports lang="${directLang ?? "?"}", through the rewrite it reports "${locale}" - the same page renders in two languages depending on how the editor arrives`,
+    );
+  }
+
+  // Absent, a CSP restricts nothing and the admin frames the route fine. What
+  // locks the editor out is a frame-ancestors that excludes it - which is what
+  // 11.4.1 shipped, from a malformed editorOrigin falling back to 'none'.
+  const framing = checkFrameAncestors(
+    direct.headers.get("content-security-policy"),
+  );
+  if (framing.status === "fail") {
+    failures.push(
+      `edit ${directPath}: ${framing.message} - the editor shows a blank panel for a route that renders fine on its own. ${framing.fix ?? ""}`.trim(),
+    );
+  }
 }

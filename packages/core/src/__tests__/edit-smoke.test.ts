@@ -22,20 +22,22 @@ const EDIT_HTML_SLOT_NO_COUNT =
 /**
  * Serves a body per URL; anything unrouted 404s, which the check reports.
  *
- * Routes answer with the framing CSP unless `noCsp` names them: a route the
- * admin cannot frame fails differently from one that renders the wrong thing.
+ * Routes answer with a framing CSP that admits the editor, unless `blocked`
+ * names them - those get the `frame-ancestors 'none'` that 11.4.1 shipped from
+ * a malformed editorOrigin, which is what actually locks the admin out. An
+ * absent CSP is not that: it restricts nothing.
  */
-function serve(routes: Record<string, string>, noCsp: string[] = []) {
+function serve(routes: Record<string, string>, blocked: string[] = []) {
   const fetchStub = vi.fn(async (url: string) => {
     const body = routes[url];
     return {
       status: body === undefined ? 404 : 200,
-      text: async () => body ?? "",
-      headers: new Headers(
-        noCsp.includes(url)
-          ? {}
-          : { "content-security-policy": "frame-ancestors https://cmssy.io" },
-      ),
+      text: async (): Promise<string> => body ?? "",
+      headers: new Headers({
+        "content-security-policy": blocked.includes(url)
+          ? "frame-ancestors 'none'"
+          : "frame-ancestors https://cmssy.io",
+      }),
     };
   });
   vi.stubGlobal("fetch", fetchStub);
@@ -197,7 +199,79 @@ describe("checkCmssyEditMode", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.failures.join(" ")).toContain("cannot frame it");
+    expect(result.failures.join(" ")).toContain("blocks the cmssy editor");
+  });
+
+  it("does not call a route unframeable for carrying no CSP at all", async () => {
+    // An absent Content-Security-Policy restricts nothing - the admin frames
+    // such a route fine. Reading its absence as "cannot be framed" got this
+    // exactly backwards, and would have failed every correct Remix consumer.
+    const noHeaders = vi.fn(async (url: string) => {
+      const routes: Record<string, string> = {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+        [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+        [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      };
+      const body = routes[url];
+      return {
+        status: body === undefined ? 404 : 200,
+        text: async (): Promise<string> => body ?? "",
+        headers: new Headers(),
+      };
+    });
+    vi.stubGlobal("fetch", noHeaders);
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("probes the edit route on a site with no localized path at all", async () => {
+    // Most consumers have one language and never pass localizedPath. The two
+    // ways into the edit route disagreed about framing regardless of language,
+    // so this must not be reachable only through the localized branch.
+    serve(
+      {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+        [verifiedUrl("/cmssy-edit")]: EDIT_HTML,
+      },
+      [verifiedUrl("/cmssy-edit")],
+    );
+
+    const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.join(" ")).toContain("blocks the cmssy editor");
+  });
+
+  it("does not double the prefix when the caller passes the edit route itself", async () => {
+    const fetchStub = serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/cmssy-edit")]: EDIT_HTML,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/cmssy-edit/no",
+    });
+
+    expect(result.failures).toEqual([]);
+    const asked = fetchStub.mock.calls.map(([url]) => String(url));
+    expect(asked.some((url) => url.includes("/cmssy-edit/cmssy-edit"))).toBe(
+      false,
+    );
   });
 
   it("passes when both ways into the edit route agree", async () => {
@@ -402,8 +476,34 @@ describe("checkCmssyEditMode with a workspace", () => {
       workspace: WORKSPACE,
     });
 
-    // The API being unreachable is not the app's fault.
-    expect(result.failures).toEqual([]);
+    // The API being unreachable is not the app's fault, so nothing is claimed
+    // about its layouts.
+    expect(result.failures.join(" ")).not.toMatch(/layout/);
+  });
+
+  it("says so rather than passing quietly when it cannot ask about languages", async () => {
+    // The language check disappearing on an outage restores exactly the state
+    // this whole check was written against: assertions unreachable, run green,
+    // nobody notices. It has to be louder than that.
+    serveWithWorkspace(
+      {
+        [`${BASE}/`]: NO_LAYOUT_HTML,
+        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+      },
+      new Error("upstream is down"),
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.join(" ")).toContain(
+      "would not say which languages",
+    );
   });
 });
 
@@ -531,7 +631,7 @@ describe("checkCmssyEditMode language, asked of the workspace", () => {
     });
 
     expect(result.failures.join("\n")).toMatch(
-      /the workspace enables "no" and this site serves nothing under \/no\. Pass localizedPath/,
+      /The workspace enables "no", so the language went unchecked - pass localizedPath/,
     );
   });
 
