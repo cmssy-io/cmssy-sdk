@@ -140,6 +140,49 @@ describe("cmssyMiddleware", () => {
     );
   });
 
+  it("sends the CSP on a direct hit of the edit route too (CMS-1096)", async () => {
+    stubSiteConfig();
+
+    const verified = await run(
+      cmssyMiddleware({
+        ...(configFor("directedit") as object),
+        editorOrigin: ["https://cmssy.io", "https://www.cmssy.io"],
+      } as never) as never,
+      "https://shop.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+    expect(verified.response.headers.get("content-security-policy")).toContain(
+      "frame-ancestors https://cmssy.io https://www.cmssy.io",
+    );
+
+    const bare = await run(
+      cmssyMiddleware({
+        ...(configFor("directbare") as object),
+        editorOrigin: "https://www.cmssy.io",
+      } as never) as never,
+      "https://shop.test/cmssy-edit/about",
+    );
+    expect(bare.response.headers.get("content-security-policy")).toContain(
+      "frame-ancestors https://www.cmssy.io",
+    );
+  });
+
+  it("denies framing rather than throwing when the edit-route CSP cannot be built (CMS-1096)", async () => {
+    stubSiteConfig();
+
+    const result = await run(
+      cmssyMiddleware({
+        ...(configFor("directbad") as object),
+        editorOrigin: "cmssy.io",
+      } as never) as never,
+      "https://shop.test/cmssy-edit/about",
+    );
+
+    expect(result.response.headers.get("content-security-policy")).toBe(
+      "frame-ancestors 'none'",
+    );
+    expect(result.response.headers.get("x-frame-options")).toBe("DENY");
+  });
+
   it("does NOT open the editor for a bare cmssyEdit=1 (CMS-948)", async () => {
     stubSiteConfig();
 

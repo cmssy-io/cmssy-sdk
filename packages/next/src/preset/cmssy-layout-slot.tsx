@@ -43,7 +43,7 @@ interface CmssyLayoutSlotBaseProps {
     locale: string;
     defaultLocale: string;
     enabledLocales: string[];
-    edit: { editorOrigin: string };
+    edit: { editorOrigin: string | string[] };
     data?: Record<string, unknown>;
     resolvedContent?: Record<string, Record<string, unknown>>;
     appContext?: Record<string, unknown>;
@@ -63,8 +63,7 @@ interface CmssyLayoutSlotBaseProps {
  * language while looking like it worked.
  */
 export type CmssyLayoutSlotLocaleSource =
-  | { path: string[]; locale?: never }
-  | { locale: string; path?: never };
+  { path: string[]; locale?: never } | { locale: string; path?: never };
 
 export type CmssyLayoutSlotProps = CmssyLayoutSlotBaseProps &
   CmssyLayoutSlotLocaleSource;
@@ -135,7 +134,7 @@ export async function CmssyLayoutSlot({
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
-      edit={{ editorOrigin: (Array.isArray(origin) ? origin[0] : origin) ?? "" }}
+      edit={{ editorOrigin: origin ?? "" }}
       data={resolved.data}
       resolvedContent={resolved.resolvedContent}
       appContext={appContext}

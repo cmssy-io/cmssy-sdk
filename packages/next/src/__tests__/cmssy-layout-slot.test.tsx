@@ -10,7 +10,9 @@ const CONFIG = {
   editorOrigin: "https://app.cmssy.io",
 };
 
-const GROUPS = [{ position: "header", blocks: [{ id: "b1", type: "site-header" }] }];
+const GROUPS = [
+  { position: "header", blocks: [{ id: "b1", type: "site-header" }] },
+];
 
 const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
@@ -125,6 +127,22 @@ describe("CmssyLayoutSlot", () => {
     expect(element.props.data).toEqual({ b1: { categories: [] } });
     expect(element.props.resolvedContent).toEqual({ b1: { heading: "Shop" } });
     expect(element.props.edit).toEqual({ editorOrigin: CONFIG.editorOrigin });
+  });
+
+  it("hands the bridge every editor origin, not just the first (CMS-1096)", async () => {
+    const origins = ["https://cmssy.io", "https://www.cmssy.io"];
+    setup({ editorOrigin: origins });
+
+    const element = await CmssyLayoutSlot({
+      config: { ...CONFIG, editorOrigin: origins },
+      blocks: [],
+      position: "header",
+      path: [],
+      editMode: true,
+      editable: Editable,
+    });
+
+    expect(element.props.edit).toEqual({ editorOrigin: origins });
   });
 
   it("forwards appContext to both modes", async () => {

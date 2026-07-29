@@ -134,6 +134,20 @@ export function cmssyMiddleware(
       }
     }
 
+    if (underEditRoute) {
+      const response = await next();
+      try {
+        applyCmssyCsp(response, { editorOrigin: config.editorOrigin });
+      } catch {
+        response.headers.set(
+          "content-security-policy",
+          "frame-ancestors 'none'",
+        );
+        response.headers.set("x-frame-options", "DENY");
+      }
+      return response;
+    }
+
     return next();
   };
 }

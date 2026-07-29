@@ -6,6 +6,34 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.4.0
+
+**`@cmssy/next`: the site-wide header and footer could not be edited on the
+default configuration.** `CmssyLayoutSlot` declared its own prop type for the
+`editable` component - `edit: { editorOrigin: string }` - and collapsed the
+configured value to `editorOrigin[0]` to fit it. The default is two origins,
+`https://cmssy.io` and `https://www.cmssy.io`, and the apex redirects to `www`,
+so the admin answers on the entry that was being thrown away. With a single
+value the bridge skips the referrer match entirely, posts at an origin nothing
+listens on, and `isOriginAllowed` rejects every message the admin sends. Page
+blocks were unaffected - `createCmssyPage` passes the list through.
+
+**Do I have to do anything?** Only if you wrote your own editable-layout wrapper
+and typed its prop as `edit: { editorOrigin: string }`. That prop is now
+`string | string[]`, so a narrower type no longer satisfies it and the app stops
+compiling. Widen it, or use `EditBridgeConfig` from `@cmssy/react`, which has
+accepted both since the bridge was written. Apps passing `CmssyEditableLayout`
+or `CmssyLazyLayout` need no change.
+
+**`@cmssy/astro`: `/cmssy-edit/...` was served without framing headers when hit
+directly.** The CSP was applied only on the branch that rewrites into the edit
+route, so a request that already pointed at it mounted the bridge with no
+`frame-ancestors` and no `X-Frame-Options`. The headers now go out for the edit
+route however it was reached. If `editorOrigin` is too malformed to build a CSP
+from, the route denies framing outright rather than throwing - a misconfigured
+origin should not turn the whole route into a 500, and it must not leave the
+page frameable either.
+
 ## 11.3.2
 
 **`@cmssy/astro`: a language-prefixed URL rendered in the default language.**
@@ -355,7 +383,10 @@ graphql-codegen emits, in either mode - alongside the query string they always
 took:
 
 ```ts
-const data = await client.query(PublicPageMetaDocument, { workspaceSlug, slug });
+const data = await client.query(PublicPageMetaDocument, {
+  workspaceSlug,
+  slug,
+});
 ```
 
 The variables are checked and the result inferred, so the repeated generic, the
