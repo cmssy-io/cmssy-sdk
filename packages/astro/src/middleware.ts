@@ -75,21 +75,34 @@ export function cmssyMiddleware(
     context.request.headers.delete(CMSSY_EDIT_HEADER);
     context.request.headers.delete(CMSSY_LOCALE_HEADER);
 
-    const locale = await localeForPathname(config, pathname);
+    const underEditRoute =
+      pathname === CMSSY_EDIT_PATH_PREFIX ||
+      pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`);
+
+    // `/cmssy-edit` is routing, not language. Resolving from the whole path
+    // answers with the default language on a direct hit, so the editor renders
+    // /cmssy-edit/no/blog in English while the same page reached through the
+    // rewrite renders it in Norwegian.
+    const locale = await localeForPathname(
+      config,
+      underEditRoute
+        ? pathname.slice(CMSSY_EDIT_PATH_PREFIX.length) || "/"
+        : pathname,
+    );
     context.request.headers.set(CMSSY_LOCALE_HEADER, locale);
 
     const editRequested = context.url.searchParams
       .getAll(CMSSY_EDIT_QUERY_PARAM)
       .includes("1");
 
-    const underEditRoute =
-      pathname === CMSSY_EDIT_PATH_PREFIX ||
-      pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`);
-
     if (editRequested) {
       const verified = await isVerifiedEditUrl(context.url, config);
-      if (verified && !underEditRoute) {
+      // Whether or not this pass rewrites: a request arriving at the edit route
+      // directly is in edit mode too, and only `isVerifiedEditUrl` says so.
+      if (verified) {
         context.request.headers.set(CMSSY_EDIT_HEADER, "1");
+      }
+      if (verified && !underEditRoute) {
         const target = `${CMSSY_EDIT_PATH_PREFIX}${
           pathname === "/" ? "" : pathname
         }${context.url.search}`;

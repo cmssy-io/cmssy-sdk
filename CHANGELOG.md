@@ -6,6 +6,32 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.4.2
+
+**`@cmssy/astro`: a request that reached `/cmssy-edit/...` directly rendered the
+wrong language.** The locale was resolved from the whole pathname, and
+`cmssy-edit` is its first segment - not a language - so `/cmssy-edit/no/blog`
+answered with the default one. The same page reached the way the editor reaches
+it, through the rewrite, answered correctly. Measured on a built Astro app: `no`
+through the rewrite, `en` directly.
+
+11.4.0 is what made this noticeable, not what broke it - the bug dates to
+whenever the edit route first served a language-prefixed path. Nor was the path
+unreachable before: no `frame-ancestors` header permits framing by everyone
+rather than preventing it, and the wrong language was visible by opening the URL
+in a tab, without any iframe.
+
+Also fixed: `loadCmssyPage` stripped the edit prefix as a string rather than a
+path segment, so a page slugged `cmssy-editorial` was fetched at the slug
+`orial`. That one needs no editor at all - a plain visitor hits it.
+
+The edit flag is set there too now. It was only ever set on the pass that
+rewrites, so a direct hit relied on `loadCmssyPage` recognising edit mode from
+the verified URL - which it does, making this consistency rather than a second
+bug.
+
+Nothing to do: update.
+
 ## 11.4.1
 
 **`@cmssy/core`: a comma-separated `editorOrigin` locked every editor out.**

@@ -11,6 +11,19 @@ import {
   type BlockDefinition,
 } from "@cmssy/react";
 
+import { CMSSY_EDIT_PATH_PREFIX } from "./middleware";
+
+/**
+ * On the segment. `"/cmssy-editorial".replace(/^\/cmssy-edit/, "")` is
+ * `"orial"`, so a page slugged like the edit route was fetched at `/orial`.
+ */
+function withoutEditPrefix(pathname: string): string {
+  if (pathname === CMSSY_EDIT_PATH_PREFIX) return "/";
+  return pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`)
+    ? pathname.slice(CMSSY_EDIT_PATH_PREFIX.length)
+    : pathname;
+}
+
 export interface CmssyPageResult {
   page: CmssyPageData | null;
   layouts: CmssyLayoutGroup[];
@@ -71,10 +84,7 @@ export async function loadCmssyPage(
     request.headers.get(CMSSY_EDIT_HEADER) === "1" ||
     (await isVerifiedEditUrl(url, config));
 
-  const segments = url.pathname
-    .replace(/^\/cmssy-edit/, "")
-    .split("/")
-    .filter(Boolean);
+  const segments = withoutEditPrefix(url.pathname).split("/").filter(Boolean);
 
   const positions = options.positions ?? ["header", "footer"];
   const blocks = options.blocks ?? [];
