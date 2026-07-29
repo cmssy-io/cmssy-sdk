@@ -406,6 +406,47 @@ describe("cmssyMiddleware", () => {
     expect(result.routedTo).toBe("/");
     expect(result.locale).toBe("no");
   });
+
+  it("reads the language of a request that arrives at the edit route directly", async () => {
+    // Unreachable until the framing CSP was added to that path, and wrong once
+    // it was: "cmssy-edit" is the first segment and is not a language, so the
+    // editor rendered /cmssy-edit/no/blog in the default one.
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("directhit")) as never,
+      "https://shop.test/cmssy-edit/no/blog?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+
+    expect(result.locale).toBe("no");
+    expect(result.edit).toBe("1");
+    expect(result.routedTo).toBeNull();
+  });
+
+  it("still reads the default language at the edit route's own root", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("editroot")) as never,
+      "https://shop.test/cmssy-edit?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+
+    expect(result.locale).toBe("en");
+    expect(result.edit).toBe("1");
+  });
+
+  it("does not mistake a page slugged like the edit route for it", async () => {
+    stubSiteConfig("en", ["en", "no"]);
+
+    const result = await run(
+      cmssyMiddleware(configFor("editorial2")) as never,
+      "https://shop.test/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+
+    expect(result.routedTo).toBe(
+      "/cmssy-edit/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
+    );
+  });
 });
 
 // The reason this package exists. If the Astro adapter reaches for React or
