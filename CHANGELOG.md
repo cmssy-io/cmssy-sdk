@@ -6,7 +6,7 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## 11.4.3
+## 11.5.0
 
 **`checkCmssyEditMode` now checks the preview's language, and works out which
 language to ask for by itself.** Nothing to do: pass `workspace` - which the
