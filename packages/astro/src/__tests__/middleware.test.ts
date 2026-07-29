@@ -408,9 +408,8 @@ describe("cmssyMiddleware", () => {
   });
 
   it("reads the language of a request that arrives at the edit route directly", async () => {
-    // Unreachable until the framing CSP was added to that path, and wrong once
-    // it was: "cmssy-edit" is the first segment and is not a language, so the
-    // editor rendered /cmssy-edit/no/blog in the default one.
+    // "cmssy-edit" is the first segment and is not a language, so the editor
+    // rendered /cmssy-edit/no/blog in the default one.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -435,7 +434,10 @@ describe("cmssyMiddleware", () => {
     expect(result.edit).toBe("1");
   });
 
-  it("does not mistake a page slugged like the edit route for it", async () => {
+  it("never slices the prefix out of a page slugged like the edit route", async () => {
+    // The rewrite of this URL is already covered above; what is new is that the
+    // locale slice must not run here. If it did, `/cmssy-editorial` would
+    // resolve its language from `orial`.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -443,6 +445,7 @@ describe("cmssyMiddleware", () => {
       "https://shop.test/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
     );
 
+    expect(result.locale).toBe("en");
     expect(result.routedTo).toBe(
       "/cmssy-edit/cmssy-editorial?cmssyEdit=1&cmssySecret=draft-secret-1234",
     );
