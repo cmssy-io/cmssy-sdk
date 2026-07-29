@@ -93,12 +93,15 @@ async function html(
 
 const EDIT_PATH_PREFIX = "/cmssy-edit";
 
+function withoutEditPrefix(path: string): string {
+  if (path === EDIT_PATH_PREFIX) return "/";
+  return path.startsWith(`${EDIT_PATH_PREFIX}/`)
+    ? path.slice(EDIT_PATH_PREFIX.length)
+    : path;
+}
+
 function localeOf(path: string): string | undefined {
-  const routed =
-    path === EDIT_PATH_PREFIX || path.startsWith(`${EDIT_PATH_PREFIX}/`)
-      ? path.slice(EDIT_PATH_PREFIX.length)
-      : path;
-  return routed.split("/").filter(Boolean)[0];
+  return withoutEditPrefix(path).split("/").filter(Boolean)[0];
 }
 
 function langOf(body: string): string | undefined {
@@ -174,9 +177,10 @@ async function derivedLocalizedPath(
     );
     const locale = locales.find((candidate) => candidate !== defaultLocale);
     if (!locale) return { kind: "none" };
-    const [first] = path.split("/").filter(Boolean);
+    const routed = withoutEditPrefix(path);
+    const [first] = routed.split("/").filter(Boolean);
     if (first && locales.includes(first)) return { kind: "none" };
-    const suffix = path === "/" || path === "" ? "" : path.replace(/\/+$/, "");
+    const suffix = routed === "/" || routed === "" ? "" : routed.replace(/\/+$/, "");
     return { kind: "derived", locale, localizedPath: `/${locale}${suffix}` };
   } catch {
     return { kind: "unavailable" };
@@ -334,11 +338,7 @@ async function checkDirectEditRoute(
   locale: string | undefined,
   failures: string[],
 ): Promise<void> {
-  const withoutPrefix =
-    routedPath === EDIT_PATH_PREFIX ||
-    routedPath.startsWith(`${EDIT_PATH_PREFIX}/`)
-      ? routedPath.slice(EDIT_PATH_PREFIX.length) || "/"
-      : routedPath;
+  const withoutPrefix = withoutEditPrefix(routedPath);
   const directPath = `${EDIT_PATH_PREFIX}${withoutPrefix === "/" ? "" : withoutPrefix}`;
   // The caller already pointed at the edit route, so there is no second way in
   // to compare against - fetching it again would compare a response to itself.

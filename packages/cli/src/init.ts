@@ -42,13 +42,21 @@ interface InitFile {
 
 function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
   const srcPrefix = framework.name === "next" ? nextSrcPrefix(root) : "";
-  return [
+  const files = [
     { asset: "env.example", target: ".env.example" },
     ...framework.files.map((path) => ({
       asset: path,
       target: framework.name === "next" ? `${srcPrefix}${path}` : path,
     })),
   ];
+  // The cmssy layouts render <html>, which only a root layout may do. Written
+  // under an app that already has one they are nested instead, and a second
+  // <html> inside the first is invalid markup that builds fine and fails as a
+  // hydration error at runtime. Better to write nothing and say why.
+  if (framework.name === "next" && existingFile(root, `${srcPrefix}app/layout`)) {
+    return files.filter((file) => !file.target.endsWith("/layout.tsx"));
+  }
+  return files;
 }
 
 function cliVersion(): string {
@@ -101,7 +109,7 @@ function detectInstallCommand(root: string): string {
 // A Next app scaffolded without --ts has app/layout.js, and a nested <html>
 // inside the app's own is invalid markup that no build warns about.
 function existingFile(root: string, base: string): string | undefined {
-  return ["tsx", "ts", "jsx", "js", "mjs"]
+  return ["tsx", "ts", "jsx", "js"]
     .map((extension) => `${base}.${extension}`)
     .find((candidate) => existsSync(join(root, candidate)));
 }
@@ -124,16 +132,13 @@ function frameworkNotes(
     const rootLayout = existingFile(root, `${prefix}app/layout`);
     if (rootLayout) {
       notes.push({
-        status: "unknown",
-        message: `${rootLayout} outranks the cmssy root layouts, which are what set <html lang> per language - delete it and move your global CSS import and metadata into BOTH ${prefix}app/[[...path]]/layout.tsx and ${prefix}app/cmssy-edit/[[...path]]/layout.tsx (they are separate roots, and an editor preview with no CSS is the usual way to notice)`,
-      });
-      notes.push({
-        status: "unknown",
-        message: `routes outside the cmssy catch-alls need a root layout of their own once ${rootLayout} is gone - move them under a route group, e.g. app/(site)/layout.tsx, or the build fails with "doesn't have a root layout"`,
+        status: "fail",
+        message: `${rootLayout} outranks the cmssy root layouts, so they were NOT written and <html lang> stays whatever that file says`,
+        fix: `delete ${rootLayout} and rerun, then move its global CSS import and metadata into BOTH ${prefix}app/[[...path]]/layout.tsx and ${prefix}app/cmssy-edit/[[...path]]/layout.tsx - they are separate roots, and an editor preview with no CSS is the usual way to find out you only did one. Routes outside the cmssy catch-alls need a root layout of their own once it is gone: move them under a route group, e.g. ${prefix}app/(site)/layout.tsx, or the build fails with "doesn't have a root layout".`,
       });
     }
     for (const layout of ["app/[[...path]]", "app/cmssy-edit/[[...path]]"]) {
-      if (skipped.includes(`${prefix}${layout}/layout.tsx`)) {
+      if (!rootLayout && skipped.includes(`${prefix}${layout}/layout.tsx`)) {
         notes.push({
           status: "unknown",
           message: `${prefix}${layout}/layout.tsx already existed - set <html lang={await resolveCmssyLocale(cmssy, path)}> there yourself (import from @cmssy/core), or the site declares one language while rendering another`,

@@ -186,6 +186,23 @@ describe("runInit", () => {
     expect(output).toContain("route group");
   });
 
+  it("writes no cmssy root layout under an app that already has one", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app"));
+    writeFileSync(join(cwd, "app/layout.tsx"), "export default () => null;\n");
+    expect(runInit({}, deps)).toBe(0);
+
+    // A second <html> inside the app's own builds fine and fails at runtime.
+    expect(existsSync(join(cwd, "app/[[...path]]/layout.tsx"))).toBe(false);
+    expect(existsSync(join(cwd, "app/cmssy-edit/[[...path]]/layout.tsx"))).toBe(
+      false,
+    );
+    expect(existsSync(join(cwd, "app/[[...path]]/page.tsx"))).toBe(true);
+    expect(lines.join("\n")).toContain("were NOT written");
+  });
+
   it("says what a skipped cmssy root layout was for", () => {
     const { deps, cwd, lines } = makeApp({
       dependencies: { next: "^16.0.0" },
