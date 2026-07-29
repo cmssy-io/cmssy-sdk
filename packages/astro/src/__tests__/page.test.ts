@@ -100,9 +100,8 @@ describe("loadCmssyPage", () => {
 
 describe("loadCmssyPage path handling", () => {
   it("does not slice the edit prefix out of a page slugged like it", async () => {
-    // `"/cmssy-editorial".replace(/^\/cmssy-edit/, "")` is `"orial"`, so this
-    // page was fetched at the slug `/orial`. No editor involved: the middleware
-    // correctly leaves this URL alone and a plain visitor lands here.
+    // This page was fetched at the slug `/orial`. No editor involved: the
+    // middleware leaves the URL alone and a plain visitor lands here.
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.position, options.editMode)),
     );

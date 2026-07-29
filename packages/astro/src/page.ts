@@ -13,10 +13,7 @@ import {
 
 import { CMSSY_EDIT_PATH_PREFIX } from "./middleware";
 
-/**
- * On the segment. `"/cmssy-editorial".replace(/^\/cmssy-edit/, "")` is
- * `"orial"`, so a page slugged like the edit route was fetched at `/orial`.
- */
+/** On the segment, so `/cmssy-editorial` stays a page rather than a slug. */
 function withoutEditPrefix(pathname: string): string {
   if (pathname === CMSSY_EDIT_PATH_PREFIX) return "/";
   return pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`)
