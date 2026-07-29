@@ -6,6 +6,23 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.4.1
+
+**`@cmssy/core`: a comma-separated `editorOrigin` locked every editor out.**
+`CMSSY_EDITOR_ORIGIN` carries a list as one comma-separated string, and
+`resolveEditorOrigin` split it - but only on the branch that reads the env var
+itself. Every generated config passes `process.env.CMSSY_EDITOR_ORIGIN` in
+explicitly, which takes the other branch, so the whole string was treated as a
+single origin: `new URL()` parsed `https://cmssy.io,https://cmssy.dev` down to
+the origin `https://cmssy.io,https`, the CSP shipped that as `frame-ancestors`,
+and no editor could frame the app - not even the one that worked before the
+second origin was added. An explicit value is now split the same way the env var
+always was, including per-entry inside an array.
+
+**Do I have to do anything?** No, unless you worked around this by splitting the
+value yourself before handing it to `defineCmssyConfig` - that still works and
+can now go. Passing the raw env var through is the documented shape again.
+
 ## 11.4.0
 
 **`@cmssy/next`: the site-wide header and footer could not be edited on the

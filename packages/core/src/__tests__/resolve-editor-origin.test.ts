@@ -55,6 +55,29 @@ describe("resolveEditorOrigin", () => {
     ]);
   });
 
+  it("splits a comma-separated explicit value, the same as env", () => {
+    expect(
+      resolveEditorOrigin("https://cmssy.io, https://cmssy.dev"),
+    ).toEqual(["https://cmssy.io", "https://cmssy.dev"]);
+  });
+
+  it("splits comma-separated entries inside an array override", () => {
+    expect(
+      resolveEditorOrigin(["https://cmssy.io,https://www.cmssy.io", ""]),
+    ).toEqual(["https://cmssy.io", "https://www.cmssy.io"]);
+  });
+
+  it("keeps a single explicit origin a string, not a one-item list", () => {
+    expect(resolveEditorOrigin("https://admin.example.com,")).toBe(
+      "https://admin.example.com",
+    );
+  });
+
+  it("falls back to env when the explicit value is blank", () => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "https://cmssy.dev");
+    expect(resolveEditorOrigin("  ")).toBe("https://cmssy.dev");
+  });
+
   it("prefers an explicit value over env", () => {
     vi.stubEnv("CMSSY_EDITOR_ORIGIN", "http://env:3000");
     expect(resolveEditorOrigin("https://explicit.com")).toBe(
