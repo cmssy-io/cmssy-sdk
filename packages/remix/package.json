@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/remix",
-  "version": "11.4.2",
+  "version": "11.5.0",
   "description": "React Router 7 bindings for cmssy headless sites: page loader, framing CSP, sitemap and robots.",
   "keywords": [
     "cmssy",
@@ -48,11 +48,12 @@
     "@cmssy/react": "^11.3.0"
   },
   "devDependencies": {
+    "@cmssy/react": "workspace:*",
     "@types/node": "^20.0.0",
+    "react-router": "^8.2.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
-    "@cmssy/react": "workspace:*"
+    "vitest": "^2.1.0"
   },
   "dependencies": {
     "@cmssy/core": "workspace:*"

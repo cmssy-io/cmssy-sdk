@@ -32,7 +32,9 @@ const NEXT_FILES = [
   "cmssy/editable-layout.tsx",
   "blocks/hero/block.ts",
   "blocks/hero/Hero.tsx",
+  "app/[[...path]]/layout.tsx",
   "app/[[...path]]/page.tsx",
+  "app/cmssy-edit/[[...path]]/layout.tsx",
   "app/cmssy-edit/[[...path]]/page.tsx",
   "app/api/draft/route.ts",
 ];
@@ -168,6 +170,48 @@ describe("runInit", () => {
     expect(runInit({}, deps)).toBe(0);
     expect(lines.join("\n")).toContain(
       "app/page.tsx conflicts with the cmssy catch-all route",
+    );
+  });
+
+  it("spots a root layout scaffolded without typescript", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app"));
+    writeFileSync(join(cwd, "app/layout.js"), "export default () => null;\n");
+    expect(runInit({}, deps)).toBe(0);
+    const output = lines.join("\n");
+    expect(output).toContain("app/layout.js outranks the cmssy root layouts");
+    expect(output).toContain("app/cmssy-edit/[[...path]]/layout.tsx");
+    expect(output).toContain("route group");
+  });
+
+  it("writes no cmssy root layout under an app that already has one", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app"));
+    writeFileSync(join(cwd, "app/layout.tsx"), "export default () => null;\n");
+    expect(runInit({}, deps)).toBe(0);
+
+    // A second <html> inside the app's own builds fine and fails at runtime.
+    expect(existsSync(join(cwd, "app/[[...path]]/layout.tsx"))).toBe(false);
+    expect(existsSync(join(cwd, "app/cmssy-edit/[[...path]]/layout.tsx"))).toBe(
+      false,
+    );
+    expect(existsSync(join(cwd, "app/[[...path]]/page.tsx"))).toBe(true);
+    expect(lines.join("\n")).toContain("were NOT written");
+  });
+
+  it("says what a skipped cmssy root layout was for", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app/[[...path]]"), { recursive: true });
+    writeFileSync(join(cwd, "app/[[...path]]/layout.tsx"), "mine\n");
+    expect(runInit({}, deps)).toBe(0);
+    expect(lines.join("\n")).toContain(
+      "app/[[...path]]/layout.tsx already existed - set <html lang=",
     );
   });
 

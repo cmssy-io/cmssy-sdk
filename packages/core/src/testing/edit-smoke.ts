@@ -1,4 +1,7 @@
 import { graphqlRequest } from "../data/graphql-request";
+import { localesFromSiteConfig } from "../data/site-locales";
+import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "../data/queries";
+import { checkFrameAncestors } from "../preflight";
 
 export interface EditSmokeOptions {
   /** A running build of the consumer app, e.g. http://localhost:3000. */
@@ -31,6 +34,7 @@ export interface EditSmokeOptions {
    * rendered", stayed green.
    */
   workspace?: { org: string; workspaceSlug: string; apiUrl?: string };
+  editRoute?: boolean;
 }
 
 export interface EditSmokeResult {
@@ -76,9 +80,32 @@ function resolvedContentCounts(body: string): number[] {
   return [...body.matchAll(EDITOR_CONTENT_COUNT)].map((m) => Number(m[1]));
 }
 
-async function html(url: string): Promise<{ status: number; body: string }> {
+async function html(
+  url: string,
+): Promise<{ status: number; body: string; headers: Headers }> {
   const response = await fetch(url, { redirect: "manual" });
-  return { status: response.status, body: await response.text() };
+  return {
+    status: response.status,
+    body: await response.text(),
+    headers: response.headers,
+  };
+}
+
+const EDIT_PATH_PREFIX = "/cmssy-edit";
+
+function withoutEditPrefix(path: string): string {
+  if (path === EDIT_PATH_PREFIX) return "/";
+  return path.startsWith(`${EDIT_PATH_PREFIX}/`)
+    ? path.slice(EDIT_PATH_PREFIX.length)
+    : path;
+}
+
+function localeOf(path: string): string | undefined {
+  return withoutEditPrefix(path).split("/").filter(Boolean)[0];
+}
+
+function langOf(body: string): string | undefined {
+  return /<html[^>]*\slang=["']([^"']+)["']/i.exec(body)?.[1];
 }
 
 const LAYOUT_BLOCKS_QUERY = `query CmssySmokeLayouts($workspaceSlug: String!, $pageSlug: String!) {
@@ -123,6 +150,40 @@ async function workspaceHasLayoutBlocks(
     );
   } catch {
     return null;
+  }
+}
+
+type DerivedLocale =
+  | { kind: "derived"; localizedPath: string; locale: string }
+  | { kind: "none" }
+  | { kind: "unavailable" };
+
+async function derivedLocalizedPath(
+  workspace: NonNullable<EditSmokeOptions["workspace"]>,
+  path: string,
+): Promise<DerivedLocale> {
+  try {
+    const data = await graphqlRequest<{
+      public?: { siteConfig?: CmssySiteConfig | null } | null;
+    }>(
+      workspace,
+      SITE_CONFIG_QUERY,
+      { workspaceSlug: workspace.workspaceSlug },
+      { public: true, retry: {} },
+      "edit smoke: site locales",
+    );
+    const { defaultLocale, locales } = localesFromSiteConfig(
+      data.public?.siteConfig ?? null,
+    );
+    const locale = locales.find((candidate) => candidate !== defaultLocale);
+    if (!locale) return { kind: "none" };
+    const routed = withoutEditPrefix(path);
+    const [first] = routed.split("/").filter(Boolean);
+    if (first && locales.includes(first)) return { kind: "none" };
+    const suffix = routed === "/" || routed === "" ? "" : routed.replace(/\/+$/, "");
+    return { kind: "derived", locale, localizedPath: `/${locale}${suffix}` };
+  } catch {
+    return { kind: "unavailable" };
   }
 }
 
@@ -218,25 +279,87 @@ export async function checkCmssyEditMode(
     }
   }
 
-  const { localizedPath } = options;
+  const query = `cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`;
+
+  const asked = options.localizedPath;
+  const derived =
+    !asked && options.workspace
+      ? await derivedLocalizedPath(options.workspace, path)
+      : { kind: "none" as const };
+
+  if (derived.kind === "unavailable") {
+    failures.push(
+      `the delivery API would not say which languages ${options.workspace?.workspaceSlug} enables, so the preview's language went unchecked. That is the check three releases shipped a wrong-language preview past - a green run here does not mean it works.`,
+    );
+  }
+
+  const localizedPath =
+    asked ?? (derived.kind === "derived" ? derived.localizedPath : undefined);
+
   if (localizedPath) {
     const locale =
-      options.localizedLocale ?? localizedPath.split("/").filter(Boolean)[0];
-    const localized = await html(
-      url(
-        `${localizedPath}?cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`,
-      ),
-    );
-    if (!EDITOR_MARKER.test(localized.body)) {
-      failures.push(`edit ${localizedPath}: no editor in the response`);
-    }
-    const served = /<html[^>]*\slang=["']([^"']+)["']/i.exec(localized.body)?.[1];
-    if (locale && served !== locale) {
+      options.localizedLocale ??
+      (derived.kind === "derived" ? derived.locale : localeOf(localizedPath));
+
+    const localized = await html(url(`${localizedPath}?${query}`));
+    if (localized.status !== 200) {
       failures.push(
-        `edit ${localizedPath}: the page reports lang="${served ?? "?"}" but the URL asks for "${locale}" - the preview renders in the wrong language`,
+        derived.kind === "derived"
+          ? `edit ${localizedPath}: expected 200, got ${localized.status}. The workspace enables "${locale}", so the language went unchecked - pass localizedPath if this site spells the language some other way.`
+          : `edit ${localizedPath}: expected 200, got ${localized.status}`,
       );
+    } else {
+      if (!EDITOR_MARKER.test(localized.body)) {
+        failures.push(`edit ${localizedPath}: no editor in the response`);
+      }
+      const served = langOf(localized.body);
+      if (locale && served !== locale) {
+        failures.push(
+          `edit ${localizedPath}: the page reports lang="${served ?? "?"}" but the URL asks for "${locale}" - the preview renders in the wrong language`,
+        );
+      }
+      if (options.editRoute !== false) {
+        await checkDirectEditRoute(url, localizedPath, query, locale, failures);
+      }
     }
   }
 
+  if (options.editRoute !== false) {
+    await checkDirectEditRoute(url, path, query, undefined, failures);
+  }
+
   return { ok: failures.length === 0, failures };
+}
+
+async function checkDirectEditRoute(
+  url: (suffix: string) => string,
+  routedPath: string,
+  query: string,
+  locale: string | undefined,
+  failures: string[],
+): Promise<void> {
+  const withoutPrefix = withoutEditPrefix(routedPath);
+  const directPath = `${EDIT_PATH_PREFIX}${withoutPrefix === "/" ? "" : withoutPrefix}`;
+  // The caller already pointed at the edit route, so there is no second way in
+  // to compare against - fetching it again would compare a response to itself.
+  if (directPath === routedPath) return;
+
+  const direct = await html(url(`${directPath}?${query}`));
+  if (direct.status !== 200 || !EDITOR_MARKER.test(direct.body)) return;
+
+  const directLang = langOf(direct.body);
+  if (locale && directLang !== locale) {
+    failures.push(
+      `edit ${directPath}: reached directly the page reports lang="${directLang ?? "?"}", through the rewrite it reports "${locale}" - the same page renders in two languages depending on how the editor arrives`,
+    );
+  }
+
+  const framing = checkFrameAncestors(
+    direct.headers.get("content-security-policy"),
+  );
+  if (framing.status === "fail") {
+    failures.push(
+      `edit ${directPath}: ${framing.message} - the editor shows a blank panel for a route that renders fine on its own. ${framing.fix ?? ""}`.trim(),
+    );
+  }
 }

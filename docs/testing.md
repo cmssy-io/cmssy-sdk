@@ -13,10 +13,7 @@ const result = await checkCmssyEditMode({
   baseUrl: "http://localhost:3000",
   secret: process.env.CMSSY_DRAFT_SECRET!,
   path: "/",
-  // Only if your URLs carry the language. The check reads <html lang> - a
-  // contract - rather than hunting for a word from your copy, which an editor
-  // can rewrite at any time.
-  localizedPath: "/no",
+  workspace: { org: "acme", workspaceSlug: "shop" },
 });
 
 expect(result.failures).toEqual([]);
@@ -37,7 +34,24 @@ in the first place.
 4. When you pass `workspace`: the layout slot is mounted **and it resolved
    content for the editor**. See below - this is the assertion that catches the
    editor that only looks alive.
-5. Optionally: the localized preview **declares** the language its URL asks for (`<html lang>`).
+5. When you pass `workspace` and it enables more than one language: the
+   localized preview **declares** the language its URL asks for (`<html lang>`),
+   and the edit route answers the same language reached directly as it does
+   through the rewrite. The check asks the delivery API which languages the
+   workspace enables and picks a non-default one - you do not name a language.
+6. That the edit route can be framed: its `frame-ancestors` must admit the cmssy
+   editor. A missing CSP is fine - it restricts nothing.
+
+### When the derivation does not fit
+
+`localizedPath` overrides it, for a site that spells the language some other way
+than a first path segment (a subdomain, a cookie). Pass `localizedLocale` too if
+the language your site declares is not the segment itself (`nb-NO` under `/no`).
+
+`editRoute: false` says the app serves the editor from the page rather than a
+`/cmssy-edit` route. `@cmssy/remix/testing` already passes it - a React Router
+page always sees its query string, so that adapter mounts no such route and
+`/cmssy-edit/...` there is an ordinary page slug.
 
 ## The one that matters: a slot that resolved nothing
 

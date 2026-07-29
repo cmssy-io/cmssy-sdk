@@ -10,8 +10,15 @@ import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 export type { CmssySiteLocales };
 
 const TTL_MS = 60_000;
+// Short, because a failure is worth remembering only long enough to stop one
+// page render probing six times. Every caller passes a retry policy, so an
+// uncached failure costs four requests and ~2s of backoff each.
+const FAILURE_TTL_MS = 5_000;
 const MAX_ENTRIES = 64;
-const cache = new Map<string, { value: CmssySiteLocales; expires: number }>();
+const cache = new Map<
+  string,
+  { value: CmssySiteLocales | null; expires: number }
+>();
 
 /**
  * Maps a workspace site config to its locale set. The single place that
@@ -32,16 +39,16 @@ export function localesFromSiteConfig(
   };
 }
 
-export async function resolveSiteLocales(
+async function loadSiteLocales(
   config: CmssyClientConfig,
   options?: GraphqlRequestOptions,
-): Promise<CmssySiteLocales> {
+): Promise<CmssySiteLocales | null> {
   const key = `${resolveApiUrl(config.apiUrl)}::${config.org}::${config.workspaceSlug}`;
   const cached = cache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
   cache.delete(key);
 
-  let value: CmssySiteLocales;
+  let value: CmssySiteLocales | null;
   try {
     const data = await graphqlRequest<{
       public: { siteConfig: CmssySiteConfig | null } | null;
@@ -54,12 +61,37 @@ export async function resolveSiteLocales(
     );
     value = localesFromSiteConfig(data.public?.siteConfig ?? null);
   } catch {
-    value = { defaultLocale: "en", locales: ["en"] };
+    value = null;
   }
 
   if (cache.size >= MAX_ENTRIES) cache.clear();
-  cache.set(key, { value, expires: Date.now() + TTL_MS });
+  cache.set(key, {
+    value,
+    expires: Date.now() + (value ? TTL_MS : FAILURE_TTL_MS),
+  });
   return value;
+}
+
+export async function resolveSiteLocales(
+  config: CmssyClientConfig,
+  options?: GraphqlRequestOptions,
+): Promise<CmssySiteLocales> {
+  return (
+    (await loadSiteLocales(config, options)) ?? {
+      defaultLocale: "en",
+      locales: ["en"],
+    }
+  );
+}
+
+export async function resolveCmssyLocale(
+  config: CmssyClientConfig,
+  path: string[] | undefined,
+  options?: GraphqlRequestOptions,
+): Promise<string | undefined> {
+  const siteLocales = await loadSiteLocales(config, options);
+  if (!siteLocales) return undefined;
+  return splitLocaleFromPath(path, siteLocales).locale;
 }
 
 export function splitLocaleFromPath(

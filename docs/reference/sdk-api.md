@@ -139,6 +139,17 @@ Message types: `AppToEditorMessage`, `EditorToAppMessage`, `ReadyMessage`,
 language **set** lives in the workspace site config - query it (see
 [Delivery API](./delivery-api.md)).
 
+`resolveCmssyLocale(config, path)` answers the language a route's path segments
+ask for, for `<html lang>` in a root layout. It takes the segments rather than a
+request on purpose: a root layout that reads a header opts every page out of
+static rendering. It returns `undefined` when the workspace's languages could
+not be read - React then omits the attribute, and no `lang` is honest where a
+guessed one is not.
+
+`useCmssyLocale()` (`@cmssy/remix`) is the same answer for React Router, read
+off the matched route's loader data - `root.tsx` renders `<html>` and has no
+loader of its own. Also `undefined` when nothing resolved a language.
+
 ### Webhooks
 
 `verifyCmssyWebhook(event, options?)`, `CmssyWebhookError`,
@@ -275,7 +286,9 @@ component (types are erased, values are not).
 
 ### `@cmssy/next/testing`
 
-`checkCmssyEditMode`, re-exported from core.
+`checkCmssyEditMode`, re-exported from core. `@cmssy/astro/testing` does the
+same; `@cmssy/remix/testing` wraps it with `editRoute: false`, because that
+adapter serves the editor from the page and mounts no `/cmssy-edit` route.
 
 ## Config types
 

@@ -9,5 +9,6 @@ exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
   "defineCmssyConfig",
   "isVerifiedEditUrl",
   "localizeHref",
+  "useCmssyLocale",
 ]
 `;

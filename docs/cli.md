@@ -33,8 +33,9 @@ cmssy init --dir ../my-site --force
    have are left untouched. You run the install yourself - the hint names the
    package manager your lockfile says you use.
 4. Prints what needs your attention: a conflicting `app/page.tsx` next to the
-   catch-all (Next), the `npx astro add react node` step (Astro), or an
-   `app/routes.ts` it refused to overwrite (React Router).
+   catch-all or an `app/layout.tsx` that outranks the cmssy root layouts (Next),
+   the `npx astro add react node` step (Astro), or an `app/routes.ts` or
+   `app/root.tsx` it refused to overwrite (React Router).
 
 Flags: `--dir <path>` targets an app outside the working directory; `--force`
 overwrites existing wiring files.
@@ -43,9 +44,9 @@ overwrites existing wiring files.
 
 | Framework      | Wiring                                                                                                                                                                                                                                    |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout, layout slot), `blocks/hero/`, `app/[[...path]]/`, `app/cmssy-edit/[[...path]]/`, `app/api/draft/` - under `src/` when the app uses one. |
+| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout, layout slot), `blocks/hero/`, `app/[[...path]]/` and `app/cmssy-edit/[[...path]]/` (page **and** layout - these are the root layouts, so the app has no `app/layout.tsx`), `app/api/draft/` - under `src/` when the app uses one. |
 | Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`.                                                                        |
-| React Router 7 | `cmssy.config.ts`, `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                 |
+| React Router 7 | `cmssy.config.ts`, `app/root.tsx` (its `Layout` sets `<html lang>`), `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                 |
 
 SEO (metadata, sitemap, robots) is deliberately not scaffolded: since 10.0 it is
 the app's own query plus its own transformation. The
