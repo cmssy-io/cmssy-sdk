@@ -79,6 +79,8 @@ function searchParams(sp: Record<string, string | string[]> = {}) {
 
 describe("createCmssyPage", () => {
   beforeEach(() => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    vi.stubEnv("NODE_ENV", "production");
     draftEnabled = false;
     fetchPage.mockReset();
     resolveSiteLocales.mockReset();

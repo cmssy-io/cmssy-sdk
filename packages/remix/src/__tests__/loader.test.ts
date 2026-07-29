@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_CMSSY_EDITOR_ORIGINS } from "@cmssy/core";
 
@@ -49,6 +49,10 @@ function stubApi() {
   );
   return calls;
 }
+
+beforeEach(() => {
+  vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();

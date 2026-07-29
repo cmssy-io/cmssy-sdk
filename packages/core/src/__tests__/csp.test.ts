@@ -1,5 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyCmssyCsp, cmssyCspHeaders } from "../csp";
+
+beforeEach(() => {
+  vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+  vi.stubEnv("NODE_ENV", "production");
+});
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("cmssyCspHeaders", () => {
   it("emits frame-ancestors for a single origin", () => {
@@ -32,7 +39,6 @@ describe("cmssyCspHeaders", () => {
     expect(cmssyCspHeaders({ editorOrigin: "*" })).toEqual({
       "Content-Security-Policy": "frame-ancestors *",
     });
-    vi.unstubAllEnvs();
   });
 
   it("refuses the wildcard outside development (CMS-1092)", () => {
@@ -51,6 +57,17 @@ describe("cmssyCspHeaders", () => {
     expect(cmssyCspHeaders({})).toEqual({
       "Content-Security-Policy":
         "frame-ancestors https://cmssy.io https://www.cmssy.io",
+    });
+  });
+
+  it("takes CMSSY_EDITOR_ORIGIN, list included, when the config gives none", () => {
+    vi.stubEnv(
+      "CMSSY_EDITOR_ORIGIN",
+      "https://cmssy.dev, https://www.cmssy.dev",
+    );
+    expect(cmssyCspHeaders({})).toEqual({
+      "Content-Security-Policy":
+        "frame-ancestors https://cmssy.dev https://www.cmssy.dev",
     });
   });
 
