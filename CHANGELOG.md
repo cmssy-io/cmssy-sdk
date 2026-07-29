@@ -6,6 +6,29 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.4.3
+
+**`checkCmssyEditMode` now checks the preview's language, and works out which
+language to ask for by itself.** Nothing to do: pass `workspace` - which the
+scaffolded smoke test already does - and the check asks the delivery API which
+languages the workspace enables, picks one that is not the default, and proves
+the editor renders a prefixed URL in it. A workspace with one language is asked
+nothing about language, because there is no second one to render.
+
+Pass `localizedPath` only for a site that routes languages some other way than
+a first path segment; it overrides the derivation entirely.
+
+This is the check that would have caught 11.3.1 and 11.4.2 before release
+rather than after. It was in the SDK all along and never ran: the language
+assertions were reachable only by passing `localizedPath`, and no caller did.
+The check also opens the edit route directly now, not only through the rewrite
+- the two answers disagreed for three releases and nothing looked.
+
+The alternative was writing a language into the CI workflow. A locale hardcoded
+in a smoke test is one workspace's content: it goes stale the day that
+workspace turns the language off, and it is wrong for anyone pointing the job
+at their own workspace.
+
 ## 11.4.2
 
 **`@cmssy/astro`: a request that reached `/cmssy-edit/...` directly rendered the

@@ -154,7 +154,12 @@ jobs:
 
           // Passing the workspace lets the check tell "this app renders no
           // header" from "this workspace has no header" - the difference that
-          // let a scaffold with no layout slot ship green.
+          // let a scaffold with no layout slot ship green. It is also where the
+          // second language comes from: the check asks the workspace which ones
+          // it enables rather than being told one here, so pointing this job at
+          // another workspace keeps working. Language went unchecked until now,
+          // and three releases running shipped a preview that rendered in the
+          // wrong one.
           const result = await checkCmssyEditMode({
             baseUrl,
             secret,

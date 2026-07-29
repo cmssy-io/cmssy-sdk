@@ -19,13 +19,23 @@ const EDIT_HTML_SLOT_EMPTY =
 const EDIT_HTML_SLOT_NO_COUNT =
   '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" hidden></div><main>hi</main></html>';
 
-/** Serves a body per URL; anything unrouted 404s, which the check reports. */
-function serve(routes: Record<string, string>) {
+/**
+ * Serves a body per URL; anything unrouted 404s, which the check reports.
+ *
+ * Routes answer with the framing CSP unless `noCsp` names them: a route the
+ * admin cannot frame fails differently from one that renders the wrong thing.
+ */
+function serve(routes: Record<string, string>, noCsp: string[] = []) {
   const fetchStub = vi.fn(async (url: string) => {
     const body = routes[url];
     return {
       status: body === undefined ? 404 : 200,
       text: async () => body ?? "",
+      headers: new Headers(
+        noCsp.includes(url)
+          ? {}
+          : { "content-security-policy": "frame-ancestors https://cmssy.io" },
+      ),
     };
   });
   vi.stubGlobal("fetch", fetchStub);
@@ -144,6 +154,88 @@ describe("checkCmssyEditMode", () => {
 
     expect(result.failures).toEqual([]);
   });
+
+  it("fails when the edit route answers differently reached directly", async () => {
+    // Both URLs render the same page for the same editor. Until 11.4.2 the
+    // direct one resolved its language from the whole path, `cmssy-edit`
+    // included, and served the default. Nothing saw it: this check only ever
+    // went through the rewrite.
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.join(" ")).toContain("two languages");
+  });
+
+  it("fails when the edit route cannot be framed", async () => {
+    serve(
+      {
+        [`${BASE}/`]: PUBLIC_HTML,
+        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+        [verifiedUrl()]: EDIT_HTML,
+        [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+        [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      },
+      [verifiedUrl("/cmssy-edit/no")],
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.failures.join(" ")).toContain("cannot frame it");
+  });
+
+  it("passes when both ways into the edit route agree", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/no",
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("reads the language of an edit-route path off the segment after the prefix", async () => {
+    // A caller who passes the edit route as `localizedPath` was told its
+    // language is `cmssy-edit`, by the check meant to catch that confusion.
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/cmssy-edit/no",
+    });
+
+    expect(result.failures).toEqual([]);
+  });
 });
 
 describe("checkCmssyEditMode with a workspace", () => {
@@ -151,29 +243,43 @@ describe("checkCmssyEditMode with a workspace", () => {
   const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
   const NO_LAYOUT_HTML = "<html><main>hi</main></html>";
 
-  /** Serves pages by URL and answers the layout probe with the given groups. */
+  /**
+   * Serves pages by URL and answers both workspace probes: the layout groups,
+   * and the site config the second language is read off.
+   */
   function serveWithWorkspace(
     routes: Record<string, string>,
     layouts: unknown,
+    siteConfig: unknown = null,
   ) {
     const fetchStub = vi.fn(async (url: string, init?: { body?: string }) => {
       if (url === DELIVERY) {
+        const asksForSiteConfig = String(init?.body ?? "").includes(
+          "PublicSiteConfig",
+        );
         return {
           ok: true,
           status: 200,
           json: async () =>
             layouts instanceof Error
               ? { errors: [{ message: String(layouts.message) }] }
-              : { data: { public: { page: { layouts } } } },
-          text: async () => "",
+              : {
+                  data: asksForSiteConfig
+                    ? { public: { siteConfig } }
+                    : { public: { page: { layouts } } },
+                },
+          text: async (): Promise<string> => "",
         };
       }
       const body = routes[url];
       return {
         ok: body !== undefined,
         status: body === undefined ? 404 : 200,
-        text: async () => body ?? "",
+        text: async (): Promise<string> => body ?? "",
         json: async () => ({}),
+        headers: new Headers({
+          "content-security-policy": "frame-ancestors https://cmssy.io",
+        }),
       };
     });
     vi.stubGlobal("fetch", fetchStub);
@@ -298,5 +404,158 @@ describe("checkCmssyEditMode with a workspace", () => {
 
     // The API being unreachable is not the app's fault.
     expect(result.failures).toEqual([]);
+  });
+});
+
+describe("checkCmssyEditMode language, asked of the workspace", () => {
+  const WORKSPACE = { org: "acme", workspaceSlug: "shop" };
+  const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
+
+  /** Answers the site-config probe with a locale set; serves pages by URL. */
+  function serveLocales(
+    routes: Record<string, string>,
+    siteConfig: { defaultLanguage: string; enabledLanguages: string[] } | null,
+  ) {
+    const fetchStub = vi.fn(async (url: string, init?: { body?: string }) => {
+      if (url === DELIVERY) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: String(init?.body ?? "").includes("PublicSiteConfig")
+              ? { public: { siteConfig } }
+              : { public: { page: { layouts: [] } } },
+          }),
+          text: async (): Promise<string> => "",
+        };
+      }
+      const body = routes[url];
+      return {
+        ok: body !== undefined,
+        status: body === undefined ? 404 : 200,
+        text: async (): Promise<string> => body ?? "",
+        json: async () => ({}),
+        headers: new Headers({
+          "content-security-policy": "frame-ancestors https://cmssy.io",
+        }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchStub);
+    return fetchStub;
+  }
+
+  const lang = (code: string) =>
+    `<html lang="${code}"><div data-cmssy-editor="1" hidden></div><main>hi</main></html>`;
+
+  it("catches a wrong-language preview without being told which language", async () => {
+    serveLocales(
+      {
+        [`${BASE}/`]: "<html lang=\"en\"><main>hi</main></html>",
+        [`${BASE}/?cmssyEdit=1`]: "<html lang=\"en\"><main>hi</main></html>",
+        [verifiedUrl()]: lang("en"),
+        [verifiedUrl("/no")]: lang("en"),
+        [verifiedUrl("/cmssy-edit/no")]: lang("en"),
+      },
+      { defaultLanguage: "en", enabledLanguages: ["en", "no"] },
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures.join("\n")).toMatch(
+      /edit \/no: the page reports lang="en" but the URL asks for "no"/,
+    );
+  });
+
+  it("passes the same site once the preview honours the language", async () => {
+    serveLocales(
+      {
+        [`${BASE}/`]: "<html lang=\"en\"><main>hi</main></html>",
+        [`${BASE}/?cmssyEdit=1`]: "<html lang=\"en\"><main>hi</main></html>",
+        [verifiedUrl()]: lang("en"),
+        [verifiedUrl("/no")]: lang("no"),
+        [verifiedUrl("/cmssy-edit/no")]: lang("no"),
+      },
+      { defaultLanguage: "en", enabledLanguages: ["en", "no"] },
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures).toEqual([]);
+  });
+
+  it("asks nothing about language on a workspace that enables one", async () => {
+    const fetchStub = serveLocales(
+      {
+        [`${BASE}/`]: "<html lang=\"en\"><main>hi</main></html>",
+        [`${BASE}/?cmssyEdit=1`]: "<html lang=\"en\"><main>hi</main></html>",
+        [verifiedUrl()]: lang("en"),
+      },
+      { defaultLanguage: "en", enabledLanguages: ["en"] },
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    // No second language exists, so there is no prefixed URL to ask for - and
+    // asking for one would 404 on a perfectly correct site.
+    expect(result.failures).toEqual([]);
+    const asked = fetchStub.mock.calls.map(([url]) => String(url));
+    expect(asked.some((url) => url.includes("/en?"))).toBe(false);
+  });
+
+  it("says which language it derived when the site serves nothing under it", async () => {
+    serveLocales(
+      {
+        [`${BASE}/`]: "<html lang=\"en\"><main>hi</main></html>",
+        [`${BASE}/?cmssyEdit=1`]: "<html lang=\"en\"><main>hi</main></html>",
+        [verifiedUrl()]: lang("en"),
+      },
+      { defaultLanguage: "en", enabledLanguages: ["en", "no"] },
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+    });
+
+    expect(result.failures.join("\n")).toMatch(
+      /the workspace enables "no" and this site serves nothing under \/no\. Pass localizedPath/,
+    );
+  });
+
+  it("uses the path it was given over the one it would derive", async () => {
+    const fetchStub = serveLocales(
+      {
+        [`${BASE}/`]: "<html lang=\"en\"><main>hi</main></html>",
+        [`${BASE}/?cmssyEdit=1`]: "<html lang=\"en\"><main>hi</main></html>",
+        [verifiedUrl()]: lang("en"),
+        [verifiedUrl("/nb-NO")]: lang("nb-NO"),
+        [verifiedUrl("/cmssy-edit/nb-NO")]: lang("nb-NO"),
+      },
+      { defaultLanguage: "en", enabledLanguages: ["en", "no"] },
+    );
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      workspace: WORKSPACE,
+      localizedPath: "/nb-NO",
+    });
+
+    expect(result.failures).toEqual([]);
+    const asked = fetchStub.mock.calls.map(([url]) => String(url));
+    expect(asked.some((url) => url.includes("/no?"))).toBe(false);
   });
 });
