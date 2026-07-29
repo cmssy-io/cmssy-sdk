@@ -117,36 +117,80 @@ jobs:
             }
             pkg.pnpm = { ...pkg.pnpm, overrides };
             fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
-            fs.writeFileSync(
-              "pnpm-workspace.yaml",
-              "overrides:\n" +
-                Object.entries(overrides)
-                  .map(([name, spec]) => `  "${name}": "${spec}"\n`)
-                  .join(""),
-            );
             console.log("direct:", linked.join(", "));
             console.log("overrides:", Object.keys(overrides).join(", "));
           '
           pnpm install --no-frozen-lockfile
 
+      # An override that does not apply says nothing, and the job stays green
+      # while testing the last release - every version in the range exists on
+      # npm. `pnpm.overrides` lives in package.json, which is where pnpm 9 reads
+      # it and NOT where pnpm 10 does, so the day the packageManager pin moves
+      # this is what says so instead of the smoke test quietly changing subject.
+      #
+      # Every copy on disk, not just node_modules/@cmssy: those are the direct
+      # dependencies the step above rewrote by hand, so they prove nothing about
+      # the overrides. The copy an override is needed for is the @cmssy/core
+      # that @cmssy/next depends on, which pnpm puts under .pnpm.
       - name: Prove every @cmssy package came from this checkout
         working-directory: /tmp/app
         run: |
           set -euo pipefail
-          bad=0
-          for dir in node_modules/@cmssy/*; do
-            name="@cmssy/$(basename "$dir")"
-            version=$(node -p "require('$PWD/$dir/package.json').version")
-            expected=$(node -p "require('$GITHUB_WORKSPACE/packages/core/package.json').version")
-            if [ "$version" != "$expected" ]; then
-              echo "FAILED: $name resolved to $version, this checkout is $expected" \
-                   "- the tarball redirect did not apply and this job is testing a release."
-              bad=1
-            else
-              echo "ok: $name@$version"
-            fi
-          done
-          exit $bad
+          expected=$(node -p "require('$GITHUB_WORKSPACE/packages/core/package.json').version")
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const expected = process.argv[1];
+
+            // Only what was packed. @cmssy/types is published on its own
+            // version line, so it is not one of the lockstep packages and
+            // holding it to this version would fail every run.
+            const packed = new Set(
+              fs.readdirSync("/tmp/pkgs").map((file) =>
+                file.replace(/^cmssy-/, "").replace(/-\d+\.\d+\.\d+.*$/, ""),
+              ),
+            );
+
+            const scopeDirs = ["node_modules/@cmssy"];
+            const store = "node_modules/.pnpm";
+            if (fs.existsSync(store)) {
+              for (const entry of fs.readdirSync(store)) {
+                const dir = path.join(store, entry, "node_modules/@cmssy");
+                if (fs.existsSync(dir)) scopeDirs.push(dir);
+              }
+            }
+
+            const found = [];
+            for (const scope of scopeDirs) {
+              if (!fs.existsSync(scope)) continue;
+              for (const name of fs.readdirSync(scope)) {
+                if (!packed.has(name)) continue;
+                const manifest = path.join(scope, name, "package.json");
+                if (!fs.existsSync(manifest)) continue;
+                const { version } = JSON.parse(fs.readFileSync(manifest, "utf8"));
+                found.push({ where: path.join(scope, name), version });
+              }
+            }
+
+            if (found.length === 0) {
+              console.error("FAILED: no @cmssy package is installed at all.");
+              process.exit(1);
+            }
+
+            let bad = false;
+            for (const { where, version } of found) {
+              const ok = version === expected;
+              console.log((ok ? "ok: " : "FAILED: ") + where + "@" + version);
+              if (!ok) bad = true;
+            }
+            if (bad) {
+              console.error(
+                "This checkout is " + expected + ". A copy resolved to something else, so an",
+                "override did not apply and this job is testing a release, not the diff.",
+              );
+              process.exit(1);
+            }
+          ' "$expected"
 
       # cmssy init tells the user to run this themselves - the CI does what the
       # user does. The React integration renders the blocks; the Node adapter

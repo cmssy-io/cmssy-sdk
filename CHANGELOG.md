@@ -15,13 +15,23 @@ page's language. `cmssy init` now owns the layouts that render `<html>`:
 `app/[[...path]]/layout.tsx` and `app/cmssy-edit/[[...path]]/layout.tsx` for
 Next, `app/root.tsx` for Remix.
 
-**Do I have to do anything?** Only on an existing app, where `init` skips a file
-that is already there and tells you what to do with it. For Next, delete
-`app/layout.tsx` and move your global CSS import and metadata into
-`app/[[...path]]/layout.tsx` - the cmssy layouts must be the root layouts,
-because only a root layout may render `<html>` and only a layout under the
-catch-all knows the language. For Remix, set `<html lang={useCmssyLocale()}>` in
+**Do I have to do anything?** Yes - rerun `cmssy init`. Bumping the version
+alone changes nothing here, because the fix is in the files `init` writes.
+
+On an existing app `init` skips what is already there and prints what to do with
+it. For Next, delete `app/layout.tsx` and move your global CSS import and
+metadata into **both** `app/[[...path]]/layout.tsx` and
+`app/cmssy-edit/[[...path]]/layout.tsx` - they are separate root layouts, and an
+editor preview with no CSS is the usual way to find out you only did one. If you
+have routes outside the cmssy catch-alls, give them a root layout of their own
+under a route group (`app/(site)/layout.tsx`); without one the build fails with
+"doesn't have a root layout". For Remix, set `<html lang={useCmssyLocale()}>` in
 your root `Layout`.
+
+`createCmssyProxy(..., { stripLocalePrefix: true })` is the one configuration
+this does not reach: the proxy removes the language from the path before the
+route sees it, so the layout has nothing to read. Those sites keep the default
+language in `<html lang>`.
 
 The language is taken from the route, not from a request header: a root layout
 that reads a header opts every page out of static rendering, and these pages are
@@ -30,7 +40,9 @@ prerendered.
 **New: `resolveCmssyLocale` (`@cmssy/core`) and `useCmssyLocale`
 (`@cmssy/remix`).** Both answer `undefined` rather than guessing when no
 language could be resolved, and React then omits the attribute. No `lang` is
-honest; a wrong one is the bug above.
+honest; a wrong one is the bug above. This is about the attribute only - the
+rendered content still falls back to the default language, as it always has,
+because a page has to render in something.
 
 **`checkCmssyEditMode` now checks the preview's language, and works out which
 language to ask for by itself.** Pass `workspace` - which the scaffolded smoke

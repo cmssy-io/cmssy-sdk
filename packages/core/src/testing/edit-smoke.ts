@@ -340,6 +340,9 @@ async function checkDirectEditRoute(
       ? routedPath.slice(EDIT_PATH_PREFIX.length) || "/"
       : routedPath;
   const directPath = `${EDIT_PATH_PREFIX}${withoutPrefix === "/" ? "" : withoutPrefix}`;
+  // The caller already pointed at the edit route, so there is no second way in
+  // to compare against - fetching it again would compare a response to itself.
+  if (directPath === routedPath) return;
 
   const direct = await html(url(`${directPath}?${query}`));
   if (direct.status !== 200 || !EDITOR_MARKER.test(direct.body)) return;

@@ -675,3 +675,26 @@ describe("checkCmssyEditMode on an adapter with no edit route", () => {
     expect(result.failures.join(" ")).toContain("two languages");
   });
 });
+
+describe("checkCmssyEditMode given the edit route as the localized path", () => {
+  it("does not fetch it twice and compare it against itself", async () => {
+    const fetchStub = serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+      [verifiedUrl("/cmssy-edit")]: EDIT_HTML,
+      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      localizedPath: "/cmssy-edit/no",
+    });
+
+    expect(result.failures).toEqual([]);
+    const asked = fetchStub.mock.calls.map(([url]) => String(url));
+    const edits = asked.filter((url) => url.includes("/cmssy-edit/no"));
+    expect(edits).toHaveLength(1);
+  });
+});

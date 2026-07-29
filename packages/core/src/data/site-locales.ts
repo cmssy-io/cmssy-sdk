@@ -10,8 +10,15 @@ import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 export type { CmssySiteLocales };
 
 const TTL_MS = 60_000;
+// Short, because a failure is worth remembering only long enough to stop one
+// page render probing six times. Every caller passes a retry policy, so an
+// uncached failure costs four requests and ~2s of backoff each.
+const FAILURE_TTL_MS = 5_000;
 const MAX_ENTRIES = 64;
-const cache = new Map<string, { value: CmssySiteLocales; expires: number }>();
+const cache = new Map<
+  string,
+  { value: CmssySiteLocales | null; expires: number }
+>();
 
 /**
  * Maps a workspace site config to its locale set. The single place that
@@ -41,7 +48,7 @@ async function loadSiteLocales(
   if (cached && cached.expires > Date.now()) return cached.value;
   cache.delete(key);
 
-  let value: CmssySiteLocales;
+  let value: CmssySiteLocales | null;
   try {
     const data = await graphqlRequest<{
       public: { siteConfig: CmssySiteConfig | null } | null;
@@ -54,11 +61,14 @@ async function loadSiteLocales(
     );
     value = localesFromSiteConfig(data.public?.siteConfig ?? null);
   } catch {
-    return null;
+    value = null;
   }
 
   if (cache.size >= MAX_ENTRIES) cache.clear();
-  cache.set(key, { value, expires: Date.now() + TTL_MS });
+  cache.set(key, {
+    value,
+    expires: Date.now() + (value ? TTL_MS : FAILURE_TTL_MS),
+  });
   return value;
 }
 

@@ -158,19 +158,20 @@ describe("resolveCmssyLocale", () => {
     expect(locale).toBeUndefined();
   });
 
-  it("does not cache a failure - the next request asks again", async () => {
+  it("asks once while the API is failing, not once per caller", async () => {
     const down = vi.fn(async () => {
       throw new Error("upstream is down");
     });
+
     await resolveCmssyLocale(config("ws-h"), undefined, {
       fetch: down as never,
     });
-
-    const locale = await resolveCmssyLocale(config("ws-h"), ["no"], {
-      fetch: serving("en", ["en", "no"]) as never,
+    const second = await resolveCmssyLocale(config("ws-h"), ["no"], {
+      fetch: down as never,
     });
 
-    expect(locale).toBe("no");
+    expect(second).toBeUndefined();
+    expect(down).toHaveBeenCalledTimes(1);
   });
 
   it("does not treat the default language's own prefix as a language", async () => {

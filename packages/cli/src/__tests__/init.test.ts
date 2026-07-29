@@ -173,6 +173,31 @@ describe("runInit", () => {
     );
   });
 
+  it("spots a root layout scaffolded without typescript", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app"));
+    writeFileSync(join(cwd, "app/layout.js"), "export default () => null;\n");
+    expect(runInit({}, deps)).toBe(0);
+    const output = lines.join("\n");
+    expect(output).toContain("app/layout.js outranks the cmssy root layouts");
+    expect(output).toContain("app/cmssy-edit/[[...path]]/layout.tsx");
+    expect(output).toContain("route group");
+  });
+
+  it("says what a skipped cmssy root layout was for", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+    });
+    mkdirSync(join(cwd, "app/[[...path]]"), { recursive: true });
+    writeFileSync(join(cwd, "app/[[...path]]/layout.tsx"), "mine\n");
+    expect(runInit({}, deps)).toBe(0);
+    expect(lines.join("\n")).toContain(
+      "app/[[...path]]/layout.tsx already existed - set <html lang=",
+    );
+  });
+
   it("writes the astro wiring and points at astro add", () => {
     const { deps, cwd, lines } = makeApp({
       dependencies: { astro: "^5.0.0" },

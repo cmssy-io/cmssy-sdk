@@ -98,6 +98,14 @@ function detectInstallCommand(root: string): string {
   return "npm install";
 }
 
+// A Next app scaffolded without --ts has app/layout.js, and a nested <html>
+// inside the app's own is invalid markup that no build warns about.
+function existingFile(root: string, base: string): string | undefined {
+  return ["tsx", "ts", "jsx", "js", "mjs"]
+    .map((extension) => `${base}.${extension}`)
+    .find((candidate) => existsSync(join(root, candidate)));
+}
+
 function frameworkNotes(
   framework: FrameworkDef,
   root: string,
@@ -106,19 +114,31 @@ function frameworkNotes(
   const notes: PreflightResult[] = [];
   if (framework.name === "next") {
     const prefix = nextSrcPrefix(root);
-    const home = `${prefix}app/page.tsx`;
-    if (existsSync(join(root, home))) {
+    const home = existingFile(root, `${prefix}app/page`);
+    if (home) {
       notes.push({
         status: "unknown",
         message: `${home} conflicts with the cmssy catch-all route - delete it and the cmssy page serves /`,
       });
     }
-    const rootLayout = `${prefix}app/layout.tsx`;
-    if (existsSync(join(root, rootLayout))) {
+    const rootLayout = existingFile(root, `${prefix}app/layout`);
+    if (rootLayout) {
       notes.push({
         status: "unknown",
-        message: `${rootLayout} outranks the cmssy root layouts, which are what set <html lang> per language - delete it, moving your global CSS import and metadata into ${prefix}app/[[...path]]/layout.tsx`,
+        message: `${rootLayout} outranks the cmssy root layouts, which are what set <html lang> per language - delete it and move your global CSS import and metadata into BOTH ${prefix}app/[[...path]]/layout.tsx and ${prefix}app/cmssy-edit/[[...path]]/layout.tsx (they are separate roots, and an editor preview with no CSS is the usual way to notice)`,
       });
+      notes.push({
+        status: "unknown",
+        message: `routes outside the cmssy catch-alls need a root layout of their own once ${rootLayout} is gone - move them under a route group, e.g. app/(site)/layout.tsx, or the build fails with "doesn't have a root layout"`,
+      });
+    }
+    for (const layout of ["app/[[...path]]", "app/cmssy-edit/[[...path]]"]) {
+      if (skipped.includes(`${prefix}${layout}/layout.tsx`)) {
+        notes.push({
+          status: "unknown",
+          message: `${prefix}${layout}/layout.tsx already existed - set <html lang={await resolveCmssyLocale(cmssy, path)}> there yourself (import from @cmssy/core), or the site declares one language while rendering another`,
+        });
+      }
     }
   }
   if (framework.name === "astro") {
