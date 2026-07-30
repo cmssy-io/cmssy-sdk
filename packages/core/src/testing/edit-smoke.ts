@@ -1,6 +1,4 @@
 import { graphqlRequest } from "../data/graphql-request";
-import { localesFromSiteConfig } from "../data/site-locales";
-import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "../data/queries";
 import { checkFrameAncestors } from "../preflight";
 
 export interface EditSmokeOptions {
@@ -11,11 +9,13 @@ export interface EditSmokeOptions {
   /** A published page to exercise. Defaults to "/". */
   path?: string;
   /**
-   * The same page under a language prefix, e.g. "/no". Pass it on a site whose
-   * URLs carry the language, and the check also proves the preview renders in
-   * THAT language rather than the default one - by reading `<html lang>`, which
-   * is a contract, unlike a word from the page's copy that an editor can change
-   * at any time.
+   * The same page under a language prefix, e.g. "/no". The caller states it
+   * because only the caller knows how its site spells a language; asking a
+   * workspace would tie this check to content that can change or be deleted.
+   *
+   * Given it, the check also proves the preview renders in THAT language rather
+   * than the default one - by reading `<html lang>`, which is a contract,
+   * unlike a word from the page's copy that an editor can change at any time.
    */
   localizedPath?: string;
   /**
@@ -153,40 +153,6 @@ async function workspaceHasLayoutBlocks(
   }
 }
 
-type DerivedLocale =
-  | { kind: "derived"; localizedPath: string; locale: string }
-  | { kind: "none" }
-  | { kind: "unavailable" };
-
-async function derivedLocalizedPath(
-  workspace: NonNullable<EditSmokeOptions["workspace"]>,
-  path: string,
-): Promise<DerivedLocale> {
-  try {
-    const data = await graphqlRequest<{
-      public?: { siteConfig?: CmssySiteConfig | null } | null;
-    }>(
-      workspace,
-      SITE_CONFIG_QUERY,
-      { workspaceSlug: workspace.workspaceSlug },
-      { public: true, retry: {} },
-      "edit smoke: site locales",
-    );
-    const { defaultLocale, locales } = localesFromSiteConfig(
-      data.public?.siteConfig ?? null,
-    );
-    const locale = locales.find((candidate) => candidate !== defaultLocale);
-    if (!locale) return { kind: "none" };
-    const routed = withoutEditPrefix(path);
-    const [first] = routed.split("/").filter(Boolean);
-    if (first && locales.includes(first)) return { kind: "none" };
-    const suffix = routed === "/" || routed === "" ? "" : routed.replace(/\/+$/, "");
-    return { kind: "derived", locale, localizedPath: `/${locale}${suffix}` };
-  } catch {
-    return { kind: "unavailable" };
-  }
-}
-
 /**
  * Proves a consumer app's EDIT path still works - the path a build cannot check,
  * because the site compiles and serves fine while being uneditable.
@@ -281,32 +247,15 @@ export async function checkCmssyEditMode(
 
   const query = `cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`;
 
-  const asked = options.localizedPath;
-  const derived =
-    !asked && options.workspace
-      ? await derivedLocalizedPath(options.workspace, path)
-      : { kind: "none" as const };
-
-  if (derived.kind === "unavailable") {
-    failures.push(
-      `the delivery API would not say which languages ${options.workspace?.workspaceSlug} enables, so the preview's language went unchecked. That is the check three releases shipped a wrong-language preview past - a green run here does not mean it works.`,
-    );
-  }
-
-  const localizedPath =
-    asked ?? (derived.kind === "derived" ? derived.localizedPath : undefined);
+  const { localizedPath } = options;
 
   if (localizedPath) {
-    const locale =
-      options.localizedLocale ??
-      (derived.kind === "derived" ? derived.locale : localeOf(localizedPath));
+    const locale = options.localizedLocale ?? localeOf(localizedPath);
 
     const localized = await html(url(`${localizedPath}?${query}`));
     if (localized.status !== 200) {
       failures.push(
-        derived.kind === "derived"
-          ? `edit ${localizedPath}: expected 200, got ${localized.status}. The workspace enables "${locale}", so the language went unchecked - pass localizedPath if this site spells the language some other way.`
-          : `edit ${localizedPath}: expected 200, got ${localized.status}`,
+        `edit ${localizedPath}: expected 200, got ${localized.status}`,
       );
     } else {
       if (!EDITOR_MARKER.test(localized.body)) {

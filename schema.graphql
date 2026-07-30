@@ -2649,31 +2649,6 @@ type PublicFormSubmissionListResult {
   total: Int!
 }
 
-type PublicMediaItem {
-  alt: JSON!
-  caption: JSON
-  createdAt: DateTime!
-  filename: String!
-  height: Int
-  id: String!
-  mimeType: String!
-  size: Int!
-  tags: [String!]!
-  type: String!
-  url: String!
-  width: Int
-}
-
-type PublicMediaListResult {
-  hasMore: Boolean!
-  items: [PublicMediaItem!]!
-  total: Int!
-}
-
-type PublicMediaQueries {
-  forContext(folderId: String, limit: Int = 20, offset: Int = 0, tag: String, type: String, workspaceId: String!): PublicMediaListResult!
-}
-
 type PublicModelQueries {
   definitions(workspaceId: String!): [ModelDefinition!]!
   records(
@@ -2811,7 +2786,6 @@ type PublicPagesListResult {
 type PublicQueries {
   draftSecretValid(secret: String!, workspaceSlug: String!): Boolean!
   form: PublicFormQueries!
-  media: PublicMediaQueries!
   model: PublicModelQueries!
   order: PublicOrderQueries!
   page: PublicPageQueries!
