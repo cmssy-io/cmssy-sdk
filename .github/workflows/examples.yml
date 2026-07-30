@@ -249,17 +249,34 @@ jobs:
           pnpm update "@cmssy/*" --latest
           pnpm list --depth 0 | grep '@cmssy/' || true
 
-      # These are not secrets. The demo workspace is public and its published
-      # content needs no token; edit mode compares the URL's secret to the app's
-      # own, so a placeholder is enough for anything this job checks. Draft
-      # preview is not checked and not claimed.
+      # The workspace comes from repository variables, never a literal. A slug
+      # written here ties this repo to content someone else owns and can delete,
+      # and the job then fails or goes quiet for reasons that are not the SDK's.
+      # Not secrets: the content is public and edit mode compares the URL's
+      # secret to the app's own, so a placeholder covers what this job checks.
+      - name: Require a workspace to point at
+        if: ${{ !matrix.blocked }}
+        env:
+          ORG: ${{ vars.CMSSY_ORG_SLUG }}
+          WORKSPACE: ${{ vars.CMSSY_WORKSPACE_SLUG }}
+        run: |
+          if [ -z "${ORG:-}" ] || [ -z "${WORKSPACE:-}" ]; then
+            echo "CMSSY_ORG_SLUG and CMSSY_WORKSPACE_SLUG are unset."
+            echo "These examples build against a real workspace, but its slug"
+            echo "must not live in this repo. Set the repository variables:"
+            echo "  gh variable set CMSSY_ORG_SLUG --body <org>"
+            echo "  gh variable set CMSSY_WORKSPACE_SLUG --body <workspace>"
+            exit 1
+          fi
+          echo "pointing at $ORG/$WORKSPACE"
+
       - name: Build
         if: ${{ !matrix.blocked }}
         working-directory: examples/${{ matrix.dir }}
         env:
           BUILD: ${{ matrix.build }}
-          CMSSY_ORG_SLUG: cmssy
-          CMSSY_WORKSPACE_SLUG: cmssy-demo
+          CMSSY_ORG_SLUG: ${{ vars.CMSSY_ORG_SLUG }}
+          CMSSY_WORKSPACE_SLUG: ${{ vars.CMSSY_WORKSPACE_SLUG }}
           CMSSY_DRAFT_SECRET: examples-ci-placeholder-draft-secret
           CMSSY_SESSION_SECRET: examples-ci-placeholder-session-secret
           # NEXT_PUBLIC_* is inlined at build time, so it has to match the port
@@ -276,8 +293,8 @@ jobs:
           START: ${{ matrix.start }}
           PORT: ${{ matrix.port }}
           PATHS: ${{ join(matrix.assertRender, ' ') }}
-          CMSSY_ORG_SLUG: cmssy
-          CMSSY_WORKSPACE_SLUG: cmssy-demo
+          CMSSY_ORG_SLUG: ${{ vars.CMSSY_ORG_SLUG }}
+          CMSSY_WORKSPACE_SLUG: ${{ vars.CMSSY_WORKSPACE_SLUG }}
           CMSSY_DRAFT_SECRET: examples-ci-placeholder-draft-secret
           CMSSY_SESSION_SECRET: examples-ci-placeholder-session-secret
           NEXT_PUBLIC_SITE_URL: http://localhost:${{ matrix.port }}

@@ -6,6 +6,26 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.5.1
+
+**`checkCmssyEditMode` no longer asks a workspace which language to assert.**
+11.5.0 derived `localizedPath` by querying the delivery API for the workspace's
+enabled languages. That traded a hardcoded locale for a worse coupling: the
+check's coverage depended on content someone else owns and can delete, so a
+workspace change could make it fail for reasons unrelated to the SDK, or go
+quiet while still reporting green.
+
+`localizedPath` is caller-supplied again, as it was before 11.5.0. Only the
+caller knows how its site spells a language, and a check that needs content to
+be meaningful belongs in the consumer's repo rather than the SDK's.
+
+Everything else in 11.5.0 stands: the scaffolded `<html lang>`, the
+`frame-ancestors` reading, the direct edit-route probe and `editRoute`.
+
+**Do I have to do anything?** Only if you upgraded to 11.5.0 and relied on the
+derivation - pass `localizedPath` explicitly. Callers that already passed it are
+unaffected.
+
 ## 11.5.0
 
 **The Next and Remix scaffolds served every page as `<html lang="en">`.** A page

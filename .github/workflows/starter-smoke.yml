@@ -15,16 +15,19 @@ on:
 jobs:
   starter:
     runs-on: ubuntu-latest
-    # No secrets, on purpose. The published demo workspace is public, and edit
-    # mode is verified by comparing the URL's cmssySecret to the app's OWN
-    # draftSecret (cmssySecretsMatch, no backend call) - so any string works as
-    # long as both sides use the same one. Secrets would only have bought draft
-    # PREVIEW, which this job does not check, at the price of a job that cannot
-    # run on a fork's pull request. Override via secrets to point at your own
-    # workspace.
+    # The workspace is repository configuration, never a literal here. A slug
+    # written into this repo ties the SDK to content someone else owns and can
+    # delete, and this job then breaks - or quietly stops covering what it
+    # claims - for reasons that have nothing to do with the SDK.
+    #
+    # A repository VARIABLE, not a secret: the content is public, and edit mode
+    # compares the URL's cmssySecret to the app's OWN draftSecret with no
+    # backend call, so any string works as long as both sides use the same one.
+    # A secret would only have bought draft PREVIEW, which this job does not
+    # check, at the price of a job that cannot run on a fork's pull request.
     env:
-      CMSSY_ORG_SLUG: ${{ secrets.CMSSY_ORG_SLUG || 'cmssy' }}
-      CMSSY_WORKSPACE_SLUG: ${{ secrets.CMSSY_WORKSPACE_SLUG || 'cmssy-demo' }}
+      CMSSY_ORG_SLUG: ${{ vars.CMSSY_ORG_SLUG }}
+      CMSSY_WORKSPACE_SLUG: ${{ vars.CMSSY_WORKSPACE_SLUG }}
       CMSSY_DRAFT_SECRET: ${{ secrets.CMSSY_DRAFT_SECRET || 'smoke-placeholder-draft-secret' }}
     strategy:
       fail-fast: false
@@ -36,6 +39,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Require a workspace to point at
+        run: |
+          if [ -z "${CMSSY_ORG_SLUG:-}" ] || [ -z "${CMSSY_WORKSPACE_SLUG:-}" ]; then
+            echo "CMSSY_ORG_SLUG and CMSSY_WORKSPACE_SLUG are unset."
+            echo "This job builds a real app against a real workspace, so it"
+            echo "needs one - but the slug must not live in this repo. Set the"
+            echo "repository variables:"
+            echo "  gh variable set CMSSY_ORG_SLUG --body <org>"
+            echo "  gh variable set CMSSY_WORKSPACE_SLUG --body <workspace>"
+            exit 1
+          fi
+          echo "pointing at $CMSSY_ORG_SLUG/$CMSSY_WORKSPACE_SLUG"
 
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm -r build
@@ -124,9 +140,10 @@ jobs:
 
       # An override that does not apply says nothing, and the job stays green
       # while testing the last release - every version in the range exists on
-      # npm. `pnpm.overrides` lives in package.json, which is where pnpm 9 reads
-      # it and NOT where pnpm 10 does, so the day the packageManager pin moves
-      # this is what says so instead of the smoke test quietly changing subject.
+      # npm. `pnpm.overrides` lives in package.json, which this repo's pinned
+      # pnpm 9 reads. Later pnpm prefers pnpm-workspace.yaml, so the day the
+      # packageManager pin moves this is what says so instead of the smoke test
+      # quietly changing subject.
       #
       # Every copy on disk, not just node_modules/@cmssy: those are the direct
       # dependencies the step above rewrote by hand, so they prove nothing about

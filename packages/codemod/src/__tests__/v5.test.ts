@@ -93,7 +93,7 @@ describe("v5 codemod", () => {
   // A symbol with no home is silently left on the root, which no longer exports
   // it, so `npx @cmssy/codemod v5` hands the developer a broken build and calls
   // the migration automatic. This caught 28 of them, including fetchOrderByToken
-  // - found only because cmssy-demo's build failed on it.
+  // - found only because a consumer app's build failed on it.
   it("gives every 4.x export a home in 5.0", () => {
     const rootExports = new Set(exportedSymbols("index.ts"));
     const homeless = (NEXT4_EXPORTS as string[]).filter(
