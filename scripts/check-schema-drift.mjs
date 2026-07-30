@@ -43,7 +43,6 @@ if (breaking.length > 0) {
   );
 }
 console.error(
-  "\nRefresh it: run `pnpm --filter backend print-schema` in the cmssy repo, " +
-    "then `pnpm sync-schema` here.",
+  "\nRefresh it: pnpm fetch-prod-schema && cp prod-schema.graphql schema.graphql",
 );
 process.exit(1);

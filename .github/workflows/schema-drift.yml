@@ -1,7 +1,10 @@
 name: Schema drift
 
+# Daily, not per pull request. Production is not this repo's to change, so
+# gating a PR on it fails authors for a diff they did not write - it happened
+# twice in one afternoon when the public media surface was removed upstream -
+# and a red that nobody can fix is a red everyone learns to ignore.
 on:
-  pull_request:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
