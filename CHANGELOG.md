@@ -6,6 +6,29 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.6.0
+
+**`verifyCmssyWebhook` now accepts several secrets.** `secret` takes
+`string | readonly string[]`, and the verifier reads **every** `v1=` part of the
+signature header instead of only the last one. A delivery verifies when any
+signature matches any secret. Nothing to do: a single secret behaves exactly as
+before, and cmssy still sends one signature today.
+
+This exists for secret rotation. Rotating is a hard cutover right now - the old
+secret stops verifying the instant the new one is issued, so deliveries fail
+until you redeploy. Once cmssy signs with the previous secret as well, holding
+both across a deploy will make rotation seamless. Upgrade before that ships.
+
+**A non-string secret is now rejected.** Passing `[{ id, value }]` where
+`[value]` was meant used to stringify the object into the HMAC key - so the
+endpoint's effective key became the guessable literal `"[object Object]"` and a
+forged delivery verified. It throws `CmssyWebhookError` instead. Untyped
+callers should check what they pass.
+
+**A missing secret throws `CmssyWebhookError`, not `TypeError`.** `undefined`
+or `null` now fails as a webhook error like every other failure, so a handler
+that maps `CmssyWebhookError` to 401 keeps doing so when an env var is unset.
+
 ## 11.5.1
 
 **`checkCmssyEditMode` no longer asks a workspace which language to assert.**

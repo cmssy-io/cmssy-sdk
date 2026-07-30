@@ -1,4 +1,4 @@
-import { verifyCmssyWebhook, type CmssyWebhookEvent } from "@cmssy/next";
+import { verifyCmssyWebhook, type CmssyWebhookEvent } from "@cmssy/core";
 
 const FAKTUROWNIA_DOMAIN = process.env.FAKTUROWNIA_DOMAIN ?? "";
 const FAKTUROWNIA_API_TOKEN = process.env.FAKTUROWNIA_API_TOKEN ?? "";
@@ -88,7 +88,7 @@ export async function POST(req: Request): Promise<Response> {
 
   let event: CmssyWebhookEvent;
   try {
-    event = verifyCmssyWebhook({
+    event = await verifyCmssyWebhook({
       body,
       signatureHeader: req.headers.get("x-cmssy-signature"),
       secret: CMSSY_WEBHOOK_SECRET,
