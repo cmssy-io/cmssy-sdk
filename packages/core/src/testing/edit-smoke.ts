@@ -13,6 +13,7 @@ export interface EditSmokeOptions {
 export interface EditSmokeResult {
   ok: boolean;
   failures: string[];
+  skipped: string[];
 }
 
 const EDITOR_MARKER = /data-cmssy-editor/;
@@ -58,6 +59,7 @@ export async function checkCmssyEditMode(
 ): Promise<EditSmokeResult> {
   const { baseUrl, secret, path = "/" } = options;
   const failures: string[] = [];
+  const skipped: string[] = [];
   const url = (suffix: string) => `${baseUrl.replace(/\/+$/, "")}${suffix}`;
 
   const publicPage = await html(url(path));
@@ -68,8 +70,18 @@ export async function checkCmssyEditMode(
     failures.push(`public ${path}: the editor is mounted on a public page`);
   }
   const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
+  if (!hasServerLayoutBlocks) {
+    skipped.push(
+      `layout bridge: the public ${path} server-rendered no <header> or <footer>, so nothing proved they move onto the edit bridge in edit mode`,
+    );
+  }
 
   const expectLayoutBlocks = options.expectLayoutBlocks === true;
+  if (!expectLayoutBlocks) {
+    skipped.push(
+      "layout slot: expectLayoutBlocks is not set, so neither the mounted slot nor the content it resolved for the editor was asserted",
+    );
+  }
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {
@@ -116,6 +128,11 @@ export async function checkCmssyEditMode(
   const query = `cmssyEdit=1&cmssySecret=${encodeURIComponent(secret)}`;
 
   const { localizedPath } = options;
+  if (!localizedPath) {
+    skipped.push(
+      "language: no localizedPath, so nothing checked that a prefixed URL previews in its own language",
+    );
+  }
 
   if (localizedPath) {
     const locale = options.localizedLocale ?? localeOf(localizedPath);
@@ -143,9 +160,13 @@ export async function checkCmssyEditMode(
 
   if (options.editRoute !== false) {
     await checkDirectEditRoute(url, path, query, undefined, failures);
+  } else {
+    skipped.push(
+      "edit route: editRoute is false, so the direct /cmssy-edit route and its frame-ancestors were not checked",
+    );
   }
 
-  return { ok: failures.length === 0, failures };
+  return { ok: failures.length === 0, failures, skipped };
 }
 
 async function checkDirectEditRoute(

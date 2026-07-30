@@ -359,6 +359,61 @@ describe("checkCmssyEditMode with expectLayoutBlocks", () => {
     expect(result.failures.join("\n")).toMatch(/no editor-content marker/);
   });
 
+  it("reports the layout assertions it did not run", async () => {
+    serve({
+      [`${BASE}/`]: NO_LAYOUT_HTML,
+      [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+    });
+
+    const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
+
+    expect(result.ok).toBe(true);
+    expect(result.skipped.join("\n")).toMatch(/expectLayoutBlocks is not set/);
+    expect(result.skipped.join("\n")).toMatch(/no <header> or <footer>/);
+    expect(result.skipped.join("\n")).toMatch(/no localizedPath/);
+  });
+
+  it("claims no skip for the assertions it did run", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit")]: EDIT_HTML_WITH_SLOT,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      expectLayoutBlocks: true,
+      localizedPath: "/no",
+    });
+
+    expect(result.failures).toEqual([]);
+    expect(result.skipped).toEqual([]);
+  });
+
+  it("reports the direct edit route as skipped when the adapter has none", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+    });
+
+    const result = await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      expectLayoutBlocks: true,
+      editRoute: false,
+    });
+
+    expect(result.failures).toEqual([]);
+    expect(result.skipped.join("\n")).toMatch(/editRoute is false/);
+  });
+
   it("says nothing about layout slots when the caller does not claim any", async () => {
     serve({
       [`${BASE}/`]: NO_LAYOUT_HTML,

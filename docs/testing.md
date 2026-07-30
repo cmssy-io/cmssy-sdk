@@ -82,6 +82,25 @@ const result = await checkCmssyEditMode({
 Set it for a site whose header and footer are cmssy blocks. Leave it off and the
 mounted-slot and resolved-content assertions do not run.
 
+## `skipped`: what a green result did not check
+
+`failures` being empty answers "did anything fail", not "was anything checked".
+Four assertions only run when the call gives them something to run against, so
+the result names the ones that did not:
+
+```ts
+const result = await checkCmssyEditMode({ baseUrl, secret });
+
+expect(result.failures).toEqual([]);
+console.log(result.skipped);
+// layout bridge: the public / server-rendered no <header> or <footer>, ...
+// layout slot: expectLayoutBlocks is not set, ...
+// language: no localizedPath, ...
+```
+
+Print it in CI. A run that skips three of six assertions and reports green is the
+shape both of our dead-editor releases had.
+
 ## Why "no `<header>` in the SSR" means success
 
 In edit mode the header and footer mount through the edit bridge, which renders on the
