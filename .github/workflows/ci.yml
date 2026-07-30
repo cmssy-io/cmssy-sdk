@@ -20,15 +20,32 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build first: @cmssy/next typechecks + tests against @cmssy/react's
-      # dist .d.ts, which doesn't exist on a fresh checkout until react builds.
       - run: pnpm -r build
 
       - run: pnpm -r typecheck
 
       - run: pnpm -r test
 
-      # Prose has no compiler, so it drifts silently: 10.0 removed ~90 symbols
-      # and every guide kept teaching them for six releases. This reads the code
-      # blocks against the BUILT types.
       - run: pnpm check-docs
+
+  scaffold:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [next, remix]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -r build
+
+      - run: node scripts/scaffold-probe.mjs ${{ matrix.framework }}
