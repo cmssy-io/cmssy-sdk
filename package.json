@@ -8,8 +8,7 @@
     "typecheck": "pnpm -r typecheck",
     "fetch-prod-schema": "node scripts/fetch-prod-schema.mjs",
     "check-schema-drift": "node scripts/check-schema-drift.mjs",
-    "check-docs": "node scripts/check-docs-imports.mjs",
-    "probe-scaffold": "node scripts/scaffold-probe.mjs"
+    "check-docs": "node scripts/check-docs-imports.mjs"
   },
   "devDependencies": {
     "graphql": "^16.10.0",
