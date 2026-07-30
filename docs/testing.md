@@ -13,10 +13,7 @@ const result = await checkCmssyEditMode({
   baseUrl: "http://localhost:3000",
   secret: process.env.CMSSY_DRAFT_SECRET!,
   path: "/",
-  workspace: { org: "acme", workspaceSlug: "shop" },
-  // Only if your URLs carry the language. You state it: the check will not ask
-  // a workspace what to assert, because that ties its coverage to content that
-  // can change or be deleted.
+  expectLayoutBlocks: true,
   localizedPath: "/no",
 });
 
@@ -35,9 +32,9 @@ in the first place.
    request must never open the door.
 3. A verified `cmssyEdit=1` + `cmssySecret` renders the editor **and** moves the
    header and footer onto the edit bridge.
-4. When you pass `workspace`: the layout slot is mounted **and it resolved
-   content for the editor**. See below - this is the assertion that catches the
-   editor that only looks alive.
+4. When you pass `expectLayoutBlocks`: the layout slot is mounted **and it
+   resolved content for the editor**. See below - this is the assertion that
+   catches the editor that only looks alive.
 5. When you pass `localizedPath`: the localized preview **declares** the
    language its URL asks for (`<html lang>`), and the edit route answers the
    same language reached directly as it does through the rewrite.
@@ -70,19 +67,20 @@ but was not rendered in edit mode - the canvas gets nothing and the fetch ran
 without the preview secret, so you are editing the published page.
 ```
 
-It needs `workspace` to know the site has layout blocks at all - an empty
-position legally resolves to zero:
+A site with no layout blocks legally resolves to zero, so this assertion only
+runs when you say the site has them. You state it, and the check stays offline
+from your CMS - it talks to your app and nothing else:
 
 ```ts
 const result = await checkCmssyEditMode({
   baseUrl,
   secret: process.env.CMSSY_DRAFT_SECRET!,
-  workspace: {
-    org: process.env.CMSSY_ORG_SLUG!,
-    workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG!,
-  },
+  expectLayoutBlocks: true,
 });
 ```
+
+Set it for a site whose header and footer are cmssy blocks. Leave it off and the
+mounted-slot and resolved-content assertions do not run.
 
 ## Why "no `<header>` in the SSR" means success
 
@@ -109,5 +107,5 @@ selectable but have no fields (is CMSSY_EDIT_HEADER set on the rewrite?)
 - run: pnpm smoke:edit
 ```
 
-Skip the job when the workspace secrets are absent - a green check that verifies
+Skip the job when `CMSSY_DRAFT_SECRET` is absent - a green check that verifies
 nothing is worse than no check.

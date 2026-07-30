@@ -1,39 +1,12 @@
-import { graphqlRequest } from "../data/graphql-request";
 import { checkFrameAncestors } from "../preflight";
 
 export interface EditSmokeOptions {
-  /** A running build of the consumer app, e.g. http://localhost:3000. */
   baseUrl: string;
-  /** The site's CMSSY_DRAFT_SECRET. Without it nothing can be verified. */
   secret: string;
-  /** A published page to exercise. Defaults to "/". */
   path?: string;
-  /**
-   * The same page under a language prefix, e.g. "/no". The caller states it
-   * because only the caller knows how its site spells a language; asking a
-   * workspace would tie this check to content that can change or be deleted.
-   *
-   * Given it, the check also proves the preview renders in THAT language rather
-   * than the default one - by reading `<html lang>`, which is a contract,
-   * unlike a word from the page's copy that an editor can change at any time.
-   */
   localizedPath?: string;
-  /**
-   * The language `localizedPath` must render, e.g. "no". Defaults to the first
-   * path segment, which IS the language on a prefixed site.
-   */
   localizedLocale?: string;
-  /**
-   * The workspace the app is pointed at. Given it, the check asks the delivery
-   * API whether the workspace HAS header/footer blocks - and if it does, an app
-   * that renders none is a failure rather than a site that simply has none.
-   *
-   * That distinction is the whole point. `cmssy init` once scaffolded the
-   * editable-layout wrapper with nothing mounting it, so the app rendered no
-   * header at all - and this check, unable to tell "none configured" from "none
-   * rendered", stayed green.
-   */
-  workspace?: { org: string; workspaceSlug: string; apiUrl?: string };
+  expectLayoutBlocks?: boolean;
   editRoute?: boolean;
 }
 
@@ -42,38 +15,10 @@ export interface EditSmokeResult {
   failures: string[];
 }
 
-// The edit bridge renders `data-cmssy-editor` (see @cmssy/react). Matching that
-// is a contract; matching a chunk name or a component name - as this once did -
-// is matching whatever the bundler happened to emit, which passed on two
-// frameworks by luck and failed on the third for no reason.
 const EDITOR_MARKER = /data-cmssy-editor/;
-/**
- * Layout blocks rendered server-side. In edit mode they move to the edit bridge
- * and mount on the client, so their absence from the SSR HTML is what proves
- * the header and footer are editable blocks rather than plain markup.
- *
- * `data-cmssy-unknown-block` counts: an app whose registry does not know the
- * workspace's header type still RENDERED the layout group, which is what this
- * asks about. Matching only `<header>` would call a mounted slot missing.
- */
 const SERVER_LAYOUT_BLOCKS = /<header|<footer/;
-/**
- * The editable layout slot renders this server-side (see CmssyLazyLayout). Its
- * blocks mount on the client, so this marker is the only thing in the edit
- * route's HTML that says a slot is mounted at all - which is exactly what
- * "the editor lets me select the header but shows no fields" comes down to.
- */
 const EDITABLE_LAYOUT_SLOT = /data-cmssy-layout-slot/;
 
-/**
- * How many layout blocks the slot actually resolved content for.
- *
- * The marker above proves a slot is mounted and nothing else: every scaffold
- * renders one whether or not the request was verified. That is how an adapter
- * ran with edit mode permanently off - fetching without the preview secret,
- * handing the canvas nothing - while this check stayed green for months. A
- * count above zero is reachable only through a real editor render.
- */
 const EDITOR_CONTENT_COUNT = /data-cmssy-editor-content="(\d+)"/g;
 
 function resolvedContentCounts(body: string): number[] {
@@ -108,70 +53,6 @@ function langOf(body: string): string | undefined {
   return /<html[^>]*\slang=["']([^"']+)["']/i.exec(body)?.[1];
 }
 
-const LAYOUT_BLOCKS_QUERY = `query CmssySmokeLayouts($workspaceSlug: String!, $pageSlug: String!) {
-  public {
-    page {
-      layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug) {
-        position
-        blocks { id isActive }
-      }
-    }
-  }
-}`;
-
-interface LayoutProbe {
-  public?: {
-    page?: {
-      layouts?: Array<{ blocks?: Array<{ isActive?: boolean | null }> }> | null;
-    } | null;
-  } | null;
-}
-
-/**
- * Whether the workspace defines any active layout block for the page.
- * `null` means the question could not be answered - an unreachable API is not
- * the app's fault, so it must not turn into a failure about the app.
- */
-async function workspaceHasLayoutBlocks(
-  workspace: NonNullable<EditSmokeOptions["workspace"]>,
-  pageSlug: string,
-): Promise<boolean | null> {
-  try {
-    const data = await graphqlRequest<LayoutProbe>(
-      workspace,
-      LAYOUT_BLOCKS_QUERY,
-      { workspaceSlug: workspace.workspaceSlug, pageSlug },
-      { public: true, retry: {} },
-      "edit smoke: layout blocks",
-    );
-    const groups = data.public?.page?.layouts ?? [];
-    return groups.some((group) =>
-      (group.blocks ?? []).some((block) => block.isActive !== false),
-    );
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Proves a consumer app's EDIT path still works - the path a build cannot check,
- * because the site compiles and serves fine while being uneditable.
- *
- * It asserts four independent things:
- *   1. the public page renders WITHOUT the editor, header and footer server-rendered;
- *   2. a bare `?cmssyEdit=1` does NOT enter edit mode (an unverified pair must
- *      not open the door - CMS-948);
- *   3. a verified `cmssyEdit=1` + `cmssySecret` renders the editor AND moves the
- *      header and footer onto the edit bridge;
- *   4. given `workspace`, that an app whose workspace HAS layout blocks renders
- *      them at all - the one thing "no header anywhere" and "no header
- *      configured" otherwise look alike.
- *
- * Run it against a started production build:
- *
- *   const result = await checkCmssyEditMode({ baseUrl, secret });
- *   expect(result.failures).toEqual([]);
- */
 export async function checkCmssyEditMode(
   options: EditSmokeOptions,
 ): Promise<EditSmokeResult> {
@@ -186,15 +67,9 @@ export async function checkCmssyEditMode(
   if (EDITOR_MARKER.test(publicPage.body)) {
     failures.push(`public ${path}: the editor is mounted on a public page`);
   }
-  // A site with no layout blocks is perfectly valid, so their absence is not a
-  // failure on its own. What matters is the CHANGE: a header that is
-  // server-rendered publicly must move to the edit bridge in edit mode.
   const hasServerLayoutBlocks = SERVER_LAYOUT_BLOCKS.test(publicPage.body);
 
-  // Whether the workspace has any header/footer to render in the first place.
-  const configured = options.workspace
-    ? await workspaceHasLayoutBlocks(options.workspace, path)
-    : null;
+  const expectLayoutBlocks = options.expectLayoutBlocks === true;
 
   const unverified = await html(url(`${path}?cmssyEdit=1`));
   if (EDITOR_MARKER.test(unverified.body)) {
@@ -219,20 +94,13 @@ export async function checkCmssyEditMode(
       `edit ${path}: the header and footer are still server-rendered - the editor will let you select them but show no fields (is CMSSY_EDIT_HEADER set on the rewrite?)`,
     );
   }
-  // The workspace has layout blocks and the edit route mounts no slot for them:
-  // the editor will show a page with no header to edit. This is the check that
-  // an app scaffolded without a layout slot fails.
-  if (configured === true && !EDITABLE_LAYOUT_SLOT.test(verified.body)) {
+  if (expectLayoutBlocks && !EDITABLE_LAYOUT_SLOT.test(verified.body)) {
     failures.push(
-      `edit ${path}: the workspace defines layout blocks and no editable layout slot is mounted - the header and footer cannot be edited (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
+      `edit ${path}: expectLayoutBlocks is set and no editable layout slot is mounted - the header and footer cannot be edited (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
     );
   }
 
-  // A mounted slot that resolved nothing is a slot rendered outside edit mode:
-  // the page looks editable and the canvas has no content to show. Only assert
-  // it when the workspace is known to have blocks - an empty position legally
-  // resolves to zero.
-  if (configured === true && EDITABLE_LAYOUT_SLOT.test(verified.body)) {
+  if (expectLayoutBlocks && EDITABLE_LAYOUT_SLOT.test(verified.body)) {
     const counts = resolvedContentCounts(verified.body);
     if (counts.length === 0) {
       failures.push(
@@ -289,8 +157,6 @@ async function checkDirectEditRoute(
 ): Promise<void> {
   const withoutPrefix = withoutEditPrefix(routedPath);
   const directPath = `${EDIT_PATH_PREFIX}${withoutPrefix === "/" ? "" : withoutPrefix}`;
-  // The caller already pointed at the edit route, so there is no second way in
-  // to compare against - fetching it again would compare a response to itself.
   if (directPath === routedPath) return;
 
   const direct = await html(url(`${directPath}?${query}`));
