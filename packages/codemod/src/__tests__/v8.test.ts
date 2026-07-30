@@ -26,10 +26,6 @@ describe("v8", () => {
     expect(transform(source).code).toBe(source);
   });
 
-  /**
-   * The point of the version. Rewriting a hand-written content type would copy
-   * the drift forward - the drift IS the bug. Name the file and stop.
-   */
   it("does NOT rewrite a hand-typed component, it reports it", () => {
     const source = [
       `import { defineBlock, fields } from "@cmssy/react";`,
@@ -44,12 +40,6 @@ describe("v8", () => {
     expect(result.notes?.[0]).toContain("BlockProps");
   });
 
-  /**
-   * The migrated shape splits the block in two: the schema and the component in
-   * one file, the registration in another. The registration names neither a
-   * field nor BlockProps - and it is correct. Flagging it taught the first repo
-   * through this migration to ignore the report.
-   */
   it("says nothing about a registration that points at an exported schema", () => {
     const source = [
       `import { defineBlock } from "@cmssy/react";`,

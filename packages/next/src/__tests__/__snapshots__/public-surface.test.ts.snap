@@ -35,3 +35,12 @@ exports[`@cmssy/next public surface > exports exactly these names from the root 
   "resolveEditorOrigin",
 ]
 `;
+
+exports[`@cmssy/next public surface > publishes exactly these subpaths 1`] = `
+[
+  ".",
+  "./middleware",
+  "./server",
+  "./testing",
+]
+`;

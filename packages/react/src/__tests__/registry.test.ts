@@ -30,14 +30,6 @@ describe("defineBlock", () => {
   });
 });
 
-/**
- * The point of the whole thing. Every assertion below is checked by
- * `tsc --noEmit`, not by vitest: a missing error is a failed build, which is
- * the only way to prove that a mistake in a schema cannot reach production.
- *
- * Before typed fields, a block whose schema said `headline` and whose component
- * read `content.heading` compiled clean and rendered an empty block.
- */
 describe("the schema types the content", () => {
   it("gives a required field a required key, and everything else an optional one", () => {
     const props = {
@@ -102,8 +94,6 @@ describe("the schema types the content", () => {
       headline: fields.text({ required: true }),
       subtitle: fields.text(),
     };
-    // The old two-sources-of-truth shape: compatible with the schema (they share
-    // `subtitle`), so plain structural assignability let it through.
     const Drifted = ({
       content,
     }: {

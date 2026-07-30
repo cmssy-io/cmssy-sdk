@@ -43,16 +43,19 @@ await client.queryScoped(MY_QUERY, { modelSlug: "products", limit: 20 });
 
 You normally never write these - the listed helper calls them for you.
 
-| Operation                 | Helper                                   | Returns                                                      |
-| ------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
-| `publicPage`              | `fetchPage`                              | `{ id, blocks, publishedBlocks }`                            |
-| `publicPageById`          | `fetchPageById`                          | `{ id, publishedBlocks }`                                    |
-| `publicPages`             | `fetchPages`                             | `[{ id, slug, updatedAt, publishedAt }]`                     |
-| `publicPage` (SEO fields) | `fetchPageMeta`                          | `{ id, seoTitle, seoDescription, seoKeywords, displayName }` |
-| `publicPageLayouts`       | `fetchLayouts`                           | `[{ position, blocks }]`                                     |
-| `publicSiteConfig`        | `fetchSiteConfig` / `resolveSiteLocales` | site name, locales, features, branding                       |
-| `public.form.get`         | `resolveForms` (and `context.forms`)     | form fields + settings                                       |
-| `public.form.submit`      | `SUBMIT_FORM_MUTATION`                   | `{ success, message, submissionId, ... }`                    |
+Every delivery field is namespaced under `public` - there are no flat root
+fields.
+
+| Operation                      | Helper                                   | Returns                                                      |
+| ------------------------------ | ---------------------------------------- | ------------------------------------------------------------ |
+| `public.page.get`              | `fetchPage`                              | `{ id, blocks, publishedBlocks }`                            |
+| `public.page.getById`          | `fetchPageById`                          | `{ id, publishedBlocks }`                                    |
+| `public.page.list`             | `fetchPages`                             | `[{ id, slug, updatedAt, publishedAt }]`                     |
+| `public.page.get` (SEO fields) | `fetchPageMeta`                          | `{ id, seoTitle, seoDescription, seoKeywords, displayName }` |
+| `public.page.layouts`          | `fetchLayouts`                           | `[{ position, blocks }]`                                     |
+| `public.siteConfig`            | `fetchSiteConfig` / `resolveSiteLocales` | site name, locales, features, branding                       |
+| `public.form.get`              | `resolveForms` (and `context.forms`)     | form fields + settings                                       |
+| `public.form.submit`           | `SUBMIT_FORM_MUTATION`                   | `{ success, message, submissionId, ... }`                    |
 
 ## Write these yourself
 
@@ -98,7 +101,9 @@ query PublicModelRecords(
 ```
 
 `MODEL_RECORDS_QUERY` and `MODEL_DEFINITIONS_QUERY` are exported from
-`@cmssy/react` if you prefer the SDK's strings over your own.
+`@cmssy/core/internal` if you prefer the SDK's strings over your own. That entry
+point is unstable by name: it is where the adapters read from, and nothing
+promises the shape across a minor.
 
 ### List child pages (blog index, docs tree)
 
@@ -110,29 +115,36 @@ query PublicPagesByType(
   $limit: Int
   $offset: Int
 ) {
-  publicPagesByType(
-    workspaceId: $workspaceId
-    parentSlug: $parentSlug
-    search: $search
-    limit: $limit
-    offset: $offset
-  ) {
-    items {
-      id
-      slug
-      fullSlug
-      publishedAt
-      displayName
-      seoTitle
-      seoDescription
-      customFields
-      pageType
+  public {
+    page {
+      byType(
+        workspaceId: $workspaceId
+        parentSlug: $parentSlug
+        search: $search
+        limit: $limit
+        offset: $offset
+      ) {
+        items {
+          id
+          slug
+          fullSlug
+          publishedAt
+          displayName
+          seoTitle
+          seoDescription
+          customFields
+          pageType
+        }
+        total
+        hasMore
+      }
     }
-    total
-    hasMore
   }
 }
 ```
+
+`byType` also takes `pageType`, `sortBy`, `includeDrafts`, `previewSecret` and
+`customFieldFilters`; `limit` defaults to 9, not to unbounded.
 
 This powers a blog or docs index - see the [listing recipe](../building-blocks/recipes.md).
 

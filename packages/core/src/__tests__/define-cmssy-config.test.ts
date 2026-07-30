@@ -75,9 +75,6 @@ describe("config evaluated in the browser", () => {
   });
 
   it("says it is an import problem, not a config problem", () => {
-    // In the browser the server's env is never there, so "set your env vars"
-    // sends the developer to fix something that is already correct. The real
-    // mistake is a client component importing a value that reads the config.
     vi.stubGlobal("window", {});
 
     expect(() =>

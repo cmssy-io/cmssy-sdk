@@ -17,7 +17,6 @@ const CONFIG = {
   draftSecret: "draft-secret-1234",
 } as never;
 
-/** Answers the site-config lookup, then every page/layout read with an empty page. */
 function stubApi() {
   const calls: Array<Record<string, unknown>> = [];
   vi.stubGlobal(
@@ -81,8 +80,6 @@ describe("createCmssyLoader", () => {
     expect(data.isEdit).toBe(true);
   });
 
-  // The same rule as everywhere else, and the reason it exists: a bare
-  // cmssyEdit=1 would let anyone read drafts and mount the editable UI.
   it("does NOT enter edit mode for a bare cmssyEdit=1 (CMS-948)", async () => {
     stubApi();
     const data = await createCmssyLoader(CONFIG)({
@@ -191,9 +188,6 @@ describe("createCmssyLoader", () => {
   });
 });
 
-// The reason this package exists at all. If the React Router adapter reaches for
-// Next, then @cmssy/core is not framework-agnostic and the layering is a story
-// we tell ourselves.
 describe("framework boundary", () => {
   function sourceFiles(dir: string): string[] {
     return readdirSync(dir).flatMap((entry) => {

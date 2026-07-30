@@ -38,15 +38,6 @@ export interface CmssyEditorProps {
   appContext?: Record<string, unknown>;
 }
 
-/**
- * What the app wants its blocks to see, beyond the content: a signed-in member,
- * a feature flag, the active path. Given a function it is called per request
- * with the page being rendered, which is the useful form - a value fixed at
- * module scope cannot vary by visitor.
- *
- * Whatever it returns lands on `context.app`, untouched, on the deployed page
- * and in the editor alike.
- */
 export type CmssyAppContext =
   | Record<string, unknown>
   | ((args: {
@@ -80,11 +71,6 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-// `cmssyEdit=1` alone is not trusted - it must carry a `cmssySecret` matching
-// the site's draft secret, otherwise anyone could view drafts and mount the
-// editable UI (CMS-948). Only the editor iframe sends this pair; draft mode
-// (the authenticated /api/draft route) shows draft CONTENT but never mounts
-// the editor.
 async function resolveEditorRequest(
   query: SearchParams,
   draftSecret: string,
@@ -95,16 +81,6 @@ async function resolveEditorRequest(
   return cmssySecretsMatch(provided, draftSecret);
 }
 
-/**
- * Public catch-all page. Statically renderable: it never reads
- * `searchParams` or `headers()` - awaiting either forces every route
- * dynamic and kills ISR (CMS-952). Draft-mode preview (the authenticated
- * /api/draft cookie) still works per-request via `draftMode()`, which is
- * static-safe, and renders draft CONTENT without the editor (CMS-948).
- * The editor-iframe flow (`?cmssyEdit=1&cmssySecret=...`) is served by
- * the middleware rewrite (`cmssyEditRewrite`) onto the dynamic edit route
- * mounted with `createCmssyEditPage`.
- */
 export function createCmssyPage(
   config: CmssyConfig,
   blocks: BlockDefinition[],
@@ -113,12 +89,6 @@ export function createCmssyPage(
   return buildCmssyPageRenderer(config, blocks, options, false);
 }
 
-/**
- * Editor page for the middleware-rewritten edit route
- * (`app/cmssy-edit/[[...path]]/page.tsx`, `dynamic = "force-dynamic"`).
- * Re-verifies the `cmssyEdit` + `cmssySecret` pair itself, so a direct hit
- * on the route path (bypassing the middleware) cannot mount the editor.
- */
 export function createCmssyEditPage(
   config: CmssyConfig,
   blocks: BlockDefinition[],
@@ -144,8 +114,6 @@ function buildCmssyPageRenderer(
     org: config.org,
     workspaceSlug: config.workspaceSlug,
   };
-  // Hoisted so resolveWorkspaceId is memoized across requests (no per-render
-  // site-config fetch).
   const client = createCmssyClient(clientConfig);
   const fixedPath = options?.path
     ?.split("/")
@@ -160,10 +128,6 @@ function buildCmssyPageRenderer(
       fixedPath ?? (params ? ((await params).path ?? undefined) : undefined);
     const { isEnabled } = await draftMode();
 
-    // editorActive mounts the editable UI (verified editor iframe only);
-    // editMode additionally covers draft-mode preview, which fetches draft
-    // content but renders the plain, selectable page. Only the edit route
-    // reads searchParams - the public route must stay static.
     let editorActive = false;
     if (editRoute) {
       const query = searchParams ? await searchParams : {};
@@ -178,16 +142,9 @@ function buildCmssyPageRenderer(
     const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
 
-    // The workspace knows its default language, so ask it rather than assume
-    // English - the lookup is cached, and a Norwegian-first site would
-    // otherwise treat "no" as a non-default language and prefix every URL.
     const siteLocales = await resolveSiteLocales(clientConfig);
     const { defaultLocale, locales: enabledLocales } = siteLocales;
 
-    // The language prefix is never part of the slug. Splitting it only when
-    // `resolveLocale` is absent is how /no/about came to be looked up as the
-    // slug "/no/about" - which no workspace has, so the editor 404'd on every
-    // language but the default while the public route rendered fine.
     const split = splitLocaleFromPath(path, siteLocales);
     const pagePath = split.path;
     const locale = config.resolveLocale
@@ -230,8 +187,6 @@ function buildCmssyPageRenderer(
       enabled: enabledLocales,
     };
 
-    // Resolved once and handed to both paths, so the editor canvas and the
-    // deployed page see the same thing.
     const appContext =
       typeof options?.appContext === "function"
         ? await options.appContext({ page, locale, path: pagePath ?? [] })
@@ -267,8 +222,6 @@ function buildCmssyPageRenderer(
       );
     }
 
-    // Auth/member is app-owned (the SDK ships no auth): blocks that need a
-    // signed-in member get it from context the app populates, not from here.
     const auth: CmssyBlockAuthContext | undefined = undefined;
 
     let workspace: CmssyBlockWorkspace | undefined;

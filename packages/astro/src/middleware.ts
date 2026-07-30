@@ -15,19 +15,10 @@ import {
 
 export const CMSSY_EDIT_PATH_PREFIX = "/cmssy-edit";
 
-/**
- * `//evil.com/x` is protocol-relative: resolved against a base it lands on that
- * origin. Astro collapses this itself only from 6.1.
- */
 const withoutDuplicateSlashes = (pathname: string) =>
   pathname.replace(/\/{2,}/g, "/") || "/";
 
 export interface CmssyMiddlewareOptions {
-  /**
-   * Strip the language prefix before the app sees it, so a static route like
-   * `/shop` serves `/no/shop` too. Leave it off for a catch-all app that reads
-   * the language off the path itself.
-   */
   stripLocalePrefix?: boolean;
 }
 
@@ -36,31 +27,10 @@ interface AstroContextLike {
   request: Request;
 }
 
-/**
- * The rewrite payload goes to `next`, not to `context.rewrite`. Both reach
- * `applyRewriteToState`, but `context.rewrite` builds a fresh `AstroMiddleware`
- * and runs this whole chain again on the rewritten URL - where the language
- * prefix it just removed is gone, so a second pass resolved the default
- * language and overwrote the first pass's answer.
- */
 type CmssyNext = (
   payload?: string | URL | Request,
 ) => Promise<Response> | Response;
 
-/**
- * The whole middleware a cmssy Astro app needs, in the order it has to happen:
- *
- *   1. resolve the language and pass it on;
- *   2. send a VERIFIED editor request to /cmssy-edit, carrying that language and
- *      the edit flag - a prerendered page never sees the query string that would
- *      put it in edit mode;
- *   3. strip the language prefix for everything else, if asked.
- *
- * The order is not a detail. Resolve the locale after the rewrite and the editor
- * preview renders in the wrong language; drop the edit flag and the header and
- * footer become markup the editor can select but not fill. Both mistakes shipped
- * in the Next app before this sequence existed.
- */
 export function cmssyMiddleware(
   config: CmssyConfig,
   options: CmssyMiddlewareOptions = {},
@@ -71,7 +41,6 @@ export function cmssyMiddleware(
   ): Promise<Response> {
     const { pathname } = context.url;
 
-    // Strip both first: a client must never be able to forge either.
     context.request.headers.delete(CMSSY_EDIT_HEADER);
     context.request.headers.delete(CMSSY_LOCALE_HEADER);
 
@@ -79,10 +48,6 @@ export function cmssyMiddleware(
       pathname === CMSSY_EDIT_PATH_PREFIX ||
       pathname.startsWith(`${CMSSY_EDIT_PATH_PREFIX}/`);
 
-    // `/cmssy-edit` is routing, not language. Resolving from the whole path
-    // answers with the default language on a direct hit, so the editor renders
-    // /cmssy-edit/no/blog in English while the same page reached through the
-    // rewrite renders it in Norwegian.
     const locale = await localeForPathname(
       config,
       underEditRoute
@@ -97,8 +62,6 @@ export function cmssyMiddleware(
 
     if (editRequested) {
       const verified = await isVerifiedEditUrl(context.url, config);
-      // Whether or not this pass rewrites: a request arriving at the edit route
-      // directly is in edit mode too, and only `isVerifiedEditUrl` says so.
       if (verified) {
         context.request.headers.set(CMSSY_EDIT_HEADER, "1");
       }
@@ -129,9 +92,6 @@ export function cmssyMiddleware(
         try {
           applyCmssyCsp(page, { editorOrigin: config.editorOrigin });
         } catch {
-          // An editorOrigin too malformed to build a CSP from is one of the
-          // things this page reports. Throwing here replaces the explanation
-          // with a 500.
         }
         return page;
       }

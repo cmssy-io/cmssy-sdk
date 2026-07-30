@@ -10,17 +10,7 @@ export interface GraphqlRequestOptions {
   fetch?: FetchLike;
   signal?: AbortSignal;
   headers?: Record<string, string>;
-  /**
-   * Route through the org-scoped public delivery path instead of the base
-   * `/graphql` endpoint. Set for unauthenticated public queries so the backend
-   * resolves the workspace from the URL rather than a global slug lookup.
-   */
   public?: boolean;
-  /**
-   * Retry transient HTTP failures (429/503, honoring Retry-After). Off by
-   * default: this function also carries mutations (auth, cart, checkout),
-   * which must never be blind-retried. Read-only callers opt in with `{}`.
-   */
   retry?: RetryPolicy | false;
 }
 

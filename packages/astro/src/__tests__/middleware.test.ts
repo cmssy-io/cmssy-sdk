@@ -9,7 +9,6 @@ import { cmssyMiddleware } from "../middleware";
 const CMSSY_LOCALE_HEADER = "x-cmssy-locale";
 const CMSSY_EDIT_HEADER = "x-cmssy-edit";
 
-/** `resolveSiteLocales` caches per workspace, so a shared slug leaks a stub. */
 const configFor = (workspaceSlug: string) =>
   ({
     apiUrl: "https://api.test/graphql",
@@ -27,7 +26,6 @@ const CONFIG = {
   draftSecret: "draft-secret-1234",
 } as never;
 
-/** The site config call the locale lookup makes; anything else is a test bug. */
 function stubSiteConfig(defaultLanguage = "en", enabled = ["en", "no"]) {
   vi.stubGlobal(
     "fetch",
@@ -49,12 +47,6 @@ function stubSiteConfig(defaultLanguage = "en", enabled = ["en", "no"]) {
   );
 }
 
-/**
- * `context.rewrite` throws here on purpose. Both it and `next(payload)` reach
- * `applyRewriteToState`, but `context.rewrite` builds a fresh `AstroMiddleware`
- * and runs the chain again on the rewritten URL - the second pass this file
- * exists to keep from coming back.
- */
 function contextFor(href: string) {
   const url = new URL(href);
   return {
@@ -67,7 +59,6 @@ function contextFor(href: string) {
 }
 
 interface MiddlewareRun {
-  /** What the middleware handed `next`, if anything. */
   routedTo: string | null;
   locale: string | null;
   edit: string | null;
@@ -134,7 +125,6 @@ describe("cmssyMiddleware", () => {
     );
     expect(result.edit).toBe("1");
     expect(result.locale).toBe("no");
-    // Without this the admin cannot frame the site and the editor shows nothing.
     expect(result.response.headers.get("content-security-policy")).toContain(
       "frame-ancestors",
     );
@@ -222,8 +212,6 @@ describe("cmssyMiddleware", () => {
     expect(body).toContain("acme/ws");
     expect(body).toContain("frame-ancestors");
     expect(body).not.toContain("draft-secret-1234");
-    // Diagnostics the admin cannot frame are a blank iframe - the symptom they
-    // exist to explain.
     expect(result.response.headers.get("content-security-policy")).toContain(
       "frame-ancestors",
     );
@@ -277,8 +265,6 @@ describe("cmssyMiddleware", () => {
   });
 
   it("strips the prefix without eating the page's own slug", async () => {
-    // Measured on a built Astro 7 app: routing twice - once per middleware pass
-    // - served /vember for this URL, and 508 for the one below.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -317,9 +303,6 @@ describe("cmssyMiddleware", () => {
   });
 
   it("never routes to a protocol-relative path", async () => {
-    // `//evil.com/x` resolves to a URL on THAT origin, and the render would run
-    // there. Astro collapses the slashes itself only from 6.1, so leaving it to
-    // Astro reopens this across the whole supported range.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -363,14 +346,11 @@ describe("cmssyMiddleware", () => {
       "https://shop.test/about?cmssyEdit=1&cmssySecret=wrong",
     );
 
-    // A malformed editorOrigin is one of the things this page reports; a 500
-    // replaces the explanation with nothing.
     expect(result.response.status).toBe(200);
     expect(await result.response.text()).toContain("cmssy editor diagnostics");
   });
 
   it("edits a page whose slug starts with the edit prefix", async () => {
-    // `/cmssy-editorial` is a page, not the edit route.
     stubSiteConfig();
 
     const result = await run(
@@ -408,8 +388,6 @@ describe("cmssyMiddleware", () => {
   });
 
   it("reads the language of a request that arrives at the edit route directly", async () => {
-    // "cmssy-edit" is the first segment and is not a language, so the editor
-    // rendered /cmssy-edit/no/blog in the default one.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -435,9 +413,6 @@ describe("cmssyMiddleware", () => {
   });
 
   it("never slices the prefix out of a page slugged like the edit route", async () => {
-    // The rewrite of this URL is already covered above; what is new is that the
-    // locale slice must not run here. If it did, `/cmssy-editorial` would
-    // resolve its language from `orial`.
     stubSiteConfig("en", ["en", "no"]);
 
     const result = await run(
@@ -452,9 +427,6 @@ describe("cmssyMiddleware", () => {
   });
 });
 
-// The reason this package exists. If the Astro adapter reaches for React or
-// Next, then @cmssy/core is not framework-agnostic - it is Next's data layer
-// with a second consumer, and "headless for any frontend" is a slogan again.
 describe("framework boundary", () => {
   function sourceFiles(dir: string): string[] {
     return readdirSync(dir).flatMap((entry) => {

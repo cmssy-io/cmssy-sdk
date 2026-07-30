@@ -1,13 +1,7 @@
 import type { FetchLike, FetchLikeResponse } from "../content/content-client";
 
-/** HTTP-level failure from the cmssy API, with a machine-readable status. */
 export class CmssyRequestError extends Error {
   readonly status: number;
-  /**
-   * How long the server asked us to wait, in ms, when it said so. Present on a
-   * 429 that carried `Retry-After`; a caller can serve stale content for that
-   * long instead of guessing.
-   */
   readonly retryAfterMs?: number;
 
   constructor(message: string, status: number, retryAfterMs?: number) {
@@ -19,20 +13,10 @@ export class CmssyRequestError extends Error {
 }
 
 export interface RetryPolicy {
-  /** Additional attempts after the first request (default 3). */
   maxRetries?: number;
-  /** Exponential backoff base in ms: base * 2^attempt (default 300). */
   baseDelayMs?: number;
-  /** Upper bound for a guessed backoff wait (default 3000). */
   maxDelayMs?: number;
-  /**
-   * Upper bound for a wait the server asked for by `Retry-After` (default
-   * 10000). Beyond it there is nothing to gain from holding a render open, so
-   * the request fails immediately and carries `retryAfterMs` - the caller is in
-   * a better position to decide between stale content and an error page.
-   */
   maxRetryAfterMs?: number;
-  /** HTTP statuses that trigger a retry (default [429, 503]). */
   retryStatuses?: number[];
 }
 
@@ -87,10 +71,6 @@ async function fetchWithRetry(
       return response;
     }
     const asked = retryAfterMs(response);
-    // A server that names a wait longer than we are willing to hold a render
-    // for is not going to change its mind in 300ms. Retrying anyway burns the
-    // attempts, delays the failure and adds load to something already
-    // rate-limited - so stop, and let the caller see how long it asked for.
     if (asked !== null && asked > maxRetryAfterMs) return response;
     const backoff = baseDelayMs * 2 ** attempt;
     const wait = asked !== null ? asked : Math.min(backoff, maxDelayMs);
@@ -109,21 +89,10 @@ export interface PostGraphqlOptions {
   fetch?: FetchLike;
   signal?: AbortSignal;
   headers?: Record<string, string>;
-  /**
-   * Retry transient HTTP failures (429/503 by default, honoring Retry-After).
-   * Off unless set - mutations must never be blind-retried; read paths inside
-   * the SDK pass `{}` for the default policy.
-   */
   retry?: RetryPolicy | false;
-  /** Human-readable operation name used in error messages. */
   label: string;
 }
 
-/**
- * The one POST pipeline every cmssy API call goes through: resolves the fetch
- * implementation, applies the retry policy, surfaces HTTP failures as
- * CmssyRequestError (status included), and unwraps the GraphQL envelope.
- */
 export async function postGraphql<T>(
   url: string,
   query: string,

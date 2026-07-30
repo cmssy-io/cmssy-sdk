@@ -3,11 +3,6 @@ export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://www.cmssy.io",
 ];
 
-/**
- * Accepts every shape an editor origin arrives in - one origin, a list, or the
- * comma-separated string an env var carries - and normalises it to trimmed,
- * non-empty entries.
- */
 function parseEditorOrigin(
   raw: string | string[] | undefined,
 ): string | string[] | undefined {
@@ -57,52 +52,16 @@ export function resolveEditorOrigin(
 }
 
 export interface CmssyConfig {
-  /**
-   * Full GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint
-   * (`https://api.cmssy.io/graphql`); set it only for self-hosted / staging.
-   */
   apiUrl?: string;
-  /** Organization slug - part of the org-scoped delivery path. */
   org: string;
   workspaceSlug: string;
   draftSecret: string;
-  /**
-   * A cmssy API token (`cs_…`) that opts this app into the editor-controlled dev
-   * preview. In development only, the SDK sends it on every page fetch so the
-   * backend can resolve the token's user and honour that user's dev-preview flag
-   * (toggled from the editor's dev-mode switch): flag on + a saved dev draft ⇒
-   * the draft overlay renders, otherwise published content. Server-only (never
-   * reaches the client); ignored outside development. See the Quickstart
-   * "Dev preview" section.
-   */
   devToken?: string;
-  /**
-   * Origin(s) allowed to frame your app in the editor: one origin, a list, or
-   * the comma-separated string an env var carries - all three are accepted, so
-   * `process.env.CMSSY_EDITOR_ORIGIN` can be passed through as-is. Defaults to
-   * {@link DEFAULT_CMSSY_EDITOR_ORIGINS}; set it only for self-hosted admins.
-   */
   editorOrigin?: string | string[];
-  /**
-   * Canonical absolute site URL (e.g. https://cmssy.com), used by
-   * createCmssyRobots / createCmssySitemap. When omitted the helpers derive the
-   * origin from the request `host` header at render time (multi-domain safe).
-   */
   siteUrl?: string;
-  /**
-   * Fallback locale resolver for a site whose URLs carry no language (e.g. a
-   * cookie or Accept-Language strategy). The workspace site config remains the
-   * source of truth for the default and enabled languages.
-   */
   resolveLocale?: () => string | Promise<string>;
 }
 
-/**
- * Env-shaped input for {@link defineCmssyConfig}: the required string fields are
- * widened to `string | undefined` so a config can pass `process.env.*` straight
- * through without a `?? ""` fallback (which would mask a missing value as an
- * empty string) or a cast.
- */
 export type CmssyEnvConfig = Omit<
   CmssyConfig,
   "org" | "workspaceSlug" | "draftSecret"
@@ -118,13 +77,6 @@ const REQUIRED_CONFIG_ENV = [
   ["draftSecret", "CMSSY_DRAFT_SECRET"],
 ] as const;
 
-/**
- * Validates an env-sourced config and returns a strictly-typed
- * {@link CmssyConfig}. Pass raw `process.env.*` values; this throws a clear,
- * actionable error listing any missing required variables (rendered by the
- * Next.js error overlay / boundary), so the app fails fast instead of running
- * with silently-empty config.
- */
 export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
   const resolved: CmssyEnvConfig = { ...config };
   const missing: string[] = [];
@@ -138,11 +90,6 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
     }
   }
   if (missing.length > 0) {
-    // In the browser these variables are ALWAYS missing - they are server-side
-    // env, and Next does not ship them. So this is not a configuration mistake
-    // at all: a client component pulled a VALUE out of a module that reads the
-    // config, dragging it into the browser bundle. Saying "set your env vars"
-    // here sends the developer to fix something that is already correct.
     if (typeof window !== "undefined") {
       throw new Error(
         "cmssy: the config was evaluated in the browser, so it cannot see the " +

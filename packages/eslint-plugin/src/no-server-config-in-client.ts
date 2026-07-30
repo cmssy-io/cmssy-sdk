@@ -4,7 +4,6 @@ import type { Rule } from "eslint";
 
 const SERVER_MODULES = [/^@cmssy\/next\/server$/];
 
-/** Symbols that read server env the moment they are evaluated. */
 const SERVER_SYMBOLS = new Set(["defineCmssyConfig"]);
 
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx", ".mjs"];
@@ -48,12 +47,6 @@ function importsServerConfig(code: string): boolean {
   );
 }
 
-/**
- * Walks a module and everything it imports, and reports the chain that reaches
- * server config - the chain is the whole point. "Something in this file reads
- * server env" sends a developer hunting; "editor.tsx -> lib/locale.ts ->
- * cmssy.config.ts" tells them which line to move.
- */
 function chainToServerConfig(
   file: string,
   cache: Map<string, string[] | null>,
@@ -119,8 +112,6 @@ export const noServerConfigInClient: Rule.RuleModule = {
 
     return {
       ImportDeclaration(node) {
-        // importKind is a TypeScript-parser extension: `import type` is erased
-        // at build time, so it can never drag config into a bundle.
         const typed = node as { importKind?: string };
         const onlyTypes =
           typed.importKind === "type" ||

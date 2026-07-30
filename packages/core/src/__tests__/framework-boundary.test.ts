@@ -4,21 +4,12 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-// @cmssy/core is the reason a Vue, Svelte or Astro app can talk to cmssy at all.
-// The day one module here imports React or Next, that promise is gone - and it
-// would go quietly, because every one of our own apps happens to run Next. This
-// test is the only thing standing between "framework-agnostic" and a slogan.
-
 const FORBIDDEN = [
   /^react(\/|$)/,
   /^react-dom(\/|$)/,
   /^next(\/|$)/,
   /^vue(\/|$)/,
   /^svelte(\/|$)/,
-  // Node built-ins are a framework too - the framework of one runtime. core
-  // imported node's `crypto` for HMAC, and the day an Astro island pulled core
-  // into a browser bundle, the build died on it. Web Crypto works everywhere;
-  // node:crypto works in exactly one place.
   /^(node:)?(crypto|fs|path|os|http|https|stream|buffer|child_process|url|util)$/,
 ];
 

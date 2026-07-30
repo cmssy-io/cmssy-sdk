@@ -12,12 +12,6 @@ export interface QueryScopedOptions extends GraphqlRequestOptions {
 
 export interface CmssyClient {
   readonly config: CmssyClientConfig;
-  /**
-   * Hand it a document that carries its types (what graphql-codegen emits, in
-   * either mode) and the variables are checked and the result inferred; hand it
-   * a query string and it behaves exactly as before. Same method, no second
-   * way to do the same thing.
-   */
   query<Result, Variables>(
     document: CmssyTypedDocument<Result, Variables>,
     variables: Variables,
@@ -28,7 +22,6 @@ export interface CmssyClient {
     variables?: Record<string, unknown>,
     options?: GraphqlRequestOptions,
   ): Promise<T>;
-  /** {@link CmssyClient.query} with the workspace id resolved and injected. */
   queryScoped<Result, Variables>(
     document: CmssyTypedDocument<Result, Variables>,
     variables: Omit<Variables, "workspaceId">,
@@ -43,9 +36,6 @@ export interface CmssyClient {
 }
 
 export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
-  // Fill the platform default for apiUrl so the client, its cache keys, and the
-  // workspace-id resolver all see a concrete endpoint - consumers on cmssy cloud
-  // never set it.
   const config: CmssyClientConfig = {
     ...input,
     apiUrl: resolveApiUrl(input.apiUrl),
@@ -110,8 +100,6 @@ export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
   const client: CmssyClient = {
     config,
     resolveWorkspaceId,
-    // One implementation behind both overloads: a string passes through
-    // documentText untouched, a typed document gives up its query text.
     query: ((
       document: unknown,
       variables: Record<string, unknown> = {},

@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/core",
-  "version": "11.6.0",
+  "version": "11.7.0",
   "description": "Framework-agnostic cmssy gateway: GraphQL client, block/field system, editor protocol. No React, no Next.",
   "keywords": [
     "cmssy",
@@ -23,29 +23,54 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./internal": {
-      "types": "./dist/internal.d.ts",
-      "import": "./dist/internal.js",
-      "require": "./dist/internal.cjs"
+      "import": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      }
     },
     "./internal/locale": {
-      "types": "./dist/internal/locale.d.ts",
-      "import": "./dist/internal/locale.js",
-      "require": "./dist/internal/locale.cjs"
+      "import": {
+        "types": "./dist/internal/locale.d.ts",
+        "default": "./dist/internal/locale.js"
+      },
+      "require": {
+        "types": "./dist/internal/locale.d.cts",
+        "default": "./dist/internal/locale.cjs"
+      }
     },
     "./testing": {
-      "types": "./dist/testing.d.ts",
-      "import": "./dist/testing.js",
-      "require": "./dist/testing.cjs"
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
+      }
     },
     "./preflight": {
-      "types": "./dist/preflight.d.ts",
-      "import": "./dist/preflight.js",
-      "require": "./dist/preflight.cjs"
+      "import": {
+        "types": "./dist/preflight.d.ts",
+        "default": "./dist/preflight.js"
+      },
+      "require": {
+        "types": "./dist/preflight.d.cts",
+        "default": "./dist/preflight.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",

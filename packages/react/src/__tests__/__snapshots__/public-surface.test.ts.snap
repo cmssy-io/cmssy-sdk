@@ -24,3 +24,13 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "resolveEditorLayoutBlockData",
 ]
 `;
+
+exports[`@cmssy/react public surface > publishes exactly these subpaths 1`] = `
+[
+  ".",
+  "./block-error-boundary",
+  "./client",
+  "./internal",
+  "./internal-server",
+]
+`;

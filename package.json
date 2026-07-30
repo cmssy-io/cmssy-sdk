@@ -8,10 +8,12 @@
     "typecheck": "pnpm -r typecheck",
     "fetch-prod-schema": "node scripts/fetch-prod-schema.mjs",
     "check-schema-drift": "node scripts/check-schema-drift.mjs",
-    "check-docs": "node scripts/check-docs-imports.mjs"
+    "check-packaging": "node scripts/check-packaging.mjs"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "graphql": "^16.10.0",
+    "publint": "^0.3.22",
     "typescript": "^5.6.0"
   },
   "packageManager": "pnpm@9.0.0",

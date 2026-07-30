@@ -16,7 +16,6 @@ export interface CmssyLazyEditorProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
-  /** Forwarded untouched to the block context as `context.app`. */
   appContext?: Record<string, unknown>;
   load: () => Promise<{ blocks: BlockDefinition[]; category?: string }>;
 }
@@ -51,11 +50,6 @@ export function CmssyLazyEditor({ load, ...props }: CmssyLazyEditorProps) {
     };
   }, [load]);
 
-  // An explicit, layout-neutral marker that the edit bridge is mounted. It is
-  // rendered before the blocks arrive and on the server, because a smoke test
-  // has to be able to ASK the page whether it is editable. The old check matched
-  // bundler artifacts - a chunk name, an island's component name - which meant
-  // it passed on Next and Astro by accident and found nothing on React Router.
   return (
     <>
       <div data-cmssy-editor="1" hidden />

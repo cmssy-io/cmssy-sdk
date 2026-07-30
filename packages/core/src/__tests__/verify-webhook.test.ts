@@ -108,7 +108,7 @@ describe("verifyCmssyWebhook", () => {
 
   it("rejects a stale timestamp outside tolerance", async () => {
     const body = makeBody();
-    const stale = now - 10 * 60 * 1000; // 10 min old
+    const stale = now - 10 * 60 * 1000;
     const header = `t=${stale},v1=${sign(SECRET, stale, body)}`;
     await expect(
       verifyCmssyWebhook({
@@ -187,8 +187,6 @@ describe("rotation overlap (CMS-1111)", () => {
 
   it("accepts when the consumer holds only the previous secret", async () => {
     const body = makeBody();
-    // OLD first on purpose: the pre-change parser kept only the LAST v1, so a
-    // trailing match would pass there too and pin nothing.
     const header = `t=${now},v1=${sign(OLD, now, body)},v1=${sign(NEW, now, body)}`;
 
     await expect(
@@ -246,7 +244,6 @@ describe("rotation overlap (CMS-1111)", () => {
 
   it("refuses a non-string secret instead of hashing its stringification", async () => {
     const body = makeBody();
-    // "[object Object]" is a guessable key: signing with it must not verify.
     const forged = `t=${now},v1=${sign("[object Object]", now, body)}`;
 
     await expect(

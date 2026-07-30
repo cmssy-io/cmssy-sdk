@@ -10,9 +10,7 @@ import { UnknownBlock } from "./unknown-block";
 
 export interface RenderResolvedBlockOptions {
   context?: CmssyBlockContext;
-  /** Loader result, passed to the component as the `data` prop. */
   data?: unknown;
-  /** Pre-resolved localized content; skips re-resolution when provided. */
   resolvedContent?: Record<string, unknown>;
   enabledLocales?: string[];
   error?: CmssyBlockError;

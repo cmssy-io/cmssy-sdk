@@ -22,7 +22,6 @@ export interface CmssyEditableLayoutProps {
   edit: EditBridgeConfig;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
-  /** Same channel the deployed layout gets, so the canvas shows the same thing. */
   appContext?: Record<string, unknown>;
 }
 

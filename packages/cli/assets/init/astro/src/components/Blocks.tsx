@@ -2,10 +2,6 @@ import { CmssyBlock, buildBlockMap, buildBlockContext } from "@cmssy/react";
 import type { CmssyPageData } from "@cmssy/core";
 import { blocks } from "../cmssy/blocks";
 
-/**
- * The public page: React blocks rendered on the server by Astro, with no client
- * JS at all. The visitor gets HTML; the framework stays out of the render path.
- */
 export function Blocks({
   page,
   locale,

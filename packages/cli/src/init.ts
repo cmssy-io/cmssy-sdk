@@ -38,22 +38,28 @@ export interface InitDeps {
 interface InitFile {
   asset: string;
   target: string;
+  purpose: string;
 }
 
 function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
   const srcPrefix = framework.name === "next" ? nextSrcPrefix(root) : "";
   const files = [
-    { asset: "env.example", target: ".env.example" },
-    ...framework.files.map((path) => ({
+    {
+      asset: "env.example",
+      target: ".env.example",
+      purpose:
+        "the variables the config reads - copy it to .env.local and fill them in",
+    },
+    ...framework.files.map(({ path, purpose }) => ({
       asset: path,
       target: framework.name === "next" ? `${srcPrefix}${path}` : path,
+      purpose,
     })),
   ];
-  // The cmssy layouts render <html>, which only a root layout may do. Written
-  // under an app that already has one they are nested instead, and a second
-  // <html> inside the first is invalid markup that builds fine and fails as a
-  // hydration error at runtime. Better to write nothing and say why.
-  if (framework.name === "next" && existingFile(root, `${srcPrefix}app/layout`)) {
+  if (
+    framework.name === "next" &&
+    existingFile(root, `${srcPrefix}app/layout`)
+  ) {
     return files.filter((file) => !file.target.endsWith("/layout.tsx"));
   }
   return files;
@@ -106,8 +112,6 @@ function detectInstallCommand(root: string): string {
   return "npm install";
 }
 
-// A Next app scaffolded without --ts has app/layout.js, and a nested <html>
-// inside the app's own is invalid markup that no build warns about.
 function existingFile(root: string, base: string): string | undefined {
   return ["tsx", "ts", "jsx", "js"]
     .map((extension) => `${base}.${extension}`)
@@ -214,6 +218,7 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       copyFileSync(join(ASSETS_DIR, framework.name, file.asset), target);
       written.push(file.target);
       log(formatResult({ status: "ok", message: `wrote ${file.target}` }));
+      log(`    ${file.purpose}`);
     }
 
     const added = addDependencies(root, pkg, framework);
@@ -234,6 +239,10 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
     log(
       `${written.length} file${written.length === 1 ? "" : "s"} written, ${skipped.length} skipped.`,
     );
+    log("");
+    log("What not to break:");
+    for (const warning of framework.warnings) log(`  - ${warning}`);
+    log("  full wiring, and what each file is doing: docs/wiring.md");
     log("");
     log("Next steps:");
     let step = 1;

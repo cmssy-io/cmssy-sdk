@@ -5,10 +5,6 @@ import { applyEnv, parseEnvFile } from "./env-file";
 
 const ENV_FILES = [".env.local", ".env"];
 
-/**
- * Fills `env` from the app's env files, without overwriting anything the
- * process already has - a real environment variable beats a file.
- */
 export function loadEnvFiles(
   cwd: string,
   env: Record<string, string | undefined>,

@@ -17,33 +17,15 @@ export interface CmssyServerPageProps {
   blocks: BlockDefinition[];
   locale?: string;
   defaultLocale?: string;
-  /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
   enabledLocales?: string[];
-  /**
-   * The workspace, so the languages can be looked up when they are not passed.
-   * Without it the SDK has to guess, and its guess is "en".
-   */
   config?: CmssyClientConfig;
-  /** Form definitions referenced by page blocks, exposed via context.forms. */
   forms?: Record<string, CmssyFormDefinition>;
-  /** Member auth state, exposed via context.auth. Resolved by createCmssyPage. */
   auth?: CmssyBlockAuthContext;
-  /** Workspace identity, exposed via context.workspace. Resolved by createCmssyPage. */
   workspace?: CmssyBlockWorkspace;
-  /**
-   * Anything the app wants its blocks to see, exposed as context.app and passed
-   * through untouched. The escape hatch: a block needing something cmssy does
-   * not model is answered here instead of by a new field in the SDK.
-   */
   appContext?: Record<string, unknown>;
   editMode?: boolean;
 }
 
-/**
- * Async React Server Component (Next.js App Router / RSC). It runs each block's
- * loader server-side before rendering, so it must be rendered in a server
- * component tree (as `createCmssyPage` does) - not in a client component.
- */
 export async function CmssyServerPage({
   page,
   blocks,

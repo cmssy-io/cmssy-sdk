@@ -187,7 +187,6 @@ describe("runTypes", () => {
           },
         },
       });
-      // Same app directory, a workspace that moved on.
       drifted.deps.cwd = cwd;
 
       const code = await runTypes({ check: true }, drifted.deps);
