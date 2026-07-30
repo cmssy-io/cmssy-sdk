@@ -6,6 +6,43 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.7.0
+
+**`checkCmssyEditMode` talks to your app and nothing else.** The `workspace`
+option queried a workspace's delivery API to find out whether the site has
+layout blocks, so the check's coverage depended on content the caller had
+already told it about by other means. 11.5.1 removed the same pattern for
+language and left this one. It is now `expectLayoutBlocks: boolean` - the caller
+states the fact, the check needs no API token, no org and no workspace slug, and
+it cannot go red because someone deactivated a header.
+
+**Do I have to do anything?** Replace `workspace: { org, workspaceSlug }` with
+`expectLayoutBlocks: true`. Nothing else in the check changed. Callers that never
+passed `workspace` are unaffected.
+
+**`EditSmokeResult` gained `skipped: string[]`.** An empty `failures` answered
+"did anything fail", never "was anything checked" - and four of the six
+assertions only run when the call gives them something to run against. They now
+say so by name, so a run that checks half of what you think it checks cannot
+report an unqualified green. Print it in CI.
+
+**Comments are gone from the SDK's source.** ~1270 lines of them across 103
+files, some of them wrong: `edit-smoke.ts` claimed `data-cmssy-unknown-block`
+counted toward the server-rendered layout assertion, which was true for 38
+minutes on 27 July and never again. The behaviour is unchanged - the rationale
+belongs in `docs/` and in commit messages, where it cannot silently contradict
+the code beside it.
+
+**`cmssy init` explains itself as it writes.** The scaffolded files carried their
+explanations as comments; those print now - one line per file, plus the handful of
+things whose absence breaks the editor silently - and the files land clean in your
+repo.
+
+**The Fakturownia invoicing example is gone** - deleted, not moved. It was a
+README and one webhook route that nothing here built, typechecked or tested, and
+an example living in this repo can only ever demonstrate an unreleased `main`.
+Examples that run against published packages live in `cmssy-io/examples`.
+
 ## 11.6.0
 
 **`verifyCmssyWebhook` now accepts several secrets.** `secret` takes
