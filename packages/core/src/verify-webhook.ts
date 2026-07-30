@@ -29,6 +29,10 @@ export class CmssyWebhookError extends Error {
 
 const DEFAULT_TOLERANCE_SECONDS = 300;
 
+// cmssy signs once per active secret, so a handful is the real ceiling. The
+// cap stops a caller-supplied header from deciding how much work we do.
+const MAX_SIGNATURES = 8;
+
 function parseSignatureHeader(header: string): {
   timestamp: number;
   signatures: string[];
@@ -44,7 +48,9 @@ function parseSignatureHeader(header: string): {
     const key = part.slice(0, idx).trim();
     const value = part.slice(idx + 1).trim();
     if (key === "t") timestamp = Number(value);
-    else if (key === "v1" && value) signatures.push(value);
+    else if (key === "v1" && value && signatures.length < MAX_SIGNATURES) {
+      signatures.push(value);
+    }
   }
   if (timestamp === null || !Number.isFinite(timestamp) || !signatures.length) {
     throw new CmssyWebhookError("Malformed X-Cmssy-Signature header");
@@ -68,9 +74,12 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
+  // Length first: a caller-supplied v1 can be arbitrarily long, and decoding
+  // it before comparing lengths lets the header dictate the work.
+  if (expectedHex.length !== providedHex.length) return false;
   const expected = hexToBytes(expectedHex);
   const provided = hexToBytes(providedHex);
-  if (!expected || !provided || expected.length !== provided.length) {
+  if (!expected || !provided) {
     return false;
   }
   let diff = 0;
@@ -109,9 +118,14 @@ export async function verifyCmssyWebhook(
   if (!signatureHeader) {
     throw new CmssyWebhookError("Missing X-Cmssy-Signature header");
   }
-  const secrets = (typeof secret === "string" ? [secret] : [...secret]).filter(
-    Boolean,
-  );
+  const candidates =
+    typeof secret === "string" ? [secret] : Array.isArray(secret) ? secret : [];
+  // A non-string entry would be stringified into the HMAC key, so a config
+  // object passed by mistake becomes the guessable key "[object Object]".
+  if (candidates.some((value) => typeof value !== "string")) {
+    throw new CmssyWebhookError("Webhook secret must be a string");
+  }
+  const secrets = candidates.filter(Boolean);
   if (!secrets.length) {
     throw new CmssyWebhookError("Missing webhook secret");
   }

@@ -187,7 +187,9 @@ describe("rotation overlap (CMS-1111)", () => {
 
   it("accepts when the consumer holds only the previous secret", async () => {
     const body = makeBody();
-    const header = `t=${now},v1=${sign(NEW, now, body)},v1=${sign(OLD, now, body)}`;
+    // OLD first on purpose: the pre-change parser kept only the LAST v1, so a
+    // trailing match would pass there too and pin nothing.
+    const header = `t=${now},v1=${sign(OLD, now, body)},v1=${sign(NEW, now, body)}`;
 
     await expect(
       verifyCmssyWebhook({ body, signatureHeader: header, secret: OLD, now }),
@@ -210,7 +212,7 @@ describe("rotation overlap (CMS-1111)", () => {
 
   it("keeps checking the remaining signatures past a malformed one", async () => {
     const body = makeBody();
-    const header = `t=${now},v1=zzzz,v1=${sign(OLD, now, body)}`;
+    const header = `t=${now},v1=${sign(OLD, now, body)},v1=zzzz`;
 
     await expect(
       verifyCmssyWebhook({ body, signatureHeader: header, secret: OLD, now }),
@@ -225,5 +227,44 @@ describe("rotation overlap (CMS-1111)", () => {
       verifyCmssyWebhook({ body, signatureHeader: header, secret: [], now }),
     ).rejects.toThrow(/Missing webhook secret/);
   });
-});
 
+  it("rejects a missing secret as a webhook error, not a TypeError", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(OLD, now, body)}`;
+
+    for (const secret of [undefined, null]) {
+      await expect(
+        verifyCmssyWebhook({
+          body,
+          signatureHeader: header,
+          secret: secret as unknown as string,
+          now,
+        }),
+      ).rejects.toThrow(CmssyWebhookError);
+    }
+  });
+
+  it("refuses a non-string secret instead of hashing its stringification", async () => {
+    const body = makeBody();
+    // "[object Object]" is a guessable key: signing with it must not verify.
+    const forged = `t=${now},v1=${sign("[object Object]", now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({
+        body,
+        signatureHeader: forged,
+        secret: [{} as unknown as string],
+        now,
+      }),
+    ).rejects.toThrow(/must be a string/);
+  });
+
+  it("treats a list of empty strings as no secret at all", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({ body, signatureHeader: header, secret: ["", ""], now }),
+    ).rejects.toThrow(/Missing webhook secret/);
+  });
+});
