@@ -1,13 +1,3 @@
-/**
- * Fails when the docs import a symbol the packages do not export.
- *
- * Docs drift silently: 10.0 removed ~90 symbols and every guide kept teaching
- * them for six releases, because prose has no compiler. This gives it one - it
- * reads the code blocks the way a reader would, and asks the BUILT types
- * whether each import exists.
- *
- * Run after `pnpm -r build`: it reads dist, not src, so it checks what ships.
- */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,8 +5,6 @@ import ts from "typescript";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Markdown that documents the SDK. Migration guides included - a guide that
- *  names a symbol in a code block is a guide people copy from. */
 function markdownFiles(dir) {
   const out = [];
   for (const entry of readdirSync(dir)) {
@@ -31,7 +19,6 @@ function markdownFiles(dir) {
 const FENCE = /```(?:ts|tsx|typescript|js|jsx)\n([\s\S]*?)```/g;
 const IMPORT = /import\s+(type\s+)?({[^}]*}|[A-Za-z_$][\w$]*)\s+from\s+["'](@cmssy\/[^"']+)["']/g;
 
-/** `{ a, type B, c as d }` -> ["a", "B", "c"] */
 function namedImports(clause) {
   if (!clause.startsWith("{")) return [];
   return clause
@@ -41,7 +28,6 @@ function namedImports(clause) {
     .filter(Boolean);
 }
 
-/** The .d.ts a bare import of `specifier` resolves to, via the exports map. */
 function typesEntry(specifier) {
   const [scope, name, ...rest] = specifier.split("/");
   const pkgDir = join(root, "packages", name);
@@ -78,11 +64,6 @@ function exportedNames(dtsPath) {
   return names;
 }
 
-/**
- * The field builders that actually exist. Imports are not the only way docs go
- * stale: `fields.singleLine` and `fields.numeric` were documented for months
- * and never existed - a reader copying either gets a runtime crash.
- */
 const { fields } = await import(join(root, "packages/core/dist/index.js"));
 const FIELD_BUILDERS = new Set(Object.keys(fields));
 const FIELD_USE = /\bfields\.([A-Za-z_$][\w$]*)\s*\(/g;

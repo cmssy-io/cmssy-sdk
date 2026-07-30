@@ -21,9 +21,7 @@ export interface CmssyBlockProps {
   patchedContent?: Record<string, unknown>;
   patchedStyle?: Record<string, unknown>;
   patchedAdvanced?: Record<string, unknown>;
-  /** Server-resolved content for this block (locale flattened, relations resolved). */
   resolvedContent?: Record<string, unknown>;
-  /** The block's field schema; lets the client render coerce raw relation values. */
   schema?: Record<string, FieldDefinition>;
   editable?: boolean;
   editMode?: boolean;

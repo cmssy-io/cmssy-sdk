@@ -18,30 +18,14 @@ export interface CmssyServerLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
   position: string;
-  /** The language to render in. Omit it and the workspace's default is used. */
   locale?: string;
   defaultLocale?: string;
-  /** All languages enabled on the workspace; exposed to blocks via context.locale.enabled. */
   enabledLocales?: string[];
-  /**
-   * The workspace, so the languages can be looked up when they are not passed.
-   * Without it the SDK has to guess, and its guess is "en".
-   */
   config?: CmssyClientConfig;
-  /**
-   * Anything the app wants its layout blocks to see, exposed as context.app.
-   * A header that highlights the active link reads it from here - the SDK does
-   * not know the app's routing.
-   */
   appContext?: Record<string, unknown>;
   editMode?: boolean;
 }
 
-/**
- * Async React Server Component. Like CmssyServerPage it runs each block's
- * loader server-side before rendering, so a header block can list categories
- * the same way a page block can. Must be rendered in a server component tree.
- */
 export async function CmssyServerLayout({
   groups,
   blocks,

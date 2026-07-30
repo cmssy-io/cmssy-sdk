@@ -1,23 +1,7 @@
-/**
- * 9.0 removes the config locale override: `defaultLocale` / `enabledLocales`
- * on `CmssyConfig` duplicated the workspace site config and were honored
- * inconsistently - the SEO helpers and the Next middleware read them, the
- * router never did. The workspace's languages are the only source of truth now.
- *
- * The removal itself is mechanical (the fields no longer exist, so leaving
- * them in is a type error), but it is reported: if the removed value disagreed
- * with the workspace, routing and SEO change, and only a human can confirm the
- * workspace languages are what the site expects.
- */
 import type { TransformResult } from "./v8";
 
 const KEYS = ["defaultLocale", "enabledLocales"] as const;
 
-/**
- * The keys are common words (component props, CmssySiteLocales literals), so
- * they are only stripped inside a cmssy config literal: the argument of
- * `defineCmssyConfig(...)` or an object annotated `: CmssyConfig = {...}`.
- */
 function configRegions(code: string): Array<{ start: number; end: number }> {
   const regions: Array<{ start: number; end: number }> = [];
   const openers = [/defineCmssyConfig\s*\(\s*\{/g, /:\s*CmssyConfig\s*=\s*\{/g];
@@ -40,7 +24,6 @@ function configRegions(code: string): Array<{ start: number; end: number }> {
   return regions;
 }
 
-/** Removes `key: <value>,` from the slice, counting `[`/`{` in the value. */
 function stripKey(
   slice: string,
   key: string,
@@ -81,7 +64,6 @@ export function transform(source: string): TransformResult {
   let code = source;
   const notes: string[] = [];
 
-  // Regions are re-resolved after every removal - offsets shift.
   for (const key of KEYS) {
     let removed: string | null;
     do {

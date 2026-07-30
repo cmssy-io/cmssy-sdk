@@ -2,11 +2,6 @@ import type { CmssyLocaleContext } from "../block-context";
 
 const PROTOCOL_OR_RELATIVE = /^([a-z][a-z0-9+.-]*:|\/\/)/i;
 
-/**
- * True for hrefs that must not be locale-prefixed: absolute URLs (http:, https:,
- * mailto:, tel:, …), protocol-relative (//cdn…), pure fragments (#section) and
- * empty values.
- */
 export function isExternalHref(href: string): boolean {
   const value = href.trim();
   if (!value) return true;
@@ -14,10 +9,6 @@ export function isExternalHref(href: string): boolean {
   return PROTOCOL_OR_RELATIVE.test(value);
 }
 
-/**
- * Removes a leading non-default locale segment from an absolute path so a href
- * can be safely re-prefixed without doubling (`/en/about` → `/about`).
- */
 function stripLeadingLocale(path: string, locale: CmssyLocaleContext): string {
   const segments = path.split("/");
   const first = segments[1];
@@ -29,7 +20,6 @@ function stripLeadingLocale(path: string, locale: CmssyLocaleContext): string {
   return path;
 }
 
-/** Prefixes an absolute path with `target` locale; the default locale stays bare. */
 function addLocalePrefix(
   path: string,
   target: string,
@@ -40,11 +30,6 @@ function addLocalePrefix(
   return `/${target}${path}`;
 }
 
-/**
- * Rewrites an internal href to carry the active locale as a path prefix.
- * External hrefs, fragments and relative paths are returned untouched. Already
- * prefixed hrefs are normalized so the prefix never doubles.
- */
 export function localizeHref(href: string, locale: CmssyLocaleContext): string {
   const value = href.trim();
   if (isExternalHref(value)) return href;
@@ -56,10 +41,6 @@ export function localizeHref(href: string, locale: CmssyLocaleContext): string {
   return `${addLocalePrefix(bare, locale.current, locale)}${suffix}`;
 }
 
-/**
- * Builds the href that switches the current `pathname` to `target` locale,
- * preserving the rest of the path. Used by a language switcher.
- */
 export function buildLocaleSwitchHref(
   target: string,
   pathname: string,
@@ -70,14 +51,8 @@ export function buildLocaleSwitchHref(
   return addLocalePrefix(bare, target, locale);
 }
 
-// Attributes before href may be quoted and contain ">" — skip whole quoted
-// values so an embedded ">" doesn't truncate the match.
 const ANCHOR_HREF = /(<a\b(?:"[^"]*"|'[^']*'|[^>])*?\shref=)(["'])(.*?)\2/gi;
 
-/**
- * Rewrites every `<a href>` inside an HTML string with {@link localizeHref}.
- * For rich-text content stored in CMS blocks where links are raw markup.
- */
 export function localizeHtmlLinks(
   html: string,
   locale: CmssyLocaleContext,

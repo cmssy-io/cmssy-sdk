@@ -57,8 +57,6 @@ describe("resolveCmssyLayoutSlot", () => {
     });
 
     expect(result.groups).toBe(GROUPS);
-    // A published render with the draft secret would serve draft chrome to
-    // everyone - the failure that is invisible from the outside.
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
     });
@@ -78,7 +76,6 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: CONFIG.draftSecret,
     });
-    // Both halves: the canvas renders stored content, where a relation is ids.
     expect(result.data).toEqual({ b1: { categories: [] } });
     expect(result.resolvedContent).toEqual({ b1: { heading: "Shop" } });
   });
@@ -94,7 +91,6 @@ describe("resolveCmssyLayoutSlot", () => {
     });
 
     expect(result.locale).toBe("no");
-    // Returned so callers stop re-deriving it - which is how the adapters drifted.
     expect(result.path).toEqual(["about"]);
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
       previewSecret: undefined,
@@ -140,8 +136,6 @@ describe("resolveCmssyLayoutSlot", () => {
       path: [],
     });
 
-    // Collapsing this to origin[0] drops www.cmssy.io, and the editor served
-    // from it gets its messages posted to the wrong origin.
     expect(result.editorOrigin).toEqual(CONFIG.editorOrigin);
   });
 });

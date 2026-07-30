@@ -34,9 +34,6 @@ export function createDraftRoute(config: CmssyDraftRouteConfig) {
   }
   return async function GET(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    // Exit path needs no secret - the visitor is only clearing their own
-    // draft cookie. Without it the cookie never expires and the browser is
-    // stuck previewing drafts (and bypassing the cache) forever.
     if (url.searchParams.get("disable") === "1") {
       const draft = await draftMode();
       draft.disable();

@@ -1,6 +1,3 @@
-// The root entry is what every runtime may import: config, constants and types.
-// Anything that only works in one place lives where it works -
-// @cmssy/next/server (RSC + route handlers), /middleware (edge).
 export {
   defineCmssyConfig,
   resolveEditorOrigin,

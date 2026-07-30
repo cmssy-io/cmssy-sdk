@@ -19,7 +19,6 @@ const NEXT_SRC = resolve(
   "../../../next/src",
 );
 
-/** The names an entry actually exports, as written in its barrel. */
 function exportedSymbols(entry: string): string[] {
   const code = readFileSync(resolve(NEXT_SRC, entry), "utf8");
   const blocks = [...code.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/g)];
@@ -88,12 +87,6 @@ describe("v5 codemod", () => {
     );
   });
 
-  // THE test. A 4.x app imports 79 symbols from @cmssy/next. Every one of them
-  // must land somewhere in 5.0 - a runtime entry, @cmssy/core, or a rename.
-  // A symbol with no home is silently left on the root, which no longer exports
-  // it, so `npx @cmssy/codemod v5` hands the developer a broken build and calls
-  // the migration automatic. This caught 28 of them, including fetchOrderByToken
-  // - found only because a consumer app's build failed on it.
   it("gives every 4.x export a home in 5.0", () => {
     const rootExports = new Set(exportedSymbols("index.ts"));
     const homeless = (NEXT4_EXPORTS as string[]).filter(
@@ -109,9 +102,6 @@ describe("v5 codemod", () => {
     expect(homeless).toEqual([]);
   });
 
-  // If a runtime entry gains an export the map does not know, the codemod leaves
-  // that import on the root, which does not export it. Symbols the root also
-  // exports are exempt: leaving those alone is correct.
   it("knows every symbol that lives ONLY on a runtime entry", () => {
     const mapped = new Set([
       ...SERVER_SYMBOLS,

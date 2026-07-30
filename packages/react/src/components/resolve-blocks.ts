@@ -15,11 +15,8 @@ export interface ResolvedBlock {
 }
 
 export interface ResolveBlocksOptions {
-  /** Block schemas keyed by block type; needed to spot relation fields. */
   schemas?: BlockSchemaMap;
-  /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
-  /** Already-resolved workspace id; saves the resolver a lookup request. */
   workspaceId?: string;
 }
 

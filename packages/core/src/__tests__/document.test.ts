@@ -3,12 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import { documentText } from "../data/document";
 
-/** codegen inlines the AST and strips `loc` - reproduce that exactly. */
 function inlined(source: string): unknown {
   return JSON.parse(JSON.stringify(parse(source)));
 }
 
-/** What `documentMode: "string"` emits: a String subclass with phantom types. */
 class TypedDocumentString {
   constructor(private readonly source: string) {}
   toString(): string {
@@ -72,8 +70,6 @@ describe("documentText", () => {
     for (const [label, source] of CASES) {
       it(`re-parses to the same document: ${label}`, () => {
         const printed = documentText(inlined(source));
-        // The printer's formatting is its own; what has to hold is that the
-        // server receives the same operation.
         expect(print(parse(printed))).toBe(print(parse(source)));
       });
     }

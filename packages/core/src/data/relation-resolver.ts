@@ -81,14 +81,6 @@ function isListShaped(field: FieldDefinition): boolean {
   );
 }
 
-/**
- * The editor canvas renders stored content without the server-side resolve, so
- * a relation field there holds raw ids - or the "" a freshly inserted block is
- * seeded with. A component is typed against resolved records, so anything that
- * is not one falls back to the server-resolved value for that key (the admin
- * hydrates the canvas with raw stored content, clobbering it), and only then
- * to the safe empty shape.
- */
 export function normalizeRelationContent(
   content: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
@@ -123,13 +115,6 @@ function collectionKey(ref: RelationRef): string {
   return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join("\u0000");
 }
 
-/**
- * Resolves every `fields.relation` value on the given block contents in place:
- * stored record ids become full records (one batched read for the whole page),
- * and a `mode: "all"` field becomes the model's record list. A dangling id and
- * a failed fetch both degrade to "no value" - a relation must never break a
- * render.
- */
 export async function resolveRelationContent(
   config: CmssyClientConfig,
   entries: RelationContentEntry[],

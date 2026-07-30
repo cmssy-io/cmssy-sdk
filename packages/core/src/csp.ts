@@ -1,7 +1,6 @@
 import { resolveEditorOrigin } from "./config";
 
 export interface CmssyCspOptions {
-  /** Defaults to the cmssy cloud admin origin when unset. */
   editorOrigin?: string | string[];
 }
 

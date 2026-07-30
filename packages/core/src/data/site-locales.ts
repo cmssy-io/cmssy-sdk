@@ -6,13 +6,9 @@ import {
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
 
-// CmssySiteLocales lives in @cmssy/types; re-exported for consumers.
 export type { CmssySiteLocales };
 
 const TTL_MS = 60_000;
-// Short, because a failure is worth remembering only long enough to stop one
-// page render probing six times. Every caller passes a retry policy, so an
-// uncached failure costs four requests and ~2s of backoff each.
 const FAILURE_TTL_MS = 5_000;
 const MAX_ENTRIES = 64;
 const cache = new Map<
@@ -20,11 +16,6 @@ const cache = new Map<
   { value: CmssySiteLocales | null; expires: number }
 >();
 
-/**
- * Maps a workspace site config to its locale set. The single place that
- * decides the default and enabled languages - the router and the SEO helpers
- * must agree, so both go through here.
- */
 export function localesFromSiteConfig(
   siteConfig: {
     defaultLanguage?: string | null;

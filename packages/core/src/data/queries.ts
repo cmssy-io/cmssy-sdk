@@ -11,7 +11,6 @@ import type {
   SubmitFormInput,
 } from "@cmssy/types";
 
-// These data shapes live in @cmssy/types; re-exported for consumers.
 export type {
   CmssyBranding,
   CmssySiteConfig,

@@ -194,7 +194,6 @@ describe("runInit", () => {
     writeFileSync(join(cwd, "app/layout.tsx"), "export default () => null;\n");
     expect(runInit({}, deps)).toBe(0);
 
-    // A second <html> inside the app's own builds fine and fails at runtime.
     expect(existsSync(join(cwd, "app/[[...path]]/layout.tsx"))).toBe(false);
     expect(existsSync(join(cwd, "app/cmssy-edit/[[...path]]/layout.tsx"))).toBe(
       false,

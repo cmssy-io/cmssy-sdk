@@ -8,9 +8,6 @@ import type {
 
 export const PROTOCOL_VERSION = 2;
 
-// Schema/geometry shapes live in @cmssy/types (single source of truth);
-// re-exported here so the editor-bridge message types below and existing
-// consumers keep importing them from this module.
 export type { FieldType, FieldDefinition, BlockSchema, BlockMeta, BlockRect };
 
 export interface ReadyMessage {

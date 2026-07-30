@@ -65,8 +65,6 @@ describe("buildBlockContext", () => {
   });
 
   it("reports no page rather than one without a slug", () => {
-    // A page built by hand, or fetched by an older SDK: identity is unknown,
-    // and a block must be able to tell that apart from "I am at /".
     const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
       page: { id: "page_1", blocks: [] },
     });

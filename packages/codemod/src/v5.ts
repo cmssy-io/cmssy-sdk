@@ -61,10 +61,6 @@ export const CLIENT_SYMBOLS = new Set([
   "useCmssyLocale",
 ]);
 
-// Symbols @cmssy/next used to re-export that are not Next's at all - a webhook
-// verifier, a session cookie, an order lookup. They live in @cmssy/core now and
-// nowhere else, so leaving them on the root entry is not a smaller change: it is
-// a broken build.
 export const CORE_SYMBOLS = new Set([
   "resolveApiUrl",
   "DEFAULT_CMSSY_API_URL",
@@ -137,12 +133,6 @@ export interface TransformResult {
   changed: boolean;
 }
 
-/**
- * Rewrites 4.x imports onto the 5.0 entries. One import can fan out into
- * several - a file that pulled the proxy and the page factory from the same
- * place was importing across two runtimes, which is exactly the mistake the
- * split exists to prevent.
- */
 export function transform(source: string): TransformResult {
   let changed = false;
 

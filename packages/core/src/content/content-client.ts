@@ -1,5 +1,3 @@
-// Content/delivery data shapes live in @cmssy/types (single source of truth);
-// re-exported so consumers import them from @cmssy/core.
 import type {
   CmssyClientConfig,
   RawBlock,
@@ -26,11 +24,6 @@ export type {
   CmssyPageMeta,
 };
 
-/**
- * The cmssy cloud GraphQL delivery endpoint. It is the same for every workspace,
- * so consumers never need to set it - `apiUrl` defaults to this. Self-hosted /
- * staging deployments override it via config.
- */
 export const DEFAULT_CMSSY_API_URL = "https://api.cmssy.io/graphql";
 
 export function resolveApiUrl(apiUrl: string | undefined): string {
@@ -43,12 +36,6 @@ export function resolveApiUrl(apiUrl: string | undefined): string {
   return fromEnv.length > 0 ? fromEnv : DEFAULT_CMSSY_API_URL;
 }
 
-/**
- * Public delivery endpoint for a workspace: the org-scoped path
- * `{base}/public/{orgSlug}/{workspaceSlug}/graphql`. `apiUrl` is the GraphQL
- * base (its trailing `/graphql` is stripped); the org path is what tells the
- * backend which workspace to serve, so slugs only need to be unique per org.
- */
 export function resolvePublicUrl(config: CmssyClientConfig): string {
   const base = resolveApiUrl(config.apiUrl).replace(/\/graphql\/?$/, "");
   return `${base}/public/${config.org}/${config.workspaceSlug}/graphql`;
@@ -223,8 +210,6 @@ export async function fetchPage(
   if (!page) return null;
   const draft = previewSecret !== null || devPreview;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
-  // The slug the CMS knows the page by - the query asked for one path, but the
-  // answer is the page's own, so a block never has to guess where it stands.
   return {
     id: page.id,
     blocks,

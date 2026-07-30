@@ -14,8 +14,6 @@ const TRANSFORMS = {
 };
 type Version = keyof typeof TRANSFORMS;
 
-// The message has to name the version it looked for. Saying "no 4.x imports"
-// after a v7 run tells the developer nothing about what was checked.
 const PREVIOUS_MAJOR: Record<Version, string> = {
   v5: "4.x",
   v7: "6.x",
@@ -33,9 +31,6 @@ const MIGRATION_GUIDE: Record<Version, string> = {
 const SKIP = new Set(["node_modules", "dist", "build", "out", "coverage"]);
 const EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
-// Hidden directories are skipped wholesale: .next holds build output, and
-// .worktrees holds OTHER checkouts of the same repo - rewriting those would
-// quietly edit branches the developer is not even on.
 function skipDirectory(name: string): boolean {
   return name.startsWith(".") || SKIP.has(name);
 }
@@ -104,7 +99,6 @@ async function main(): Promise<void> {
     for (const file of touched) console.log(`  ${report(file)}`);
   }
 
-  // A codemod that stayed quiet about what it could not do would read as "done".
   if (manual.length > 0) {
     console.log(`\ncmssy: ${manual.length} file(s) need a look from you:\n`);
     for (const { file, notes } of manual) {
@@ -113,8 +107,6 @@ async function main(): Promise<void> {
     console.log(`\n  ${MIGRATION_GUIDE[version]}`);
   }
 
-  // Rewriting an import to a package the app does not depend on trades one
-  // broken build for another, so say it here rather than let the bundler say it.
   if (needsCore && !(await dependsOnCore(target))) {
     console.log(
       "\nYour code now imports @cmssy/core, which you do not depend on yet:\n" +
@@ -136,8 +128,6 @@ async function dependsOnCore(target: string): Promise<boolean> {
     ) as { dependencies?: Record<string, string> };
     return Boolean(manifest.dependencies?.["@cmssy/core"]);
   } catch {
-    // No manifest here (the codemod was pointed at a subdirectory) - saying
-    // nothing beats guessing wrong.
     return true;
   }
 }

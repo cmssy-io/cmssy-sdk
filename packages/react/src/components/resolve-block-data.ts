@@ -47,9 +47,7 @@ export interface ResolveBlockDataOptions {
   enabledLocales?: string[];
   forms?: Record<string, CmssyFormDefinition>;
   isPreview?: boolean;
-  /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
-  /** Passed to loaders as context.app, exactly as on the deployed page. */
   appContext?: Record<string, unknown>;
 }
 
@@ -101,9 +99,7 @@ export interface ResolveLayoutBlockDataOptions {
   enabledLocales?: string[];
   forms?: Record<string, CmssyFormDefinition>;
   isPreview?: boolean;
-  /** Workspace the relation records are read from. No config, no resolution. */
   config?: CmssyClientConfig;
-  /** Passed to loaders as context.app, exactly as on the deployed layout. */
   appContext?: Record<string, unknown>;
 }
 

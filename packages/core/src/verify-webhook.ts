@@ -4,21 +4,7 @@ import type {
   VerifyCmssyWebhookOptions,
 } from "@cmssy/types";
 
-// Webhook data shapes live in @cmssy/types; re-exported for consumers.
 export type { CmssyWebhookOrder, CmssyWebhookEvent, VerifyCmssyWebhookOptions };
-
-/**
- * Verify + parse an inbound cmssy webhook (CMS-693 / CMS-694).
- *
- * cmssy signs each delivery with HMAC-SHA256 over `${timestamp}.${body}`
- * and sends the result in the `X-Cmssy-Signature: t=<ms>,v1=<hex>`
- * header, plus a unique `X-Cmssy-Webhook-Id`. This helper recomputes the
- * signature (timing-safe compare), rejects stale timestamps to bound
- * replay, and returns the typed event.
- *
- * IMPORTANT: pass the RAW request body string (e.g. `await req.text()`),
- * never a re-serialized object - the signed bytes must match exactly.
- */
 
 export class CmssyWebhookError extends Error {
   constructor(message: string) {
@@ -29,17 +15,12 @@ export class CmssyWebhookError extends Error {
 
 const DEFAULT_TOLERANCE_SECONDS = 300;
 
-// cmssy signs once per active secret, so a handful is the real ceiling. The
-// cap stops a caller-supplied header from deciding how much work we do.
 const MAX_SIGNATURES = 8;
 
 function parseSignatureHeader(header: string): {
   timestamp: number;
   signatures: string[];
 } {
-  // Format: "t=<ms>,v1=<hex>[,v1=<hex>...]" - order-independent, extra parts
-  // ignored. Every v1 is kept: during a rotation overlap cmssy signs once per
-  // active secret, and the consumer may hold only one of them.
   let timestamp: number | null = null;
   const signatures: string[] = [];
   for (const part of header.split(",")) {
@@ -59,8 +40,6 @@ function parseSignatureHeader(header: string): {
 }
 
 function hexToBytes(hex: string): Uint8Array | null {
-  // Invalid hex decodes to nothing rather than to a shorter buffer: a bad v1
-  // must fail as a signature mismatch, not as a thrown length error.
   if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) return null;
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < bytes.length; i += 1) {
@@ -74,8 +53,6 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
-  // Length first: a caller-supplied v1 can be arbitrarily long, and decoding
-  // it before comparing lengths lets the header dictate the work.
   if (expectedHex.length !== providedHex.length) return false;
   const expected = hexToBytes(expectedHex);
   const provided = hexToBytes(providedHex);
@@ -106,11 +83,6 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   return bytesToHex(new Uint8Array(signature));
 }
 
-/**
- * Verify the signature + freshness and return the parsed event. Throws
- * `CmssyWebhookError` on any failure (missing/malformed header, bad
- * signature, stale timestamp, invalid JSON) - catch it and respond 400.
- */
 export async function verifyCmssyWebhook(
   options: VerifyCmssyWebhookOptions,
 ): Promise<CmssyWebhookEvent> {
@@ -120,8 +92,6 @@ export async function verifyCmssyWebhook(
   }
   const candidates =
     typeof secret === "string" ? [secret] : Array.isArray(secret) ? secret : [];
-  // A non-string entry would be stringified into the HMAC key, so a config
-  // object passed by mistake becomes the guessable key "[object Object]".
   if (candidates.some((value) => typeof value !== "string")) {
     throw new CmssyWebhookError("Webhook secret must be a string");
   }
@@ -139,9 +109,6 @@ export async function verifyCmssyWebhook(
     throw new CmssyWebhookError("Webhook timestamp outside tolerance");
   }
 
-  // Any signature against any secret. A rotation overlap means the delivery
-  // carries one signature per active secret while the consumer may still hold
-  // only the previous one - or already only the new one.
   let matched = false;
   for (const candidate of secrets) {
     const expected = await hmacSha256Hex(candidate, `${timestamp}.${body}`);

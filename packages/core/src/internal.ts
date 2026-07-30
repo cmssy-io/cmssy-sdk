@@ -1,8 +1,3 @@
-// @cmssy/core/internal — plumbing shared by the first-party @cmssy packages
-// (react/next/astro/remix). NOT a stable public API: no semver guarantees,
-// not for app code. Everything a shop or site needs is a GraphQL query via
-// `graphqlRequest`, or lives on the public `@cmssy/core` entry.
-
 export {
   fetchPage,
   fetchPageById,

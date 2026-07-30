@@ -17,9 +17,6 @@ const GROUPS = [
 const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
-// The data half lives in resolveCmssyLayoutSlot and is tested in @cmssy/react.
-// What is left here is the part that is Next's: which component renders, and
-// what reaches it.
 const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<Record<string, unknown>>();
@@ -77,8 +74,6 @@ describe("CmssyLayoutSlot", () => {
     });
 
     expect(element.props.locale).toBe("no");
-    // Reading headers() here would make every page dynamic - the reason the
-    // 10.0 version of this component was removed.
     expect(headersMock).not.toHaveBeenCalled();
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
@@ -99,9 +94,6 @@ describe("CmssyLayoutSlot", () => {
     });
 
     expect(element.props.locale).toBe("no");
-    // A caller with no path resolves the language itself. There is no header
-    // fallback: a static route never sees the header the proxy set, so the
-    // fallback would render the wrong language and look like it worked.
     expect(headersMock).not.toHaveBeenCalled();
   });
 
@@ -122,8 +114,6 @@ describe("CmssyLayoutSlot", () => {
     });
 
     expect(element.type).toBe(Editable);
-    // Both halves reach the canvas: it renders stored content, where a
-    // relation field is raw ids.
     expect(element.props.data).toEqual({ b1: { categories: [] } });
     expect(element.props.resolvedContent).toEqual({ b1: { heading: "Shop" } });
     expect(element.props.edit).toEqual({ editorOrigin: CONFIG.editorOrigin });
