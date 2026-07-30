@@ -31,23 +31,25 @@ const DEFAULT_TOLERANCE_SECONDS = 300;
 
 function parseSignatureHeader(header: string): {
   timestamp: number;
-  signature: string;
+  signatures: string[];
 } {
-  // Format: "t=<ms>,v1=<hex>" (order-independent, extra parts ignored).
+  // Format: "t=<ms>,v1=<hex>[,v1=<hex>...]" - order-independent, extra parts
+  // ignored. Every v1 is kept: during a rotation overlap cmssy signs once per
+  // active secret, and the consumer may hold only one of them.
   let timestamp: number | null = null;
-  let signature: string | null = null;
+  const signatures: string[] = [];
   for (const part of header.split(",")) {
     const idx = part.indexOf("=");
     if (idx === -1) continue;
     const key = part.slice(0, idx).trim();
     const value = part.slice(idx + 1).trim();
     if (key === "t") timestamp = Number(value);
-    else if (key === "v1") signature = value;
+    else if (key === "v1" && value) signatures.push(value);
   }
-  if (timestamp === null || !Number.isFinite(timestamp) || !signature) {
+  if (timestamp === null || !Number.isFinite(timestamp) || !signatures.length) {
     throw new CmssyWebhookError("Malformed X-Cmssy-Signature header");
   }
-  return { timestamp, signature };
+  return { timestamp, signatures };
 }
 
 function hexToBytes(hex: string): Uint8Array | null {
@@ -107,11 +109,14 @@ export async function verifyCmssyWebhook(
   if (!signatureHeader) {
     throw new CmssyWebhookError("Missing X-Cmssy-Signature header");
   }
-  if (!secret) {
+  const secrets = (typeof secret === "string" ? [secret] : [...secret]).filter(
+    Boolean,
+  );
+  if (!secrets.length) {
     throw new CmssyWebhookError("Missing webhook secret");
   }
 
-  const { timestamp, signature } = parseSignatureHeader(signatureHeader);
+  const { timestamp, signatures } = parseSignatureHeader(signatureHeader);
 
   const toleranceMs =
     (options.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS) * 1000;
@@ -120,8 +125,17 @@ export async function verifyCmssyWebhook(
     throw new CmssyWebhookError("Webhook timestamp outside tolerance");
   }
 
-  const expected = await hmacSha256Hex(secret, `${timestamp}.${body}`);
-  if (!timingSafeHexEqual(expected, signature)) {
+  // Any signature against any secret. A rotation overlap means the delivery
+  // carries one signature per active secret while the consumer may still hold
+  // only the previous one - or already only the new one.
+  let matched = false;
+  for (const candidate of secrets) {
+    const expected = await hmacSha256Hex(candidate, `${timestamp}.${body}`);
+    for (const signature of signatures) {
+      if (timingSafeHexEqual(expected, signature)) matched = true;
+    }
+  }
+  if (!matched) {
     throw new CmssyWebhookError("Webhook signature mismatch");
   }
 

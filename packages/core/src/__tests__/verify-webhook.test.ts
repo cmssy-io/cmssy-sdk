@@ -156,3 +156,74 @@ describe("verifyCmssyWebhook", () => {
     ).rejects.toThrow(/secret/i);
   });
 });
+
+describe("rotation overlap (CMS-1111)", () => {
+  const now = 1_700_000_000_000;
+  const OLD = "o".repeat(64);
+  const NEW = "n".repeat(64);
+
+  it("accepts a delivery signed with the previous secret while the consumer holds both", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(NEW, now, body)},v1=${sign(OLD, now, body)}`;
+
+    const event = await verifyCmssyWebhook({
+      body,
+      signatureHeader: header,
+      secret: [NEW, OLD],
+      now,
+    });
+
+    expect(event.event).toBe("order.paid");
+  });
+
+  it("accepts when the consumer holds only the new secret and the delivery carries both", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(NEW, now, body)},v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({ body, signatureHeader: header, secret: NEW, now }),
+    ).resolves.toBeDefined();
+  });
+
+  it("accepts when the consumer holds only the previous secret", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(NEW, now, body)},v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({ body, signatureHeader: header, secret: OLD, now }),
+    ).resolves.toBeDefined();
+  });
+
+  it("rejects when no secret matches any signature", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(NEW, now, body)},v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({
+        body,
+        signatureHeader: header,
+        secret: ["x".repeat(64), "y".repeat(64)],
+        now,
+      }),
+    ).rejects.toThrow(CmssyWebhookError);
+  });
+
+  it("keeps checking the remaining signatures past a malformed one", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=zzzz,v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({ body, signatureHeader: header, secret: OLD, now }),
+    ).resolves.toBeDefined();
+  });
+
+  it("rejects an empty secret list rather than accepting anything", async () => {
+    const body = makeBody();
+    const header = `t=${now},v1=${sign(OLD, now, body)}`;
+
+    await expect(
+      verifyCmssyWebhook({ body, signatureHeader: header, secret: [], now }),
+    ).rejects.toThrow(/Missing webhook secret/);
+  });
+});
+
