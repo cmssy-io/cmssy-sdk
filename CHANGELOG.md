@@ -8,6 +8,25 @@ nowhere.
 
 ## 11.7.0
 
+**The docs said things the code does not.** A file-by-file pass found eighteen,
+and the two that would have cost you an afternoon are both in
+[the delivery API reference](docs/reference/delivery-api.md): the "list child
+pages" example called a flat root field `publicPagesByType`, which the schema does
+not have (it is `public.page.byType`), and the wrapped-operations table named five
+more flat fields that were namespaced away. Also corrected: `MODEL_RECORDS_QUERY`
+and `MODEL_DEFINITIONS_QUERY` come from `@cmssy/core/internal`, not
+`@cmssy/react`; the README no longer says `CmssyLayoutSlot` was removed in 10.0,
+because it is exported from `@cmssy/next/server` and `cmssy init` mounts it; and
+`@cmssy/astro` needs `@cmssy/react` as a peer, so "no React" was half true at
+best. The full list is in the pull request.
+
+**`@cmssy/core/internal` lost eight symbols** nothing imported and no doc
+mentioned: `normalizeSlug`, `resolvePublicUrl`, `cachedWorkspaceId`,
+`localesFromSiteConfig`, `buildLocaleSwitchHref`, `localizeHtmlLinks`,
+`RECORDS_BY_IDS_QUERY`, `CmssyDeliveryOperation`. If you imported one from
+`/internal`, it moved nowhere - that entry point is the adapters' and never
+promised a shape. Say so and it can come back to the public surface with a name.
+
 **`checkCmssyEditMode` talks to your app and nothing else.** The `workspace`
 option queried a workspace's delivery API to find out whether the site has
 layout blocks, so the check's coverage depended on content the caller had

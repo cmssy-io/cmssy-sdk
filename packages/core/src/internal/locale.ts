@@ -4,15 +4,7 @@ export {
   localeForPath,
   splitCmssyLocale,
 } from "../locale";
-export {
-  localesFromSiteConfig,
-  resolveSiteLocales,
-  splitLocaleFromPath,
-} from "../data/site-locales";
+export { resolveSiteLocales, splitLocaleFromPath } from "../data/site-locales";
 export type { CmssySiteLocales } from "../data/site-locales";
-export {
-  localizeHref,
-  buildLocaleSwitchHref,
-  localizeHtmlLinks,
-} from "../data/localize-href";
+export { localizeHref } from "../data/localize-href";
 export { localizedPath } from "../seo-paths";

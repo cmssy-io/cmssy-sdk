@@ -411,7 +411,9 @@ describe("checkCmssyEditMode with expectLayoutBlocks", () => {
     });
 
     expect(result.failures).toEqual([]);
-    expect(result.skipped.join("\n")).toMatch(/editRoute is false/);
+    const skipped = result.skipped.join("\n");
+    expect(skipped).toMatch(/no \/cmssy-edit route to reach directly/);
+    expect(skipped).toMatch(/nothing to fix/);
   });
 
   it("says nothing about layout slots when the caller does not claim any", async () => {

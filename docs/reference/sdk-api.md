@@ -177,10 +177,15 @@ Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
 
 ### `@cmssy/core/testing` and `/preflight`
 
-`checkCmssyEditMode({ baseUrl, secret })` proves a deployed site can still be
-**edited** - see [testing](../testing.md). `/preflight` holds the diagnostics the
-CLI renders: `collectEditDiagnostics`, `checkWorkspaceReachable`,
-`checkDraftSecret`, `checkPreviewUrl`, `checkFrameAncestors`, `buildEditorUrl`.
+`checkCmssyEditMode(options)` proves a deployed site can still be **edited** - see
+[testing](../testing.md). It returns `{ ok, failures, skipped }`, and `skipped` is
+the half people miss: given `baseUrl` and `secret` alone, four of its six
+assertions stand down and are named there. `expectLayoutBlocks`, `localizedPath`
+/ `localizedLocale` and `editRoute` are what turn them on.
+
+`/preflight` holds the diagnostics the CLI renders: `collectEditDiagnostics`,
+`checkWorkspaceReachable`, `checkDraftSecret`, `checkPreviewUrl`,
+`checkFrameAncestors`, `buildEditorUrl`.
 
 ## @cmssy/react
 
@@ -231,6 +236,18 @@ The canvas renders **stored** content: a block's loader has not run and a
 relation field is still the ids it stores. These resolve both halves, and what
 they return goes to `CmssyLazyEditor` / `CmssyLazyLayout` as `data` and
 `resolvedContent`. See [wiring §5](../wiring.md).
+
+`resolveBlockData` and `resolveLayoutBlockData` are the same two without the
+editor's stored-content half - a server render that only needs each block's
+loader result.
+
+### `@cmssy/react/block-error-boundary`
+
+`BlockErrorBoundary` (`{ blockType, blockId, editMode? }`) - a client component
+that catches one block's render error so the rest of the page still renders.
+`CmssyBlock` and the resolved-block renderer already wrap every block with it, so
+you need this entry point only to wrap something yourself; it exists as its own
+entry because a `"use client"` boundary cannot live in the server graph.
 
 ## @cmssy/next
 

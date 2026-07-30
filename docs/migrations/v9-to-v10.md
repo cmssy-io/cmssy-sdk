@@ -10,21 +10,27 @@ Nothing about your blocks, your config or your editor wiring changes. What
 changes is that reads you used to get for free are now a query you own - typed
 against the schema, in your repo, where you can change them.
 
+**There is no codemod for this major**, unlike v5, v7, v8 and v9. Those rewrote
+import paths, which a tool can do mechanically. This one trades helpers for
+queries only you can write: a codemod could delete the `buildCmssyMetadata` call
+but not decide which fields your `generateMetadata` needs. The table below is the
+work, one row at a time.
+
 ## What was removed, and what replaces it
 
-| Removed (v9)                                        | Replacement                                                                 |
-| --------------------------------------------------- | --------------------------------------------------------------------------- |
-| `buildCmssyMetadata`                                | Your `generateMetadata` - query `public.page.get`                            |
-| `createCmssySitemap`, `createCmssyRobots`           | Your `app/sitemap.ts` / `app/robots.ts` - query `public.page.list`           |
-| `createCmssyNotFound`                               | Your `app/not-found.tsx`                                                     |
-| `CmssyLayoutSlot`                                   | Your layout slot - see [wiring §5](../wiring.md)                             |
-| `CmssyLink` (`@cmssy/next/client`)                  | `next/link` + `localizeHref(href, locale)`                                   |
-| `getCmssyLocale`                                    | The routed path (static-safe) or `CMSSY_LOCALE_HEADER`                       |
-| `createCmssyAuthRoute`, `getCmssyUser`, session helpers, `config.auth` | Your own session; the delivery API's member mutations   |
-| `createCmssyCartRoute`, `createCmssyOrdersRoute`, `fetchProducts`, the product/cart/checkout blocks | Your Server Actions over the cart/order mutations |
-| `CmssyAuthProvider` / `useCmssyUser`, `CmssyCommerceProvider` / `useCart`, `useCmssyOrders` | Your own providers                          |
-| `fetchPage`, `fetchPages`, `fetchPageMeta`, `fetchLayouts`, `fetchSiteConfig`, `resolveSiteLocales` | `graphqlRequest` / `createCmssyClient` with your query |
-| `createCmssyLocaleMiddleware`                       | `createCmssyProxy` (it already resolves the language)                        |
+| Removed (v9)                                                                                        | Replacement                                                        |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `buildCmssyMetadata`                                                                                | Your `generateMetadata` - query `public.page.get`                  |
+| `createCmssySitemap`, `createCmssyRobots`                                                           | Your `app/sitemap.ts` / `app/robots.ts` - query `public.page.list` |
+| `createCmssyNotFound`                                                                               | Your `app/not-found.tsx`                                           |
+| `CmssyLayoutSlot`                                                                                   | Your layout slot - see [wiring §5](../wiring.md)                   |
+| `CmssyLink` (`@cmssy/next/client`)                                                                  | `next/link` + `localizeHref(href, locale)`                         |
+| `getCmssyLocale`                                                                                    | The routed path (static-safe) or `CMSSY_LOCALE_HEADER`             |
+| `createCmssyAuthRoute`, `getCmssyUser`, session helpers, `config.auth`                              | Your own session; the delivery API's member mutations              |
+| `createCmssyCartRoute`, `createCmssyOrdersRoute`, `fetchProducts`, the product/cart/checkout blocks | Your Server Actions over the cart/order mutations                  |
+| `CmssyAuthProvider` / `useCmssyUser`, `CmssyCommerceProvider` / `useCart`, `useCmssyOrders`         | Your own providers                                                 |
+| `fetchPage`, `fetchPages`, `fetchPageMeta`, `fetchLayouts`, `fetchSiteConfig`, `resolveSiteLocales` | `graphqlRequest` / `createCmssyClient` with your query             |
+| `createCmssyLocaleMiddleware`                                                                       | `createCmssyProxy` (it already resolves the language)              |
 
 `@cmssy/core/internal` and `@cmssy/react/internal` exist and export much of the
 above - they are for the first-party adapters and change without a major

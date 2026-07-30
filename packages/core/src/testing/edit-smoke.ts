@@ -108,7 +108,7 @@ export async function checkCmssyEditMode(
   }
   if (expectLayoutBlocks && !EDITABLE_LAYOUT_SLOT.test(verified.body)) {
     failures.push(
-      `edit ${path}: expectLayoutBlocks is set and no editable layout slot is mounted - the header and footer cannot be edited (10.0 removed CmssyLayoutSlot; see docs/wiring.md §5)`,
+      `edit ${path}: expectLayoutBlocks is set and no editable layout slot is mounted - the header and footer cannot be edited (mount CmssyLayoutSlot from @cmssy/next/server, or resolveCmssyLayoutSlot on the other adapters; see docs/wiring.md §5)`,
     );
   }
 
@@ -162,7 +162,7 @@ export async function checkCmssyEditMode(
     await checkDirectEditRoute(url, path, query, undefined, failures);
   } else {
     skipped.push(
-      "edit route: editRoute is false, so the direct /cmssy-edit route and its frame-ancestors were not checked",
+      "edit route: this adapter serves the editor from the page (editRoute: false), so there is no /cmssy-edit route to reach directly and its frame-ancestors were not checked - nothing to fix unless you expected one",
     );
   }
 
