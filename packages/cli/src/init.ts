@@ -38,18 +38,28 @@ export interface InitDeps {
 interface InitFile {
   asset: string;
   target: string;
+  purpose: string;
 }
 
 function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
   const srcPrefix = framework.name === "next" ? nextSrcPrefix(root) : "";
   const files = [
-    { asset: "env.example", target: ".env.example" },
-    ...framework.files.map((path) => ({
+    {
+      asset: "env.example",
+      target: ".env.example",
+      purpose:
+        "the variables the config reads - copy it to .env.local and fill them in",
+    },
+    ...framework.files.map(({ path, purpose }) => ({
       asset: path,
       target: framework.name === "next" ? `${srcPrefix}${path}` : path,
+      purpose,
     })),
   ];
-  if (framework.name === "next" && existingFile(root, `${srcPrefix}app/layout`)) {
+  if (
+    framework.name === "next" &&
+    existingFile(root, `${srcPrefix}app/layout`)
+  ) {
     return files.filter((file) => !file.target.endsWith("/layout.tsx"));
   }
   return files;
@@ -208,6 +218,7 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       copyFileSync(join(ASSETS_DIR, framework.name, file.asset), target);
       written.push(file.target);
       log(formatResult({ status: "ok", message: `wrote ${file.target}` }));
+      log(`    ${file.purpose}`);
     }
 
     const added = addDependencies(root, pkg, framework);
@@ -228,6 +239,10 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
     log(
       `${written.length} file${written.length === 1 ? "" : "s"} written, ${skipped.length} skipped.`,
     );
+    log("");
+    log("What not to break:");
+    for (const warning of framework.warnings) log(`  - ${warning}`);
+    log("  full wiring, and what each file is doing: docs/wiring.md");
     log("");
     log("Next steps:");
     let step = 1;

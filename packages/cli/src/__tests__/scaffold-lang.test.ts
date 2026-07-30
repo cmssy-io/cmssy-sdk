@@ -50,6 +50,18 @@ function walk(dir: string): string[] {
   });
 }
 
+describe("scaffolded sources carry no comments", () => {
+  for (const file of walk(ASSETS).filter((f) => /\.(tsx?|astro)$/.test(f))) {
+    it(`${file.slice(ASSETS.length + 1)} explains itself through cmssy init`, () => {
+      const commented = readFileSync(file, "utf8")
+        .split("\n")
+        .filter((line) => /^\s*(\/\/|\/\*|\*\s)/.test(line));
+
+      expect(commented).toEqual([]);
+    });
+  }
+});
+
 describe("scaffolded sources parse", () => {
   const sources = walk(ASSETS).filter((file) => /\.tsx?$/.test(file));
 
@@ -72,9 +84,7 @@ describe("scaffolded sources parse", () => {
         (parsed as unknown as { parseDiagnostics?: ts.Diagnostic[] })
           .parseDiagnostics ?? [];
       expect(
-        errors.map((d) =>
-          ts.flattenDiagnosticMessageText(d.messageText, " "),
-        ),
+        errors.map((d) => ts.flattenDiagnosticMessageText(d.messageText, " ")),
       ).toEqual([]);
     });
   }

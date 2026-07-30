@@ -5,12 +5,8 @@ import { blocks } from "../../cmssy/blocks";
 import CmssyEditor from "../../cmssy/editor";
 import LayoutSlot from "../../cmssy/layout-slot";
 
-// The editor iframe lands here (the middleware rewrites verified requests). It
-// must be dynamic: a prerendered page never sees the query string.
 export const prerender = false;
 
-// `blocks` is what resolves the editor's layout data. Without it the editor
-// can select the header and not fill it, and a relation field shows raw ids.
 const { page, layouts, locale, defaultLocale, enabledLocales, editorData } =
   await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
 const editorOrigin = resolveEditorOrigin(cmssy.editorOrigin);

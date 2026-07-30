@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { FRAMEWORKS } from "../framework";
 import { runInit, type InitDeps } from "../init";
 
 const CLI_VERSION = (
@@ -97,6 +98,36 @@ describe("runInit", () => {
     expect(output).toContain("detected Next.js");
     expect(output).toContain(`${NEXT_FILES.length} files written, 0 skipped.`);
     expect(output).toContain("npx @cmssy/cli link");
+  });
+
+  it("says what every file it writes is for, and what not to break", () => {
+    const { deps, lines } = makeApp({
+      dependencies: { next: "^16.0.0", react: "^19.0.0" },
+    });
+    expect(runInit({}, deps)).toBe(0);
+
+    const output = lines.join("\n");
+    const next = FRAMEWORKS.find((framework) => framework.name === "next")!;
+    for (const { purpose } of next.files) {
+      expect(output, purpose).toContain(purpose);
+    }
+    for (const warning of next.warnings) {
+      expect(output, warning).toContain(warning);
+    }
+    expect(output).toContain("What not to break:");
+    expect(output).toContain("docs/wiring.md");
+  });
+
+  it("carries a purpose for every scaffolded file of every framework", () => {
+    for (const framework of FRAMEWORKS) {
+      for (const file of framework.files) {
+        expect(
+          file.purpose.length,
+          `${framework.name} ${file.path}`,
+        ).toBeGreaterThan(20);
+      }
+      expect(framework.warnings.length, framework.name).toBeGreaterThan(0);
+    }
   });
 
   it("places the next wiring under src/ when the app uses a src directory", () => {
