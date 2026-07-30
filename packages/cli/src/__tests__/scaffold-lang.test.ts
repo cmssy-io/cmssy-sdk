@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const ASSETS = fileURLToPath(new URL("../../assets/init", import.meta.url));
@@ -46,6 +48,51 @@ describe("scaffolded <html lang>", () => {
 
     it(`${file} hardcodes no language`, () => {
       expect(asset(file)).not.toMatch(/<html[^>]*\slang=["'][a-z]/i);
+    });
+  }
+});
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const full = join(dir, entry);
+    return statSync(full).isDirectory() ? walk(full) : [full];
+  });
+}
+
+/**
+ * The assets are copied verbatim and never compiled here, so a syntax error in
+ * one ships and only fails in the user's build. This parses them; it does not
+ * type-check them - their imports (`@/cmssy.config`, `./+types/root`) only
+ * resolve inside a scaffolded app.
+ */
+describe("scaffolded sources parse", () => {
+  const sources = walk(ASSETS).filter((file) => /\.tsx?$/.test(file));
+
+  it("finds the assets", () => {
+    expect(sources.length).toBeGreaterThan(10);
+  });
+
+  for (const file of sources) {
+    it(`${file.slice(ASSETS.length + 1)} is valid TypeScript`, () => {
+      const source = readFileSync(file, "utf8");
+      const parsed = ts.createSourceFile(
+        file,
+        source,
+        ts.ScriptTarget.Latest,
+        true,
+        file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+
+      // `parseDiagnostics` is internal but it is the only place the parser
+      // reports syntax errors when it is used standalone.
+      const errors =
+        (parsed as unknown as { parseDiagnostics?: ts.Diagnostic[] })
+          .parseDiagnostics ?? [];
+      expect(
+        errors.map((d) =>
+          ts.flattenDiagnosticMessageText(d.messageText, " "),
+        ),
+      ).toEqual([]);
     });
   }
 });

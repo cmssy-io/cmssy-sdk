@@ -9,22 +9,34 @@ nowhere.
 ## 11.5.1
 
 **`checkCmssyEditMode` no longer asks a workspace which language to assert.**
-11.5.0 derived `localizedPath` by querying the delivery API for the workspace's
+11.5.0 derived `localizedPath` by querying the delivery API for a workspace's
 enabled languages. That traded a hardcoded locale for a worse coupling: the
-check's coverage depended on content someone else owns and can delete, so a
-workspace change could make it fail for reasons unrelated to the SDK, or go
-quiet while still reporting green.
+check's coverage came to depend on content nobody in this repo owns.
+`localizedPath` is caller-supplied again, as before 11.5.0 - only the caller
+knows how its site spells a language.
 
-`localizedPath` is caller-supplied again, as it was before 11.5.0. Only the
-caller knows how its site spells a language, and a check that needs content to
-be meaningful belongs in the consumer's repo rather than the SDK's.
+**The starter-smoke and examples workflows are gone.** Both built real apps
+against a real workspace, so the SDK's own CI depended on someone's content: it
+could break because a page was edited, stop covering what it claimed because a
+language was turned off, and a contributor with a fork could not run it at all.
+That is a product integration test, not a test of this library. An SDK is a tool
+for other people's developers, and its suite has to prove the SDK works and run
+offline in any checkout.
 
-Everything else in 11.5.0 stands: the scaffolded `<html lang>`, the
-`frame-ancestors` reading, the direct edit-route probe and `editRoute`.
+Nothing was traded for a hand-written fake of the delivery API - a second
+implementation of a contract this repo does not own drifts the moment the graph
+moves, which is what `check-schema-drift` exists to prevent.
+
+What replaces them is smaller and honest about its reach: the scaffold assets
+are copied verbatim and were never compiled or read by any test here, which is
+how a hardcoded `<html lang="en">` shipped for several releases. They are now
+parsed, and every file that renders `<html>` must bind `lang` to a resolver and
+name no language itself.
 
 **Do I have to do anything?** Only if you upgraded to 11.5.0 and relied on the
 derivation - pass `localizedPath` explicitly. Callers that already passed it are
-unaffected.
+unaffected. `checkCmssyEditMode` itself is unchanged for consumers: running it
+against your own app and your own workspace is exactly what it is for.
 
 ## 11.5.0
 
