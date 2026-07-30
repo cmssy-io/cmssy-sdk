@@ -38,6 +38,19 @@ explanations as comments; those print now - one line per file, plus the handful 
 things whose absence breaks the editor silently - and the files land clean in your
 repo.
 
+**CommonJS consumers were getting the wrong types.** Every package shipped one
+`types` condition per subpath, pointing at the ESM declarations, so a
+`require("@cmssy/core")` from TypeScript resolved types that describe an ES module
+
+- what `@arethetypeswrong/cli` calls masquerading. `tsup` was already emitting the
+  `.d.cts` files; the exports map never pointed at them. All 19 subpaths across the
+  eight packages now declare `types` per condition. `import` users see no change.
+
+**Do I have to do anything?** No - unless you `require()` the SDK from
+TypeScript, in which case this is the fix. `publint --strict` and `attw` run in CI
+from now on, and each package's published subpaths are snapshotted, so one cannot
+disappear quietly either.
+
 **The Fakturownia invoicing example is gone** - deleted, not moved. It was a
 README and one webhook route that nothing here built, typechecked or tested, and
 an example living in this repo can only ever demonstrate an unreleased `main`.

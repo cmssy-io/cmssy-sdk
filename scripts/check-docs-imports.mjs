@@ -17,14 +17,21 @@ function markdownFiles(dir) {
 }
 
 const FENCE = /```(?:ts|tsx|typescript|js|jsx)\n([\s\S]*?)```/g;
-const IMPORT = /import\s+(type\s+)?({[^}]*}|[A-Za-z_$][\w$]*)\s+from\s+["'](@cmssy\/[^"']+)["']/g;
+const IMPORT =
+  /import\s+(type\s+)?({[^}]*}|[A-Za-z_$][\w$]*)\s+from\s+["'](@cmssy\/[^"']+)["']/g;
 
 function namedImports(clause) {
   if (!clause.startsWith("{")) return [];
   return clause
     .slice(1, -1)
     .split(",")
-    .map((part) => part.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0])
+    .map(
+      (part) =>
+        part
+          .trim()
+          .replace(/^type\s+/, "")
+          .split(/\s+as\s+/)[0],
+    )
     .filter(Boolean);
 }
 
@@ -38,10 +45,16 @@ function typesEntry(specifier) {
     return null;
   }
   const subpath = rest.length ? `./${rest.join("/")}` : ".";
-  const entry = manifest.exports?.[subpath];
-  const types = typeof entry === "string" ? entry : entry?.types;
+  const types = declarationsFor(manifest.exports?.[subpath]);
   if (!types) return null;
   return join(pkgDir, types);
+}
+
+function declarationsFor(entry) {
+  if (!entry) return null;
+  if (typeof entry === "string") return entry;
+  if (typeof entry.types === "string") return entry.types;
+  return declarationsFor(entry.import) ?? declarationsFor(entry.default);
 }
 
 const exportCache = new Map();

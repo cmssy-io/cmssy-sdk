@@ -24,29 +24,54 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js",
-      "require": "./dist/client.cjs"
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
     },
     "./internal": {
-      "types": "./dist/internal.d.ts",
-      "import": "./dist/internal.js",
-      "require": "./dist/internal.cjs"
+      "import": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      }
     },
     "./internal-server": {
-      "types": "./dist/internal-server.d.ts",
-      "import": "./dist/internal-server.js",
-      "require": "./dist/internal-server.cjs"
+      "import": {
+        "types": "./dist/internal-server.d.ts",
+        "default": "./dist/internal-server.js"
+      },
+      "require": {
+        "types": "./dist/internal-server.d.cts",
+        "default": "./dist/internal-server.cjs"
+      }
     },
     "./block-error-boundary": {
-      "types": "./dist/block-error-boundary.d.ts",
-      "import": "./dist/block-error-boundary.js",
-      "require": "./dist/block-error-boundary.cjs"
+      "import": {
+        "types": "./dist/block-error-boundary.d.ts",
+        "default": "./dist/block-error-boundary.js"
+      },
+      "require": {
+        "types": "./dist/block-error-boundary.d.cts",
+        "default": "./dist/block-error-boundary.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",

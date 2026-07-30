@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -16,5 +17,13 @@ describe("@cmssy/next public surface", () => {
 
   it("exports exactly these names from /middleware", () => {
     expect(Object.keys(middleware).sort()).toMatchSnapshot();
+  });
+
+  it("publishes exactly these subpaths", () => {
+    const pkg = JSON.parse(
+      readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+    ) as { exports: Record<string, unknown> };
+
+    expect(Object.keys(pkg.exports).sort()).toMatchSnapshot();
   });
 });

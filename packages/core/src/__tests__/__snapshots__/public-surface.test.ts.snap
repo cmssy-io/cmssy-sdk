@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@cmssy/core public surface > exports exactly these names from the root 1`] = `
+[
+  "CMSSY_EDIT_HEADER",
+  "CMSSY_EDIT_QUERY_PARAM",
+  "CMSSY_LOCALE_HEADER",
+  "CMSSY_SECRET_QUERY_PARAM",
+  "CmssyRequestError",
+  "CmssyWebhookError",
+  "DEFAULT_CMSSY_API_URL",
+  "DEFAULT_CMSSY_EDITOR_ORIGINS",
+  "PROTOCOL_VERSION",
+  "applyCmssyCsp",
+  "createCmssyClient",
+  "defineCmssyConfig",
+  "evaluateFieldConditionGroup",
+  "fields",
+  "graphqlRequest",
+  "isProtocolCompatible",
+  "isVerifiedEditUrl",
+  "layoutPositionValues",
+  "localizeHref",
+  "normalizeOrigin",
+  "parseEditorMessage",
+  "postToEditor",
+  "resolveCmssyLocale",
+  "resolveEditorOrigin",
+  "verifyCmssyWebhook",
+]
+`;
+
+exports[`@cmssy/core public surface > publishes exactly these subpaths 1`] = `
+[
+  ".",
+  "./internal",
+  "./internal/locale",
+  "./preflight",
+  "./testing",
+]
+`;
