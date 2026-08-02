@@ -10,6 +10,8 @@ export {
   CMSSY_EDIT_HEADER,
   localizeHref,
   CMSSY_LOCALE_HEADER,
+  verifyCmssyWebhook,
+  CmssyWebhookError,
 } from "@cmssy/core";
 export type {
   CmssyConfig,
@@ -17,4 +19,6 @@ export type {
   CmssyPageData,
   CmssyLayoutGroup,
   CmssyBlockContext,
+  CmssyWebhookEvent,
+  VerifyCmssyWebhookOptions,
 } from "@cmssy/core";

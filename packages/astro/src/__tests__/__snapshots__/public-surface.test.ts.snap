@@ -5,12 +5,14 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "CMSSY_EDIT_HEADER",
   "CMSSY_EDIT_PATH_PREFIX",
   "CMSSY_LOCALE_HEADER",
+  "CmssyWebhookError",
   "cmssyMiddleware",
   "createCmssyClient",
   "defineCmssyConfig",
   "loadCmssyPage",
   "localizeHref",
   "resolveEditorOrigin",
+  "verifyCmssyWebhook",
 ]
 `;
 
