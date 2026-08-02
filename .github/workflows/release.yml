@@ -1,24 +1,11 @@
 name: Release
 
-# Publishes the @cmssy/* SDK packages to npm via trusted publishing (OIDC) - no
-# token. Trigger by pushing a version tag (e.g. `git tag v9.9.0 && git push
-# origin v9.9.0`) or manually via the Actions tab. Authentication comes from the
-# GitHub OIDC token, so EACH published package must have this repo + this
-# workflow registered as a Trusted Publisher (npmjs.com -> package -> Settings
-# -> Trusted Publisher).
-#
-# pnpm packs each package (rewriting workspace:* deps into the tarball); npm then
-# publishes the tarball, because this repo is pinned to pnpm 9, which predates
-# pnpm's own OIDC support. Keeping npm as the publisher also makes the OIDC path
-# identical to the single-package repos.
-
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
 
-# Serialize releases so two runs can't race past the "already on npm" check.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -28,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Lets the job mint the OIDC token npm exchanges for publish rights.
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -40,13 +26,9 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing needs npm >= 11.5.1; the node 22 image ships 10.x.
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
-      # On a tag release, the tag must match the package versions being
-      # published (package.json is the source of truth). Manual dispatch
-      # publishes the current branch's package.json version as-is.
       - name: Verify tag matches package versions
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -61,19 +43,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build first: @cmssy/next typechecks against @cmssy/react's dist .d.ts,
-      # which doesn't exist on a fresh checkout until react is built.
       - run: pnpm -r build
 
       - run: pnpm -r typecheck
 
       - run: pnpm -r test
 
-      # Publish in dependency order (core, then the renderers, then the
-      # adapters). pnpm pack rewrites workspace:* deps into the tarball; npm
-      # publishes it via OIDC, with a provenance attestation (public repo).
-      # Skips a package whose current version is already on npm, so re-runs are
-      # safe.
       - name: Publish packages
         run: |
           set -e
@@ -91,12 +66,6 @@ jobs:
             cd ../..
           done
 
-      # `npm view` runs with our credentials, so it happily finds a package
-      # nobody else can install - which is exactly how 5.0.0 shipped three
-      # packages that 404'd for the world. This asks the registry as a stranger.
-      # A successful publish is eventually consistent: the anonymous read
-      # replica can lag several minutes behind. Retry before failing so a
-      # propagation delay is not mistaken for a restricted package.
       - name: Verify the packages are installable by anyone
         timeout-minutes: 25
         run: |

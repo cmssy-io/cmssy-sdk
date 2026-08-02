@@ -6,12 +6,8 @@ import { CmssyEditor } from "../cmssy/editor";
 import { LayoutSlot } from "../cmssy/layout-slot";
 import type { Route } from "./+types/page";
 
-// `blocks` is what lets the loader resolve the editor's layout data. Drop it
-// and the site still renders - the editor just cannot fill the header.
 export const loader = createCmssyLoader(cmssy, { blocks });
 
-// Without these the admin cannot frame the site, and the editor shows an empty
-// box with no error anywhere.
 export const headers = createCmssyHeaders(cmssy);
 
 export default function CmssyPage({ loaderData }: Route.ComponentProps) {
@@ -31,8 +27,6 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     return <div dangerouslySetInnerHTML={{ __html: diagnostics }} />;
   }
 
-  // A verified editor request renders the same page through the edit bridge.
-  // No separate route: a React Router page always sees its query string.
   const slot = (position: "header" | "footer") => (
     <LayoutSlot
       groups={layouts}

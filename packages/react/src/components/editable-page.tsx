@@ -26,7 +26,6 @@ export interface CmssyEditablePageProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
-  /** Same channel the deployed page gets, so the canvas shows the same thing. */
   appContext?: Record<string, unknown>;
 }
 
@@ -77,7 +76,6 @@ interface EditableBlocksProps {
   forms?: Record<string, CmssyFormDefinition>;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
-  /** Same channel the deployed page gets, so the canvas shows the same thing. */
   appContext?: Record<string, unknown>;
 }
 
@@ -95,8 +93,6 @@ function EditableBlocks({
   appContext,
 }: EditableBlocksProps) {
   const blockMap = useMemo(() => buildBlockMap(blocks), [blocks]);
-  // Same identity the deployed page gets, so a block that reads context.page
-  // renders the same thing in the editor as on the site.
   const context = useMemo(
     () =>
       buildBlockContext(locale, defaultLocale, enabledLocales, true, forms, {

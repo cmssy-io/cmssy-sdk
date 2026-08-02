@@ -1,14 +1,7 @@
-// @cmssy/core — public surface: the GraphQL gateway, the block/field system,
-// and the editor bridge. Anything expressible as a GraphQL query is the app's
-// own query (via `graphqlRequest`), not an SDK wrapper. Framework-internal
-// plumbing lives on `@cmssy/core/internal`.
-
-// --- Config ---
 export { defineCmssyConfig } from "./config";
 export { resolveEditorOrigin, DEFAULT_CMSSY_EDITOR_ORIGINS } from "./config";
 export type { CmssyConfig, CmssyEnvConfig } from "./config";
 
-// --- Gateway (query/mutation) ---
 export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
 export { CmssyRequestError } from "./data/http";
@@ -44,10 +37,7 @@ export type {
   SubmitFormInput,
 } from "./data/queries";
 
-// --- Blocks / fields ---
 export { fields } from "./fields";
-// The six positions a layout block can occupy. Apps mount header and footer
-// most often; the type is what tells a reader the other four exist.
 export { layoutPositionValues } from "@cmssy/types";
 export type { LayoutPosition } from "@cmssy/types";
 export type {
@@ -73,12 +63,10 @@ export type {
   BuildBlockContextExtra,
 } from "./block-context";
 
-// --- Localization (path-prefix helpers) ---
 export { localizeHref } from "./data/localize-href";
 export { resolveCmssyLocale } from "./data/site-locales";
 export { CMSSY_LOCALE_HEADER } from "./locale";
 
-// --- Editor / edit-bridge ---
 export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";
 export type {
   FieldType,
@@ -110,7 +98,6 @@ export {
 export { applyCmssyCsp } from "./csp";
 export type { CmssyCspOptions } from "./csp";
 
-// --- Webhooks (signature verification — a security primitive, not a query) ---
 export { verifyCmssyWebhook, CmssyWebhookError } from "./verify-webhook";
 export type {
   CmssyWebhookEvent,

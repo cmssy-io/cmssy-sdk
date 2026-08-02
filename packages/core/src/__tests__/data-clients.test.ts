@@ -222,8 +222,6 @@ describe("createCmssyClient().resolveWorkspaceId", () => {
 });
 
 describe("createCmssyClient().query (typed document)", () => {
-  // What graphql-codegen emits: the AST inlined, `loc` stripped, cast to a
-  // TypedDocumentNode carrying the result and variable types.
   const PRODUCTS = JSON.parse(
     JSON.stringify(
       parse(
@@ -249,7 +247,6 @@ describe("createCmssyClient().query (typed document)", () => {
       { fetch },
     );
 
-    // No generic passed, no `.toString()`, no cast: `total` is a number here.
     expect(data.public.model.records.total).toBe(7);
     expect(calls[0]?.query).toContain("query Products(");
     expect(calls[0]?.variables).toEqual({

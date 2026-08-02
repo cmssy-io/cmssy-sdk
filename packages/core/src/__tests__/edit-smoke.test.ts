@@ -6,25 +6,17 @@ const SECRET = "draft-secret-1234";
 
 const PUBLIC_HTML = "<html><header>MACHTEC</header><main>hi</main></html>";
 const EDITOR = '<div data-cmssy-editor="1" hidden></div>';
-const EDIT_HTML = '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
-/** What an edit route with a mounted layout slot serves (see CmssyLazyLayout). */
+const EDIT_HTML =
+  '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>';
 const EDIT_HTML_WITH_SLOT =
   '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" data-cmssy-editor-content="2" hidden></div><main>hi</main></html>';
 
-/** A slot that is mounted and resolved nothing: rendered outside edit mode. */
 const EDIT_HTML_SLOT_EMPTY =
   '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" data-cmssy-editor-content="0" hidden></div><main>hi</main></html>';
 
-/** A slot from a consumer still on an older @cmssy/react: no count at all. */
 const EDIT_HTML_SLOT_NO_COUNT =
   '<html><div data-cmssy-editor="1" hidden></div><div data-cmssy-layout-slot="header" hidden></div><main>hi</main></html>';
 
-/**
- * Serves a body per URL; anything unrouted 404s, which the check reports.
- *
- * Routes answer with a framing CSP that admits the editor, unless `blocked`
- * names them.
- */
 function serve(routes: Record<string, string>, blocked: string[] = []) {
   const fetchStub = vi.fn(async (url: string) => {
     const body = routes[url];
@@ -66,7 +58,8 @@ describe("checkCmssyEditMode", () => {
     serve({
       [`${BASE}/`]: bare,
       [`${BASE}/?cmssyEdit=1`]: bare,
-      [verifiedUrl()]: '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>',
+      [verifiedUrl()]:
+        '<html><div data-cmssy-editor="1" hidden></div><main>hi</main></html>',
     });
 
     const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
@@ -75,8 +68,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("fails when the verified request renders no editor - the /cmssy-edit route is missing (CMS-969)", async () => {
-    // Exactly what a consumer looks like after an SDK 4 bump without the route:
-    // the site serves fine, and the editor iframe gets a page it cannot edit.
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
@@ -90,8 +81,6 @@ describe("checkCmssyEditMode", () => {
   });
 
   it("fails when the header is still server-rendered in edit mode (CMS-970)", async () => {
-    // The editor selects the header and has no fields for it: the blocks never
-    // reached the edit bridge.
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
@@ -121,7 +110,6 @@ describe("checkCmssyEditMode", () => {
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-      // The editor is mounted, but the page still says it is English.
       [verifiedUrl("/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
       [verifiedUrl()]: EDIT_HTML,
     });
@@ -136,8 +124,6 @@ describe("checkCmssyEditMode", () => {
     expect(result.failures.join(" ")).toContain("wrong language");
   });
 
-  // <html lang> is a contract. A word from the page's copy is content - an editor
-  // can rewrite it at any time, and then the test lies about what it proved.
   it("passes when the localized preview declares the language its URL asks for", async () => {
     serve({
       [`${BASE}/`]: PUBLIC_HTML,
@@ -161,7 +147,8 @@ describe("checkCmssyEditMode", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="en">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -181,7 +168,8 @@ describe("checkCmssyEditMode", () => {
         [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
         [verifiedUrl()]: EDIT_HTML,
         [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-        [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+        [verifiedUrl("/cmssy-edit/no")]:
+          `<html lang="no">${EDITOR}<main>hi</main></html>`,
       },
       [verifiedUrl("/cmssy-edit/no")],
     );
@@ -203,7 +191,8 @@ describe("checkCmssyEditMode", () => {
         [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
         [verifiedUrl()]: EDIT_HTML,
         [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-        [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+        [verifiedUrl("/cmssy-edit/no")]:
+          `<html lang="no">${EDITOR}<main>hi</main></html>`,
       };
       const body = routes[url];
       return {
@@ -246,7 +235,8 @@ describe("checkCmssyEditMode", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/cmssy-edit")]: EDIT_HTML,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -268,7 +258,8 @@ describe("checkCmssyEditMode", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -285,7 +276,8 @@ describe("checkCmssyEditMode", () => {
       [`${BASE}/`]: PUBLIC_HTML,
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -298,65 +290,20 @@ describe("checkCmssyEditMode", () => {
   });
 });
 
-describe("checkCmssyEditMode with a workspace", () => {
-  const WORKSPACE = { org: "acme", workspaceSlug: "shop" };
-  const DELIVERY = "https://api.cmssy.io/public/acme/shop/graphql";
+describe("checkCmssyEditMode with expectLayoutBlocks", () => {
   const NO_LAYOUT_HTML = "<html><main>hi</main></html>";
 
-  /** Serves pages by URL and answers the layout and site-config probes. */
-  function serveWithWorkspace(
-    routes: Record<string, string>,
-    layouts: unknown,
-    siteConfig: unknown = null,
-  ) {
-    const fetchStub = vi.fn(async (url: string, init?: { body?: string }) => {
-      if (url === DELIVERY) {
-        const asksForSiteConfig = String(init?.body ?? "").includes(
-          "PublicSiteConfig",
-        );
-        return {
-          ok: true,
-          status: 200,
-          json: async () =>
-            layouts instanceof Error
-              ? { errors: [{ message: String(layouts.message) }] }
-              : {
-                  data: asksForSiteConfig
-                    ? { public: { siteConfig } }
-                    : { public: { page: { layouts } } },
-                },
-          text: async (): Promise<string> => "",
-        };
-      }
-      const body = routes[url];
-      return {
-        ok: body !== undefined,
-        status: body === undefined ? 404 : 200,
-        text: async (): Promise<string> => body ?? "",
-        json: async () => ({}),
-        headers: new Headers({
-          "content-security-policy": "frame-ancestors https://cmssy.io",
-        }),
-      };
+  it("fails an app that mounts no editable layout slot", async () => {
+    serve({
+      [`${BASE}/`]: NO_LAYOUT_HTML,
+      [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+      [verifiedUrl()]: EDIT_HTML,
     });
-    vi.stubGlobal("fetch", fetchStub);
-    return fetchStub;
-  }
-
-  it("fails an app that mounts no editable layout slot when the workspace has blocks", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: NO_LAYOUT_HTML,
-        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
-        [verifiedUrl()]: EDIT_HTML,
-      },
-      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
-    );
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
     });
 
     expect(result.ok).toBe(false);
@@ -364,105 +311,140 @@ describe("checkCmssyEditMode with a workspace", () => {
   });
 
   it("passes the same app once it mounts the layout slot", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: PUBLIC_HTML,
-        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-        [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
-      },
-      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
-    );
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+    });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
     });
 
     expect(result.failures).toEqual([]);
   });
 
   it("fails a slot that is mounted but resolved nothing - it is not in edit mode", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: PUBLIC_HTML,
-        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-        [verifiedUrl()]: EDIT_HTML_SLOT_EMPTY,
-      },
-      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
-    );
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_SLOT_EMPTY,
+    });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
     });
 
-    // This is the state the Astro adapter shipped in: the slot renders, the
-    // marker is there, and the editor is looking at the published page. The
-    // old check passed it.
     expect(result.ok).toBe(false);
     expect(result.failures.join("\n")).toMatch(/resolved 0 blocks/);
   });
 
   it("fails a consumer whose slot emits no count at all", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: PUBLIC_HTML,
-        [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
-        [verifiedUrl()]: EDIT_HTML_SLOT_NO_COUNT,
-      },
-      [{ position: "header", blocks: [{ id: "b1", isActive: true }] }],
-    );
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_SLOT_NO_COUNT,
+    });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
     });
 
     expect(result.failures.join("\n")).toMatch(/no editor-content marker/);
   });
 
-  it("does not fault an app whose workspace has no layout blocks", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: NO_LAYOUT_HTML,
-        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
-        [verifiedUrl()]: EDIT_HTML,
-      },
-      [{ position: "header", blocks: [{ id: "b1", isActive: false }] }],
-    );
+  it("reports the layout assertions it did not run", async () => {
+    serve({
+      [`${BASE}/`]: NO_LAYOUT_HTML,
+      [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+    });
+
+    const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
+
+    expect(result.ok).toBe(true);
+    expect(result.skipped.join("\n")).toMatch(/expectLayoutBlocks is not set/);
+    expect(result.skipped.join("\n")).toMatch(/no <header> or <footer>/);
+    expect(result.skipped.join("\n")).toMatch(/no localizedPath/);
+  });
+
+  it("claims no skip for the assertions it did run", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+      [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit")]: EDIT_HTML_WITH_SLOT,
+    });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
+      localizedPath: "/no",
     });
 
     expect(result.failures).toEqual([]);
+    expect(result.skipped).toEqual([]);
   });
 
-  it("stays silent about layouts when the delivery API cannot answer", async () => {
-    serveWithWorkspace(
-      {
-        [`${BASE}/`]: NO_LAYOUT_HTML,
-        [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
-        [verifiedUrl()]: EDIT_HTML,
-      },
-      new Error("upstream is down"),
-    );
+  it("reports the direct edit route as skipped when the adapter has none", async () => {
+    serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+    });
 
     const result = await checkCmssyEditMode({
       baseUrl: BASE,
       secret: SECRET,
-      workspace: WORKSPACE,
+      expectLayoutBlocks: true,
+      editRoute: false,
     });
 
-    // The API being unreachable is not the app's fault.
+    expect(result.failures).toEqual([]);
+    const skipped = result.skipped.join("\n");
+    expect(skipped).toMatch(/no \/cmssy-edit route to reach directly/);
+    expect(skipped).toMatch(/nothing to fix/);
+  });
+
+  it("says nothing about layout slots when the caller does not claim any", async () => {
+    serve({
+      [`${BASE}/`]: NO_LAYOUT_HTML,
+      [`${BASE}/?cmssyEdit=1`]: NO_LAYOUT_HTML,
+      [verifiedUrl()]: EDIT_HTML,
+    });
+
+    const result = await checkCmssyEditMode({ baseUrl: BASE, secret: SECRET });
+
     expect(result.failures).toEqual([]);
   });
 
+  it("reaches the app only - no delivery API request", async () => {
+    const fetchStub = serve({
+      [`${BASE}/`]: PUBLIC_HTML,
+      [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
+      [verifiedUrl()]: EDIT_HTML_WITH_SLOT,
+    });
+
+    await checkCmssyEditMode({
+      baseUrl: BASE,
+      secret: SECRET,
+      expectLayoutBlocks: true,
+    });
+
+    for (const [url] of fetchStub.mock.calls) {
+      expect(String(url).startsWith(BASE)).toBe(true);
+    }
+  });
 });
 
 describe("checkCmssyEditMode on an adapter with no edit route", () => {
@@ -472,8 +454,10 @@ describe("checkCmssyEditMode on an adapter with no edit route", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
-      [verifiedUrl("/cmssy-edit")]: `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
+      [verifiedUrl("/cmssy-edit")]:
+        `<html lang="en">${EDITOR}<h1>Not found</h1></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -492,7 +476,8 @@ describe("checkCmssyEditMode on an adapter with no edit route", () => {
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="en">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="en">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({
@@ -512,7 +497,8 @@ describe("checkCmssyEditMode given the edit route as the localized path", () => 
       [`${BASE}/?cmssyEdit=1`]: PUBLIC_HTML,
       [verifiedUrl()]: EDIT_HTML,
       [verifiedUrl("/cmssy-edit")]: EDIT_HTML,
-      [verifiedUrl("/cmssy-edit/no")]: `<html lang="no">${EDITOR}<main>hi</main></html>`,
+      [verifiedUrl("/cmssy-edit/no")]:
+        `<html lang="no">${EDITOR}<main>hi</main></html>`,
     });
 
     const result = await checkCmssyEditMode({

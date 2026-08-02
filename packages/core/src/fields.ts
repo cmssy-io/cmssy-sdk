@@ -35,13 +35,6 @@ type RepeaterValue<O> = O extends {
   ? InferBlockContent<Schema>[]
   : Record<string, unknown>[];
 
-/**
- * The value a relation field holds AFTER server-side resolution: the SDK
- * replaces the stored record id(s) with the records themselves before the
- * component renders. `mode: "all"` and `multiple: true` yield a list; the
- * default is a single record - `undefined` when the reference dangles, which
- * no `required` flag can rule out.
- */
 type RelationValue<O> = O extends { mode: "all" } | { multiple: true }
   ? CmssyModelRecord[]
   : CmssyModelRecord | undefined;
@@ -50,12 +43,7 @@ interface RelationFieldOptions extends Omit<
   FieldOptions,
   "options" | "itemSchema"
 > {
-  /** Slug of the model the field points at. */
   model: string;
-  /**
-   * "all" binds the field to every record of the model (no editor picking;
-   * `sort`/`limit` shape the list). Omit it for editor-picked record id(s).
-   */
   mode?: RelationMode;
   multiple?: boolean;
   sort?: string;
@@ -66,12 +54,6 @@ function build(type: FieldType, opts: FieldOptions): FieldDefinition {
   return { type, label: opts.label ?? "", ...opts } as FieldDefinition;
 }
 
-/**
- * Every builder returns a `TypedField`, so `defineBlock` can derive the block's
- * `content` from its schema instead of trusting a hand-written type beside it.
- * The `const` type parameter is what makes that possible: it keeps `required`,
- * `options` and `itemSchema` as literals instead of widening them away.
- */
 function control<T extends FieldType>(type: T) {
   return <const O extends FieldOptions>(opts: O = {} as O) =>
     build(type, opts) as TypedField<FieldTypeValueMap[T], Declared<O>>;

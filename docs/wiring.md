@@ -66,7 +66,17 @@ import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
+import { publishedPaths } from "@/services/pages";
 import { buildPageMetadata } from "@/services/seo";
+
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+// Not optional: without it this route is served on demand on every request and
+// the `revalidate` above does nothing. §5 explains what that costs.
+export function generateStaticParams() {
+  return publishedPaths();
+}
 
 export async function generateMetadata({ params }) {
   const { path } = await params;
@@ -76,6 +86,10 @@ export async function generateMetadata({ params }) {
 
 export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 ```
+
+That is the page for a site with no header or footer. Those are layout blocks
+rather than markup you own, so a site that has them mounts a slot too - §5 shows
+this same file with the slots in place, which is what `cmssy init` writes.
 
 `buildPageMetadata` is **your** function - since 10.0 the SDK ships no page-SEO
 helper (see [§7](#7-seo)). The rule it has to keep is the one above: pass the
@@ -138,15 +152,17 @@ export default async function Page(props) {
       config={cmssy}
       blocks={blocks}
       position={position}
-      path={path ?? []}      // the language prefix in it IS the language
-      editMode={false}       // true only on the /cmssy-edit route
+      path={path ?? []} // the language prefix in it IS the language
+      editMode={false} // true only on the /cmssy-edit route
       editable={EditableLayout}
     />
   );
   return (
     <>
       {slot("header")}
-      <main><CmssyPage {...props} /></main>
+      <main>
+        <CmssyPage {...props} />
+      </main>
       {slot("footer")}
     </>
   );
@@ -198,7 +214,7 @@ request renders them and they are cached from then on.
 
 **What caching costs you, stated plainly.** With `revalidate = 3600`, an edit
 published in the CMS takes up to an hour to appear. And because an unknown path
-renders as not-found, a URL someone visited *before* you published it keeps
+renders as not-found, a URL someone visited _before_ you published it keeps
 serving 404 for the rest of that window - the 404 is cached like any other
 response. Both go away when publishing revalidates on demand
 (`revalidatePath` from a webhook route); until you wire that, pick `revalidate`
@@ -262,10 +278,16 @@ the model and append their URLs with the same `baseUrl` and locales.
 const result = await checkCmssyEditMode({
   baseUrl,
   secret: process.env.CMSSY_DRAFT_SECRET,
+  expectLayoutBlocks: true, // your header and footer are cmssy blocks
+  localizedPath: "/no", // only if your URLs carry the language
 });
 expect(result.failures).toEqual([]);
+console.log(result.skipped); // what this run did NOT check
 ```
 
 A build proves the site compiles. It says nothing about whether the site can be
-**edited** - and that is the part that breaks silently. See
-[testing](testing.md).
+**edited** - and that is the part that breaks silently.
+
+Called with `baseUrl` and `secret` alone, four of its six assertions stand down
+and say so in `skipped`. An empty `failures` answers "did anything fail", not
+"was anything checked" - print `skipped` in CI. See [testing](testing.md).

@@ -1,17 +1,3 @@
-/**
- * Accepting a *typed* document, not a string, is what makes a query's variables
- * and its result checked together. graphql-codegen emits one of three shapes,
- * and the SDK takes all of them so an app never has to care which mode its
- * codegen runs in - or add `graphql` to its runtime dependencies to print an
- * AST it already has.
- */
-
-/**
- * A document that carries its result and variable types. Structurally
- * compatible with `TypedDocumentNode` (`@graphql-typed-document-node/core`) and
- * with graphql-codegen's `TypedDocumentString`, both of which declare the same
- * phantom `__apiType`.
- */
 export interface CmssyTypedDocument<Result, Variables> {
   __apiType?: (variables: Variables) => Result;
 }
@@ -179,21 +165,11 @@ function printDefinition(node: AstNode): string {
   )}${printSelectionSet((node as { selectionSet?: unknown }).selectionSet, 0)}`;
 }
 
-/**
- * Prints the AST subset graphql-codegen emits. Deliberately not a general
- * GraphQL printer: it exists so a consumer does not have to ship the `graphql`
- * runtime just to hand the SDK a document it already generated.
- */
 function printDocumentNode(node: AstNode): string {
   const definitions = (node as { definitions?: AstNode[] }).definitions ?? [];
   return definitions.map(printDefinition).join("\n\n");
 }
 
-/**
- * The query text of whatever the caller passed: a string, a
- * `TypedDocumentString`, or a `TypedDocumentNode` (with or without the `loc`
- * the parser attaches - codegen strips it).
- */
 export function documentText(document: unknown): string {
   if (typeof document === "string") return document;
   if (!document || typeof document !== "object") {
@@ -202,7 +178,6 @@ export function documentText(document: unknown): string {
     );
   }
 
-  // The parser keeps the source it read; codegen's inlined AST does not.
   const loc = (document as { loc?: { source?: { body?: unknown } } }).loc;
   if (typeof loc?.source?.body === "string") return loc.source.body;
 

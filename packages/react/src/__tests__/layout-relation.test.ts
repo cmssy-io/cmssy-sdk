@@ -3,17 +3,6 @@ import { fields } from "@cmssy/core";
 import { defineBlock } from "../registry";
 import { resolveEditorLayoutBlockData } from "../components/resolve-block-data";
 
-/**
- * The acceptance criterion nobody could measure on a live workspace: the demo's
- * `site-header` and `site-footer` hold only text, repeater and link fields, so
- * "a relation field resolves in the editor" was inference from the fact that
- * `resolvedContent` arrived at all.
- *
- * This closes it. A layout block with a relation field goes through the exact
- * path the editor uses, and what comes out the other side must be records - not
- * the ids the CMS stores, which is what the canvas rendered before any of this.
- */
-
 const CONFIG = {
   apiUrl: "https://api.test/graphql",
   org: "acme",
@@ -61,7 +50,6 @@ function record(id: string, title: string) {
   };
 }
 
-/** Answers the workspace lookup and the records-by-ids read, nothing else. */
 function stubDelivery() {
   const calls: string[] = [];
   vi.stubGlobal(
@@ -120,10 +108,8 @@ describe("a relation field in a layout block", () => {
       | undefined;
     expect(Array.isArray(featured)).toBe(true);
     expect(featured).toHaveLength(2);
-    // The whole defect in one assertion: ids in, records out.
     expect(featured?.[0]).toMatchObject({ id: "p1" });
     expect(featured?.[1]).toMatchObject({ id: "p2" });
-    // The plain field is untouched alongside it.
     expect(result.content.h1?.brand).toBe("Acme");
   });
 
@@ -162,8 +148,6 @@ describe("a relation field in a layout block", () => {
       config: CONFIG,
     });
 
-    // No relation, no record read: the resolver must not cost a request per
-    // render on every site that has none.
     expect(calls.some((q) => q.includes("recordsByIds"))).toBe(false);
   });
 });

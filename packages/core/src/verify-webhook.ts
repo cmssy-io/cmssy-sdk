@@ -4,21 +4,7 @@ import type {
   VerifyCmssyWebhookOptions,
 } from "@cmssy/types";
 
-// Webhook data shapes live in @cmssy/types; re-exported for consumers.
 export type { CmssyWebhookOrder, CmssyWebhookEvent, VerifyCmssyWebhookOptions };
-
-/**
- * Verify + parse an inbound cmssy webhook (CMS-693 / CMS-694).
- *
- * cmssy signs each delivery with HMAC-SHA256 over `${timestamp}.${body}`
- * and sends the result in the `X-Cmssy-Signature: t=<ms>,v1=<hex>`
- * header, plus a unique `X-Cmssy-Webhook-Id`. This helper recomputes the
- * signature (timing-safe compare), rejects stale timestamps to bound
- * replay, and returns the typed event.
- *
- * IMPORTANT: pass the RAW request body string (e.g. `await req.text()`),
- * never a re-serialized object - the signed bytes must match exactly.
- */
 
 export class CmssyWebhookError extends Error {
   constructor(message: string) {
@@ -29,30 +15,31 @@ export class CmssyWebhookError extends Error {
 
 const DEFAULT_TOLERANCE_SECONDS = 300;
 
+const MAX_SIGNATURES = 8;
+
 function parseSignatureHeader(header: string): {
   timestamp: number;
-  signature: string;
+  signatures: string[];
 } {
-  // Format: "t=<ms>,v1=<hex>" (order-independent, extra parts ignored).
   let timestamp: number | null = null;
-  let signature: string | null = null;
+  const signatures: string[] = [];
   for (const part of header.split(",")) {
     const idx = part.indexOf("=");
     if (idx === -1) continue;
     const key = part.slice(0, idx).trim();
     const value = part.slice(idx + 1).trim();
     if (key === "t") timestamp = Number(value);
-    else if (key === "v1") signature = value;
+    else if (key === "v1" && value && signatures.length < MAX_SIGNATURES) {
+      signatures.push(value);
+    }
   }
-  if (timestamp === null || !Number.isFinite(timestamp) || !signature) {
+  if (timestamp === null || !Number.isFinite(timestamp) || !signatures.length) {
     throw new CmssyWebhookError("Malformed X-Cmssy-Signature header");
   }
-  return { timestamp, signature };
+  return { timestamp, signatures };
 }
 
 function hexToBytes(hex: string): Uint8Array | null {
-  // Invalid hex decodes to nothing rather than to a shorter buffer: a bad v1
-  // must fail as a signature mismatch, not as a thrown length error.
   if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) return null;
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < bytes.length; i += 1) {
@@ -66,9 +53,10 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function timingSafeHexEqual(expectedHex: string, providedHex: string): boolean {
+  if (expectedHex.length !== providedHex.length) return false;
   const expected = hexToBytes(expectedHex);
   const provided = hexToBytes(providedHex);
-  if (!expected || !provided || expected.length !== provided.length) {
+  if (!expected || !provided) {
     return false;
   }
   let diff = 0;
@@ -95,11 +83,6 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   return bytesToHex(new Uint8Array(signature));
 }
 
-/**
- * Verify the signature + freshness and return the parsed event. Throws
- * `CmssyWebhookError` on any failure (missing/malformed header, bad
- * signature, stale timestamp, invalid JSON) - catch it and respond 400.
- */
 export async function verifyCmssyWebhook(
   options: VerifyCmssyWebhookOptions,
 ): Promise<CmssyWebhookEvent> {
@@ -107,11 +90,17 @@ export async function verifyCmssyWebhook(
   if (!signatureHeader) {
     throw new CmssyWebhookError("Missing X-Cmssy-Signature header");
   }
-  if (!secret) {
+  const candidates =
+    typeof secret === "string" ? [secret] : Array.isArray(secret) ? secret : [];
+  if (candidates.some((value) => typeof value !== "string")) {
+    throw new CmssyWebhookError("Webhook secret must be a string");
+  }
+  const secrets = candidates.filter(Boolean);
+  if (!secrets.length) {
     throw new CmssyWebhookError("Missing webhook secret");
   }
 
-  const { timestamp, signature } = parseSignatureHeader(signatureHeader);
+  const { timestamp, signatures } = parseSignatureHeader(signatureHeader);
 
   const toleranceMs =
     (options.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS) * 1000;
@@ -120,8 +109,14 @@ export async function verifyCmssyWebhook(
     throw new CmssyWebhookError("Webhook timestamp outside tolerance");
   }
 
-  const expected = await hmacSha256Hex(secret, `${timestamp}.${body}`);
-  if (!timingSafeHexEqual(expected, signature)) {
+  let matched = false;
+  for (const candidate of secrets) {
+    const expected = await hmacSha256Hex(candidate, `${timestamp}.${body}`);
+    for (const signature of signatures) {
+      if (timingSafeHexEqual(expected, signature)) matched = true;
+    }
+  }
+  if (!matched) {
     throw new CmssyWebhookError("Webhook signature mismatch");
   }
 

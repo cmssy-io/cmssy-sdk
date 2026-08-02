@@ -1,11 +1,3 @@
-/**
- * Turns the workspace's model definitions into TypeScript.
- *
- * A record's `data` is a JSON blob on the wire, so without this every read of a
- * model is `unknown` and every field access is a hand-written cast. The CMS
- * already knows the shape - this makes it say so in the type system.
- */
-
 export interface ModelFieldDefinition {
   key: string;
   label?: string | null;
@@ -31,7 +23,6 @@ export interface ModelDefinition {
   fields: ModelFieldDefinition[];
 }
 
-/** Field types whose value is a string, and which a workspace can translate. */
 const TEXTUAL = new Set([
   "text",
   "textarea",
@@ -58,7 +49,6 @@ function pascalCase(value: string): string {
   return /^[A-Za-z]/.test(joined) ? joined : `Model${joined}`;
 }
 
-/** A key that is not a plain identifier has to be quoted in an interface. */
 function propertyKey(key: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
 }
@@ -78,7 +68,6 @@ function scalarType(field: ModelFieldDefinition): string {
       return "boolean";
     case "media":
     case "file":
-      // A media field stores the CDN URL, or a list of them.
       return field.multiple ? "string[]" : "string";
     case "select":
     case "radio":
@@ -88,7 +77,6 @@ function scalarType(field: ModelFieldDefinition): string {
         ? `Array<${stringUnion(field.options)}>`
         : "string[]";
     case "relation":
-      // Stored as record ids; resolve them with a `populate` or a second read.
       return field.relationType === "hasMany" || field.multiple
         ? "string[]"
         : "string";
@@ -165,9 +153,7 @@ export interface CmssyRecordOf<Data> {
 }`;
 
 export interface GenerateOptions {
-  /** Workspace slug, for the header comment. */
   workspace: string;
-  /** Command to re-run, for the header comment. */
   command?: string;
 }
 
@@ -182,7 +168,6 @@ export function generateModelTypes(
   const typeNames = new Map<string, string>();
   for (const model of sorted) {
     let name = pascalCase(model.slug);
-    // Two slugs can pascal-case to the same name (`shop-member`, `shopMember`).
     if (used.has(name)) name = `${name}_${used.size}`;
     used.set(name, model.slug);
     typeNames.set(model.slug, name);

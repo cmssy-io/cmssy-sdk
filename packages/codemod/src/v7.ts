@@ -1,9 +1,3 @@
-/**
- * 7.0 renames one export. `CmssyChrome` came from the UI-jargon sense of
- * "chrome" - the frame around the content. In a CMS SDK that reads as the
- * browser, and the thing it actually renders is a layout slot: the header or
- * footer blocks at a named position.
- */
 export const RENAMES: Record<string, string> = {
   CmssyChrome: "CmssyLayoutSlot",
   CmssyChromeProps: "CmssyLayoutSlotProps",

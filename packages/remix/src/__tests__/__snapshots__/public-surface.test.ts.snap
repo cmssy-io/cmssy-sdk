@@ -12,3 +12,10 @@ exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
   "useCmssyLocale",
 ]
 `;
+
+exports[`@cmssy/remix public surface > publishes exactly these subpaths 1`] = `
+[
+  ".",
+  "./testing",
+]
+`;

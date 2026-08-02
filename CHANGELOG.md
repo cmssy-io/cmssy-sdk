@@ -6,6 +6,98 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 11.7.0
+
+**The docs said things the code does not.** A file-by-file pass found eighteen,
+and the two that would have cost you an afternoon are both in
+[the delivery API reference](docs/reference/delivery-api.md): the "list child
+pages" example called a flat root field `publicPagesByType`, which the schema does
+not have (it is `public.page.byType`), and the wrapped-operations table named five
+more flat fields that were namespaced away. Also corrected: `MODEL_RECORDS_QUERY`
+and `MODEL_DEFINITIONS_QUERY` come from `@cmssy/core/internal`, not
+`@cmssy/react`; the README no longer says `CmssyLayoutSlot` was removed in 10.0,
+because it is exported from `@cmssy/next/server` and `cmssy init` mounts it; and
+`@cmssy/astro` needs `@cmssy/react` as a peer, so "no React" was half true at
+best. The full list is in the pull request.
+
+**`@cmssy/core/internal` lost eight symbols** nothing imported and no doc
+mentioned: `normalizeSlug`, `resolvePublicUrl`, `cachedWorkspaceId`,
+`localesFromSiteConfig`, `buildLocaleSwitchHref`, `localizeHtmlLinks`,
+`RECORDS_BY_IDS_QUERY`, `CmssyDeliveryOperation`. If you imported one from
+`/internal`, it moved nowhere - that entry point is the adapters' and never
+promised a shape. Say so and it can come back to the public surface with a name.
+
+**`checkCmssyEditMode` talks to your app and nothing else.** The `workspace`
+option queried a workspace's delivery API to find out whether the site has
+layout blocks, so the check's coverage depended on content the caller had
+already told it about by other means. 11.5.1 removed the same pattern for
+language and left this one. It is now `expectLayoutBlocks: boolean` - the caller
+states the fact, the check needs no API token, no org and no workspace slug, and
+it cannot go red because someone deactivated a header.
+
+**Do I have to do anything?** Replace `workspace: { org, workspaceSlug }` with
+`expectLayoutBlocks: true`. Nothing else in the check changed. Callers that never
+passed `workspace` are unaffected.
+
+**`EditSmokeResult` gained `skipped: string[]`.** An empty `failures` answered
+"did anything fail", never "was anything checked" - and four of the six
+assertions only run when the call gives them something to run against. They now
+say so by name, so a run that checks half of what you think it checks cannot
+report an unqualified green. Print it in CI.
+
+**Comments are gone from the SDK's source.** ~1270 lines of them across 103
+files, some of them wrong: `edit-smoke.ts` claimed `data-cmssy-unknown-block`
+counted toward the server-rendered layout assertion, which was true for 38
+minutes on 27 July and never again. The behaviour is unchanged - the rationale
+belongs in `docs/` and in commit messages, where it cannot silently contradict
+the code beside it.
+
+**`cmssy init` explains itself as it writes.** The scaffolded files carried their
+explanations as comments; those print now - one line per file, plus the handful of
+things whose absence breaks the editor silently - and the files land clean in your
+repo.
+
+**CommonJS consumers were getting the wrong types.** Every package shipped one
+`types` condition per subpath, pointing at the ESM declarations, so a
+`require("@cmssy/core")` from TypeScript resolved types that describe an ES module
+
+- what `@arethetypeswrong/cli` calls masquerading. `tsup` was already emitting the
+  `.d.cts` files; the exports map never pointed at them. All 19 subpaths across the
+  eight packages now declare `types` per condition. `import` users see no change.
+
+**Do I have to do anything?** No - unless you `require()` the SDK from
+TypeScript, in which case this is the fix. `publint --strict` and `attw` run in CI
+from now on, and each package's published subpaths are snapshotted, so one cannot
+disappear quietly either.
+
+**The Fakturownia invoicing example is gone** - deleted, not moved. It was a
+README and one webhook route that nothing here built, typechecked or tested, and
+an example living in this repo can only ever demonstrate an unreleased `main`.
+Examples that run against published packages live in `cmssy-io/examples`.
+
+## 11.6.0
+
+**`verifyCmssyWebhook` now accepts several secrets.** `secret` takes
+`string | readonly string[]`, and the verifier reads **every** `v1=` part of the
+signature header instead of only the last one. A delivery verifies when any
+signature matches any secret. Nothing to do: a single secret behaves exactly as
+before, and cmssy still sends one signature today.
+
+This exists for secret rotation. Rotating is a hard cutover right now - the old
+secret stops verifying the instant the new one is issued, so deliveries fail
+until you redeploy. Once cmssy signs with the previous secret as well, holding
+both across a deploy will make rotation seamless. Upgrade before that ships.
+
+**A non-string secret is now rejected.** Passing `[{ id, value }]` where
+`[value]` was meant used to stringify the object into the HMAC key - so the
+endpoint's effective key became the guessable literal `"[object Object]"` and a
+forged delivery verified. It throws `CmssyWebhookError` instead. Untyped
+callers should check what they pass.
+
+**A missing secret throws `CmssyWebhookError`, not `TypeError`.** `undefined`
+or `null` now fails as a webhook error like every other failure, so a handler
+that maps `CmssyWebhookError` to 401 keeps doing so when an env var is unset.
+
 ## 11.5.1
 
 **`checkCmssyEditMode` no longer asks a workspace which language to assert.**

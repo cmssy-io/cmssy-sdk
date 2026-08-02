@@ -12,7 +12,6 @@ const CONFIG = {
   editorOrigin: "https://app.cmssy.io",
 };
 
-/** The workspace answers "no is default, en is the other one". */
 function stubSiteConfig() {
   vi.stubGlobal(
     "fetch",
@@ -43,9 +42,6 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("createCmssyProxy", () => {
   it("sends a verified editor request to the edit route, carrying the language AND the edit flag", async () => {
-    // Both of these were forgotten once, separately: without the language the
-    // preview renders in the wrong one, without the flag the header and footer
-    // are markup the editor can select and cannot fill.
     stubSiteConfig();
     const proxy = createCmssyProxy(CONFIG);
 
@@ -83,8 +79,6 @@ describe("createCmssyProxy", () => {
   });
 
   it("strips a language prefix, asking the workspace which language needs none", async () => {
-    // "no" is this workspace's default, so /en is the prefixed one. Assuming
-    // English is default here would prefix every URL of a Norwegian-first site.
     stubSiteConfig();
     const proxy = createCmssyProxy(CONFIG, { stripLocalePrefix: true });
 
@@ -115,7 +109,6 @@ describe("createCmssyProxy cookies", () => {
     const response = await proxy(request("/about"));
 
     expect(response.cookies.get("session")?.value).toBe("refreshed");
-    // Setting it on the response alone would leave THIS render signed out.
     expect(forwarded(response, "cookie")).toContain("session=refreshed");
   });
 
@@ -154,7 +147,6 @@ describe("createCmssyProxy cookies", () => {
     const incoming = request("/about");
     incoming.headers.set("cookie", "session=stale");
     const proxy = createCmssyProxy(CONFIG, {
-      // What a real app passes: the same options used to set the cookie.
       cookies: () => [
         { name: "session", value: "", options: { maxAge: 60 * 60 * 24 } },
       ],

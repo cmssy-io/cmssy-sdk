@@ -55,8 +55,6 @@ describe("loadCmssyPage", () => {
       { blocks: [] },
     );
 
-    // The footer holds different blocks than the header. Handing it the
-    // header's data is the quiet version of the bug this fixes.
     expect(Object.keys(result.editorData ?? {})).toEqual(["header", "footer"]);
     expect(result.editorData?.footer?.resolvedContent).toEqual({
       "footer-block": { heading: "footer" },
@@ -78,7 +76,6 @@ describe("loadCmssyPage", () => {
     );
 
     expect(result.editorData).toBeUndefined();
-    // One call, not one per position: a visitor pays for none of this.
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledTimes(1);
   });
 
@@ -100,8 +97,6 @@ describe("loadCmssyPage", () => {
 
 describe("loadCmssyPage path handling", () => {
   it("does not slice the edit prefix out of a page slugged like it", async () => {
-    // This page was fetched at the slug `/orial`. No editor involved: the
-    // middleware leaves the URL alone and a plain visitor lands here.
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.position, options.editMode)),
     );
@@ -139,9 +134,6 @@ describe("loadCmssyPage edit-mode detection", () => {
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
-    // No x-cmssy-edit header: this is the edit page after Astro's rewrite,
-    // which builds a fresh request and drops whatever the middleware set. The
-    // URL is the signal that survives.
     const url = new URL(
       "https://site.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
     );
@@ -150,8 +142,6 @@ describe("loadCmssyPage edit-mode detection", () => {
     });
 
     expect(result.isEdit).toBe(true);
-    // The whole point: without edit mode the page and layouts are fetched
-    // without the preview secret, so the editor shows the published site.
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: DRAFT_SECRET,
     });

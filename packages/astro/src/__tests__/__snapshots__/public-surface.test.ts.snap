@@ -13,3 +13,10 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "resolveEditorOrigin",
 ]
 `;
+
+exports[`@cmssy/astro public surface > publishes exactly these subpaths 1`] = `
+[
+  ".",
+  "./testing",
+]
+`;

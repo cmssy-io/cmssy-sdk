@@ -7,16 +7,6 @@ import type {
   FieldDefinition,
 } from "@cmssy/core";
 
-/**
- * The props a block component receives, derived from the fields it declares:
- *
- *   const props = { headline: fields.text({ required: true }) };
- *   export function Hero({ content }: BlockProps<typeof props>) { … }
- *
- * Type the component this way and the schema is the only place a field is
- * named. Rename `headline` and the component stops compiling, instead of
- * quietly rendering nothing.
- */
 export interface BlockProps<P extends BlockPropsSchema, D = unknown> {
   content: InferBlockContent<P>;
   style?: Record<string, unknown>;
@@ -30,21 +20,10 @@ type Identical<X, Y> =
     ? true
     : false;
 
-/** What the component says about the fields the schema declares - nothing else. */
 type SchemaSlice<C, Content> = {
   [K in keyof Content]: K extends keyof C ? C[K] : never;
 };
 
-/**
- * Rejects a component whose `content` disagrees with the schema about a field
- * the schema declares. Extra keys are fine - a loader may inject content the
- * editor knows nothing about (see `productBlock`) - but a declared field must
- * have the name and the type the schema gives it.
- *
- * Without this, a hand-written content type only had to be *compatible* with the
- * schema, and since every optional field is optional on both sides, a field the
- * component invented was compatible with the one it forgot.
- */
 type ContentGuard<C, P extends BlockPropsSchema> =
   Identical<
     SchemaSlice<C, InferBlockContent<P>>,
@@ -68,21 +47,8 @@ export interface BlockDefinition {
   category?: string;
   icon?: string;
   layoutPositions?: string[];
-  /**
-   * One-line semantic description of what the block is and when it belongs on a
-   * page. Surfaced to the AI page composer to guide block selection and order.
-   */
   description?: string;
   props: Record<string, FieldDefinition>;
-  /**
-   * Optional server-side data loader. Run by CmssyServerPage during SSR; its
-   * result is passed to the component as the `data` prop. Not run in the
-   * editor (the component receives `data: undefined` there).
-   *
-   * The result crosses the server→client boundary when the block component is a
-   * Client Component, so it must be RSC-serializable (plain objects, arrays and
-   * primitives - no functions, class instances, etc.).
-   */
   loader?: BlockLoader;
   component: ComponentType<{
     content: Record<string, unknown>;

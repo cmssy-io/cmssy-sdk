@@ -36,11 +36,6 @@ export async function resolveWorkspaceId(
 
 const workspaceIdCache = new Map<string, Promise<string>>();
 
-/**
- * Every authenticated operation needs the workspace id, and it never changes for
- * a given (endpoint, workspace) pair - so it is resolved once and shared. A
- * failed lookup is evicted, otherwise one bad request would be cached forever.
- */
 export function cachedWorkspaceId(config: CmssyClientConfig): Promise<string> {
   const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
   const existing = workspaceIdCache.get(key);

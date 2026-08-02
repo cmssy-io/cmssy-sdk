@@ -1,11 +1,5 @@
-// Real draft secrets are short; anything longer is abuse, and both sides are
-// bounded so an attacker can't burn CPU hashing megabyte query params.
 const MAX_SECRET_LENGTH = 256;
 
-// Constant-time secret comparison built on Web Crypto so it runs in both the
-// Node runtime (route handlers, server components) and the Edge runtime
-// (middleware). Hashing both inputs first makes the byte comparison
-// length-independent.
 export async function cmssySecretsMatch(
   a: string,
   b: string,

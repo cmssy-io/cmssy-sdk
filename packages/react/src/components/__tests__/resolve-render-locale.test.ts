@@ -7,7 +7,6 @@ const CONFIG = {
   workspaceSlug: `ws-${Math.random()}`,
 };
 
-/** resolveSiteLocales caches per workspace, so each test needs its own slug. */
 function config() {
   return { ...CONFIG, workspaceSlug: `ws-${Date.now()}-${Math.random()}` };
 }
@@ -29,8 +28,6 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("resolveRenderLocale", () => {
   it("asks the workspace for its default language instead of assuming English", async () => {
-    // A Norwegian-first workspace used to get an English header under a
-    // Norwegian page, with no error to show for it - the SDK guessed.
     stubSiteConfig({ defaultLanguage: "no", enabledLanguages: ["no", "en"] });
 
     const resolved = await resolveRenderLocale({ config: config() });

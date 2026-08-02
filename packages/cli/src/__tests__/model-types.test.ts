@@ -71,7 +71,6 @@ describe("generateModelTypes", () => {
   it("types a localized field as string-or-map", () => {
     const output = generate();
     expect(output).toContain("title: CmssyLocalized;");
-    // A non-localized text field stays a plain string.
     expect(output).toContain("slug: string;");
   });
 

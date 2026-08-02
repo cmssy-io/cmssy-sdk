@@ -7,7 +7,7 @@
   "excludeFiles": ["CHANGELOG.md"],
   "rules": [
     "The framework is an adapter, never the foundation. Data, config and the editor protocol live in @cmssy/core.",
-    "@cmssy/next has one entry per runtime: / (anywhere), /server (RSC + route handlers), /middleware (edge), /client (browser).",
+    "@cmssy/next has one entry per runtime: / (anywhere), /server (RSC + route handlers), /middleware (edge), /testing. The browser entry is @cmssy/react/client - @cmssy/next has none.",
     "The editor needs a verified request: cmssyEdit=1 AND a cmssySecret matching the draft secret. A bare cmssyEdit=1 must never open it.",
     "A build cannot tell you whether the editor still works. Run checkCmssyEditMode against a started production build."
   ]

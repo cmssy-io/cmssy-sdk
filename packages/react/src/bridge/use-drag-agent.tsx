@@ -103,11 +103,6 @@ export function useDragAgent(config: DragAgentConfig): {
       setDropY(y);
     };
 
-    // Reorder is an in-document drag, so the agent sees the native events
-    // and posts cmssy:move. Drop-to-add is a drag started in the editor
-    // (parent) that never reaches this cross-origin frame, so the editor
-    // forwards the cursor via cmssy:drag-over and we report the index back.
-
     const onDragStart = (event: DragEvent) => {
       const blockEl = (
         event.target as HTMLElement | null
@@ -142,7 +137,6 @@ export function useDragAgent(config: DragAgentConfig): {
           index,
         });
       } catch {
-        // editor frame may reject during teardown; ignore
       }
     };
 
@@ -178,7 +172,6 @@ export function useDragAgent(config: DragAgentConfig): {
             index,
           });
         } catch {
-          // ignore
         }
       } else if (message.type === "cmssy:drag-end") {
         updateDropY(null);

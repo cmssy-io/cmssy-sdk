@@ -15,7 +15,6 @@ export interface CmssyLazyLayoutProps {
   edit: EditBridgeConfig;
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
-  /** Forwarded untouched to the block context as `context.app`. */
   appContext?: Record<string, unknown>;
   load: () => Promise<{ blocks: BlockDefinition[] }>;
 }
@@ -47,17 +46,6 @@ export function CmssyLazyLayout({ load, ...props }: CmssyLazyLayoutProps) {
     };
   }, [load]);
 
-  // The blocks arrive on the client, so nothing below this component is in the
-  // server HTML - which left no way to tell a mounted slot from a missing one
-  // until the browser ran. This marker is server-rendered, hidden, and is what
-  // `checkCmssyEditMode` reads.
-  //
-  // The count is the second half, and it is the half that matters. A mounted
-  // slot proves nothing about edit mode: every scaffold renders one whether or
-  // not the request was verified. That is how the Astro adapter shipped with
-  // `isEdit` permanently false - fetching without the preview secret, resolving
-  // no content - while the marker above reported a healthy editor. A non-zero
-  // count is reachable only if the slot really was resolved for the editor.
   const resolvedCount = props.resolvedContent
     ? Object.keys(props.resolvedContent).length
     : 0;

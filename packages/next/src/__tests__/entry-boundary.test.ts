@@ -4,13 +4,6 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-// @cmssy/next spans three runtimes that cannot import each other's code:
-// middleware runs on the edge (no next/headers, no server-only), the server
-// entry runs in RSC and route handlers, the client entry runs in the browser.
-// Shipping `server-only` on a shared entry is what broke consumers' middleware
-// in 4.6.2 - the boundary held only as long as someone remembered it. Now the
-// entry graph is walked and the rule is checked.
-
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function resolveLocal(from: string, specifier: string): string | null {
@@ -27,11 +20,6 @@ function resolveLocal(from: string, specifier: string): string | null {
   return null;
 }
 
-/**
- * Type-only imports are erased at build time, so they cross runtimes freely -
- * a client component may name a type declared in a server module. Only value
- * imports can drag code into a bundle, so only those are walked.
- */
 function valueImports(code: string): string[] {
   const withoutTypes = code.replace(
     /^\s*(?:import|export)\s+type\s[^;]*;/gm,
@@ -42,7 +30,6 @@ function valueImports(code: string): string[] {
   ].map(([, specifier]) => specifier ?? "");
 }
 
-/** Every module an entry pulls in, transitively, plus what each one imports. */
 function reachableFrom(entry: string): Map<string, string[]> {
   const seen = new Map<string, string[]>();
   const queue = [resolve(SRC, entry)];

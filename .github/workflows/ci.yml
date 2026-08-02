@@ -20,15 +20,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build first: @cmssy/next typechecks + tests against @cmssy/react's
-      # dist .d.ts, which doesn't exist on a fresh checkout until react builds.
       - run: pnpm -r build
 
       - run: pnpm -r typecheck
 
       - run: pnpm -r test
 
-      # Prose has no compiler, so it drifts silently: 10.0 removed ~90 symbols
-      # and every guide kept teaching them for six releases. This reads the code
-      # blocks against the BUILT types.
-      - run: pnpm check-docs
+      - run: pnpm check-packaging

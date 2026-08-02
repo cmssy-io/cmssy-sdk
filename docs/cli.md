@@ -36,17 +36,22 @@ cmssy init --dir ../my-site --force
    catch-all or an `app/layout.tsx` that outranks the cmssy root layouts (Next),
    the `npx astro add react node` step (Astro), or an `app/routes.ts` or
    `app/root.tsx` it refused to overwrite (React Router).
+5. Says what each file it wrote is for - one line under the file name - and ends
+   with a **What not to break** list: the few things whose absence breaks the
+   editor or the cache without failing a build. Since 11.7.0 the scaffolded files
+   carry no comments of their own; that explanation is printed once, here, and
+   the long version is [wiring](wiring.md).
 
 Flags: `--dir <path>` targets an app outside the working directory; `--force`
 overwrites existing wiring files.
 
 ## What it writes
 
-| Framework      | Wiring                                                                                                                                                                                                                                    |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js        | `cmssy.config.ts`, `proxy.ts`, `cmssy/` (registry, editor, editable layout, layout slot), `blocks/hero/`, `app/[[...path]]/` and `app/cmssy-edit/[[...path]]/` (page **and** layout - these are the root layouts, so the app has no `app/layout.tsx`), `app/api/draft/` - under `src/` when the app uses one. |
-| Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`.                                                                        |
-| React Router 7 | `cmssy.config.ts`, `app/root.tsx` (its `Layout` sets `<html lang>`), `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                 |
+| Framework      | Wiring                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js        | `cmssy.config.ts`, `proxy.ts`, `services/pages.ts` (the delivery query and `publishedPaths()` for `generateStaticParams`), `cmssy/` (registry, editor, editable layout), `blocks/hero/`, `app/[[...path]]/` and `app/cmssy-edit/[[...path]]/` (page **and** layout - these are the root layouts, so the app has no `app/layout.tsx`), `app/api/draft/` - under `src/` when the app uses one. The layout slot itself is `CmssyLayoutSlot` from `@cmssy/next/server`, so no file is written for it. |
+| Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`.                                                                                                                                                                                                                                                                                                                                                      |
+| React Router 7 | `cmssy.config.ts`, `app/root.tsx` (its `Layout` sets `<html lang>`), `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                                                                                                                                                                                                                                             |
 
 SEO (metadata, sitemap, robots) is deliberately not scaffolded: since 10.0 it is
 the app's own query plus its own transformation. The
@@ -213,6 +218,11 @@ It reads the workspace's model definitions over the **public** delivery path -
 the same `CMSSY_ORG_SLUG` / `CMSSY_WORKSPACE_SLUG` your app uses, loaded from
 `.env.local` / `.env` like `cmssy link` does. No API token, so it runs in CI.
 
+Flags: `--out <path>` moves the models file; `--operations-out <path>` moves the
+operations file; `--no-operations` skips it entirely; `--check` writes nothing and
+exits non-zero when either file is out of date; `--org <slug>` and
+`--workspace <slug>` override what the env files say.
+
 For a `product` model it writes:
 
 ```ts
@@ -229,7 +239,9 @@ export interface ProductData {
 }
 
 export type ProductRecord = CmssyRecordOf<ProductData>;
-export interface CmssyModels { product: ProductData; /* … */ }
+export interface CmssyModels {
+  product: ProductData; /* … */
+}
 ```
 
 What the mapping preserves, and what a hand-written type usually loses:
@@ -270,6 +282,13 @@ These are not a template the CLI carries - they are the constants `@cmssy/core`
 itself queries with, exported and written out. A CLI-side copy would be one more
 place for the shape to drift from the client that uses it, which is the problem
 this solves rather than repeats.
+
+**Two operations are deliberately absent, and adding them breaks apps.** The
+dev-preview variant of `PublicPage` is a second document with the same operation
+name, and graphql-codegen's client preset rejects a duplicate name outright - the
+file would fail every consumer's codegen. `PublicModelDefinitions` is what
+`cmssy types` itself reads to write `models.ts`; an app has no reason to fetch
+model definitions at runtime.
 
 **The file is vendored, not yours.** Every run rewrites it, so editing it is
 pointless rather than dangerous. Need a different selection set? Write your own

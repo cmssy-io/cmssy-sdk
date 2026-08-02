@@ -10,11 +10,6 @@ export interface CmssyLocaleProviderProps {
   children: ReactNode;
 }
 
-/**
- * Exposes the active locale ({@link CmssyLocaleContext}) to client components
- * below it (e.g. `CmssyLink`) so they can build locale-aware hrefs without
- * prop-drilling. Wrap your root layout body with it.
- */
 export function CmssyLocaleProvider({
   value,
   children,
@@ -24,7 +19,6 @@ export function CmssyLocaleProvider({
   );
 }
 
-/** Reads the active locale; returns null when no provider is mounted. */
 export function useCmssyLocale(): CmssyLocaleContext | null {
   return useContext(LocaleContext);
 }

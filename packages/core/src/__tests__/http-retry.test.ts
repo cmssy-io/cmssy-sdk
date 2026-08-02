@@ -56,9 +56,6 @@ describe("postGraphql retry", () => {
   });
 
   it("stops immediately when the server asks for longer than we will wait", async () => {
-    // Clamping a ten-minute Retry-After down to the backoff cap used to burn
-    // every attempt in a few hundred ms against something already rate-limited,
-    // and reported a bare 429 (CMS-1054).
     const doFetch = vi
       .fn()
       .mockResolvedValue(res(429, {}, { "Retry-After": "600" }));

@@ -159,9 +159,6 @@ describe("editor-content marker", () => {
       />,
     );
 
-    // The mounted-slot marker alone says nothing: it is here either way. Zero
-    // is what an adapter looks like when its edit signal never arrived - the
-    // state that shipped undetected because only the marker was asserted.
     const marker = container.querySelector("[data-cmssy-layout-slot]");
     expect(marker).not.toBeNull();
     expect(marker?.getAttribute("data-cmssy-editor-content")).toBe("0");

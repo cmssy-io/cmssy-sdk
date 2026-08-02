@@ -10,7 +10,6 @@ import type {
   BuildBlockContextExtra,
 } from "@cmssy/types";
 
-// Block-context shapes live in @cmssy/types; re-exported for consumers.
 export type {
   CmssyLocaleContext,
   CmssyBlockMember,
@@ -42,10 +41,6 @@ export function buildBlockContext(
     forms,
     ...(extra?.auth ? { auth: extra.auth } : {}),
     ...(extra?.workspace ? { workspace: extra.workspace } : {}),
-    // Identity only, and only when the page has one. A page fetched by an older
-    // SDK has no slug, and then a block gets no `page` at all rather than one
-    // with a hole in it: "I don't know where I am" has to stay distinguishable
-    // from "I am at /".
     ...(extra?.page?.slug
       ? {
           page: {

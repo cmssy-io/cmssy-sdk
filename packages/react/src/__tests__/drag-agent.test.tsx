@@ -40,8 +40,6 @@ function setParent(value: unknown) {
   });
 }
 
-// jsdom returns all-zero rects; stub each block's rect so the agent can
-// compute an index from clientY. b1 occupies y 0..100, b2 100..200.
 function stubBlockRects() {
   for (const el of Array.from(
     document.querySelectorAll<HTMLElement>("[data-block-id]"),
@@ -139,7 +137,7 @@ describe("drag agent", () => {
       />,
     );
     stubBlockRects();
-    window.dispatchEvent(dragOver(150)); // below b2 midpoint → index 2
+    window.dispatchEvent(dragOver(150));
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:drag-index",
@@ -255,8 +253,8 @@ describe("drag agent", () => {
     stubBlockRects();
     const b1El = container.querySelector('[data-block-id="b1"]')!;
     const { make } = dropEvent(150, null);
-    document.dispatchEvent(make("dragstart", b1El)); // start dragging b1
-    document.dispatchEvent(make("drop")); // drop below b2 → index 2
+    document.dispatchEvent(make("dragstart", b1El));
+    document.dispatchEvent(make("drop"));
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: "cmssy:move",
@@ -355,7 +353,7 @@ describe("drag agent", () => {
     );
     stubBlockRects();
     const { make } = dropEvent(50, null);
-    document.dispatchEvent(make("drop")); // no prior dragstart → movingId null
+    document.dispatchEvent(make("drop"));
     const dragCalls = mockParent.postMessage.mock.calls.filter((c) =>
       ["cmssy:move", "cmssy:drag-index"].includes(
         (c[0] as { type?: string })?.type ?? "",

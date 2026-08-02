@@ -33,11 +33,11 @@ editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 
 ### Config
 
-| Export               | Signature                             | Notes                                                          |
-| -------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| `defineCmssyConfig`  | `(config: CmssyEnvConfig) => CmssyConfig` | Validates env-sourced values; throws naming every missing one. |
-| `CmssyConfig`        | type                                  | The validated config (see [below](#config-types)).             |
-| `CmssyEnvConfig`     | type                                  | The same with the required fields widened to `\| undefined`.    |
+| Export              | Signature                                 | Notes                                                          |
+| ------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| `defineCmssyConfig` | `(config: CmssyEnvConfig) => CmssyConfig` | Validates env-sourced values; throws naming every missing one. |
+| `CmssyConfig`       | type                                      | The validated config (see [below](#config-types)).             |
+| `CmssyEnvConfig`    | type                                      | The same with the required fields widened to `\| undefined`.   |
 
 ### Gateway
 
@@ -76,8 +76,16 @@ organization. The client has exactly three members (`query` and `queryScoped` ea
 interface CmssyClient {
   readonly config: CmssyClientConfig;
   // Typed document: variables checked, result inferred.
-  query<R, V>(document: CmssyTypedDocument<R, V>, variables: V, options?): Promise<R>;
-  queryScoped<R, V>(document, variables: Omit<V, "workspaceId">, options?): Promise<R>;
+  query<R, V>(
+    document: CmssyTypedDocument<R, V>,
+    variables: V,
+    options?,
+  ): Promise<R>;
+  queryScoped<R, V>(
+    document,
+    variables: Omit<V, "workspaceId">,
+    options?,
+  ): Promise<R>;
   // Query string: your own generic, as before.
   query<T>(document: string, variables?, options?): Promise<T>;
   queryScoped<T>(document: string, variables?, options?): Promise<T>;
@@ -87,12 +95,12 @@ interface CmssyClient {
 
 `GraphqlRequestOptions`:
 
-| Option    | Meaning                                                                                                                                |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `public`  | Route through the org-scoped public delivery path. Set it for unauthenticated reads.                                                    |
-| `retry`   | Retry 429/503, honoring `Retry-After`. **Off by default** - this function also carries mutations. Read-only callers opt in with `{}`.   |
-| `headers` | Extra request headers (e.g. an `authorization` bearer for a signed-in member).                                                          |
-| `fetch`   | Custom fetch. `signal` for cancellation.                                                                                                |
+| Option    | Meaning                                                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `public`  | Route through the org-scoped public delivery path. Set it for unauthenticated reads.                                                  |
+| `retry`   | Retry 429/503, honoring `Retry-After`. **Off by default** - this function also carries mutations. Read-only callers opt in with `{}`. |
+| `headers` | Extra request headers (e.g. an `authorization` bearer for a signed-in member).                                                        |
+| `fetch`   | Custom fetch. `signal` for cancellation.                                                                                              |
 
 Errors are `CmssyRequestError`. `DEFAULT_CMSSY_API_URL` is exported for a
 self-hosted endpoint check.
@@ -104,12 +112,12 @@ folder is a working example, `codegen` included.
 
 ### Blocks & fields
 
-| Export                        | Signature                                  | Notes                                                                     |
-| ----------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
-| `fields`                      | object of field builders                   | See the list below.                                                       |
-| `FieldDefinition` `TypedField` | types                                     | What a builder returns.                                                   |
-| `InferBlockContent`           | type                                       | Schema → the `content` object a component receives.                       |
-| `evaluateFieldConditionGroup` | `(group, values) => boolean`               | Conditional-field (`showWhen`) evaluation, for a custom renderer.         |
+| Export                         | Signature                    | Notes                                                             |
+| ------------------------------ | ---------------------------- | ----------------------------------------------------------------- |
+| `fields`                       | object of field builders     | See the list below.                                               |
+| `FieldDefinition` `TypedField` | types                        | What a builder returns.                                           |
+| `InferBlockContent`            | type                         | Schema → the `content` object a component receives.               |
+| `evaluateFieldConditionGroup`  | `(group, values) => boolean` | Conditional-field (`showWhen`) evaluation, for a custom renderer. |
 
 `fields.` builders: `text`, `textarea`, `richText`, `markdown`, `number`, `date`,
 `datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,
@@ -117,16 +125,16 @@ folder is a working example, `codegen` included.
 
 ### Editor protocol, edit mode & CSP
 
-| Export                                     | Signature                                                         |
-| ------------------------------------------ | ----------------------------------------------------------------- |
-| `PROTOCOL_VERSION` / `isProtocolCompatible` | `number` / `(version) => boolean`                                |
-| `parseEditorMessage`                       | `(data, origin, expectedOrigin) => EditorToAppMessage \| null`    |
-| `postToEditor`                             | `(target, editorOrigin, message) => void`                         |
-| `applyCmssyCsp`                            | `(response, options?) => response` - sets `frame-ancestors`       |
-| `resolveEditorOrigin`                      | `(editorOrigin?) => string \| string[]` - defaults to cmssy admin |
-| `DEFAULT_CMSSY_EDITOR_ORIGINS`             | `string[]`                                                        |
-| `isVerifiedEditUrl`                        | `(url, config) => Promise<boolean>`                               |
-| `CMSSY_EDIT_HEADER` `CMSSY_EDIT_QUERY_PARAM` `CMSSY_SECRET_QUERY_PARAM` | constants                             |
+| Export                                                                  | Signature                                                         |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `PROTOCOL_VERSION` / `isProtocolCompatible`                             | `number` / `(version) => boolean`                                 |
+| `parseEditorMessage`                                                    | `(data, origin, expectedOrigin) => EditorToAppMessage \| null`    |
+| `postToEditor`                                                          | `(target, editorOrigin, message) => void`                         |
+| `applyCmssyCsp`                                                         | `(response, options?) => response` - sets `frame-ancestors`       |
+| `resolveEditorOrigin`                                                   | `(editorOrigin?) => string \| string[]` - defaults to cmssy admin |
+| `DEFAULT_CMSSY_EDITOR_ORIGINS`                                          | `string[]`                                                        |
+| `isVerifiedEditUrl`                                                     | `(url, config) => Promise<boolean>`                               |
+| `CMSSY_EDIT_HEADER` `CMSSY_EDIT_QUERY_PARAM` `CMSSY_SECRET_QUERY_PARAM` | constants                                                         |
 
 Message types: `AppToEditorMessage`, `EditorToAppMessage`, `ReadyMessage`,
 `SelectMessage`, `PatchMessage`, `ClickMessage`, `BoundsMessage`,
@@ -152,15 +160,32 @@ loader of its own. Also `undefined` when nothing resolved a language.
 
 ### Webhooks
 
-`verifyCmssyWebhook(event, options?)`, `CmssyWebhookError`,
-`VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`, `CmssyWebhookOrder`.
+`await verifyCmssyWebhook({ body, signatureHeader, secret, toleranceSeconds? })`
+returns the parsed `CmssyWebhookEvent` and throws `CmssyWebhookError` on any
+failure - missing or malformed header, bad signature, stale timestamp, invalid
+JSON. It is async: forgetting `await` means the signature is never checked.
+
+`body` must be the **raw** request text (`await req.text()`) - re-serializing
+parsed JSON changes bytes and the signature will not match.
+
+`secret` takes one secret or several (`string | readonly string[]`). Several is
+for a rotation window: hold the new and the previous secret at once and either
+verifies. A non-string is rejected rather than stringified into the key.
+
+Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
+`CmssyWebhookOrder`. All from `@cmssy/core`.
 
 ### `@cmssy/core/testing` and `/preflight`
 
-`checkCmssyEditMode({ baseUrl, secret })` proves a deployed site can still be
-**edited** - see [testing](../testing.md). `/preflight` holds the diagnostics the
-CLI renders: `collectEditDiagnostics`, `checkWorkspaceReachable`,
-`checkDraftSecret`, `checkPreviewUrl`, `checkFrameAncestors`, `buildEditorUrl`.
+`checkCmssyEditMode(options)` proves a deployed site can still be **edited** - see
+[testing](../testing.md). It returns `{ ok, failures, skipped }`, and `skipped` is
+the half people miss: given `baseUrl` and `secret` alone, four of its six
+assertions stand down and are named there. `expectLayoutBlocks`, `localizedPath`
+/ `localizedLocale` and `editRoute` are what turn them on.
+
+`/preflight` holds the diagnostics the CLI renders: `collectEditDiagnostics`,
+`checkWorkspaceReachable`, `checkDraftSecret`, `checkPreviewUrl`,
+`checkFrameAncestors`, `buildEditorUrl`.
 
 ## @cmssy/react
 
@@ -168,24 +193,24 @@ Block authoring and the server renderers. Re-exports the core symbols above.
 
 ### Block authoring
 
-| Export          | Signature                                 | Notes                                                                                                   |
-| --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Export          | Signature                                 | Notes                                                                                                     |
+| --------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `defineBlock`   | `(definition) => BlockDefinition`         | Declares a block; optional async server `loader`. Optional one-line `description` guides the AI composer. |
 | `BlockProps`    | type: `BlockProps<typeof props, Data?>`   | Types a component **from its schema** - a renamed field becomes a compile error.                          |
-| `buildBlockMap` | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                  |
+| `buildBlockMap` | `(blocks: BlockDefinition[]) => BlockMap` | Maps `type` to component for rendering.                                                                   |
 
 See [Authoring a block](../building-blocks/authoring-blocks.md). There is **no**
 rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/recipes.md).
 
 ### Server renderers & block context
 
-| Export              | Purpose                                                              |
-| ------------------- | -------------------------------------------------------------------- |
-| `CmssyServerPage`   | Renders a page's blocks server-side, running each block's loader.    |
-| `CmssyServerLayout` | The same for layout-position blocks (header/footer).                 |
-| `CmssyBlock`        | Renders a single block instance.                                     |
-| `UnknownBlock`      | Placeholder for a block type the registry does not know.             |
-| `buildBlockContext` | Builds the `CmssyBlockContext` passed to blocks.                     |
+| Export              | Purpose                                                           |
+| ------------------- | ----------------------------------------------------------------- |
+| `CmssyServerPage`   | Renders a page's blocks server-side, running each block's loader. |
+| `CmssyServerLayout` | The same for layout-position blocks (header/footer).              |
+| `CmssyBlock`        | Renders a single block instance.                                  |
+| `UnknownBlock`      | Placeholder for a block type the registry does not know.          |
+| `buildBlockContext` | Builds the `CmssyBlockContext` passed to blocks.                  |
 
 Both renderers take `appContext`: whatever your app hands them (a member, a
 feature flag, the active path) reaches every block as `context.app`, untouched.
@@ -202,15 +227,27 @@ Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
 
 ### Editor data
 
-| Export                         | Signature                                    |
-| ------------------------------ | -------------------------------------------- |
-| `resolveEditorBlockData`       | `(options) => Promise<{ data, content }>`    |
-| `resolveEditorLayoutBlockData` | `(options) => Promise<{ data, content }>`    |
+| Export                         | Signature                                 |
+| ------------------------------ | ----------------------------------------- |
+| `resolveEditorBlockData`       | `(options) => Promise<{ data, content }>` |
+| `resolveEditorLayoutBlockData` | `(options) => Promise<{ data, content }>` |
 
 The canvas renders **stored** content: a block's loader has not run and a
 relation field is still the ids it stores. These resolve both halves, and what
 they return goes to `CmssyLazyEditor` / `CmssyLazyLayout` as `data` and
 `resolvedContent`. See [wiring §5](../wiring.md).
+
+`resolveBlockData` and `resolveLayoutBlockData` are the same two without the
+editor's stored-content half - a server render that only needs each block's
+loader result.
+
+### `@cmssy/react/block-error-boundary`
+
+`BlockErrorBoundary` (`{ blockType, blockId, editMode? }`) - a client component
+that catches one block's render error so the rest of the page still renders.
+`CmssyBlock` and the resolved-block renderer already wrap every block with it, so
+you need this entry point only to wrap something yourself; it exists as its own
+entry because a `"use client"` boundary cannot live in the server graph.
 
 ## @cmssy/next
 
@@ -219,14 +256,14 @@ the middleware preset.
 
 ### `@cmssy/next/server`
 
-| Export                | Signature                                       | Use in                          |
-| --------------------- | ----------------------------------------------- | ------------------------------- |
-| `createCmssyPage`     | `(config, blocks, options?) => PageComponent`   | `app/[[...path]]/page.tsx`      |
-| `createCmssyEditPage` | `(config, blocks, options?) => PageComponent`   | `app/cmssy-edit/[[...path]]/`   |
-| `createDraftRoute`    | `(config) => (request) => Promise<Response>`    | `app/api/draft/route.ts`        |
-| `CmssyLayoutSlot`     | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale` | any route |
-| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half | any adapter |
-| `isCmssyEditMode`     | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic | `/cmssy-edit` only |
+| Export                                    | Signature                                                                           | Use in                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------- |
+| `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                       | `app/[[...path]]/page.tsx`    |
+| `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                       | `app/cmssy-edit/[[...path]]/` |
+| `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                        | `app/api/draft/route.ts`      |
+| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`            | any route                     |
+| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half | any adapter                   |
+| `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic         | `/cmssy-edit` only            |
 
 ```ts
 interface CreateCmssyPageOptions {
@@ -234,9 +271,11 @@ interface CreateCmssyPageOptions {
   path?: string; // pin the route to one slug (e.g. "/" for a dedicated home page)
   appContext?:
     | Record<string, unknown>
-    | ((args: { page: CmssyPageData; locale: string; path: string[] }) =>
-        | Record<string, unknown>
-        | Promise<Record<string, unknown>>);
+    | ((args: {
+        page: CmssyPageData;
+        locale: string;
+        path: string[];
+      }) => Record<string, unknown> | Promise<Record<string, unknown>>);
 }
 ```
 
@@ -246,16 +285,16 @@ scope cannot vary by visitor.
 
 ### `@cmssy/next/middleware`
 
-| Export                     | Signature                                                       |
-| -------------------------- | ---------------------------------------------------------------- |
-| `createCmssyProxy`         | `(config, options?) => (request) => Promise<NextResponse>`      |
-| `CmssyProxyOptions`        | `{ stripLocalePrefix?, cookies? }`                              |
-| `cmssyProxyMatcher`        | `string[]` - copy the value into your literal `config.matcher`  |
-| `cmssyEditRewrite`         | `(request, config, options?) => Promise<NextResponse \| null>`  |
-| `createCmssyEditMiddleware` | `(config) => (request) => Promise<NextResponse>`                |
-| `isCmssyEditRequest`       | `(request, config) => Promise<boolean>`                         |
-| `applyCmssyCsp`            | re-exported from core                                            |
-| `CMSSY_EDIT_PATH_PREFIX`   | `"/cmssy-edit"`                                                  |
+| Export                      | Signature                                                      |
+| --------------------------- | -------------------------------------------------------------- |
+| `createCmssyProxy`          | `(config, options?) => (request) => Promise<NextResponse>`     |
+| `CmssyProxyOptions`         | `{ stripLocalePrefix?, cookies? }`                             |
+| `cmssyProxyMatcher`         | `string[]` - copy the value into your literal `config.matcher` |
+| `cmssyEditRewrite`          | `(request, config, options?) => Promise<NextResponse \| null>` |
+| `createCmssyEditMiddleware` | `(config) => (request) => Promise<NextResponse>`               |
+| `isCmssyEditRequest`        | `(request, config) => Promise<boolean>`                        |
+| `applyCmssyCsp`             | re-exported from core                                          |
+| `CMSSY_EDIT_PATH_PREFIX`    | `"/cmssy-edit"`                                                |
 
 `createCmssyProxy` is the whole middleware, in the order it has to happen:
 resolve the language, rewrite verified editor traffic onto `/cmssy-edit` carrying

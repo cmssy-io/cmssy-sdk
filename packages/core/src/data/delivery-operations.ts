@@ -14,30 +14,10 @@ import {
 } from "./queries";
 
 export interface CmssyDeliveryOperation {
-  /** One line, for the generated file - why an app would want this one. */
   purpose: string;
   document: string;
 }
 
-/**
- * The delivery operations the SDK itself performs, for `cmssy types` to vendor
- * into an app.
- *
- * These reference the runtime constants rather than restating them: a second
- * copy here would be free to drift from the client that actually sends them,
- * which is the problem this list exists to remove. Keep it that way - a literal
- * moved into this file also drops out of `sdl-operations.test.ts`, which
- * validates exported document *strings* in their home modules.
- *
- * Deliberately absent, and why:
- *
- * - `PUBLIC_PAGE_DEV_QUERY` - a second document named `PublicPage`. Two
- *   documents cannot share an operation name in graphql-codegen's client
- *   preset, so including it would emit a file every consumer's codegen
- *   rejects. It is also a dev-preview path an app never calls itself.
- * - `MODEL_DEFINITIONS_QUERY` - `cmssy types` already turns definitions into
- *   TypeScript; fetching them at runtime is not something an app does.
- */
 export const CMSSY_DELIVERY_OPERATIONS: readonly CmssyDeliveryOperation[] = [
   {
     purpose: "Languages, branding and the 404 page - the workspace's settings.",

@@ -2,8 +2,6 @@ export { createCmssyLoader, createCmssyHeaders } from "./loader";
 export type { CmssyRouteData } from "./loader";
 export { useCmssyLocale } from "./use-cmssy-locale";
 
-// The data layer, the config and the editor protocol are not React Router's -
-// they are the same @cmssy/core every adapter uses.
 export {
   defineCmssyConfig,
   createCmssyClient,
