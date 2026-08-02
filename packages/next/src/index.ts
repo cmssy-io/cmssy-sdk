@@ -7,6 +7,8 @@ export {
   CMSSY_SECRET_QUERY_PARAM,
   localizeHref,
   CMSSY_LOCALE_HEADER,
+  verifyCmssyWebhook,
+  CmssyWebhookError,
 } from "@cmssy/core";
 export type {
   CmssyConfig,
@@ -14,6 +16,8 @@ export type {
   CmssyPageData,
   CmssyPageMeta,
   CmssyPageSummary,
+  CmssyWebhookEvent,
+  VerifyCmssyWebhookOptions,
 } from "@cmssy/core";
 
 export type {
