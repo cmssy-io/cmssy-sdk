@@ -689,6 +689,7 @@ input CreateModelDefinitionInput {
   auth: ModelAuthConfigInput
   color: String
   defaultSort: DefaultSortInput
+  deliveryExposed: Boolean
   description: String
   displayField: String
   fields: [PropertyFieldInput!]
@@ -1503,10 +1504,18 @@ type MediaQueries {
   usages(assetId: ID!): MediaUsageResponse!
 }
 
+type MediaRecordUsage {
+  fieldPath: String!
+  modelId: String
+  modelName: String!
+  recordId: String!
+}
+
 type MediaUsageResponse {
   brandingUsages: [MediaBrandingUsage!]!
   isUsed: Boolean!
   pageUsages: [MediaPageUsage!]!
+  recordUsages: [MediaRecordUsage!]!
   totalPages: Int!
 }
 
@@ -1620,6 +1629,7 @@ type ModelDefinition {
   createdAt: DateTime!
   createdBy: String
   defaultSort: DefaultSort
+  deliveryExposed: Boolean!
   description: String
   displayField: String
   fields: [PropertyField!]!
@@ -3392,6 +3402,7 @@ input UpdateModelDefinitionInput {
   auth: ModelAuthConfigInput
   color: String
   defaultSort: DefaultSortInput
+  deliveryExposed: Boolean
   description: String
   displayField: String
 
@@ -3691,7 +3702,12 @@ type WebhookDelivery {
   nextAttemptAt: DateTime
   responseCode: Int
   status: String!
-  url: String!
+
+  """
+  Full delivery URL including its query string, which may carry the consumer's own shared secret. Null unless the caller holds webhooks:manage - a role that can rotate the secret anyway.
+  """
+  url: String
+  urlLabel: String!
   webhookId: String!
 }
 
@@ -3703,7 +3719,12 @@ type WebhookEndpoint {
   events: [String!]!
   id: String!
   updatedAt: DateTime!
-  url: String!
+
+  """
+  Full endpoint URL including its query string, which may carry the consumer's own shared secret. Null unless the caller holds webhooks:manage - a role that can rotate the secret anyway.
+  """
+  url: String
+  urlLabel: String!
 }
 
 """
@@ -3717,7 +3738,13 @@ type WebhookEndpointSecret {
 type WebhookMutations {
   create(input: CreateWebhookEndpointInput!): WebhookEndpointSecret!
   delete(id: ID!): DeletionResult!
-  rotateSecret(id: ID!): WebhookEndpointSecret!
+  rotateSecret(
+    """
+    Hours the previous secret keeps signing alongside the new one, capped at 24. Omit or 0 for an immediate cutover, which breaks delivery until the consumer redeploys.
+    """
+    graceHours: Int
+    id: ID!
+  ): WebhookEndpointSecret!
   update(input: UpdateWebhookEndpointInput!): WebhookEndpoint!
 }
 
