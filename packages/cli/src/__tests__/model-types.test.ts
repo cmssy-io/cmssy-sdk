@@ -1,21 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  generateModelTypes,
-  type ModelDefinition,
-} from "../model-types";
+import { generateModelTypes, type ModelDefinition } from "../model-types";
 
 const product: ModelDefinition = {
   slug: "product",
   name: "Product",
   displayField: "title",
   fields: [
-    { key: "title", label: "Title", type: "text", required: true, localized: true },
+    {
+      key: "title",
+      label: "Title",
+      type: "text",
+      required: true,
+      localized: true,
+    },
     { key: "slug", type: "text", required: true },
     { key: "price", type: "number", required: true },
     { key: "inStock", type: "boolean" },
     { key: "image", type: "media" },
     { key: "gallery", type: "media", multiple: true },
+    { key: "manual", type: "file" },
+    { key: "attachments", type: "file", multiple: true },
     { key: "unit", type: "select", options: ["pcs", "kg"] },
     { key: "tags", type: "multiselect", options: ["new", "sale"] },
     {
@@ -76,10 +81,19 @@ describe("generateModelTypes", () => {
 
   it("maps media, select and multiselect", () => {
     const output = generate();
-    expect(output).toContain("image?: string;");
-    expect(output).toContain("gallery?: string[];");
+    expect(output).toContain("image?: CmssyMedia;");
+    expect(output).toContain("gallery?: CmssyMedia[];");
     expect(output).toContain('unit?: "pcs" | "kg";');
     expect(output).toContain('tags?: Array<"new" | "sale">;');
+  });
+
+  it("gives file its own type, so a change to media cannot reach it", () => {
+    const output = generate();
+    expect(output).toContain("manual?: CmssyFile;");
+    expect(output).toContain("attachments?: CmssyFile[];");
+    expect(output).toContain("export type CmssyMedia =");
+    expect(output).toContain("export type CmssyFile =");
+    expect(output).not.toContain("manual?: CmssyMedia");
   });
 
   it("types a relation as the ids it stores, and says which model", () => {
@@ -91,7 +105,9 @@ describe("generateModelTypes", () => {
 
   it("inlines object fields and repeater items", () => {
     const output = generate();
-    expect(output).toMatch(/specs\?: \{\n\s+material\?: string;\n\s+weightKg\?: number;\n\s+\};/);
+    expect(output).toMatch(
+      /specs\?: \{\n\s+material\?: string;\n\s+weightKg\?: number;\n\s+\};/,
+    );
     expect(output).toMatch(/faq\?: Array<\{\n\s+question: string;/);
   });
 
@@ -101,7 +117,9 @@ describe("generateModelTypes", () => {
 
   it("exports the slug map and a record type per model", () => {
     const output = generate();
-    expect(output).toContain("export type ProductRecord = CmssyRecordOf<ProductData>;");
+    expect(output).toContain(
+      "export type ProductRecord = CmssyRecordOf<ProductData>;",
+    );
     expect(output).toContain("product: ProductData;");
     expect(output).toContain("export type CmssyModelSlug = keyof CmssyModels;");
   });

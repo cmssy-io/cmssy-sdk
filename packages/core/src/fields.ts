@@ -7,6 +7,7 @@ import type {
   FieldTypeValueMap,
   FieldDefinition,
   InferBlockContent,
+  MediaFieldValue,
   RelationMode,
   TypedField,
 } from "@cmssy/types";
@@ -27,7 +28,9 @@ type OptionValue<O> = O extends {
   ? Option
   : string;
 
-type MediaValue<O> = O extends { multiple: true } ? string[] : string;
+type MediaValue<O> = MediaFieldValue<
+  O extends { multiple: true } ? true : false
+>;
 
 type RepeaterValue<O> = O extends {
   itemSchema: infer Schema extends BlockPropsSchema;
