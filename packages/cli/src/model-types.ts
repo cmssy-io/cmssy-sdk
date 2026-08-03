@@ -67,8 +67,9 @@ function scalarType(field: ModelFieldDefinition): string {
     case "boolean":
       return "boolean";
     case "media":
+      return field.multiple ? "CmssyMedia[]" : "CmssyMedia";
     case "file":
-      return field.multiple ? "string[]" : "string";
+      return field.multiple ? "CmssyFile[]" : "CmssyFile";
     case "select":
     case "radio":
       return field.options?.length ? stringUnion(field.options) : "string";
@@ -113,7 +114,9 @@ function docComment(field: ModelFieldDefinition, pad: string): string[] {
   if (field.label && field.label !== field.key) parts.push(field.label);
   if (field.description) parts.push(field.description);
   if (field.type === "relation" && field.relationTo) {
-    parts.push(`Record id(s) from \`${field.relationTo.replace(/^model:/, "")}\`.`);
+    parts.push(
+      `Record id(s) from \`${field.relationTo.replace(/^model:/, "")}\`.`,
+    );
   }
   if (!parts.length) return [];
   return [`${pad}/** ${parts.join(" - ")} */`];
@@ -141,6 +144,12 @@ function objectType(fields: ModelFieldDefinition[], depth: number): string {
 
 const PREAMBLE = `/** A translatable field: one string, or one per enabled language. */
 export type CmssyLocalized = string | Record<string, string>;
+
+/** What a media field holds. Mirrors \`MediaFieldValue\` in @cmssy/types. */
+export type CmssyMedia = string;
+
+/** What a file field holds. Mirrors \`FileFieldValue\` in @cmssy/types. */
+export type CmssyFile = string;
 
 /** A record as \`public.model.records\` returns it, with \`data\` typed. */
 export interface CmssyRecordOf<Data> {
@@ -186,7 +195,8 @@ export function generateModelTypes(
     const doc = [`/**`, ` * ${title}`];
     if (model.description) doc.push(` *`, ` * ${model.description}`);
     doc.push(` *`, ` * Model slug: \`${model.slug}\``);
-    if (model.displayField) doc.push(` * Display field: \`${model.displayField}\``);
+    if (model.displayField)
+      doc.push(` * Display field: \`${model.displayField}\``);
     doc.push(` */`);
 
     blocks.push(
