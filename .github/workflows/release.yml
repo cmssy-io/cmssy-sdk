@@ -46,11 +46,10 @@ jobs:
       # bump these, so next/astro/remix sat on ^11.3.0 through six minors and
       # would have carried it into a major, where it admits an 11.x react into
       # a 12.x adapter.
+      # No `if:` on purpose - workflow_dispatch publishes too, so gating this on
+      # a tag would let the one path that skips the check still ship.
       - name: Verify @cmssy peer ranges were bumped with the release
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          TAG: ${{ github.ref_name }}
-        run: node scripts/check-peer-ranges.mjs "${TAG#v}"
+        run: node scripts/check-peer-ranges.mjs
 
       - run: pnpm install --frozen-lockfile
 

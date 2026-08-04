@@ -6,35 +6,52 @@
  * there through six minors, and on a major it would admit an 11.x react into a
  * 12.x adapter - a combination npm installs without a word.
  *
- * Usage: node scripts/check-peer-ranges.mjs <version>
+ * The version comes from the packages themselves, not the tag, so a
+ * workflow_dispatch publish is held to the same rule as a tagged one.
+ *
+ * Usage: node scripts/check-peer-ranges.mjs [version]
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const PACKAGES = [
-  "core",
-  "eslint-plugin",
-  "codemod",
-  "cli",
-  "react",
-  "next",
-  "astro",
-  "remix",
-];
+const packagesDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "packages",
+);
 
-const version = process.argv[2];
-if (!version) {
-  console.error("usage: node scripts/check-peer-ranges.mjs <version>");
+function manifestOf(pkg) {
+  return JSON.parse(
+    readFileSync(join(packagesDir, pkg, "package.json"), "utf8"),
+  );
+}
+
+const packages = readdirSync(packagesDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .filter((name) => {
+    try {
+      manifestOf(name);
+      return true;
+    } catch {
+      return false;
+    }
+  })
+  .sort();
+
+if (packages.length === 0) {
+  console.error("::error::found no packages to check - is packages/ missing?");
   process.exit(2);
 }
 
+const version = process.argv[2] ?? manifestOf("core").version;
 const expected = `^${version}`;
 const wrong = [];
 
-for (const pkg of PACKAGES) {
-  const manifest = JSON.parse(
-    readFileSync(`packages/${pkg}/package.json`, "utf8"),
-  );
+for (const pkg of packages) {
+  const manifest = manifestOf(pkg);
   for (const [dep, range] of Object.entries(manifest.peerDependencies ?? {})) {
     if (!dep.startsWith("@cmssy/")) continue;
     if (range !== expected) wrong.push({ pkg, dep, range });
@@ -50,4 +67,6 @@ if (wrong.length > 0) {
   process.exit(1);
 }
 
-console.log(`every @cmssy peer range is ${expected}`);
+console.log(
+  `every @cmssy peer range is ${expected} (${packages.length} packages)`,
+);
