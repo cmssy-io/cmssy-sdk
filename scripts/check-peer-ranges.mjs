@@ -7,7 +7,14 @@
  * 12.x adapter - a combination npm installs without a word.
  *
  * The version comes from the packages themselves, not the tag, so a
- * workflow_dispatch publish is held to the same rule as a tagged one.
+ * workflow_dispatch publish is held to the same rule as a tagged one. That
+ * path skips the tag-matches-version check, so this also refuses to run
+ * against packages that are not all on one version - otherwise a skew would
+ * publish as long as the peer ranges happened to match core.
+ *
+ * Passing a version explicitly asks "would this release pass?" and skips the
+ * lockstep check, since the point is to compare against a version nothing is
+ * on yet.
  *
  * Usage: node scripts/check-peer-ranges.mjs [version]
  */
@@ -46,7 +53,23 @@ if (packages.length === 0) {
   process.exit(2);
 }
 
-const version = process.argv[2] ?? manifestOf("core").version;
+const asked = process.argv[2];
+
+if (!asked) {
+  const skew = packages
+    .map((pkg) => ({ pkg, version: manifestOf(pkg).version }))
+    .filter((p) => p.version !== manifestOf("core").version);
+  if (skew.length > 0) {
+    for (const { pkg, version } of skew) {
+      console.error(
+        `::error::@cmssy/${pkg} is ${version} but @cmssy/core is ${manifestOf("core").version} - these ship in lockstep`,
+      );
+    }
+    process.exit(1);
+  }
+}
+
+const version = asked ?? manifestOf("core").version;
 const expected = `^${version}`;
 const wrong = [];
 
