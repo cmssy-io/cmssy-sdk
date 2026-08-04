@@ -55,7 +55,7 @@
   },
   "peerDependencies": {
     "astro": ">=4.16",
-    "@cmssy/react": "^11.3.0"
+    "@cmssy/react": "^11.9.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
