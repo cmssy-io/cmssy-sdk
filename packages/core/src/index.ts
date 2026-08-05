@@ -38,6 +38,8 @@ export type {
 } from "./data/queries";
 
 export { fields } from "./fields";
+export { mediaAlt, mediaUrl, mediaUrls } from "./media";
+export type { MediaLike } from "./media";
 export { layoutPositionValues } from "@cmssy/types";
 export type { LayoutPosition } from "@cmssy/types";
 export type {
