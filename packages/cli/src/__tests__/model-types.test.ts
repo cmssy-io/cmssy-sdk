@@ -91,7 +91,7 @@ describe("generateModelTypes", () => {
     const output = generate();
     expect(output).toContain("manual?: CmssyFile;");
     expect(output).toContain("attachments?: CmssyFile[];");
-    expect(output).toContain("export type CmssyMedia =");
+    expect(output).toContain("export interface CmssyMedia {");
     expect(output).toContain("export type CmssyFile =");
     expect(output).not.toContain("manual?: CmssyMedia");
   });

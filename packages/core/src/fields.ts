@@ -7,7 +7,7 @@ import type {
   FieldTypeValueMap,
   FieldDefinition,
   InferBlockContent,
-  MediaFieldValue,
+  ResolvedMediaValue,
   RelationMode,
   TypedField,
 } from "@cmssy/types";
@@ -28,7 +28,7 @@ type OptionValue<O> = O extends {
   ? Option
   : string;
 
-type MediaValue<O> = MediaFieldValue<
+type MediaValue<O> = ResolvedMediaValue<
   O extends { multiple: true } ? true : false
 >;
 
