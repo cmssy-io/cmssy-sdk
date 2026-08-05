@@ -81,7 +81,7 @@ describe("generateModelTypes", () => {
 
   it("maps media, select and multiselect", () => {
     const output = generate();
-    expect(output).toContain("image?: CmssyMedia;");
+    expect(output).toContain("image?: CmssyMedia | null;");
     expect(output).toContain("gallery?: CmssyMedia[];");
     expect(output).toContain('unit?: "pcs" | "kg";');
     expect(output).toContain('tags?: Array<"new" | "sale">;');
@@ -92,6 +92,7 @@ describe("generateModelTypes", () => {
     expect(output).toContain("manual?: CmssyFile;");
     expect(output).toContain("attachments?: CmssyFile[];");
     expect(output).toContain("export interface CmssyMedia {");
+    expect(output).toContain("CmssyMedia | null");
     expect(output).toContain("export type CmssyFile =");
     expect(output).not.toContain("manual?: CmssyMedia");
   });
