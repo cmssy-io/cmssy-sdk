@@ -1,47 +1,55 @@
 import type { TransformResult } from "./v8";
 
-const MEDIA_FIELD = /\bfields\s*\.\s*media\s*\(/;
+const MEDIA_FIELD = /(\w+)\s*:\s*fields\s*\.\s*media\s*\(/g;
 
-const DIRECT_USE = [
-  /\bsrc\s*=\s*\{\s*content\.(\w+)\s*\}/g,
-  /\bsrc\s*=\s*\{\s*(\w+)\.(\w+)\s*\}/g,
-  /\bbackgroundImage\s*:\s*`url\(\$\{\s*content\.(\w+)\s*\}\)`/g,
-];
+function mediaFieldNames(source: string): string[] {
+  const names = new Set<string>();
+  MEDIA_FIELD.lastIndex = 0;
+  for (
+    let match = MEDIA_FIELD.exec(source);
+    match !== null;
+    match = MEDIA_FIELD.exec(source)
+  ) {
+    if (match[1]) names.add(match[1]);
+  }
+  return [...names];
+}
 
-function collectDirectUses(source: string): string[] {
-  const found = new Set<string>();
+function usesOf(source: string, field: string): string[] {
+  const uses = new Set<string>();
+  const reads = new RegExp(`\\b(\\w+)\\.${field}\\b`, "g");
 
-  for (const pattern of DIRECT_USE) {
-    pattern.lastIndex = 0;
-    for (
-      let match = pattern.exec(source);
-      match !== null;
-      match = pattern.exec(source)
-    ) {
-      found.add(match[0].trim());
-    }
+  for (
+    let match = reads.exec(source);
+    match !== null;
+    match = reads.exec(source)
+  ) {
+    const line = source.slice(
+      source.lastIndexOf("\n", match.index) + 1,
+      (source.indexOf("\n", match.index) + 1 || source.length + 1) - 1,
+    );
+    uses.add(line.trim());
   }
 
-  return [...found];
+  return [...uses];
 }
 
 export function transform(source: string): TransformResult {
-  if (!MEDIA_FIELD.test(source)) {
-    return { code: source, changed: false };
-  }
+  const fields = mediaFieldNames(source);
+  if (fields.length === 0) return { code: source, changed: false };
 
   const notes = [
-    "A media value is no longer the asset's URL. It reads back as { id, url, visibility, alt?, width?, height? } and url is null for a private asset.",
-    "Replace `src={content.image}` with `src={content.image.url}`, and guard it: a reference whose asset was deleted resolves to null.",
-    "A gallery is an array of the same object, so `content.gallery.map((one) => one.url)`.",
-    "alt now arrives with the value for the locale being read - pass it to the img rather than writing your own.",
+    `Media fields in this file: ${fields.join(", ")}.`,
+    "A media value is no longer the asset's URL. It reads back as { id, url, visibility, alt?, width?, height? }, and url is null for a private asset or one whose asset was deleted.",
+    "So `src={content.image}` becomes `src={content.image.url}` behind a null check, and a gallery is `content.gallery.map((one) => one.url)`.",
+    "alt arrives resolved for the locale being read - pass it to the img rather than writing your own.",
   ];
 
-  const uses = collectDirectUses(source);
-  if (uses.length > 0) {
-    notes.push(
-      `Direct uses to check by hand: ${uses.slice(0, 8).join(", ")}${uses.length > 8 ? ` (+${uses.length - 8} more)` : ""}`,
-    );
+  for (const field of fields) {
+    const lines = usesOf(source, field);
+    if (lines.length > 0) {
+      notes.push(`Lines reading "${field}": ${lines.join(" | ")}`);
+    }
   }
 
   return { code: source, changed: false, notes };
