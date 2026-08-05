@@ -67,7 +67,7 @@ function scalarType(field: ModelFieldDefinition): string {
     case "boolean":
       return "boolean";
     case "media":
-      return field.multiple ? "CmssyMedia[]" : "CmssyMedia";
+      return field.multiple ? "CmssyMedia[]" : "CmssyMedia | null";
     case "file":
       return field.multiple ? "CmssyFile[]" : "CmssyFile";
     case "select":
@@ -145,8 +145,19 @@ function objectType(fields: ModelFieldDefinition[], depth: number): string {
 const PREAMBLE = `/** A translatable field: one string, or one per enabled language. */
 export type CmssyLocalized = string | Record<string, string>;
 
-/** What a media field holds. Mirrors \`MediaFieldValue\` in @cmssy/types. */
-export type CmssyMedia = string;
+/**
+ * What a media field reads back. Mirrors \`ResolvedMedia\` in @cmssy/types.
+ * A single media field is \`CmssyMedia | null\`: a reference whose asset was
+ * deleted resolves to nothing. A gallery drops such entries instead.
+ */
+export interface CmssyMedia {
+  id: string;
+  url: string | null;
+  visibility: "public" | "private";
+  alt?: string;
+  width?: number;
+  height?: number;
+}
 
 /** What a file field holds. Mirrors \`FileFieldValue\` in @cmssy/types. */
 export type CmssyFile = string;
