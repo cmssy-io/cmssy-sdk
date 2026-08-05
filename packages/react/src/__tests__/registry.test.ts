@@ -1,4 +1,5 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
+import type { ResolvedMedia } from "@cmssy/types";
 import {
   defineBlock,
   buildBlockMap,
@@ -58,8 +59,8 @@ describe("the schema types the content", () => {
 
     expectTypeOf<Content["align"]>().toEqualTypeOf<"left" | "center">();
     expectTypeOf<Content["tags"]>().toEqualTypeOf<("new" | "sale")[]>();
-    expectTypeOf<Content["cover"]>().toEqualTypeOf<string>();
-    expectTypeOf<Content["gallery"]>().toEqualTypeOf<string[]>();
+    expectTypeOf<Content["cover"]>().toEqualTypeOf<ResolvedMedia>();
+    expectTypeOf<Content["gallery"]>().toEqualTypeOf<ResolvedMedia[]>();
   });
 
   it("gives a repeater the shape of one row", () => {
