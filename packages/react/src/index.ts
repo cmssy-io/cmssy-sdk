@@ -37,6 +37,8 @@ export type {
 } from "@cmssy/core";
 
 export { fields } from "@cmssy/core";
+export { mediaAlt, mediaUrl, mediaUrls } from "@cmssy/core";
+export type { MediaLike } from "@cmssy/core";
 export type {
   BlockPropsSchema,
   FieldControl,
