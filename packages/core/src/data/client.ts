@@ -92,7 +92,11 @@ export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
       config,
       document,
       scopedVariables,
-      { ...rest, headers: { ...headers, "x-workspace-id": workspaceId } },
+      {
+        ...rest,
+        public: true,
+        headers: { ...headers, "x-workspace-id": workspaceId },
+      },
       "graphql operation",
     );
   }
