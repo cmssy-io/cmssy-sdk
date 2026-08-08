@@ -1,6 +1,7 @@
 import { parse } from "graphql";
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
+import type { QueryScopedOptions } from "../data/client";
 import { createCmssyClient } from "../data/client";
 import type { CmssyTypedDocument } from "../data/document";
 import {
@@ -26,19 +27,21 @@ function mockFetch(payload: unknown, ok = true): FetchLike {
 function capturingFetch(payload: unknown): {
   fetch: FetchLike;
   calls: Array<{
+    url: string;
     headers: Record<string, string>;
     query: string;
     variables: Record<string, unknown>;
   }>;
 } {
   const calls: Array<{
+    url: string;
     headers: Record<string, string>;
     query: string;
     variables: Record<string, unknown>;
   }> = [];
-  const fetch: FetchLike = async (_url, init) => {
+  const fetch: FetchLike = async (url, init) => {
     const body = JSON.parse(init.body);
-    calls.push({ headers: init.headers, ...body });
+    calls.push({ url, headers: init.headers, ...body });
     return { ok: true, status: 200, json: async () => payload };
   };
   return { fetch, calls };
@@ -85,6 +88,20 @@ describe("createCmssyClient().queryScoped", () => {
     );
     expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
     expect(calls[0]?.variables).toEqual({ formId: "f1" });
+  });
+
+  it("goes to the org-scoped delivery route, not the admin one", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { form: { get: null } } },
+    });
+    const client = createCmssyClient(config);
+    await client.queryScoped(
+      FORM_QUERY,
+      { formId: "f1" },
+      { fetch, workspaceId: "w1" },
+    );
+    expect(calls[0]?.url).toBe("https://api.test/public/acme/ws/graphql");
+    expect(calls[0]?.url).not.toBe("https://api.test/graphql");
   });
 
   it("injects $workspaceId as a variable when the document declares it (records)", async () => {
@@ -286,5 +303,15 @@ describe("createCmssyClient().query (typed document)", () => {
 
     expect(data.ok).toBe(true);
     expect(calls[0]?.query).toBe("query Ok { ok }");
+  });
+});
+
+describe("QueryScopedOptions", () => {
+  it("does not let a caller ask for the admin route", () => {
+    const options: QueryScopedOptions = { workspaceId: "w1" };
+    // @ts-expect-error - `public` is not part of QueryScopedOptions, so a
+    // caller cannot ask queryScoped to leave the delivery route.
+    options.public = false;
+    expect(options.workspaceId).toBe("w1");
   });
 });

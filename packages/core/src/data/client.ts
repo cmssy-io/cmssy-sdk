@@ -6,7 +6,8 @@ import { documentText, type CmssyTypedDocument } from "./document";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { resolveWorkspaceId as resolveWorkspaceIdFromConfig } from "./settings-client";
 
-export interface QueryScopedOptions extends GraphqlRequestOptions {
+export interface QueryScopedOptions
+  extends Omit<GraphqlRequestOptions, "public"> {
   workspaceId?: string;
 }
 
@@ -92,7 +93,11 @@ export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
       config,
       document,
       scopedVariables,
-      { ...rest, headers: { ...headers, "x-workspace-id": workspaceId } },
+      {
+        ...rest,
+        public: true,
+        headers: { ...headers, "x-workspace-id": workspaceId },
+      },
       "graphql operation",
     );
   }
