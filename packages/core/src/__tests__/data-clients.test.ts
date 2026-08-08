@@ -1,6 +1,7 @@
 import { parse } from "graphql";
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
+import type { QueryScopedOptions } from "../data/client";
 import { createCmssyClient } from "../data/client";
 import type { CmssyTypedDocument } from "../data/document";
 import {
@@ -302,5 +303,15 @@ describe("createCmssyClient().query (typed document)", () => {
 
     expect(data.ok).toBe(true);
     expect(calls[0]?.query).toBe("query Ok { ok }");
+  });
+});
+
+describe("QueryScopedOptions", () => {
+  it("does not let a caller ask for the admin route", () => {
+    const options: QueryScopedOptions = { workspaceId: "w1" };
+    // @ts-expect-error - `public` is not part of QueryScopedOptions, so a
+    // caller cannot ask queryScoped to leave the delivery route.
+    options.public = false;
+    expect(options.workspaceId).toBe("w1");
   });
 });

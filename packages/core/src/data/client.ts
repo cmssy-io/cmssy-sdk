@@ -6,7 +6,8 @@ import { documentText, type CmssyTypedDocument } from "./document";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { resolveWorkspaceId as resolveWorkspaceIdFromConfig } from "./settings-client";
 
-export interface QueryScopedOptions extends GraphqlRequestOptions {
+export interface QueryScopedOptions
+  extends Omit<GraphqlRequestOptions, "public"> {
   workspaceId?: string;
 }
 
