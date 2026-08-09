@@ -127,6 +127,7 @@ export function useEditBridge(
   const [removed, setRemoved] = useState<string[]>([]);
   const selectedIdRef = useRef<string | null>(null);
   const postSafeRef = useRef<(message: AppToEditorMessage) => void>(() => {});
+  const emitBoundsRef = useRef<() => void>(() => {});
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
@@ -303,6 +304,8 @@ export function useEditBridge(
       });
     };
 
+    emitBoundsRef.current = emitSelectedBounds;
+
     window.addEventListener("message", handler);
     document.addEventListener("click", onClick, { capture: true });
     window.addEventListener("scroll", emitSelectedBounds, {
@@ -321,6 +324,10 @@ export function useEditBridge(
       window.removeEventListener("resize", emitSelectedBounds);
     };
   }, [config.editorOrigin, pageId, blocksKey]);
+
+  useEffect(() => {
+    emitBoundsRef.current();
+  });
 
   useEffect(() => {
     if (typeof window === "undefined" || window.parent === window) return;
