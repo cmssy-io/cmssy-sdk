@@ -238,6 +238,36 @@ describe("edit bridge (blocks-driven)", () => {
     }
   });
 
+  it("reports the selected block's bounds without waiting for a scroll", async () => {
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = vi.fn();
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      mockParent.postMessage.mockClear();
+
+      await act(async () => {
+        window.dispatchEvent(selectEvent(editorOrigin, "b1"));
+      });
+      await act(async () => {
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+      });
+
+      const bounds = mockParent.postMessage.mock.calls.find(
+        (c) => (c[0] as { type?: string })?.type === "cmssy:bounds",
+      )?.[0] as { blockId?: string } | undefined;
+      expect(bounds?.blockId).toBe("b1");
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it("live-patches the style and advanced buckets independently of content", async () => {
     const { container } = render(
       <CmssyEditablePage
