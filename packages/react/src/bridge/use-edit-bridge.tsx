@@ -8,6 +8,11 @@ import {
 } from "@cmssy/core";
 import { parseEditorMessage, postToEditor } from "@cmssy/core";
 import { resolveInitialTarget } from "@cmssy/core/internal";
+import {
+  isMacPlatform,
+  isTypingTarget,
+  resolveShortcutAction,
+} from "./shortcut-keys";
 
 export interface EditBridgeConfig {
   editorOrigin: string | string[];
@@ -186,6 +191,7 @@ export function useEditBridge(
           blockMeta:
             config.blockMeta ??
             (Object.create(null) as Record<string, BlockMeta>),
+          capabilities: ["shortcuts"],
         });
       } catch (error) {
         if (typeof console !== "undefined") {
@@ -283,6 +289,21 @@ export function useEditBridge(
       });
     };
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      const action = resolveShortcutAction(
+        event,
+        isMacPlatform(),
+        isTypingTarget(event.target),
+      );
+      if (!action) return;
+      event.preventDefault();
+      postSafe({
+        type: "cmssy:shortcut",
+        protocolVersion: PROTOCOL_VERSION,
+        action,
+      });
+    };
+
     let boundsRaf = 0;
     let boundsPending = false;
     const emitSelectedBounds = () => {
@@ -308,6 +329,7 @@ export function useEditBridge(
 
     window.addEventListener("message", handler);
     document.addEventListener("click", onClick, { capture: true });
+    document.addEventListener("keydown", onKeyDown);
     window.addEventListener("scroll", emitSelectedBounds, {
       capture: true,
       passive: true,
@@ -318,6 +340,7 @@ export function useEditBridge(
       if (boundsRaf) cancelAnimationFrame(boundsRaf);
       window.removeEventListener("message", handler);
       document.removeEventListener("click", onClick, { capture: true });
+      document.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("scroll", emitSelectedBounds, {
         capture: true,
       });

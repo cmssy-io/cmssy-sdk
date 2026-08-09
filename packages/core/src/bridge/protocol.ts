@@ -10,6 +10,17 @@ export const PROTOCOL_VERSION = 2;
 
 export type { FieldType, FieldDefinition, BlockSchema, BlockMeta, BlockRect };
 
+export const SHORTCUT_ACTIONS = [
+  "undo",
+  "redo",
+  "save",
+  "duplicate",
+  "delete",
+  "escape",
+] as const;
+
+export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
+
 export interface ReadyMessage {
   type: "cmssy:ready";
   protocolVersion: number;
@@ -21,6 +32,7 @@ export interface ReadyMessage {
   }>;
   schemas: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
+  capabilities?: string[];
 }
 
 export interface BoundsMessage {
@@ -53,13 +65,20 @@ export interface DragIndexMessage {
   index: number;
 }
 
+export interface ShortcutMessage {
+  type: "cmssy:shortcut";
+  protocolVersion: number;
+  action: ShortcutAction;
+}
+
 export type AppToEditorMessage =
   | ReadyMessage
   | BoundsMessage
   | ClickMessage
   | DeselectMessage
   | MoveMessage
-  | DragIndexMessage;
+  | DragIndexMessage
+  | ShortcutMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";
