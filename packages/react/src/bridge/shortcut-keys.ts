@@ -10,10 +10,9 @@ export interface ShortcutKeyEvent {
 }
 
 export function isMacPlatform(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    navigator.platform.toUpperCase().indexOf("MAC") >= 0
-  );
+  const platform =
+    typeof navigator !== "undefined" ? navigator.platform : undefined;
+  return typeof platform === "string" && platform.toUpperCase().includes("MAC");
 }
 
 export function isTypingTarget(target: EventTarget | null): boolean {

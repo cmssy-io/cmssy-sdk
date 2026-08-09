@@ -329,7 +329,7 @@ export function useEditBridge(
 
     window.addEventListener("message", handler);
     document.addEventListener("click", onClick, { capture: true });
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown, { capture: true });
     window.addEventListener("scroll", emitSelectedBounds, {
       capture: true,
       passive: true,
@@ -340,7 +340,7 @@ export function useEditBridge(
       if (boundsRaf) cancelAnimationFrame(boundsRaf);
       window.removeEventListener("message", handler);
       document.removeEventListener("click", onClick, { capture: true });
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onKeyDown, { capture: true });
       window.removeEventListener("scroll", emitSelectedBounds, {
         capture: true,
       });

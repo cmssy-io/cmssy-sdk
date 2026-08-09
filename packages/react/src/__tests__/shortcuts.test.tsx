@@ -266,6 +266,23 @@ describe("shortcut forwarding over the bridge", () => {
     expect(shortcutPosts().map((m) => m.action)).toEqual(["save"]);
   });
 
+  it("still forwards when the previewed page stops keydown propagation", () => {
+    const { container } = renderPage();
+    const widget = document.createElement("div");
+    widget.addEventListener("keydown", (e) => e.stopPropagation());
+    container.appendChild(widget);
+
+    widget.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    expect(shortcutPosts().map((m) => m.action)).toEqual(["escape"]);
+  });
+
   it("stops forwarding once unmounted", () => {
     const { unmount } = renderPage();
     unmount();
