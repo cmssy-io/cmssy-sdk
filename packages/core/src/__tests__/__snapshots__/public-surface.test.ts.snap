@@ -11,6 +11,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "DEFAULT_CMSSY_API_URL",
   "DEFAULT_CMSSY_EDITOR_ORIGINS",
   "PROTOCOL_VERSION",
+  "SHORTCUT_ACTIONS",
   "applyCmssyCsp",
   "createCmssyClient",
   "defineCmssyConfig",

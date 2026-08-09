@@ -69,7 +69,11 @@ export { localizeHref } from "./data/localize-href";
 export { resolveCmssyLocale } from "./data/site-locales";
 export { CMSSY_LOCALE_HEADER } from "./locale";
 
-export { PROTOCOL_VERSION, isProtocolCompatible } from "./bridge/protocol";
+export {
+  PROTOCOL_VERSION,
+  SHORTCUT_ACTIONS,
+  isProtocolCompatible,
+} from "./bridge/protocol";
 export type {
   FieldType,
   FieldDefinition,
@@ -79,6 +83,8 @@ export type {
   ReadyMessage,
   BoundsMessage,
   ClickMessage,
+  ShortcutAction,
+  ShortcutMessage,
   AppToEditorMessage,
   SelectMessage,
   PatchMessage,
