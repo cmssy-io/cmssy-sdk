@@ -10,6 +10,11 @@ import { noServerConfigInClient } from "../no-server-config-in-client";
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const clientFile = resolve(FIXTURES, "editor.ts");
 
+const ALIASED = resolve(FIXTURES, "aliased");
+const aliasedClient = resolve(ALIASED, "editor.ts");
+const registry = resolve(ALIASED, "registry/blocks.ts");
+const lazyRegistry = resolve(ALIASED, "registry/lazy-blocks.ts");
+
 const ruleTester = new RuleTester({
   languageOptions: { parser, ecmaVersion: 2022, sourceType: "module" },
 });
@@ -45,4 +50,71 @@ describe("no-server-config-in-client", () => {
       ],
     });
   });
+  it("follows a path alias, because that is how a real app imports (CMS-1215)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: '"use client";\nimport type { Locale } from "@/lib/locale";\nexport type X = Locale;',
+          filename: aliasedClient,
+        },
+      ],
+      invalid: [
+        {
+          code: '"use client";\nimport { localePath } from "@/lib/locale";\nexport const x = localePath;',
+          filename: aliasedClient,
+          errors: [{ messageId: "reachesConfig" }],
+        },
+      ],
+    });
+  });
+
+  it("treats a declared client entry as client code, directive or not (CMS-1215)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: 'import { heroBlock } from "@/blocks/hero";\nexport const blocks = [heroBlock];',
+          filename: registry,
+        },
+        {
+          code: 'import { heroBlock } from "@/blocks/hero";\nexport const blocks = [heroBlock];',
+          filename: registry,
+          options: [{ clientEntries: ["some/other/file.ts"] }],
+        },
+      ],
+      invalid: [
+        {
+          code: 'import { heroBlock } from "@/blocks/hero";\nexport const blocks = [heroBlock];',
+          filename: registry,
+          options: [{ clientEntries: ["registry/blocks.ts"] }],
+          errors: [{ messageId: "reachesConfigFromEntry" }],
+        },
+      ],
+    });
+  });
+
+  it("stops at a server action, which never reaches the browser (CMS-1215)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: '"use client";\nimport { submit } from "@/actions/submit";\nexport const x = submit;',
+          filename: aliasedClient,
+        },
+      ],
+      invalid: [],
+    });
+  });
+
+  it("does not follow a dynamic import, which is a chunk boundary (CMS-1215)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: 'import { lazyBlock } from "@/blocks/lazy";\nexport const blocks = [lazyBlock];',
+          filename: lazyRegistry,
+          options: [{ clientEntries: ["registry/lazy-blocks.ts"] }],
+        },
+      ],
+      invalid: [],
+    });
+  });
+
 });
