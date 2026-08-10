@@ -92,7 +92,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@cmssy/types": "12.5.0",
+    "@cmssy/types": "0.35.0",
     "jose": "^6.2.3"
   }
 }
