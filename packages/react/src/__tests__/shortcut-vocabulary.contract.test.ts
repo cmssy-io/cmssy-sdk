@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ShortcutAction } from "@cmssy/core";
 import { resolveShortcutAction } from "../bridge/shortcut-keys";
 
 /**
@@ -25,7 +26,7 @@ interface Case {
   composing?: boolean;
   mac?: boolean;
   typing?: boolean;
-  expected: string | null;
+  expected: ShortcutAction | null;
 }
 
 const CASES: Case[] = [
@@ -64,6 +65,47 @@ const CASES: Case[] = [
     key: "Backspace",
     mac: false,
     expected: null,
+  },
+  {
+    name: "Ctrl+S saves off mac",
+    key: "s",
+    ctrl: true,
+    mac: false,
+    expected: "save",
+  },
+  {
+    name: "Ctrl+D duplicates off mac",
+    key: "d",
+    ctrl: true,
+    mac: false,
+    expected: "duplicate",
+  },
+  {
+    name: "Ctrl+Shift+Z redoes off mac",
+    key: "z",
+    ctrl: true,
+    shift: true,
+    mac: false,
+    expected: "redo",
+  },
+  {
+    name: "Cmd is not the modifier off mac",
+    key: "z",
+    meta: true,
+    mac: false,
+    expected: null,
+  },
+  {
+    name: "Ctrl is not the modifier on mac",
+    key: "s",
+    ctrl: true,
+    expected: null,
+  },
+  {
+    name: "Delete deletes off mac",
+    key: "Delete",
+    mac: false,
+    expected: "delete",
   },
   { name: "Escape escapes", key: "Escape", expected: "escape" },
   {
@@ -136,7 +178,9 @@ describe("shortcut vocabulary (CMS-1205)", () => {
 
   it("resolves nothing outside the six actions it claims", () => {
     const actions = new Set(
-      CASES.map((c) => c.expected).filter((a): a is string => a !== null),
+      CASES.map((c) => c.expected).filter(
+        (a): a is ShortcutAction => a !== null,
+      ),
     );
     expect([...actions].sort()).toEqual([
       "delete",
