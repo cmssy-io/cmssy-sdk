@@ -117,4 +117,17 @@ describe("no-server-config-in-client", () => {
     });
   });
 
+  it("follows an import written without spaces (CMS-1215)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [],
+      invalid: [
+        {
+          code: '"use client";\nimport{terseBlock}from"@/blocks/terse";\nexport const x = terseBlock;',
+          filename: aliasedClient,
+          errors: [{ messageId: "reachesConfig" }],
+        },
+      ],
+    });
+  });
+
 });

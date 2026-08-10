@@ -172,8 +172,10 @@ function valueImports(code: string): string[] {
   const withoutTypes = code
     .replace(/^\s*(?:import|export)\s+type\s[^;]*;/gm, "")
     .replace(/\bimport\s*\([^)]*\)/g, "");
+  // \s* rather than \s+: `import"./a"` and `export*from"./b"` are both legal,
+  // and the dynamic form is already gone, so nothing here can match `import(`.
   return [
-    ...withoutTypes.matchAll(/(?:from|import)\s+["']([^"']+)["']/g),
+    ...withoutTypes.matchAll(/(?:from|import)\s*["']([^"']+)["']/g),
   ].map(([, specifier]) => specifier ?? "");
 }
 
