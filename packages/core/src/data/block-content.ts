@@ -186,39 +186,6 @@ function toPageRefs(value: unknown): PageRef[] {
   return items.map(toPageRef).filter((ref): ref is PageRef => ref !== null);
 }
 
-/**
- * The field types whose stored value is a reference resolved elsewhere - a
- * relation from ids before normalization runs, media at the delivery API - plus
- * the repeater, which is descended into rather than written. Putting a default
- * in place for any of them would hand a block a raw id under a type that
- * promises a resolved value. `RequiredOnly` in `fields.ts` is the type side of
- * this same list; the two have to say the same thing.
- */
-const DEFAULT_NOT_APPLIED: ReadonlySet<string> = new Set([
-  "relation",
-  "media",
-  "repeater",
-]);
-
-/**
- * Puts a declared `defaultValue` in place when the author left the field empty.
- *
- * Only an absent or cleared value counts as empty - the editor writes `null`
- * when a field is cleared, and an empty string is a deliberate blank, not a
- * missing value. Without this the default is decorative: it seeds the editor
- * and nothing else, so every block still restates it as `content.x ?? default`.
- */
-function applyDefault(
-  holder: Record<string, unknown>,
-  key: string,
-  field: FieldDefinition,
-): void {
-  if (field.defaultValue === undefined) return;
-  if (DEFAULT_NOT_APPLIED.has(field.type)) return;
-  const value = holder[key];
-  if (value === undefined || value === null) holder[key] = field.defaultValue;
-}
-
 /** Walks `path` (repeater key / row index pairs) into the server-resolved content. */
 function fallbackHolder(
   resolved: Record<string, unknown> | undefined,
@@ -248,24 +215,18 @@ export function normalizeBlockContent(
     schema,
     (holder, key, field, path) => {
       if (field.type === "pageSelector") {
-        const present = key in holder && holder[key] != null;
-        const declared = field.defaultValue !== undefined;
-        let refs = present ? toPageRefs(holder[key]) : [];
-        if (refs.length === 0) refs = toPageRefs(field.defaultValue);
+        if (!(key in holder)) return;
+        const refs = toPageRefs(holder[key]);
         if (field.multiple === false) {
           if (refs[0]) holder[key] = refs[0];
-          else if (declared) holder[key] = undefined;
           else delete holder[key];
-        } else if (key in holder || refs.length > 0 || declared) {
+        } else {
           holder[key] = refs;
         }
         return;
       }
 
-      if (field.type !== "relation") {
-        applyDefault(holder, key, field);
-        return;
-      }
+      if (field.type !== "relation") return;
 
       const value = holder[key];
       const fallback = fallbackHolder(resolved, path)?.[key];

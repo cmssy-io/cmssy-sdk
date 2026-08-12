@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
-import type { CmssyModelRecord, ResolvedMedia } from "@cmssy/types";
-import { fields, type InferBlockContent } from "../fields";
+import { fields } from "../fields";
 import {
   RECORDS_BY_IDS_QUERY,
   normalizeBlockContent,
@@ -399,106 +398,17 @@ describe("pageSelector normalization", () => {
   });
 });
 
-describe("declared defaults", () => {
-  it("puts a default in place when the author left the field empty", () => {
-    const schema = {
-      limit: fields.number({ defaultValue: 8 }),
-      heading: fields.text({ defaultValue: "Popular" }),
-    };
-    const content: Record<string, unknown> = { limit: null };
-    normalizeBlockContent(content, schema);
-    expect(content).toEqual({ limit: 8, heading: "Popular" });
-  });
-
-  it("does not overwrite a value the author actually set, including a blank", () => {
-    const schema = {
-      limit: fields.number({ defaultValue: 8 }),
-      heading: fields.text({ defaultValue: "Popular" }),
-      flag: fields.boolean({ defaultValue: true }),
-    };
-    const content: Record<string, unknown> = {
-      limit: 0,
-      heading: "",
-      flag: false,
-    };
-    normalizeBlockContent(content, schema);
-    expect(content).toEqual({ limit: 0, heading: "", flag: false });
-  });
-
-  it("defaults a field declared inside a repeater row", () => {
-    const schema = {
-      rows: fields.repeater({
-        label: "Rows",
-        itemSchema: { icon: fields.text({ defaultValue: "star" }) },
-      }),
-    };
-    const content: Record<string, unknown> = { rows: [{}, { icon: "mail" }] };
-    normalizeBlockContent(content, schema);
-    expect(content.rows).toEqual([{ icon: "star" }, { icon: "mail" }]);
-  });
-
-  it("leaves a field without a declared default absent", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, { heading: fields.text() });
-    expect(content).toEqual({});
-  });
-});
-
-describe("a page selector's declared default", () => {
-  const single = {
-    parentPage: fields.pageSelector({
-      multiple: false,
-      defaultValue: [{ slug: "blog", displayName: { en: "Blog" } }],
-    }),
-  };
-  const many = {
-    pages: fields.pageSelector({ defaultValue: ["a", "b"] }),
-  };
-
-  it("arrives in the shape the field declares, not as the raw default", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, single);
-    expect(content.parentPage).toEqual({
-      slug: "blog",
-      displayName: { en: "Blog" },
-    });
-  });
-
-  it("is restored when the editor cleared the selector to null", () => {
-    const content: Record<string, unknown> = { pages: null };
-    normalizeBlockContent(content, many);
-    expect(content.pages).toEqual([
-      { slug: "a", displayName: {} },
-      { slug: "b", displayName: {} },
-    ]);
-  });
-
-  it("gives way to a page the author actually picked", () => {
-    const content: Record<string, unknown> = {
-      parentPage: [{ slug: "news", displayName: {} }],
-    };
-    normalizeBlockContent(content, single);
-    expect(content.parentPage).toEqual({ slug: "news", displayName: {} });
-  });
-});
-
 describe("fields the editor stores outside content", () => {
   const schema = {
-    heading: fields.text({ defaultValue: "Hi" }),
-    width: fields.select({
-      label: "Width",
-      options: ["full", "narrow"],
-      defaultValue: "full",
-      tab: "style",
-    }),
+    heading: fields.text(),
+    picks: fields.pageSelector({ tab: "style" }),
     target: fields.pageSelector({ multiple: false, tab: "advanced" }),
   };
 
-  it("leaves a style-tab default out of the content bucket", () => {
-    const content: Record<string, unknown> = {};
+  it("leaves a style-tab selector in the content bucket alone", () => {
+    const content: Record<string, unknown> = { picks: "stale" };
     normalizeBlockContent(content, schema);
-    expect(content).toEqual({ heading: "Hi" });
-    expect(content).not.toHaveProperty("width");
+    expect(content.picks).toBe("stale");
   });
 
   it("does not coerce an advanced-tab selector inside content", () => {
@@ -535,112 +445,5 @@ describe("a cleared multiple page selector", () => {
     const content: Record<string, unknown> = { pages: null };
     normalizeBlockContent(content, { pages: fields.pageSelector() });
     expect(content.pages).toEqual([]);
-  });
-});
-
-type Equals<A, B> =
-  (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2
-    ? true
-    : false;
-type Expect<T extends true> = T;
-
-const maybeDefault = process.env.CMSSY_TEST_DEFAULT;
-
-// A literal default is guaranteed by normalization, so the key is not optional.
-type _LiteralDefaultIsPresent = Expect<
-  Equals<
-    InferBlockContent<{ limit: ReturnType<typeof numberWithDefault> }>,
-    { limit: number }
-  >
->;
-
-// One that may be undefined is not: normalization skips an undefined default,
-// so promising the key would be a lie.
-type _MaybeUndefinedDefaultIsOptional = Expect<
-  Equals<
-    InferBlockContent<{ heading: ReturnType<typeof textWithMaybeDefault> }>,
-    { heading?: string }
-  >
->;
-
-function numberWithDefault() {
-  return fields.number({ defaultValue: 8 });
-}
-function textWithMaybeDefault() {
-  return fields.text({ defaultValue: maybeDefault });
-}
-
-// A default only promises the key for the types normalization actually writes.
-// A relation resolves from ids before normalization, media resolves at the
-// delivery API, and a repeater is descended into rather than written - so for
-// these three only `required` can say the key is there.
-type _RelationDefaultStaysOptional = Expect<
-  Equals<
-    InferBlockContent<{ author: ReturnType<typeof relationWithDefault> }>,
-    { author?: CmssyModelRecord | undefined }
-  >
->;
-type _MediaDefaultStaysOptional = Expect<
-  Equals<
-    InferBlockContent<{ image: ReturnType<typeof mediaWithDefault> }>,
-    { image?: ResolvedMedia }
-  >
->;
-type _RepeaterDefaultStaysOptional = Expect<
-  Equals<
-    InferBlockContent<{ rows: ReturnType<typeof repeaterWithDefault> }>,
-    { rows?: { icon?: string }[] }
-  >
->;
-
-function relationWithDefault() {
-  return fields.relation({ model: "author", defaultValue: "a1" });
-}
-function mediaWithDefault() {
-  return fields.media({ defaultValue: "m1" });
-}
-function repeaterWithDefault() {
-  return fields.repeater({
-    label: "Rows",
-    itemSchema: { icon: fields.text() },
-    defaultValue: [],
-  });
-}
-
-describe("a page selector whose default yields no page", () => {
-  it("still materializes the key the type promises, as an empty list", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, {
-      pages: fields.pageSelector({ defaultValue: [] }),
-    });
-    expect(content).toHaveProperty("pages");
-    expect(content.pages).toEqual([]);
-  });
-
-  it("keeps the key on a single selector too, rather than deleting it", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, {
-      parentPage: fields.pageSelector({ multiple: false, defaultValue: [] }),
-    });
-    expect(content).toHaveProperty("parentPage");
-    expect(content.parentPage).toBeUndefined();
-  });
-});
-
-describe("defaults for values resolved elsewhere", () => {
-  it("does not inject a raw media id into content", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, {
-      image: fields.media({ defaultValue: "m1" }),
-    });
-    expect(content).not.toHaveProperty("image");
-  });
-
-  it("does not inject a raw relation id into content", () => {
-    const content: Record<string, unknown> = {};
-    normalizeBlockContent(content, {
-      author: fields.relation({ model: "author", defaultValue: "a1" }),
-    });
-    expect(content).not.toHaveProperty("author");
   });
 });

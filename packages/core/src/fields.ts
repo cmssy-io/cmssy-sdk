@@ -22,31 +22,11 @@ export type {
 };
 
 /**
- * Whether the content is guaranteed to carry the field. Required says so, and
- * so does a declared default - normalization puts it in place when the author
- * leaves the field empty, so the key is always there.
+ * Whether the content is guaranteed to carry the field. Only `required` says
+ * so: a declared `defaultValue` seeds the editor and is not put in place at
+ * read time, so it promises nothing about the stored content (CMS-1220).
  */
-type Declared<O> = O extends { required: true }
-  ? true
-  : O extends { defaultValue: infer Default }
-    ? undefined extends Default
-      ? false
-      : true
-    : false;
-
-/**
- * For the field types whose default normalization never puts in place, so only
- * `required` can promise the key is there.
- *
- * A relation's stored value is an id and records are fetched before
- * normalization runs, so a default could only ever land as a raw id under a
- * type that promises a record. Media is the same story one layer out: the
- * delivery API resolves it from the manifest before a block ever sees it. A
- * repeater is descended into rather than visited, so nothing writes the list
- * itself. Counting a default for any of them would type the key as always
- * present and leave it missing - or present in the wrong shape.
- */
-type RequiredOnly<O> = O extends { required: true } ? true : false;
+type Declared<O> = O extends { required: true } ? true : false;
 
 type OptionValue<O> = O extends {
   options: readonly (infer Option extends string)[];
@@ -126,7 +106,7 @@ export const fields = {
     build("multiselect", opts) as TypedField<OptionValue<O>[], Declared<O>>,
 
   media: <const O extends FieldOptions>(opts: O = {} as O) =>
-    build("media", opts) as TypedField<MediaValue<O>, RequiredOnly<O>>,
+    build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
 
   pageSelector: <const O extends FieldOptions>(opts: O = {} as O) =>
     build("pageSelector", opts) as TypedField<
@@ -135,7 +115,7 @@ export const fields = {
     >,
 
   repeater: <const O extends FieldOptions>(opts: O) =>
-    build("repeater", opts) as TypedField<RepeaterValue<O>, RequiredOnly<O>>,
+    build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,
 
   relation: <const O extends RelationFieldOptions>(opts: O) => {
     const { model, mode, ...rest } = opts;
@@ -144,6 +124,6 @@ export const fields = {
       relationTo: `model:${model}`,
       relationType: mode === "all" || opts.multiple ? "hasMany" : "hasOne",
       relationMode: mode ?? "picked",
-    }) as TypedField<RelationValue<O>, RequiredOnly<O>>;
+    }) as TypedField<RelationValue<O>, Declared<O>>;
   },
 };
