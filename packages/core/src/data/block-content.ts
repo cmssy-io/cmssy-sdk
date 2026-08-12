@@ -187,6 +187,20 @@ function toPageRefs(value: unknown): PageRef[] {
 }
 
 /**
+ * The field types whose stored value is a reference resolved elsewhere - a
+ * relation from ids before normalization runs, media at the delivery API - plus
+ * the repeater, which is descended into rather than written. Putting a default
+ * in place for any of them would hand a block a raw id under a type that
+ * promises a resolved value. `RequiredOnly` in `fields.ts` is the type side of
+ * this same list; the two have to say the same thing.
+ */
+const DEFAULT_NOT_APPLIED: ReadonlySet<string> = new Set([
+  "relation",
+  "media",
+  "repeater",
+]);
+
+/**
  * Puts a declared `defaultValue` in place when the author left the field empty.
  *
  * Only an absent or cleared value counts as empty - the editor writes `null`
@@ -200,6 +214,7 @@ function applyDefault(
   field: FieldDefinition,
 ): void {
   if (field.defaultValue === undefined) return;
+  if (DEFAULT_NOT_APPLIED.has(field.type)) return;
   const value = holder[key];
   if (value === undefined || value === null) holder[key] = field.defaultValue;
 }

@@ -626,3 +626,21 @@ describe("a page selector whose default yields no page", () => {
     expect(content.parentPage).toBeUndefined();
   });
 });
+
+describe("defaults for values resolved elsewhere", () => {
+  it("does not inject a raw media id into content", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, {
+      image: fields.media({ defaultValue: "m1" }),
+    });
+    expect(content).not.toHaveProperty("image");
+  });
+
+  it("does not inject a raw relation id into content", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, {
+      author: fields.relation({ model: "author", defaultValue: "a1" }),
+    });
+    expect(content).not.toHaveProperty("author");
+  });
+});
