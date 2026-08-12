@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
+import type { CmssyModelRecord, ResolvedMedia } from "@cmssy/types";
 import { fields, type InferBlockContent } from "../fields";
 import {
   RECORDS_BY_IDS_QUERY,
@@ -567,4 +568,41 @@ function numberWithDefault() {
 }
 function textWithMaybeDefault() {
   return fields.text({ defaultValue: maybeDefault });
+}
+
+// A default only promises the key for the types normalization actually writes.
+// A relation resolves from ids before normalization, media resolves at the
+// delivery API, and a repeater is descended into rather than written - so for
+// these three only `required` can say the key is there.
+type _RelationDefaultStaysOptional = Expect<
+  Equals<
+    InferBlockContent<{ author: ReturnType<typeof relationWithDefault> }>,
+    { author?: CmssyModelRecord | undefined }
+  >
+>;
+type _MediaDefaultStaysOptional = Expect<
+  Equals<
+    InferBlockContent<{ image: ReturnType<typeof mediaWithDefault> }>,
+    { image?: ResolvedMedia }
+  >
+>;
+type _RepeaterDefaultStaysOptional = Expect<
+  Equals<
+    InferBlockContent<{ rows: ReturnType<typeof repeaterWithDefault> }>,
+    { rows?: { icon?: string }[] }
+  >
+>;
+
+function relationWithDefault() {
+  return fields.relation({ model: "author", defaultValue: "a1" });
+}
+function mediaWithDefault() {
+  return fields.media({ defaultValue: "m1" });
+}
+function repeaterWithDefault() {
+  return fields.repeater({
+    label: "Rows",
+    itemSchema: { icon: fields.text() },
+    defaultValue: [],
+  });
 }
