@@ -1,22 +1,52 @@
+import type { FieldDefinition } from "@cmssy/types";
 import type { CmssyClientConfig, RawBlock } from "../content/content-client";
-import { getBlockContentForLanguage } from "../content/get-block-content";
+import {
+  asBucket,
+  getBlockContentForLanguage,
+} from "../content/get-block-content";
+import { walkBlockFields, type BlockSchemaMap } from "./block-content";
 import { createCmssyClient, type QueryScopedOptions } from "./client";
 import { FORM_QUERY, type CmssyFormDefinition } from "./queries";
 
+const BUCKETS = ["content", "style", "advanced"] as const;
+type Bucket = (typeof BUCKETS)[number];
+
+/** Which bucket the editor writes a field into - `tab` decides, content is the default. */
+function bucketOf(field: FieldDefinition): Bucket {
+  return field.tab === "style" || field.tab === "advanced"
+    ? field.tab
+    : "content";
+}
+
+/**
+ * Finds the forms a page needs by reading the blocks' schemas, so a form field
+ * is found under whatever key it was declared with. Reading a fixed `formId`
+ * key instead meant `fields.form()` under any other name silently resolved to
+ * nothing, and a form field on the style or advanced tab was invisible either
+ * way: the editor writes those into their own bucket, not into content.
+ */
 export function collectFormIds(
   blocks: RawBlock[],
+  schemas: BlockSchemaMap,
   locale: string,
   defaultLocale: string,
 ): string[] {
   const ids = new Set<string>();
   for (const block of blocks) {
-    const content = getBlockContentForLanguage(
-      block.content,
-      locale,
-      defaultLocale,
-    );
-    const formId = content.formId;
-    if (typeof formId === "string" && formId.trim()) ids.add(formId);
+    const schema = schemas[block.type];
+    if (!schema) continue;
+    const values: Record<Bucket, Record<string, unknown>> = {
+      content: getBlockContentForLanguage(block.content, locale, defaultLocale),
+      style: asBucket(block.style),
+      advanced: asBucket(block.advanced),
+    };
+    for (const bucket of BUCKETS) {
+      walkBlockFields(values[bucket], schema, (holder, key, field) => {
+        if (field.type !== "form" || bucketOf(field) !== bucket) return;
+        const id = holder[key];
+        if (typeof id === "string" && id.trim()) ids.add(id);
+      });
+    }
   }
   return [...ids];
 }
@@ -24,11 +54,12 @@ export function collectFormIds(
 export async function resolveForms(
   config: CmssyClientConfig,
   blocks: RawBlock[],
+  schemas: BlockSchemaMap,
   locale: string,
   defaultLocale: string,
   options?: QueryScopedOptions,
 ): Promise<Record<string, CmssyFormDefinition>> {
-  const ids = collectFormIds(blocks, locale, defaultLocale);
+  const ids = collectFormIds(blocks, schemas, locale, defaultLocale);
   if (ids.length === 0) return {};
 
   const client = createCmssyClient(config);

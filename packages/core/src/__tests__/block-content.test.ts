@@ -397,3 +397,48 @@ describe("pageSelector normalization", () => {
     ]);
   });
 });
+
+describe("declared defaults", () => {
+  it("puts a default in place when the author left the field empty", () => {
+    const schema = {
+      limit: fields.number({ defaultValue: 8 }),
+      heading: fields.text({ defaultValue: "Popular" }),
+    };
+    const content: Record<string, unknown> = { limit: null };
+    normalizeBlockContent(content, schema);
+    expect(content).toEqual({ limit: 8, heading: "Popular" });
+  });
+
+  it("does not overwrite a value the author actually set, including a blank", () => {
+    const schema = {
+      limit: fields.number({ defaultValue: 8 }),
+      heading: fields.text({ defaultValue: "Popular" }),
+      flag: fields.boolean({ defaultValue: true }),
+    };
+    const content: Record<string, unknown> = {
+      limit: 0,
+      heading: "",
+      flag: false,
+    };
+    normalizeBlockContent(content, schema);
+    expect(content).toEqual({ limit: 0, heading: "", flag: false });
+  });
+
+  it("defaults a field declared inside a repeater row", () => {
+    const schema = {
+      rows: fields.repeater({
+        label: "Rows",
+        itemSchema: { icon: fields.text({ defaultValue: "star" }) },
+      }),
+    };
+    const content: Record<string, unknown> = { rows: [{}, { icon: "mail" }] };
+    normalizeBlockContent(content, schema);
+    expect(content.rows).toEqual([{ icon: "star" }, { icon: "mail" }]);
+  });
+
+  it("leaves a field without a declared default absent", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, { heading: fields.text() });
+    expect(content).toEqual({});
+  });
+});

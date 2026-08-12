@@ -9,3 +9,4 @@ export type {
   ResolveBlockDataOptions,
   ResolveLayoutBlockDataOptions,
 } from "./components/resolve-block-data";
+export { blocksToSchemas } from "./registry";

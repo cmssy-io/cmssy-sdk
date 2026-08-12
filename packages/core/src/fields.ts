@@ -21,7 +21,18 @@ export type {
   TypedField,
 };
 
-type Declared<O> = O extends { required: true } ? true : false;
+/**
+ * Whether the content is guaranteed to carry the field. Required says so, and
+ * so does a declared default - normalization puts it in place when the author
+ * leaves the field empty, so the key is always there.
+ */
+type Declared<O> = O extends { required: true }
+  ? true
+  : O extends { defaultValue: infer Default }
+    ? [Default] extends [undefined]
+      ? false
+      : true
+    : false;
 
 type OptionValue<O> = O extends {
   options: readonly (infer Option extends string)[];

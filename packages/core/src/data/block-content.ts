@@ -49,42 +49,52 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export type FieldVisitor = (
+  holder: Record<string, unknown>,
+  key: string,
+  field: FieldDefinition,
+  path: readonly (string | number)[],
+) => void;
+
 /**
- * Visits every declared field of a block's content, descending into repeater
+ * Visits every declared field of a block's values, descending into repeater
  * rows so a field nested in a repeater is reached on the same terms as a
  * top-level one.
  *
- * Rows are replaced with copies before they are visited: the content a block
- * receives is only shallow-copied out of the stored document
- * (`getBlockContentForLanguage`), so a row object is still shared with it and
- * must never be written through.
+ * `copyRows` is for callers that write through the holder they are handed. The
+ * values a block receives are only shallow-copied out of the stored document
+ * (`getBlockContentForLanguage`), so a repeater row is still shared with it;
+ * copying the rows first is what keeps a write from reaching the original. A
+ * caller that only reads leaves it off and mutates nothing.
  */
-function walkContent(
-  content: Record<string, unknown>,
+export function walkBlockFields(
+  values: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
-  visit: (
-    holder: Record<string, unknown>,
-    key: string,
-    field: FieldDefinition,
-    path: readonly (string | number)[],
-  ) => void,
+  visit: FieldVisitor,
+  options: { copyRows?: boolean } = {},
   path: readonly (string | number)[] = [],
 ): void {
   for (const [key, field] of Object.entries(schema)) {
     if (field.type === "repeater") {
       const itemSchema = field.itemSchema;
-      const rows = content[key];
-      if (!itemSchema || !Array.isArray(rows)) continue;
-      const copies = rows.map((row) => (isRecord(row) ? { ...row } : row));
-      content[key] = copies;
-      copies.forEach((row, index) => {
+      const stored = values[key];
+      if (!itemSchema || !Array.isArray(stored)) continue;
+      const rows = options.copyRows
+        ? stored.map((row) => (isRecord(row) ? { ...row } : row))
+        : stored;
+      if (options.copyRows) values[key] = rows;
+      rows.forEach((row, index) => {
         if (isRecord(row)) {
-          walkContent(row, itemSchema, visit, [...path, key, index]);
+          walkBlockFields(row, itemSchema, visit, options, [
+            ...path,
+            key,
+            index,
+          ]);
         }
       });
       continue;
     }
-    visit(content, key, field, path);
+    visit(values, key, field, path);
   }
 }
 
@@ -96,12 +106,17 @@ function collectRefs(
   for (const entry of entries) {
     const schema = schemas[entry.type];
     if (!schema) continue;
-    walkContent(entry.content, schema, (holder, key, field) => {
-      if (field.type !== "relation") return;
-      const model = relationModel(field);
-      if (!model) return;
-      refs.push({ content: holder, key, field, model });
-    });
+    walkBlockFields(
+      entry.content,
+      schema,
+      (holder, key, field) => {
+        if (field.type !== "relation") return;
+        const model = relationModel(field);
+        if (!model) return;
+        refs.push({ content: holder, key, field, model });
+      },
+      { copyRows: true },
+    );
   }
   return refs;
 }
@@ -144,6 +159,24 @@ function toPageRefs(value: unknown): PageRef[] {
   return items.map(toPageRef).filter((ref): ref is PageRef => ref !== null);
 }
 
+/**
+ * Puts a declared `defaultValue` in place when the author left the field empty.
+ *
+ * Only an absent or cleared value counts as empty - the editor writes `null`
+ * when a field is cleared, and an empty string is a deliberate blank, not a
+ * missing value. Without this the default is decorative: it seeds the editor
+ * and nothing else, so every block still restates it as `content.x ?? default`.
+ */
+function applyDefault(
+  holder: Record<string, unknown>,
+  key: string,
+  field: FieldDefinition,
+): void {
+  if (field.defaultValue === undefined) return;
+  const value = holder[key];
+  if (value === undefined || value === null) holder[key] = field.defaultValue;
+}
+
 /** Walks `path` (repeater key / row index pairs) into the server-resolved content. */
 function fallbackHolder(
   resolved: Record<string, unknown> | undefined,
@@ -168,41 +201,52 @@ export function normalizeBlockContent(
   schema: Record<string, FieldDefinition>,
   resolved?: Record<string, unknown>,
 ): void {
-  walkContent(content, schema, (holder, key, field, path) => {
-    if (field.type === "pageSelector") {
-      if (!(key in holder)) return;
-      const refs = toPageRefs(holder[key]);
-      if (field.multiple === false) {
-        if (refs[0]) holder[key] = refs[0];
-        else delete holder[key];
-      } else {
-        holder[key] = refs;
+  walkBlockFields(
+    content,
+    schema,
+    (holder, key, field, path) => {
+      if (field.type === "pageSelector") {
+        if (key in holder) {
+          const refs = toPageRefs(holder[key]);
+          if (field.multiple === false) {
+            if (refs[0]) holder[key] = refs[0];
+            else delete holder[key];
+          } else {
+            holder[key] = refs;
+          }
+        }
+        applyDefault(holder, key, field);
+        return;
       }
-      return;
-    }
 
-    if (field.type !== "relation") return;
-    const value = holder[key];
-    const fallback = fallbackHolder(resolved, path)?.[key];
-    if (isListShaped(field)) {
-      if (Array.isArray(value)) {
-        const records = value.filter(isResolvedRecord);
-        if (records.length > 0 || value.length === 0) {
-          holder[key] = records;
-          return;
+      if (field.type !== "relation") {
+        applyDefault(holder, key, field);
+        return;
+      }
+
+      const value = holder[key];
+      const fallback = fallbackHolder(resolved, path)?.[key];
+      if (isListShaped(field)) {
+        if (Array.isArray(value)) {
+          const records = value.filter(isResolvedRecord);
+          if (records.length > 0 || value.length === 0) {
+            holder[key] = records;
+            return;
+          }
+        }
+        holder[key] = Array.isArray(fallback)
+          ? fallback.filter(isResolvedRecord)
+          : [];
+      } else if (!isResolvedRecord(value)) {
+        if (value != null && value !== "" && isResolvedRecord(fallback)) {
+          holder[key] = fallback;
+        } else {
+          delete holder[key];
         }
       }
-      holder[key] = Array.isArray(fallback)
-        ? fallback.filter(isResolvedRecord)
-        : [];
-    } else if (!isResolvedRecord(value)) {
-      if (value != null && value !== "" && isResolvedRecord(fallback)) {
-        holder[key] = fallback;
-      } else {
-        delete holder[key];
-      }
-    }
-  });
+    },
+    { copyRows: true },
+  );
 }
 
 function collectionKey(ref: RelationRef): string {

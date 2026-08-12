@@ -13,7 +13,10 @@ import {
 } from "@cmssy/react";
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/internal";
-import { resolveEditorBlockData } from "@cmssy/react/internal-server";
+import {
+  blocksToSchemas,
+  resolveEditorBlockData,
+} from "@cmssy/react/internal-server";
 import {
   fetchPage,
   resolveForms,
@@ -175,6 +178,7 @@ function buildCmssyPageRenderer(
     const resolvedForms = await resolveForms(
       clientConfig,
       page.blocks,
+      blocksToSchemas(blocks),
       locale,
       defaultLocale,
     );
