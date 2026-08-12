@@ -1,22 +1,16 @@
-import type { FieldDefinition } from "@cmssy/types";
 import type { CmssyClientConfig, RawBlock } from "../content/content-client";
 import {
   asBucket,
   getBlockContentForLanguage,
 } from "../content/get-block-content";
-import { walkBlockFields, type BlockSchemaMap } from "./block-content";
+import {
+  BLOCK_BUCKETS,
+  walkBlockFields,
+  type BlockBucket,
+  type BlockSchemaMap,
+} from "./block-content";
 import { createCmssyClient, type QueryScopedOptions } from "./client";
 import { FORM_QUERY, type CmssyFormDefinition } from "./queries";
-
-const BUCKETS = ["content", "style", "advanced"] as const;
-type Bucket = (typeof BUCKETS)[number];
-
-/** Which bucket the editor writes a field into - `tab` decides, content is the default. */
-function bucketOf(field: FieldDefinition): Bucket {
-  return field.tab === "style" || field.tab === "advanced"
-    ? field.tab
-    : "content";
-}
 
 /**
  * Finds the forms a page needs by reading the blocks' schemas, so a form field
@@ -35,17 +29,22 @@ export function collectFormIds(
   for (const block of blocks) {
     const schema = schemas[block.type];
     if (!schema) continue;
-    const values: Record<Bucket, Record<string, unknown>> = {
+    const values: Record<BlockBucket, Record<string, unknown>> = {
       content: getBlockContentForLanguage(block.content, locale, defaultLocale),
       style: asBucket(block.style),
       advanced: asBucket(block.advanced),
     };
-    for (const bucket of BUCKETS) {
-      walkBlockFields(values[bucket], schema, (holder, key, field) => {
-        if (field.type !== "form" || bucketOf(field) !== bucket) return;
-        const id = holder[key];
-        if (typeof id === "string" && id.trim()) ids.add(id);
-      });
+    for (const bucket of BLOCK_BUCKETS) {
+      walkBlockFields(
+        values[bucket],
+        schema,
+        (holder, key, field) => {
+          if (field.type !== "form") return;
+          const id = holder[key];
+          if (typeof id === "string" && id.trim()) ids.add(id);
+        },
+        { bucket },
+      );
     }
   }
   return [...ids];

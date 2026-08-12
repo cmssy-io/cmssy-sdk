@@ -49,6 +49,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export const BLOCK_BUCKETS = ["content", "style", "advanced"] as const;
+export type BlockBucket = (typeof BLOCK_BUCKETS)[number];
+
+/**
+ * Which bucket the editor writes a field into. `tab` decides, content is the
+ * default - a field on the style or advanced tab is stored under `block.style`
+ * or `block.advanced`, not in the block's content.
+ */
+export function bucketOf(field: FieldDefinition): BlockBucket {
+  return field.tab === "style" || field.tab === "advanced"
+    ? field.tab
+    : "content";
+}
+
 export type FieldVisitor = (
   holder: Record<string, unknown>,
   key: string,
@@ -66,15 +80,28 @@ export type FieldVisitor = (
  * (`getBlockContentForLanguage`), so a repeater row is still shared with it;
  * copying the rows first is what keeps a write from reaching the original. A
  * caller that only reads leaves it off and mutates nothing.
+ *
+ * `bucket` keeps a caller that holds one bucket from acting on fields stored in
+ * another: a schema describes all three, so walking it against content alone
+ * would read - and write - keys that live under `block.style` or
+ * `block.advanced`. Only a top-level field carries a tab; inside a repeater row
+ * there are no tabs, so the rows go with whatever bucket the repeater is in.
  */
 export function walkBlockFields(
   values: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
   visit: FieldVisitor,
-  options: { copyRows?: boolean } = {},
+  options: { copyRows?: boolean; bucket?: BlockBucket } = {},
   path: readonly (string | number)[] = [],
 ): void {
   for (const [key, field] of Object.entries(schema)) {
+    if (
+      options.bucket &&
+      path.length === 0 &&
+      bucketOf(field) !== options.bucket
+    ) {
+      continue;
+    }
     if (field.type === "repeater") {
       const itemSchema = field.itemSchema;
       const stored = values[key];
@@ -115,7 +142,7 @@ function collectRefs(
         if (!model) return;
         refs.push({ content: holder, key, field, model });
       },
-      { copyRows: true },
+      { copyRows: true, bucket: "content" },
     );
   }
   return refs;
@@ -244,7 +271,7 @@ export function normalizeBlockContent(
         }
       }
     },
-    { copyRows: true },
+    { copyRows: true, bucket: "content" },
   );
 }
 

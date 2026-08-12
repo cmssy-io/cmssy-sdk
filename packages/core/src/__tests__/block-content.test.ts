@@ -480,3 +480,51 @@ describe("a page selector's declared default", () => {
     expect(content.parentPage).toEqual({ slug: "news", displayName: {} });
   });
 });
+
+describe("fields the editor stores outside content", () => {
+  const schema = {
+    heading: fields.text({ defaultValue: "Hi" }),
+    width: fields.select({
+      label: "Width",
+      options: ["full", "narrow"],
+      defaultValue: "full",
+      tab: "style",
+    }),
+    target: fields.pageSelector({ multiple: false, tab: "advanced" }),
+  };
+
+  it("leaves a style-tab default out of the content bucket", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, schema);
+    expect(content).toEqual({ heading: "Hi" });
+    expect(content).not.toHaveProperty("width");
+  });
+
+  it("does not coerce an advanced-tab selector inside content", () => {
+    const content: Record<string, unknown> = { target: ["stale"] };
+    normalizeBlockContent(content, schema);
+    expect(content.target).toEqual(["stale"]);
+  });
+
+  it("does not fetch for a relation declared on the advanced tab", async () => {
+    const { fetch, calls } = routerFetch({ records: () => [] });
+    const content: Record<string, unknown> = {};
+    await resolveRelationContent(
+      config,
+      [{ type: "promo", content }],
+      {
+        promo: {
+          items: fields.relation({
+            model: "testimonial",
+            mode: "all",
+            tab: "advanced",
+          }),
+        },
+      },
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+    expect(calls).toHaveLength(0);
+    expect(content).toEqual({});
+  });
+});
