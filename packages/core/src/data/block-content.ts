@@ -1,4 +1,4 @@
-import type { CmssyModelRecord, FieldDefinition } from "@cmssy/types";
+import type { CmssyModelRecord, FieldDefinition, PageRef } from "@cmssy/types";
 import type { CmssyClientConfig } from "../content/content-client";
 import { createCmssyClient } from "./client";
 import type { QueryScopedOptions } from "./client";
@@ -45,6 +45,86 @@ interface RelationRef {
   model: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export const BLOCK_BUCKETS = ["content", "style", "advanced"] as const;
+export type BlockBucket = (typeof BLOCK_BUCKETS)[number];
+
+/**
+ * Which bucket the editor writes a field into. `tab` decides, content is the
+ * default - a field on the style or advanced tab is stored under `block.style`
+ * or `block.advanced`, not in the block's content.
+ */
+export function bucketOf(field: FieldDefinition): BlockBucket {
+  return field.tab === "style" || field.tab === "advanced"
+    ? field.tab
+    : "content";
+}
+
+export type FieldVisitor = (
+  holder: Record<string, unknown>,
+  key: string,
+  field: FieldDefinition,
+  path: readonly (string | number)[],
+) => void;
+
+/**
+ * Visits every declared field of a block's values, descending into repeater
+ * rows so a field nested in a repeater is reached on the same terms as a
+ * top-level one.
+ *
+ * `copyRows` is for callers that write through the holder they are handed. The
+ * values a block receives are only shallow-copied out of the stored document
+ * (`getBlockContentForLanguage`), so a repeater row is still shared with it;
+ * copying the rows first is what keeps a write from reaching the original. A
+ * caller that only reads leaves it off and mutates nothing.
+ *
+ * `bucket` keeps a caller that holds one bucket from acting on fields stored in
+ * another: a schema describes all three, so walking it against content alone
+ * would read - and write - keys that live under `block.style` or
+ * `block.advanced`. Only a top-level field carries a tab; inside a repeater row
+ * there are no tabs, so the rows go with whatever bucket the repeater is in.
+ */
+export function walkBlockFields(
+  values: Record<string, unknown>,
+  schema: Record<string, FieldDefinition>,
+  visit: FieldVisitor,
+  options: { copyRows?: boolean; bucket?: BlockBucket } = {},
+  path: readonly (string | number)[] = [],
+): void {
+  for (const [key, field] of Object.entries(schema)) {
+    if (
+      options.bucket &&
+      path.length === 0 &&
+      bucketOf(field) !== options.bucket
+    ) {
+      continue;
+    }
+    if (field.type === "repeater") {
+      const itemSchema = field.itemSchema;
+      const stored = values[key];
+      if (!itemSchema || !Array.isArray(stored)) continue;
+      const rows = options.copyRows
+        ? stored.map((row) => (isRecord(row) ? { ...row } : row))
+        : stored;
+      if (options.copyRows) values[key] = rows;
+      rows.forEach((row, index) => {
+        if (isRecord(row)) {
+          walkBlockFields(row, itemSchema, visit, options, [
+            ...path,
+            key,
+            index,
+          ]);
+        }
+      });
+      continue;
+    }
+    visit(values, key, field, path);
+  }
+}
+
 function collectRefs(
   entries: RelationContentEntry[],
   schemas: BlockSchemaMap,
@@ -53,12 +133,17 @@ function collectRefs(
   for (const entry of entries) {
     const schema = schemas[entry.type];
     if (!schema) continue;
-    for (const [key, field] of Object.entries(schema)) {
-      if (field.type !== "relation") continue;
-      const model = relationModel(field);
-      if (!model) continue;
-      refs.push({ content: entry.content, key, field, model });
-    }
+    walkBlockFields(
+      entry.content,
+      schema,
+      (holder, key, field) => {
+        if (field.type !== "relation") return;
+        const model = relationModel(field);
+        if (!model) return;
+        refs.push({ content: holder, key, field, model });
+      },
+      { copyRows: true, bucket: "content" },
+    );
   }
   return refs;
 }
@@ -81,38 +166,97 @@ function isListShaped(field: FieldDefinition): boolean {
   );
 }
 
-export function normalizeRelationContent(
+/**
+ * A page reference as the admin writes it today, or the bare slug written
+ * before a page selector carried the display name. Reading the old shape here
+ * is what lets `fields.pageSelector` promise `PageRef` for every stored value.
+ */
+function toPageRef(value: unknown): PageRef | null {
+  if (typeof value === "string") {
+    return value ? { slug: value, displayName: {} } : null;
+  }
+  if (isRecord(value) && typeof value.slug === "string" && value.slug) {
+    return value as unknown as PageRef;
+  }
+  return null;
+}
+
+function toPageRefs(value: unknown): PageRef[] {
+  const items = Array.isArray(value) ? value : [value];
+  return items.map(toPageRef).filter((ref): ref is PageRef => ref !== null);
+}
+
+/** Walks `path` (repeater key / row index pairs) into the server-resolved content. */
+function fallbackHolder(
+  resolved: Record<string, unknown> | undefined,
+  path: readonly (string | number)[],
+): Record<string, unknown> | undefined {
+  let holder: unknown = resolved;
+  for (const step of path) {
+    if (holder === undefined || holder === null) return undefined;
+    holder = (holder as Record<string | number, unknown>)[step];
+  }
+  return isRecord(holder) ? holder : undefined;
+}
+
+/**
+ * Brings stored content in line with what the block's schema declares, for the
+ * field types whose stored shape differs from the authored one: a relation
+ * carries ids, a page selector always carries a list even when it holds one
+ * page.
+ */
+export function normalizeBlockContent(
   content: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
   resolved?: Record<string, unknown>,
 ): void {
-  for (const [key, field] of Object.entries(schema)) {
-    if (field.type !== "relation") continue;
-    const value = content[key];
-    const fallback = resolved?.[key];
-    if (isListShaped(field)) {
-      if (Array.isArray(value)) {
-        const records = value.filter(isResolvedRecord);
-        if (records.length > 0 || value.length === 0) {
-          content[key] = records;
-          continue;
+  walkBlockFields(
+    content,
+    schema,
+    (holder, key, field, path) => {
+      if (field.type === "pageSelector") {
+        if (!(key in holder)) return;
+        const refs = toPageRefs(holder[key]);
+        if (field.multiple === false) {
+          if (refs[0]) holder[key] = refs[0];
+          else delete holder[key];
+        } else {
+          holder[key] = refs;
+        }
+        return;
+      }
+
+      if (field.type !== "relation") return;
+
+      const value = holder[key];
+      const fallback = fallbackHolder(resolved, path)?.[key];
+      if (isListShaped(field)) {
+        if (Array.isArray(value)) {
+          const records = value.filter(isResolvedRecord);
+          if (records.length > 0 || value.length === 0) {
+            holder[key] = records;
+            return;
+          }
+        }
+        holder[key] = Array.isArray(fallback)
+          ? fallback.filter(isResolvedRecord)
+          : [];
+      } else if (!isResolvedRecord(value)) {
+        if (value != null && value !== "" && isResolvedRecord(fallback)) {
+          holder[key] = fallback;
+        } else {
+          delete holder[key];
         }
       }
-      content[key] = Array.isArray(fallback)
-        ? fallback.filter(isResolvedRecord)
-        : [];
-    } else if (!isResolvedRecord(value)) {
-      if (value != null && value !== "" && isResolvedRecord(fallback)) {
-        content[key] = fallback;
-      } else {
-        delete content[key];
-      }
-    }
-  }
+    },
+    { copyRows: true, bucket: "content" },
+  );
 }
 
 function collectionKey(ref: RelationRef): string {
-  return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join("\u0000");
+  return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join(
+    "\u0000",
+  );
 }
 
 export async function resolveRelationContent(

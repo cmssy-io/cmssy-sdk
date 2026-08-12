@@ -4,7 +4,7 @@ import type { BlockMap } from "../registry";
 import {
   asBucket,
   getBlockContentForLanguage,
-  normalizeRelationContent,
+  normalizeBlockContent,
 } from "@cmssy/core/internal";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
@@ -91,7 +91,7 @@ export function CmssyBlock({
     ? { ...resolvedContent }
     : getBlockContentForLanguage(block.content, locale, defaultLocale);
   const content = patchedContent ? { ...base, ...patchedContent } : base;
-  if (schema) normalizeRelationContent(content, schema, resolvedContent);
+  if (schema) normalizeBlockContent(content, schema, resolvedContent);
   const style = patchedStyle
     ? { ...asBucket(block.style), ...patchedStyle }
     : asBucket(block.style);
