@@ -28,13 +28,13 @@ export {
   SUBMIT_FORM_MUTATION,
 } from "./data/queries";
 export {
-  normalizeRelationContent,
+  normalizeBlockContent,
   resolveRelationContent,
-} from "./data/relation-resolver";
+} from "./data/block-content";
 export type {
   BlockSchemaMap,
   RelationContentEntry,
-} from "./data/relation-resolver";
+} from "./data/block-content";
 
 export {
   CMSSY_LOCALE_HEADER,

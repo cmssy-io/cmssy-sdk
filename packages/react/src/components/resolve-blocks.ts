@@ -1,6 +1,7 @@
 import type { CmssyClientConfig, RawBlock } from "@cmssy/core";
 import {
   getBlockContentForLanguage,
+  normalizeBlockContent,
   resolveRelationContent,
   type BlockSchemaMap,
 } from "@cmssy/core/internal";
@@ -38,14 +39,21 @@ export async function resolveBlocks(
     ),
   );
 
-  if (options?.config && options.schemas) {
-    await resolveRelationContent(
-      options.config,
-      blocks.map((block, i) => ({ type: block.type, content: contents[i]! })),
-      options.schemas,
-      locale,
-      options.workspaceId ? { workspaceId: options.workspaceId } : {},
-    );
+  const schemas = options?.schemas;
+  if (schemas) {
+    if (options?.config) {
+      await resolveRelationContent(
+        options.config,
+        blocks.map((block, i) => ({ type: block.type, content: contents[i]! })),
+        schemas,
+        locale,
+        options.workspaceId ? { workspaceId: options.workspaceId } : {},
+      );
+    }
+    blocks.forEach((block, i) => {
+      const schema = schemas[block.type];
+      if (schema) normalizeBlockContent(contents[i]!, schema);
+    });
   }
 
   return Promise.all(

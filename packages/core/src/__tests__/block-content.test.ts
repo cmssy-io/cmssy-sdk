@@ -3,10 +3,10 @@ import type { FetchLike } from "../content/content-client";
 import { fields } from "../fields";
 import {
   RECORDS_BY_IDS_QUERY,
-  normalizeRelationContent,
+  normalizeBlockContent,
   resolveRelationContent,
   type BlockSchemaMap,
-} from "../data/relation-resolver";
+} from "../data/block-content";
 
 const config = {
   apiUrl: "https://api.test/graphql",
@@ -170,7 +170,9 @@ describe("resolveRelationContent", () => {
     );
     expect(first.items).toHaveLength(1);
     expect(second.items).toHaveLength(1);
-    expect(calls.filter((c) => c.query.includes("PublicModelRecords"))).toHaveLength(1);
+    expect(
+      calls.filter((c) => c.query.includes("PublicModelRecords")),
+    ).toHaveLength(1);
   });
 
   it("degrades on fetch failure: lists become empty, singles disappear", async () => {
@@ -194,7 +196,7 @@ describe("resolveRelationContent", () => {
     expect(collection.items).toEqual([]);
   });
 
-  it("normalizeRelationContent coerces raw editor values to safe shapes", () => {
+  it("normalizeBlockContent coerces raw editor values to safe shapes", () => {
     const schema = {
       items: fields.relation({ model: "faq-item", mode: "all" }),
       pick: fields.relation({ model: "testimonial", multiple: true }),
@@ -207,18 +209,18 @@ describe("resolveRelationContent", () => {
       author: "raw-id",
       heading: "Untouched",
     };
-    normalizeRelationContent(content, schema);
+    normalizeBlockContent(content, schema);
     expect(content.items).toEqual([]);
     expect(content.pick).toEqual([resolved]);
     expect(content).not.toHaveProperty("author");
     expect(content.heading).toBe("Untouched");
 
     const kept: Record<string, unknown> = { author: resolved };
-    normalizeRelationContent(kept, schema);
+    normalizeBlockContent(kept, schema);
     expect(kept.author).toBe(resolved);
   });
 
-  it("normalizeRelationContent falls back to server-resolved values when raw content clobbers them", () => {
+  it("normalizeBlockContent falls back to server-resolved values when raw content clobbers them", () => {
     const schema = {
       items: fields.relation({ model: "faq-item", mode: "all" }),
       author: fields.relation({ model: "author" }),
@@ -231,12 +233,12 @@ describe("resolveRelationContent", () => {
       items: [{ question: "stale repeater row" }],
       author: "raw-id",
     };
-    normalizeRelationContent(clobbered, schema, resolved);
+    normalizeBlockContent(clobbered, schema, resolved);
     expect(clobbered.items).toEqual([faq]);
     expect(clobbered.author).toBe(ann);
 
     const cleared: Record<string, unknown> = { items: [], author: null };
-    normalizeRelationContent(cleared, schema, resolved);
+    normalizeBlockContent(cleared, schema, resolved);
     expect(cleared.items).toEqual([]);
     expect(cleared).not.toHaveProperty("author");
   });
@@ -251,5 +253,147 @@ describe("resolveRelationContent", () => {
       { fetch, workspaceId: "ws1" },
     );
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("fields nested in a repeater", () => {
+  const schemas: BlockSchemaMap = {
+    "site-header": {
+      navCategories: fields.repeater({
+        label: "Nav",
+        itemSchema: {
+          label: fields.text(),
+          category: fields.relation({ model: "category" }),
+        },
+      }),
+    },
+  };
+
+  it("resolves a relation declared inside a repeater row", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const content: Record<string, unknown> = {
+      navCategories: [{ label: "Pumps", category: "c1" }],
+    };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "site-header", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(content.navCategories).toEqual([
+      { label: "Pumps", category: record("c1", { name: "Pumps" }) },
+    ]);
+  });
+
+  it("copies rows instead of writing through to the stored content", async () => {
+    const { fetch } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const storedRow = { label: "Pumps", category: "c1" };
+    const content: Record<string, unknown> = { navCategories: [storedRow] };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "site-header", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(storedRow.category).toBe("c1");
+  });
+
+  it("normalizes a repeater-nested relation against the resolved fallback", () => {
+    const cat = record("c1", { name: "Pumps" });
+    const content: Record<string, unknown> = {
+      navCategories: [{ category: "c1" }],
+    };
+    normalizeBlockContent(content, schemas["site-header"]!, {
+      navCategories: [{ category: cat }],
+    });
+    expect(content.navCategories).toEqual([{ category: cat }]);
+  });
+
+  it("drops an unresolvable repeater-nested relation rather than leaving an id", () => {
+    const content: Record<string, unknown> = {
+      navCategories: [{ label: "Pumps", category: "c1" }],
+    };
+    normalizeBlockContent(content, schemas["site-header"]!);
+    expect(content.navCategories).toEqual([{ label: "Pumps" }]);
+  });
+});
+
+describe("pageSelector normalization", () => {
+  const single = { parentPage: fields.pageSelector({ multiple: false }) };
+  const many = { pages: fields.pageSelector() };
+
+  it("unwraps the stored one-element list when the field is single", () => {
+    const content: Record<string, unknown> = {
+      parentPage: [{ slug: "blog", displayName: { en: "Blog" } }],
+    };
+    normalizeBlockContent(content, single);
+    expect(content.parentPage).toEqual({
+      slug: "blog",
+      displayName: { en: "Blog" },
+    });
+  });
+
+  it("drops a single page selector that holds nothing", () => {
+    const content: Record<string, unknown> = { parentPage: [] };
+    normalizeBlockContent(content, single);
+    expect(content).not.toHaveProperty("parentPage");
+  });
+
+  it("keeps a list for the default multiple selector, mixed shapes and all", () => {
+    const content: Record<string, unknown> = {
+      pages: ["a", { slug: "b", displayName: { en: "B" } }, "", null],
+    };
+    normalizeBlockContent(content, many);
+    expect(content.pages).toEqual([
+      { slug: "a", displayName: {} },
+      { slug: "b", displayName: { en: "B" } },
+    ]);
+  });
+
+  it("reads the legacy bare-slug shape as a page reference", () => {
+    const content: Record<string, unknown> = { parentPage: ["blog"] };
+    normalizeBlockContent(content, single);
+    expect(content.parentPage).toEqual({ slug: "blog", displayName: {} });
+  });
+
+  it("is idempotent, so a second render does not re-wrap", () => {
+    const content: Record<string, unknown> = { parentPage: ["blog"] };
+    normalizeBlockContent(content, single);
+    normalizeBlockContent(content, single);
+    expect(content.parentPage).toEqual({ slug: "blog", displayName: {} });
+  });
+
+  it("leaves an untouched selector absent rather than inventing a value", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, single);
+    normalizeBlockContent(content, many);
+    expect(content).toEqual({});
+  });
+
+  it("reaches a page selector declared inside a repeater row", () => {
+    const schema = {
+      links: fields.repeater({
+        label: "Links",
+        itemSchema: { target: fields.pageSelector({ multiple: false }) },
+      }),
+    };
+    const content: Record<string, unknown> = {
+      links: [{ target: [{ slug: "about", displayName: {} }] }],
+    };
+    normalizeBlockContent(content, schema);
+    expect(content.links).toEqual([
+      { target: { slug: "about", displayName: {} } },
+    ]);
   });
 });

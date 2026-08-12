@@ -7,6 +7,7 @@ import type {
   FieldTypeValueMap,
   FieldDefinition,
   InferBlockContent,
+  PageRef,
   ResolvedMediaValue,
   RelationMode,
   TypedField,
@@ -41,6 +42,15 @@ type RepeaterValue<O> = O extends {
 type RelationValue<O> = O extends { mode: "all" } | { multiple: true }
   ? CmssyModelRecord[]
   : CmssyModelRecord | undefined;
+
+/**
+ * A page selector holds a list unless it is explicitly single. The default is
+ * the multiple one, which is the reading the editor already takes: it treats
+ * only `multiple: false` as single.
+ */
+type PageSelectorValue<O> = O extends { multiple: false }
+  ? PageRef | undefined
+  : PageRef[];
 
 interface RelationFieldOptions extends Omit<
   FieldOptions,
@@ -83,7 +93,6 @@ export const fields = {
   table: control("table"),
   json: control("json"),
   form: control("form"),
-  pageSelector: control("pageSelector"),
 
   select: choice("select"),
   radio: choice("radio"),
@@ -93,6 +102,12 @@ export const fields = {
 
   media: <const O extends FieldOptions>(opts: O = {} as O) =>
     build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
+
+  pageSelector: <const O extends FieldOptions>(opts: O = {} as O) =>
+    build("pageSelector", opts) as TypedField<
+      PageSelectorValue<O>,
+      Declared<O>
+    >,
 
   repeater: <const O extends FieldOptions>(opts: O) =>
     build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,

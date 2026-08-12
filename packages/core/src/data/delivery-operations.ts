@@ -5,7 +5,7 @@ import {
   PUBLIC_PAGE_META_QUERY,
   PUBLIC_PAGE_QUERY,
 } from "../content/content-client";
-import { RECORDS_BY_IDS_QUERY } from "./relation-resolver";
+import { RECORDS_BY_IDS_QUERY } from "./block-content";
 import {
   FORM_QUERY,
   MODEL_RECORDS_QUERY,
@@ -56,7 +56,8 @@ export const CMSSY_DELIVERY_OPERATIONS: readonly CmssyDeliveryOperation[] = [
     document: FORM_QUERY,
   },
   {
-    purpose: "Submitting that form - rendering one without this is half a feature.",
+    purpose:
+      "Submitting that form - rendering one without this is half a feature.",
     document: SUBMIT_FORM_MUTATION,
   },
 ];

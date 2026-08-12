@@ -1,4 +1,4 @@
-import type { CmssyModelRecord, FieldDefinition } from "@cmssy/types";
+import type { CmssyModelRecord, FieldDefinition, PageRef } from "@cmssy/types";
 import type { CmssyClientConfig } from "../content/content-client";
 import { createCmssyClient } from "./client";
 import type { QueryScopedOptions } from "./client";
@@ -45,6 +45,49 @@ interface RelationRef {
   model: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Visits every declared field of a block's content, descending into repeater
+ * rows so a field nested in a repeater is reached on the same terms as a
+ * top-level one.
+ *
+ * Rows are replaced with copies before they are visited: the content a block
+ * receives is only shallow-copied out of the stored document
+ * (`getBlockContentForLanguage`), so a row object is still shared with it and
+ * must never be written through.
+ */
+function walkContent(
+  content: Record<string, unknown>,
+  schema: Record<string, FieldDefinition>,
+  visit: (
+    holder: Record<string, unknown>,
+    key: string,
+    field: FieldDefinition,
+    path: readonly (string | number)[],
+  ) => void,
+  path: readonly (string | number)[] = [],
+): void {
+  for (const [key, field] of Object.entries(schema)) {
+    if (field.type === "repeater") {
+      const itemSchema = field.itemSchema;
+      const rows = content[key];
+      if (!itemSchema || !Array.isArray(rows)) continue;
+      const copies = rows.map((row) => (isRecord(row) ? { ...row } : row));
+      content[key] = copies;
+      copies.forEach((row, index) => {
+        if (isRecord(row)) {
+          walkContent(row, itemSchema, visit, [...path, key, index]);
+        }
+      });
+      continue;
+    }
+    visit(content, key, field, path);
+  }
+}
+
 function collectRefs(
   entries: RelationContentEntry[],
   schemas: BlockSchemaMap,
@@ -53,12 +96,12 @@ function collectRefs(
   for (const entry of entries) {
     const schema = schemas[entry.type];
     if (!schema) continue;
-    for (const [key, field] of Object.entries(schema)) {
-      if (field.type !== "relation") continue;
+    walkContent(entry.content, schema, (holder, key, field) => {
+      if (field.type !== "relation") return;
       const model = relationModel(field);
-      if (!model) continue;
-      refs.push({ content: entry.content, key, field, model });
-    }
+      if (!model) return;
+      refs.push({ content: holder, key, field, model });
+    });
   }
   return refs;
 }
@@ -81,38 +124,91 @@ function isListShaped(field: FieldDefinition): boolean {
   );
 }
 
-export function normalizeRelationContent(
+/**
+ * A page reference as the admin writes it today, or the bare slug written
+ * before a page selector carried the display name. Reading the old shape here
+ * is what lets `fields.pageSelector` promise `PageRef` for every stored value.
+ */
+function toPageRef(value: unknown): PageRef | null {
+  if (typeof value === "string") {
+    return value ? { slug: value, displayName: {} } : null;
+  }
+  if (isRecord(value) && typeof value.slug === "string" && value.slug) {
+    return value as unknown as PageRef;
+  }
+  return null;
+}
+
+function toPageRefs(value: unknown): PageRef[] {
+  const items = Array.isArray(value) ? value : [value];
+  return items.map(toPageRef).filter((ref): ref is PageRef => ref !== null);
+}
+
+/** Walks `path` (repeater key / row index pairs) into the server-resolved content. */
+function fallbackHolder(
+  resolved: Record<string, unknown> | undefined,
+  path: readonly (string | number)[],
+): Record<string, unknown> | undefined {
+  let holder: unknown = resolved;
+  for (const step of path) {
+    if (holder === undefined || holder === null) return undefined;
+    holder = (holder as Record<string | number, unknown>)[step];
+  }
+  return isRecord(holder) ? holder : undefined;
+}
+
+/**
+ * Brings stored content in line with what the block's schema declares, for the
+ * field types whose stored shape differs from the authored one: a relation
+ * carries ids, a page selector always carries a list even when it holds one
+ * page.
+ */
+export function normalizeBlockContent(
   content: Record<string, unknown>,
   schema: Record<string, FieldDefinition>,
   resolved?: Record<string, unknown>,
 ): void {
-  for (const [key, field] of Object.entries(schema)) {
-    if (field.type !== "relation") continue;
-    const value = content[key];
-    const fallback = resolved?.[key];
+  walkContent(content, schema, (holder, key, field, path) => {
+    if (field.type === "pageSelector") {
+      if (!(key in holder)) return;
+      const refs = toPageRefs(holder[key]);
+      if (field.multiple === false) {
+        if (refs[0]) holder[key] = refs[0];
+        else delete holder[key];
+      } else {
+        holder[key] = refs;
+      }
+      return;
+    }
+
+    if (field.type !== "relation") return;
+    const value = holder[key];
+    const fallback = fallbackHolder(resolved, path)?.[key];
     if (isListShaped(field)) {
       if (Array.isArray(value)) {
         const records = value.filter(isResolvedRecord);
         if (records.length > 0 || value.length === 0) {
-          content[key] = records;
-          continue;
+          holder[key] = records;
+          return;
         }
       }
-      content[key] = Array.isArray(fallback)
+      holder[key] = Array.isArray(fallback)
         ? fallback.filter(isResolvedRecord)
         : [];
     } else if (!isResolvedRecord(value)) {
       if (value != null && value !== "" && isResolvedRecord(fallback)) {
-        content[key] = fallback;
+        holder[key] = fallback;
       } else {
-        delete content[key];
+        delete holder[key];
       }
     }
-  }
+  });
 }
 
 function collectionKey(ref: RelationRef): string {
-  return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join("\u0000");
+  return [ref.model, ref.field.sort ?? "", ref.field.limit ?? ""].join(
+    "\u0000",
+  );
 }
 
 export async function resolveRelationContent(
