@@ -29,7 +29,7 @@ export type {
 type Declared<O> = O extends { required: true }
   ? true
   : O extends { defaultValue: infer Default }
-    ? [Default] extends [undefined]
+    ? undefined extends Default
       ? false
       : true
     : false;

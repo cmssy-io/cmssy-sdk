@@ -239,7 +239,7 @@ export function normalizeBlockContent(
         if (field.multiple === false) {
           if (refs[0]) holder[key] = refs[0];
           else delete holder[key];
-        } else if (present || refs.length > 0) {
+        } else if (key in holder || refs.length > 0) {
           holder[key] = refs;
         }
         return;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
-import { fields } from "../fields";
+import { fields, type InferBlockContent } from "../fields";
 import {
   RECORDS_BY_IDS_QUERY,
   normalizeBlockContent,
@@ -528,3 +528,43 @@ describe("fields the editor stores outside content", () => {
     expect(content).toEqual({});
   });
 });
+
+describe("a cleared multiple page selector", () => {
+  it("normalizes null to an empty list rather than leaving it raw", () => {
+    const content: Record<string, unknown> = { pages: null };
+    normalizeBlockContent(content, { pages: fields.pageSelector() });
+    expect(content.pages).toEqual([]);
+  });
+});
+
+type Equals<A, B> =
+  (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2
+    ? true
+    : false;
+type Expect<T extends true> = T;
+
+const maybeDefault = process.env.CMSSY_TEST_DEFAULT;
+
+// A literal default is guaranteed by normalization, so the key is not optional.
+type _LiteralDefaultIsPresent = Expect<
+  Equals<
+    InferBlockContent<{ limit: ReturnType<typeof numberWithDefault> }>,
+    { limit: number }
+  >
+>;
+
+// One that may be undefined is not: normalization skips an undefined default,
+// so promising the key would be a lie.
+type _MaybeUndefinedDefaultIsOptional = Expect<
+  Equals<
+    InferBlockContent<{ heading: ReturnType<typeof textWithMaybeDefault> }>,
+    { heading?: string }
+  >
+>;
+
+function numberWithDefault() {
+  return fields.number({ defaultValue: 8 });
+}
+function textWithMaybeDefault() {
+  return fields.text({ defaultValue: maybeDefault });
+}
