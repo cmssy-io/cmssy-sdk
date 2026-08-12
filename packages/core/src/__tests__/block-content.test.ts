@@ -606,3 +606,23 @@ function repeaterWithDefault() {
     defaultValue: [],
   });
 }
+
+describe("a page selector whose default yields no page", () => {
+  it("still materializes the key the type promises, as an empty list", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, {
+      pages: fields.pageSelector({ defaultValue: [] }),
+    });
+    expect(content).toHaveProperty("pages");
+    expect(content.pages).toEqual([]);
+  });
+
+  it("keeps the key on a single selector too, rather than deleting it", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, {
+      parentPage: fields.pageSelector({ multiple: false, defaultValue: [] }),
+    });
+    expect(content).toHaveProperty("parentPage");
+    expect(content.parentPage).toBeUndefined();
+  });
+});

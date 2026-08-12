@@ -234,12 +234,14 @@ export function normalizeBlockContent(
     (holder, key, field, path) => {
       if (field.type === "pageSelector") {
         const present = key in holder && holder[key] != null;
+        const declared = field.defaultValue !== undefined;
         let refs = present ? toPageRefs(holder[key]) : [];
         if (refs.length === 0) refs = toPageRefs(field.defaultValue);
         if (field.multiple === false) {
           if (refs[0]) holder[key] = refs[0];
+          else if (declared) holder[key] = undefined;
           else delete holder[key];
-        } else if (key in holder || refs.length > 0) {
+        } else if (key in holder || refs.length > 0 || declared) {
           holder[key] = refs;
         }
         return;
