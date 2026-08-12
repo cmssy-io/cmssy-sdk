@@ -206,16 +206,15 @@ export function normalizeBlockContent(
     schema,
     (holder, key, field, path) => {
       if (field.type === "pageSelector") {
-        if (key in holder) {
-          const refs = toPageRefs(holder[key]);
-          if (field.multiple === false) {
-            if (refs[0]) holder[key] = refs[0];
-            else delete holder[key];
-          } else {
-            holder[key] = refs;
-          }
+        const present = key in holder && holder[key] != null;
+        let refs = present ? toPageRefs(holder[key]) : [];
+        if (refs.length === 0) refs = toPageRefs(field.defaultValue);
+        if (field.multiple === false) {
+          if (refs[0]) holder[key] = refs[0];
+          else delete holder[key];
+        } else if (present || refs.length > 0) {
+          holder[key] = refs;
         }
-        applyDefault(holder, key, field);
         return;
       }
 

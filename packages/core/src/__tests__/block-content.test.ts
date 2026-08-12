@@ -442,3 +442,41 @@ describe("declared defaults", () => {
     expect(content).toEqual({});
   });
 });
+
+describe("a page selector's declared default", () => {
+  const single = {
+    parentPage: fields.pageSelector({
+      multiple: false,
+      defaultValue: [{ slug: "blog", displayName: { en: "Blog" } }],
+    }),
+  };
+  const many = {
+    pages: fields.pageSelector({ defaultValue: ["a", "b"] }),
+  };
+
+  it("arrives in the shape the field declares, not as the raw default", () => {
+    const content: Record<string, unknown> = {};
+    normalizeBlockContent(content, single);
+    expect(content.parentPage).toEqual({
+      slug: "blog",
+      displayName: { en: "Blog" },
+    });
+  });
+
+  it("is restored when the editor cleared the selector to null", () => {
+    const content: Record<string, unknown> = { pages: null };
+    normalizeBlockContent(content, many);
+    expect(content.pages).toEqual([
+      { slug: "a", displayName: {} },
+      { slug: "b", displayName: {} },
+    ]);
+  });
+
+  it("gives way to a page the author actually picked", () => {
+    const content: Record<string, unknown> = {
+      parentPage: [{ slug: "news", displayName: {} }],
+    };
+    normalizeBlockContent(content, single);
+    expect(content.parentPage).toEqual({ slug: "news", displayName: {} });
+  });
+});
