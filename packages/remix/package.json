@@ -6,13 +6,14 @@
     "cmssy",
     "cms",
     "headless",
-    "astro"
+    "react-router",
+    "remix"
   ],
   "homepage": "https://cmssy.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cmssy-io/cmssy-sdk.git",
-    "directory": "packages/astro"
+    "directory": "packages/remix"
   },
   "type": "module",
   "license": "MIT",
