@@ -147,6 +147,13 @@ export interface DragEndMessage {
   protocolVersion: number;
 }
 
+export interface ViewportMessage {
+  type: "cmssy:viewport";
+  protocolVersion: number;
+  width: number;
+  height: number;
+}
+
 export type EditorToAppMessage =
   | SelectMessage
   | PatchMessage
@@ -155,7 +162,8 @@ export type EditorToAppMessage =
   | ReorderMessage
   | RemoveMessage
   | DragOverMessage
-  | DragEndMessage;
+  | DragEndMessage
+  | ViewportMessage;
 
 export function isProtocolCompatible(version: number): boolean {
   return version === PROTOCOL_VERSION;

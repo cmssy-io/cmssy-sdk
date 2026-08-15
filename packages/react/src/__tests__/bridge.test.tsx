@@ -54,6 +54,18 @@ function patchEvent(
   });
 }
 
+function viewportEvent(origin: string, width: number, height: number) {
+  return new MessageEvent("message", {
+    origin,
+    data: {
+      type: "cmssy:viewport",
+      protocolVersion: PROTOCOL_VERSION,
+      width,
+      height,
+    },
+  });
+}
+
 function bucketPatchEvent(
   origin: string,
   buckets: {
@@ -826,6 +838,48 @@ describe("edit bridge (blocks-driven)", () => {
     postSpy.mockRestore();
   });
 
+  it("fires a window resize when the editor reports a new preview size", async () => {
+    const onResize = vi.fn();
+    window.addEventListener("resize", onResize);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      await act(async () => {
+        window.dispatchEvent(viewportEvent(editorOrigin, 390, 844));
+      });
+      expect(onResize).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener("resize", onResize);
+    }
+  });
+
+  it("ignores a viewport report from another origin", async () => {
+    const onResize = vi.fn();
+    window.addEventListener("resize", onResize);
+    try {
+      render(
+        <CmssyEditablePage
+          page={page}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+      await act(async () => {
+        window.dispatchEvent(viewportEvent("https://evil.example", 390, 844));
+      });
+      expect(onResize).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("resize", onResize);
+    }
+  });
+
   it("the server page does not mount the bridge", async () => {
     render(await CmssyServerPage({ page, blocks, locale: "en" }));
     expect(mockParent.postMessage).not.toHaveBeenCalled();
@@ -1028,7 +1082,9 @@ const HiddenHero = ({ content }: BlockProps<typeof hiddenHeroProps>) => (
 
 const hiddenPage = {
   id: "hp",
-  blocks: [{ id: "b1", type: "hidden-hero", content: { en: { heading: "Hi" } } }],
+  blocks: [
+    { id: "b1", type: "hidden-hero", content: { en: { heading: "Hi" } } },
+  ],
 };
 
 describe("invisible block reporting", () => {
@@ -1091,7 +1147,8 @@ describe("invisible block reporting", () => {
     act(() => vi.advanceTimersByTime(5000));
 
     const reports = mockParent.postMessage.mock.calls.filter(
-      (call) => (call[0] as { type?: string })?.type === "cmssy:invisible-blocks",
+      (call) =>
+        (call[0] as { type?: string })?.type === "cmssy:invisible-blocks",
     );
     expect(reports).toEqual([]);
   });

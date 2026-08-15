@@ -142,6 +142,17 @@ export function parseEditorMessage(
       return data.protocolVersion === PROTOCOL_VERSION
         ? { type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION }
         : null;
+    case "cmssy:viewport":
+      return typeof data.width === "number" &&
+        typeof data.height === "number" &&
+        data.protocolVersion === PROTOCOL_VERSION
+        ? {
+            type: "cmssy:viewport",
+            protocolVersion: PROTOCOL_VERSION,
+            width: data.width,
+            height: data.height,
+          }
+        : null;
     default:
       return null;
   }
