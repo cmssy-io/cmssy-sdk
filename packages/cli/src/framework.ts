@@ -59,6 +59,11 @@ export const FRAMEWORKS: FrameworkDef[] = [
           "mounts header and footer through the edit bridge; without it the editor can select them and cannot fill them",
       },
       {
+        path: "cmssy/site-providers.tsx",
+        purpose:
+          "the one place your own providers go - both roots render it, so a provider added here reaches the editor too",
+      },
+      {
         path: "blocks/hero/block.ts",
         purpose:
           "an example block: schema beside the component that reads it (loaders: docs/building-blocks/server-loaders.md)",
@@ -70,7 +75,7 @@ export const FRAMEWORKS: FrameworkDef[] = [
       {
         path: "app/[[...path]]/layout.tsx",
         purpose:
-          "the public root layout; <html lang> comes from the route, so put your global CSS and metadata here",
+          "the public root layout; <html lang> comes from the route, so put your global CSS and metadata here, and your providers in cmssy/site-providers.tsx",
       },
       {
         path: "app/[[...path]]/page.tsx",
@@ -80,7 +85,7 @@ export const FRAMEWORKS: FrameworkDef[] = [
       {
         path: "app/cmssy-edit/[[...path]]/layout.tsx",
         purpose:
-          "the editor's root layout - a separate root, so CSS and metadata have to be repeated here",
+          "the editor's root layout - a separate root, so CSS and metadata have to be repeated here; anything only the public layout mounts is missing from every preview",
       },
       {
         path: "app/cmssy-edit/[[...path]]/page.tsx",

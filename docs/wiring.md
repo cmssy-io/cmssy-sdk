@@ -114,6 +114,41 @@ export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 Skip this file and the editor preview is blank. That is the single most common
 way to break a cmssy app.
 
+### Providers go in one file both roots render
+
+`/cmssy-edit` is a **separate root**, with its own `<html>`. A provider added to
+`app/[[...path]]/layout.tsx` is therefore absent from every editor preview, and
+the failure is silent: no error, no failed request, just a page missing whatever
+that provider gave it. A reveal animation is the loudest case - without its
+motion provider, `whileInView` never attaches and every section stays at
+`opacity: 0`, so the preview looks blank forever.
+
+Keep one file and render it from both roots:
+
+```tsx
+// cmssy/site-providers.tsx
+"use client";
+
+import type { ReactNode } from "react";
+import { LazyMotion, domAnimation } from "motion/react";
+
+export function SiteProviders({ children }: { children: ReactNode }) {
+  return <LazyMotion features={domAnimation}>{children}</LazyMotion>;
+}
+```
+
+```tsx
+// app/[[...path]]/layout.tsx AND app/cmssy-edit/[[...path]]/layout.tsx
+<body>
+  <SiteProviders>{children}</SiteProviders>
+</body>
+```
+
+`cmssy init` scaffolds that file as a passthrough, so the seam exists before you
+need it. `edit-route-provider-parity` in `@cmssy/eslint-plugin` fails the build
+if a provider ever lands in one root and not the other. Global CSS and metadata
+have the same problem and no lint rule - repeat them in both.
+
 ## 5. The header and footer
 
 They are layout **blocks**, so they must be editable like any other block:

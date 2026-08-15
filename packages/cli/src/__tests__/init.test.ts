@@ -31,6 +31,7 @@ const NEXT_FILES = [
   "cmssy/blocks.ts",
   "cmssy/editor.tsx",
   "cmssy/editable-layout.tsx",
+  "cmssy/site-providers.tsx",
   "blocks/hero/block.ts",
   "blocks/hero/Hero.tsx",
   "app/[[...path]]/layout.tsx",
@@ -116,6 +117,23 @@ describe("runInit", () => {
     }
     expect(output).toContain("What not to break:");
     expect(output).toContain("docs/wiring.md");
+  });
+
+  it("renders the shared providers in every root layout it writes", () => {
+    const { deps, cwd } = makeApp({
+      dependencies: { next: "^16.0.0", react: "^19.0.0" },
+    });
+    expect(runInit({}, deps)).toBe(0);
+
+    const layouts = NEXT_FILES.filter((file) => file.endsWith("/layout.tsx"));
+    expect(layouts.length).toBeGreaterThan(1);
+    for (const layout of layouts) {
+      const source = readFileSync(join(cwd, layout), "utf8");
+      expect(source, layout).toContain(
+        '\nimport { SiteProviders } from "@/cmssy/site-providers";',
+      );
+      expect(source, layout).toContain("<SiteProviders>{children}</SiteProviders>");
+    }
   });
 
   it("carries a purpose for every scaffolded file of every framework", () => {
