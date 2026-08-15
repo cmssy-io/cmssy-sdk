@@ -91,6 +91,7 @@ export type {
   SelectMessage,
   PatchMessage,
   ParentReadyMessage,
+  ViewportMessage,
   EditorToAppMessage,
 } from "./bridge/protocol";
 export {

@@ -75,6 +75,11 @@ function findBlockEl(blockId: string): HTMLElement | null {
   }
 }
 
+function announceResize(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("resize"));
+}
+
 function canDetectInvisibleBlocks(): boolean {
   return (
     typeof document !== "undefined" &&
@@ -267,6 +272,8 @@ export function useEditBridge(
         setRemoved((prev) =>
           prev.includes(message.blockId) ? prev : [...prev, message.blockId],
         );
+      } else if (message.type === "cmssy:viewport") {
+        announceResize();
       } else if (message.type === "cmssy:parent-ready") {
         sendReady();
       }
