@@ -36,12 +36,14 @@ function editCounterpart(filename: string): string | null {
   if (app === -1) return null;
   const rest = file.slice(app + "/app/".length);
   if (!rest.includes("/")) return null;
+  if (rest.startsWith(`${EDIT_SEGMENT}/`)) return null;
 
   return `${file.slice(0, app)}/app/${EDIT_SEGMENT}/${rest}`;
 }
 
 function rendersElement(code: string, name: string): boolean {
-  return new RegExp(`<${name}[\\s/>]`).test(code);
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`<${escaped}[\\s/>]`).test(code);
 }
 
 function isChildrenSlot(node: unknown): boolean {
@@ -73,7 +75,7 @@ export const editRouteProviderParity: Rule.RuleModule = {
     schema: [],
     messages: {
       missingProvider:
-        "<{{name}}> wraps the blocks on the public route but not on {{editRoute}}, so the editor renders them without it - an entry animation never runs and the preview stays blank.\nHoist <{{name}}> to app/layout.tsx, the root both routes share.",
+        "<{{name}}> wraps the blocks on the public route but not on {{editRoute}}, so the editor renders them without whatever it provides. A missing animation provider is the loudest case - the reveals never attach and the preview stays blank - but any context the blocks read is gone the same way.\nEither hoist <{{name}}> to app/layout.tsx, the root both routes share, or render it in the edit layout too.",
     },
   },
   create(context) {
