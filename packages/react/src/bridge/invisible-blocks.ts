@@ -28,10 +28,12 @@ function holdsText(el: Element): boolean {
 
 function collectCopy(block: Element): Element[] {
   const copy: Element[] = [];
-  for (const el of [block, ...block.querySelectorAll("*")]) {
-    if (el.closest("svg")) continue;
+  const keep = (el: Element) => {
+    if (el.closest("svg")) return;
     if (holdsText(el)) copy.push(el);
-  }
+  };
+  keep(block);
+  for (const el of block.querySelectorAll("*")) keep(el);
   return copy;
 }
 
