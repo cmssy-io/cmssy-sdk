@@ -1,6 +1,8 @@
+import { editRouteProviderParity } from "./edit-route-provider-parity";
 import { noServerConfigInClient } from "./no-server-config-in-client";
 
 const rules = {
+  "edit-route-provider-parity": editRouteProviderParity,
   "no-server-config-in-client": noServerConfigInClient,
 };
 
@@ -13,9 +15,12 @@ const plugin = {
 plugin.configs.recommended = [
   {
     plugins: { cmssy: plugin },
-    rules: { "cmssy/no-server-config-in-client": "error" },
+    rules: {
+      "cmssy/edit-route-provider-parity": "error",
+      "cmssy/no-server-config-in-client": "error",
+    },
   },
 ];
 
-export { noServerConfigInClient, rules };
+export { editRouteProviderParity, noServerConfigInClient, rules };
 export default plugin;
