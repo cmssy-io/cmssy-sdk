@@ -71,6 +71,17 @@ export interface ShortcutMessage {
   action: ShortcutAction;
 }
 
+export interface InvisibleBlock {
+  blockId: string;
+  blockType: string;
+}
+
+export interface InvisibleBlocksMessage {
+  type: "cmssy:invisible-blocks";
+  protocolVersion: number;
+  blocks: InvisibleBlock[];
+}
+
 export type AppToEditorMessage =
   | ReadyMessage
   | BoundsMessage
@@ -78,7 +89,8 @@ export type AppToEditorMessage =
   | DeselectMessage
   | MoveMessage
   | DragIndexMessage
-  | ShortcutMessage;
+  | ShortcutMessage
+  | InvisibleBlocksMessage;
 
 export interface SelectMessage {
   type: "cmssy:select";

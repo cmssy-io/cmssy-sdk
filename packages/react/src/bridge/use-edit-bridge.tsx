@@ -13,6 +13,7 @@ import {
   isTypingTarget,
   resolveShortcutAction,
 } from "./shortcut-keys";
+import { useInvisibleBlocks } from "./use-invisible-blocks";
 
 export interface EditBridgeConfig {
   editorOrigin: string | string[];
@@ -72,6 +73,13 @@ function findBlockEl(blockId: string): HTMLElement | null {
   } catch {
     return null;
   }
+}
+
+function canDetectInvisibleBlocks(): boolean {
+  return (
+    typeof document !== "undefined" &&
+    typeof IntersectionObserver !== "undefined"
+  );
 }
 
 function prefersReducedMotion(): boolean {
@@ -136,6 +144,7 @@ export function useEditBridge(
 
   const { id: pageId, blocks } = page;
   const blocksKey = blocks.map((b) => `${b.id}:${b.type}`).join("|");
+  const framed = typeof window !== "undefined" && window.parent !== window;
 
   useEffect(() => {
     setPatches({});
@@ -191,7 +200,9 @@ export function useEditBridge(
           blockMeta:
             config.blockMeta ??
             (Object.create(null) as Record<string, BlockMeta>),
-          capabilities: ["shortcuts"],
+          capabilities: canDetectInvisibleBlocks()
+            ? ["shortcuts", "invisible-blocks"]
+            : ["shortcuts"],
         });
       } catch (error) {
         if (typeof console !== "undefined") {
@@ -347,6 +358,14 @@ export function useEditBridge(
       window.removeEventListener("resize", emitSelectedBounds);
     };
   }, [config.editorOrigin, pageId, blocksKey]);
+
+  useInvisibleBlocks(framed, blocksKey, (invisibleBlocks) => {
+    postSafeRef.current({
+      type: "cmssy:invisible-blocks",
+      protocolVersion: PROTOCOL_VERSION,
+      blocks: invisibleBlocks,
+    });
+  });
 
   useEffect(() => {
     emitBoundsRef.current();
