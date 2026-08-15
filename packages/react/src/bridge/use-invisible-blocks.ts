@@ -27,7 +27,7 @@ export function useInvisibleBlocks(
     const flush = () => {
       const blocks = [...invisible.values()];
       const key = blocks
-        .map((block) => block.blockId)
+        .map((block) => `${block.blockId}:${block.blockType}`)
         .sort()
         .join("|");
       if (key === reported) return;
@@ -48,7 +48,10 @@ export function useInvisibleBlocks(
       (entries) => {
         for (const entry of entries) {
           const pending = timers.get(entry.target);
-          if (!entry.isIntersecting) {
+          if (
+            !entry.isIntersecting ||
+            entry.intersectionRatio < VISIBLE_FRACTION
+          ) {
             if (pending) {
               clearTimeout(pending);
               timers.delete(entry.target);

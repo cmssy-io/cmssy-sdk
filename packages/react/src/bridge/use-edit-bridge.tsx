@@ -75,6 +75,13 @@ function findBlockEl(blockId: string): HTMLElement | null {
   }
 }
 
+function canDetectInvisibleBlocks(): boolean {
+  return (
+    typeof document !== "undefined" &&
+    typeof IntersectionObserver !== "undefined"
+  );
+}
+
 function prefersReducedMotion(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -193,7 +200,9 @@ export function useEditBridge(
           blockMeta:
             config.blockMeta ??
             (Object.create(null) as Record<string, BlockMeta>),
-          capabilities: ["shortcuts", "invisible-blocks"],
+          capabilities: canDetectInvisibleBlocks()
+            ? ["shortcuts", "invisible-blocks"]
+            : ["shortcuts"],
         });
       } catch (error) {
         if (typeof console !== "undefined") {

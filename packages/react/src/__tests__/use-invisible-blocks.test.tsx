@@ -4,7 +4,11 @@ import { render, act, cleanup } from "@testing-library/react";
 import type { InvisibleBlock } from "@cmssy/core";
 import { useInvisibleBlocks } from "../bridge/use-invisible-blocks";
 
-type Entry = { target: Element; isIntersecting: boolean };
+type Entry = {
+  target: Element;
+  isIntersecting: boolean;
+  intersectionRatio: number;
+};
 
 class FakeIntersectionObserver {
   static instances: FakeIntersectionObserver[] = [];
@@ -24,12 +28,12 @@ class FakeIntersectionObserver {
     this.targets.length = 0;
   }
 
-  enter(target: Element) {
-    this.callback([{ target, isIntersecting: true }]);
+  enter(target: Element, intersectionRatio = 1) {
+    this.callback([{ target, isIntersecting: true, intersectionRatio }]);
   }
 
   leave(target: Element) {
-    this.callback([{ target, isIntersecting: false }]);
+    this.callback([{ target, isIntersecting: false, intersectionRatio: 0 }]);
   }
 }
 
@@ -115,6 +119,20 @@ describe("useInvisibleBlocks", () => {
     act(() => vi.advanceTimersByTime(2000));
 
     expect(report).toHaveBeenLastCalledWith([]);
+  });
+
+  it("drops the timer when the block slips below the dwell fraction while still touching the viewport", () => {
+    const block = blockMarkup("opacity:0");
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(block, 0.9));
+    act(() => vi.advanceTimersByTime(DWELL_MS - 100));
+    act(() => observer.enter(block, 0.1));
+    act(() => vi.advanceTimersByTime(DWELL_MS));
+
+    expect(report).not.toHaveBeenCalled();
   });
 
   it("drops the timer when the block leaves the viewport before it settles", () => {
