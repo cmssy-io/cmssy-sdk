@@ -4,6 +4,8 @@ const VISIBLE_TEXT_FRACTION = 0.5;
 
 const MEDIA = "img,svg,video,canvas,picture,iframe";
 
+const UNPAINTED_TEXT = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT"]);
+
 export function effectiveOpacity(node: Element | null): number {
   let value = 1;
   let current: Element | null = node;
@@ -29,6 +31,7 @@ function holdsText(el: Element): boolean {
 function collectCopy(block: Element): Element[] {
   const copy: Element[] = [];
   const keep = (el: Element) => {
+    if (UNPAINTED_TEXT.has(el.tagName)) return;
     if (el.closest("svg")) return;
     if (holdsText(el)) copy.push(el);
   };

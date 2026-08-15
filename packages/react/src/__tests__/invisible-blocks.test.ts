@@ -67,6 +67,21 @@ describe("isBlockPainted", () => {
     expect(isBlockPainted(block)).toBe(false);
   });
 
+  it("does not count text that never paints as copy", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="hero">
+         <script type="application/ld+json">{"@type":"Product"}</script>
+         <script type="application/ld+json">{"@type":"Organization"}</script>
+         <style>.hero{color:red}</style>
+         <style>.hero h1{margin:0}</style>
+         <template><p>Row</p></template>
+         <h1>Real tool</h1>
+         <p>Decide in ten seconds</p>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(true);
+  });
+
   it("still judges a block that has no copy on its media", () => {
     const block = mount(
       `<div data-block-id="b1" data-block-type="gallery">
