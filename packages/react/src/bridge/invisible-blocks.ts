@@ -1,6 +1,8 @@
 const TRANSPARENT = 0.01;
 
-const PAINTS_WITHOUT_TEXT = "img,svg,video,canvas,picture,iframe";
+const VISIBLE_TEXT_FRACTION = 0.5;
+
+const MEDIA = "img,svg,video,canvas,picture,iframe";
 
 export function effectiveOpacity(node: Element | null): number {
   let value = 1;
@@ -17,20 +19,36 @@ export function effectiveOpacity(node: Element | null): number {
   return value;
 }
 
-function paintsSomething(el: Element): boolean {
-  if (el.matches(PAINTS_WITHOUT_TEXT)) return true;
+function holdsText(el: Element): boolean {
   for (const node of el.childNodes) {
     if (node.nodeType === 3 && node.textContent?.trim()) return true;
   }
   return false;
 }
 
-export function isBlockPainted(block: Element): boolean {
-  const candidates: Element[] = [];
-  if (paintsSomething(block)) candidates.push(block);
-  for (const el of block.querySelectorAll("*")) {
-    if (paintsSomething(el)) candidates.push(el);
+function collectCopy(block: Element): Element[] {
+  const copy: Element[] = [];
+  for (const el of [block, ...block.querySelectorAll("*")]) {
+    if (el.closest("svg")) continue;
+    if (holdsText(el)) copy.push(el);
   }
-  if (candidates.length === 0) return true;
-  return candidates.some((el) => effectiveOpacity(el) > TRANSPARENT);
+  return copy;
+}
+
+function collectMedia(block: Element): Element[] {
+  const media: Element[] = [];
+  if (block.matches(MEDIA)) media.push(block);
+  for (const el of block.querySelectorAll(MEDIA)) media.push(el);
+  return media;
+}
+
+export function isBlockPainted(block: Element): boolean {
+  const copy = collectCopy(block);
+  if (copy.length > 0) {
+    const visible = copy.filter((el) => effectiveOpacity(el) > TRANSPARENT);
+    return visible.length >= copy.length * VISIBLE_TEXT_FRACTION;
+  }
+  const media = collectMedia(block);
+  if (media.length === 0) return true;
+  return media.some((el) => effectiveOpacity(el) > TRANSPARENT);
 }

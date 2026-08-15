@@ -32,11 +32,45 @@ describe("isBlockPainted", () => {
     expect(isBlockPainted(block)).toBe(true);
   });
 
-  it("reads a block as painted when any one of its content nodes shows", () => {
+  it("reads a block as painted when half its copy shows", () => {
     const block = mount(
       `<div data-block-id="b1" data-block-type="hero">
          <div style="opacity:0"><h1>Hidden headline</h1></div>
          <p>Visible paragraph</p>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(true);
+  });
+
+  it("calls a block invisible when one stray node survives and the rest of the copy does not", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="comparison-table">
+         <div style="opacity:0">
+           <h2>Headline</h2><p>One</p><p>Two</p><p>Three</p><p>Four</p>
+         </div>
+         <p>Comparison reflects standard plans</p>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(false);
+  });
+
+  it("does not let a decorative svg vouch for copy that is gone", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="hero">
+         <svg>
+           <text>FIG 0.1</text><text>MCP</text><text>BLOCK - HERO</text>
+           <text>update_block_content</text><text>AI-NATIVE HEADLESS</text>
+         </svg>
+         <div style="opacity:0"><h1>Real tool</h1><p>Decide in ten seconds</p></div>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(false);
+  });
+
+  it("still judges a block that has no copy on its media", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="gallery">
+         <img alt="" src="a.png" />
        </div>`,
     );
     expect(isBlockPainted(block)).toBe(true);
