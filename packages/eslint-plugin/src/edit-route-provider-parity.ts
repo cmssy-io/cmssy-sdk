@@ -75,7 +75,7 @@ export const editRouteProviderParity: Rule.RuleModule = {
     schema: [],
     messages: {
       missingProvider:
-        "<{{name}}> wraps the blocks on the public route but not on {{editRoute}}, so the editor renders them without whatever it provides. A missing animation provider is the loudest case - the reveals never attach and the preview stays blank - but any context the blocks read is gone the same way.\nEither hoist <{{name}}> to app/layout.tsx, the root both routes share, or render it in the edit layout too.",
+        "<{{name}}> wraps the blocks on the public route but not on {{editRoute}}, so the editor renders them without whatever it provides. A missing animation provider is the loudest case - the reveals never attach and the preview stays blank - but any context the blocks read is gone the same way.\nMove it into cmssy/site-providers.tsx and render that from both roots, or repeat <{{name}}> in the edit layout.",
     },
   },
   create(context) {

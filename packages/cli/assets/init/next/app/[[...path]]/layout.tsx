@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { resolveCmssyLocale } from "@cmssy/core";
 import { cmssy } from "@/cmssy.config";
+import { SiteProviders } from "@/cmssy/site-providers";
 
 type LayoutProps = {
   children: ReactNode;
@@ -13,7 +14,9 @@ export default async function RootLayout({ children, params }: LayoutProps) {
 
   return (
     <html lang={locale}>
-      <body>{children}</body>
+      <body>
+        <SiteProviders>{children}</SiteProviders>
+      </body>
     </html>
   );
 }
