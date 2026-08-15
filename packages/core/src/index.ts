@@ -85,6 +85,8 @@ export type {
   ClickMessage,
   ShortcutAction,
   ShortcutMessage,
+  InvisibleBlock,
+  InvisibleBlocksMessage,
   AppToEditorMessage,
   SelectMessage,
   PatchMessage,

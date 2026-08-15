@@ -993,3 +993,106 @@ describe("edit bridge (blocks-driven)", () => {
     expect(container.textContent).not.toContain("EmptyPos");
   });
 });
+
+type IntersectionEntry = { target: Element; isIntersecting: boolean };
+
+class ViewportStub {
+  static instances: ViewportStub[] = [];
+  private readonly callback: (entries: IntersectionEntry[]) => void;
+
+  constructor(callback: (entries: IntersectionEntry[]) => void) {
+    this.callback = callback;
+    ViewportStub.instances.push(this);
+  }
+
+  observe() {}
+  disconnect() {}
+
+  showEverything() {
+    this.callback(
+      [...document.querySelectorAll("[data-block-id]")].map((target) => ({
+        target,
+        isIntersecting: true,
+      })),
+    );
+  }
+}
+
+const hiddenHeroProps = { heading: fields.text() };
+
+const HiddenHero = ({ content }: BlockProps<typeof hiddenHeroProps>) => (
+  <div style={{ opacity: 0 }}>
+    <h1>{content.heading ?? ""}</h1>
+  </div>
+);
+
+const hiddenPage = {
+  id: "hp",
+  blocks: [{ id: "b1", type: "hidden-hero", content: { en: { heading: "Hi" } } }],
+};
+
+describe("invisible block reporting", () => {
+  beforeEach(() => {
+    cleanup();
+    vi.useFakeTimers();
+    ViewportStub.instances.length = 0;
+    vi.stubGlobal("IntersectionObserver", ViewportStub);
+    mockParent = { postMessage: vi.fn() };
+    setParent(mockParent);
+  });
+
+  afterEach(() => {
+    setParent(window);
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("tells the editor which blocks are mounted and painting nothing", () => {
+    render(
+      <CmssyEditablePage
+        page={hiddenPage}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={[
+          defineBlock({
+            type: "hidden-hero",
+            label: "Hidden hero",
+            component: HiddenHero,
+            props: hiddenHeroProps,
+          }),
+        ]}
+      />,
+    );
+
+    act(() => ViewportStub.instances[0]!.showEverything());
+    act(() => vi.advanceTimersByTime(1500));
+
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      {
+        type: "cmssy:invisible-blocks",
+        protocolVersion: PROTOCOL_VERSION,
+        blocks: [{ blockId: "b1", blockType: "hidden-hero" }],
+      },
+      editorOrigin,
+    );
+  });
+
+  it("stays quiet about a page that paints", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+
+    act(() => ViewportStub.instances[0]!.showEverything());
+    act(() => vi.advanceTimersByTime(5000));
+
+    const reports = mockParent.postMessage.mock.calls.filter(
+      (call) => (call[0] as { type?: string })?.type === "cmssy:invisible-blocks",
+    );
+    expect(reports).toEqual([]);
+  });
+});
