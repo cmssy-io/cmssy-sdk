@@ -51,6 +51,10 @@ export function resolveInitialTarget(editorOrigin: string | string[]): string {
   return list.find((origin) => origin === referrerOrigin) ?? list[0]!;
 }
 
+function isSize(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -143,8 +147,8 @@ export function parseEditorMessage(
         ? { type: "cmssy:drag-end", protocolVersion: PROTOCOL_VERSION }
         : null;
     case "cmssy:viewport":
-      return typeof data.width === "number" &&
-        typeof data.height === "number" &&
+      return isSize(data.width) &&
+        isSize(data.height) &&
         data.protocolVersion === PROTOCOL_VERSION
         ? {
             type: "cmssy:viewport",

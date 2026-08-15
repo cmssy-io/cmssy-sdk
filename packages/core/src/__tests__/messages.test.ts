@@ -301,19 +301,45 @@ describe("parseEditorMessage", () => {
     });
   });
 
-  it("rejects a cmssy:viewport message whose size is not numeric", () => {
+  it.each([
+    ["not a number", "390", 844],
+    ["NaN", Number.NaN, 844],
+    ["Infinity", Number.POSITIVE_INFINITY, 844],
+    ["negative", -1, 844],
+    ["a bad height", 390, Number.NaN],
+  ])("rejects a cmssy:viewport size that is %s", (_case, width, height) => {
     expect(
       parseEditorMessage(
         {
           type: "cmssy:viewport",
           protocolVersion: PROTOCOL_VERSION,
-          width: "390",
-          height: 844,
+          width,
+          height,
         },
         ORIGIN,
         ORIGIN,
       ),
     ).toBeNull();
+  });
+
+  it("accepts a collapsed preview reported as zero", () => {
+    expect(
+      parseEditorMessage(
+        {
+          type: "cmssy:viewport",
+          protocolVersion: PROTOCOL_VERSION,
+          width: 0,
+          height: 0,
+        },
+        ORIGIN,
+        ORIGIN,
+      ),
+    ).toEqual({
+      type: "cmssy:viewport",
+      protocolVersion: PROTOCOL_VERSION,
+      width: 0,
+      height: 0,
+    });
   });
 
   it("rejects a cmssy:viewport message from another protocol version", () => {
