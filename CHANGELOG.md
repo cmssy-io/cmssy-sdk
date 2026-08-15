@@ -6,6 +6,34 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.8.0
+
+**A provider the editor never gets is now a lint error.**
+`edit-route-provider-parity` ships in `@cmssy/eslint-plugin`'s `recommended`
+config as an error. It fires when `app/[[...path]]/layout.tsx` wraps `{children}`
+in something that looks like a provider and `app/cmssy-edit/[[...path]]/layout.tsx`
+does not - the state that renders an editor preview without whatever that provider
+gave the page. A missing animation provider is the loudest case: `whileInView`
+never attaches and every reveal sits at `opacity: 0`, so the preview looks blank
+with no error anywhere.
+
+**The scaffold now writes `cmssy/site-providers.tsx`** and renders it from both
+roots, so there is one place a provider can go and reach both. Existing apps keep
+whatever they have; `cmssy init` skips files that already exist.
+
+**The preview learns it was resized.** The editor's device toggle resizes the
+iframe with CSS, which changes the child's `innerWidth` and fires no `resize`
+event. The bridge now replays the editor's `cmssy:viewport` report as a real
+`window` resize, so responsive hooks, `matchMedia` re-reads and animation setups
+run on a device switch like they do in a browser. Needs the admin side, live on
+cmssy.io.
+
+**Do I have to do anything?** If you use the `recommended` eslint config and a
+provider lives only in the public root layout, lint now fails - move it into
+`cmssy/site-providers.tsx` and render that from both roots
+([wiring §4](docs/wiring.md)), or repeat the provider in the edit layout.
+Nothing else needs a change.
+
 ## 11.7.0
 
 **The docs said things the code does not.** A file-by-file pass found eighteen,
