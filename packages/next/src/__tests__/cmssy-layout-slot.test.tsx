@@ -162,3 +162,63 @@ describe("CmssyLayoutSlot", () => {
     expect(editing.props.appContext).toBe(appContext);
   });
 });
+
+describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
+  it("retries the layout resolution by default", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ retry: {} }),
+    );
+  });
+
+  it("forwards an explicit policy", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({
+        retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+      }),
+    );
+  });
+
+  it("turns retry off when the caller passes false", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+      retry: false,
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ retry: false }),
+    );
+  });
+});

@@ -1,6 +1,7 @@
 # cmssy on React Router 7 (Remix)
 
 `@cmssy/remix` depends on `@cmssy/core` and `@cmssy/react`. It never touches Next
+
 - a test in the package fails the build if it does.
 
 ## Wiring
@@ -26,7 +27,8 @@ export const headers = createCmssyHeaders(cmssy);
 
 export default function CmssyPage({ loaderData }: Route.ComponentProps) {
   const { page, locale, isEdit, editorOrigin } = loaderData;
-  if (isEdit) return <CmssyEditor page={page} locale={locale} edit={{ editorOrigin }} />;
+  if (isEdit)
+    return <CmssyEditor page={page} locale={locale} edit={{ editorOrigin }} />;
   return <Blocks page={page} locale={locale} />;
 }
 ```
@@ -75,6 +77,30 @@ That was this adapter's behaviour before 11.1.0.
 The data half - preview secret in edit mode, language, editor data - is
 `resolveCmssyLayoutSlot` in `@cmssy/react`, the same function the Next adapter
 uses. Three renderers, one set of rules.
+
+## Rate limits and retry
+
+A route costs several delivery calls: the site locales, the layouts, the page.
+Ask for enough of them at once and the delivery API answers `429` with a
+`Retry-After`. The loader retries by default - a `429` or `503` up to three
+times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS`, the
+window the API rate-limits on). Anything longer fails at once rather than
+holding the request open.
+
+```ts
+export const loader = createCmssyLoader(cmssy, {
+  blocks,
+  retry: { maxRetries: 5, maxRetryAfterMs: 120_000 },
+});
+```
+
+`retry: false` fails on the first `429` instead - the right choice for a
+request-time loader, where a visitor waiting a minute is worse than an error.
+The policy covers every delivery call the loader makes, the layout slot
+included.
+
+Budget for it: `maxRetries * maxRetryAfterMs` is the worst case for a **single**
+call, so keep it under whatever timeout sits in front of the route.
 
 ## SEO
 

@@ -59,6 +59,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(result.groups).toBe(GROUPS);
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
+      retry: {},
     });
     expect(result.data).toBeUndefined();
   });
@@ -75,6 +76,7 @@ describe("resolveCmssyLayoutSlot", () => {
 
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
     });
     expect(result.data).toEqual({ b1: { categories: [] } });
     expect(result.resolvedContent).toEqual({ b1: { heading: "Shop" } });
@@ -94,6 +96,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(result.path).toEqual(["about"]);
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -123,6 +126,7 @@ describe("resolveCmssyLayoutSlot", () => {
 
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -137,5 +141,62 @@ describe("resolveCmssyLayoutSlot", () => {
     });
 
     expect(result.editorOrigin).toEqual(CONFIG.editorOrigin);
+  });
+});
+
+describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
+  it("retries both delivery calls by default", async () => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: {} });
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: {},
+    });
+  });
+
+  it("forwards an explicit policy to both delivery calls", async () => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+  });
+
+  it("turns retry off for both delivery calls when the caller passes false", async () => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      retry: false,
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: false });
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: false,
+    });
   });
 });

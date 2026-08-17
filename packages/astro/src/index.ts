@@ -1,7 +1,7 @@
 export { cmssyMiddleware, CMSSY_EDIT_PATH_PREFIX } from "./middleware";
 export type { CmssyMiddlewareOptions } from "./middleware";
 export { loadCmssyPage } from "./page";
-export type { CmssyPageResult } from "./page";
+export type { CmssyPageResult, LoadCmssyPageOptions } from "./page";
 
 export {
   defineCmssyConfig,
@@ -21,4 +21,5 @@ export type {
   CmssyBlockContext,
   CmssyWebhookEvent,
   VerifyCmssyWebhookOptions,
+  RetryPolicy,
 } from "@cmssy/core";

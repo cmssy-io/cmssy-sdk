@@ -2,6 +2,7 @@ import type {
   CmssyConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
+  RetryPolicy,
 } from "@cmssy/core";
 import { fetchLayouts } from "@cmssy/core/internal";
 import {
@@ -19,11 +20,11 @@ interface ResolveCmssyLayoutSlotBase {
   page?: string;
   forms?: Record<string, CmssyFormDefinition>;
   appContext?: Record<string, unknown>;
+  retry?: RetryPolicy | false;
 }
 
 export type CmssyLayoutSlotLocaleSource =
-  | { path: string[]; locale?: string }
-  | { locale: string; path?: undefined };
+  { path: string[]; locale?: string } | { locale: string; path?: undefined };
 
 export type ResolveCmssyLayoutSlotOptions = ResolveCmssyLayoutSlotBase &
   CmssyLayoutSlotLocaleSource;
@@ -52,9 +53,12 @@ export async function resolveCmssyLayoutSlot(
     appContext,
     path,
     locale: explicitLocale,
+    retry,
   } = options;
 
-  const siteLocales = await resolveSiteLocales(config);
+  const requestOptions = { retry: retry ?? {} };
+
+  const siteLocales = await resolveSiteLocales(config, requestOptions);
   const fromPath = path
     ? splitLocaleFromPath(path, siteLocales)
     : { locale: siteLocales.defaultLocale, path: [] };
@@ -65,6 +69,7 @@ export async function resolveCmssyLayoutSlot(
 
   const groups = await fetchLayouts(config, pageSlug, {
     previewSecret: editMode ? config.draftSecret : undefined,
+    ...requestOptions,
   });
 
   const base = {

@@ -1,5 +1,5 @@
 export { createCmssyLoader, createCmssyHeaders } from "./loader";
-export type { CmssyRouteData } from "./loader";
+export type { CmssyRouteData, CreateCmssyLoaderOptions } from "./loader";
 export { useCmssyLocale } from "./use-cmssy-locale";
 
 export {
@@ -19,4 +19,5 @@ export type {
   CmssyBlockContext,
   CmssyWebhookEvent,
   VerifyCmssyWebhookOptions,
+  RetryPolicy,
 } from "@cmssy/core";
