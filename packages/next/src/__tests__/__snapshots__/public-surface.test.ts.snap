@@ -16,10 +16,12 @@ exports[`@cmssy/next public surface > exports exactly these names from /middlewa
 exports[`@cmssy/next public surface > exports exactly these names from /server 1`] = `
 [
   "CmssyLayoutSlot",
+  "NEXT_BUILD_PHASE",
   "createCmssyEditPage",
   "createCmssyPage",
   "createDraftRoute",
   "isCmssyEditMode",
+  "nextRetryMode",
 ]
 `;
 
@@ -31,8 +33,10 @@ exports[`@cmssy/next public surface > exports exactly these names from the root 
   "CMSSY_SECRET_QUERY_PARAM",
   "CmssyWebhookError",
   "DEFAULT_CMSSY_EDITOR_ORIGINS",
+  "NEXT_BUILD_PHASE",
   "defineCmssyConfig",
   "localizeHref",
+  "nextRetryMode",
   "resolveEditorOrigin",
   "verifyCmssyWebhook",
 ]

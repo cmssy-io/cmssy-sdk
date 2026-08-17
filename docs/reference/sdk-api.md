@@ -322,6 +322,26 @@ immediately instead of silently disabling retries.
 code serves a dynamic route they use `interactive`. The adapters do the same for
 their own call sites - see the Astro and Remix guides.
 
+**Your own queries get the same answer.** A Next app that calls the delivery API
+itself - a `services/` gateway feeding `generateStaticParams`, `generateMetadata`
+and a dynamic route from one function - would otherwise have to guess which of the
+two it is in. `nextRetryMode()` from `@cmssy/next` is the check the adapters run,
+exported so you do not reimplement it:
+
+```ts
+import { nextRetryMode } from "@cmssy/next";
+
+export function publicRequest<R, V>(document, variables) {
+  return graphqlRequest<R>(cmssy, print(document), variables, {
+    public: true,
+    retry: nextRetryMode(),
+  });
+}
+```
+
+It reads the env per call, never at module scope, so one module serves both
+phases. `NEXT_BUILD_PHASE` is the string it compares against.
+
 A policy object overrides field by field, on top of `build`:
 
 ```ts

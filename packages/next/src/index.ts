@@ -23,6 +23,8 @@ export type {
   CmssyRetryMode,
 } from "@cmssy/core";
 
+export { nextRetryMode, NEXT_BUILD_PHASE } from "./retry-mode";
+
 export type {
   CmssyEditorProps,
   CreateCmssyPageOptions,
