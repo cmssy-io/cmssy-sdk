@@ -6,6 +6,30 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.9.0
+
+**A 429 during a build no longer fails the page.** The delivery API rate-limits
+per minute and answers `Retry-After` in seconds - typically 20-60 during a cold
+build that renders many pages at once. The SDK gave up on anything above 10s, so
+every one of those became `cmssy: page fetch failed (429)` and took the build
+down. The ceiling is now 60s, the window the backend actually enforces, exported
+as `CMSSY_RATE_LIMIT_WINDOW_MS` for anyone who wants to reason about it. Nothing
+to do - rebuild on 12.9.0.
+
+**`createCmssyPage` now retries its own queries.** The page renderer makes four
+delivery calls (site locales, workspace id, the page, its forms) and only the
+page one had a retry policy; the other three surrendered on the first 429. All
+four now share one policy, and you can set it:
+
+```ts
+export default createCmssyPage(config, blocks, {
+  retry: { maxRetries: 5, maxRetryAfterMs: 90_000 },
+});
+```
+
+Pass `retry: false` to turn retries off entirely. Mutations are unchanged: they
+still never retry, because retrying a write is not safe.
+
 ## 12.8.0
 
 **A provider the editor never gets is now a lint error.**

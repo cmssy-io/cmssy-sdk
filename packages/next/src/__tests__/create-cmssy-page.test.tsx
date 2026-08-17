@@ -26,6 +26,7 @@ vi.mock("next/navigation", () => ({
 const fetchPage = vi.hoisted(() => vi.fn());
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 const resolveWorkspaceId = vi.hoisted(() => vi.fn());
+const resolveForms = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<typeof import("@cmssy/react")>();
   return {
@@ -39,6 +40,7 @@ vi.mock("@cmssy/core/internal", async (importActual) => {
     ...actual,
     fetchPage,
     resolveSiteLocales,
+    resolveForms,
   };
 });
 
@@ -89,6 +91,8 @@ describe("createCmssyPage", () => {
     });
     resolveWorkspaceId.mockReset();
     resolveWorkspaceId.mockResolvedValue("ws_123");
+    resolveForms.mockReset();
+    resolveForms.mockResolvedValue({});
   });
 
   afterEach(() => {
@@ -109,6 +113,7 @@ describe("createCmssyPage", () => {
     expect(element.props.enabledLocales).toEqual(["pl", "en"]);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -123,6 +128,7 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -139,7 +145,7 @@ describe("createCmssyPage", () => {
         workspaceSlug: CONFIG.workspaceSlug,
       },
       ["about"],
-      { previewSecret: undefined },
+      { previewSecret: undefined, retry: {} },
     );
   });
 
@@ -151,6 +157,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
     });
   });
 
@@ -173,6 +180,7 @@ describe("createCmssyPage", () => {
     });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
     });
   });
 
@@ -213,6 +221,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
     });
   });
 
@@ -228,6 +237,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -243,6 +253,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -260,6 +271,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
       devPreview: true,
       devToken: "cs_devtoken",
       workspaceId: "ws_123",
@@ -286,6 +298,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
       devPreview: true,
       devToken: "cs_devtoken",
       workspaceId: "ws_123",
@@ -302,6 +315,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -322,6 +336,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -355,6 +370,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -385,6 +401,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -532,6 +549,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
     expect(element.props.locale).toBe("no");
   });
@@ -558,6 +576,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
+      retry: {},
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -579,6 +598,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["de", "about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -611,6 +631,7 @@ describe("createCmssyPage", () => {
     await Page({ params: params(undefined) });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), undefined, {
       previewSecret: undefined,
+      retry: {},
     });
   });
 
@@ -652,7 +673,15 @@ describe("createCmssyPage", () => {
   it("calls appContext per request with the page being rendered", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const appContext = vi.fn(
-      ({ page, locale, path }: { page: { id: string }; locale: string; path: string[] }) => ({
+      ({
+        page,
+        locale,
+        path,
+      }: {
+        page: { id: string };
+        locale: string;
+        path: string[];
+      }) => ({
         pageId: page.id,
         locale,
         activePath: "/" + path.join("/"),
@@ -691,5 +720,119 @@ describe("createCmssyPage", () => {
     const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.props.auth).toBeUndefined();
     expect(element.props.workspace).toBeUndefined();
+  });
+});
+
+describe("createCmssyPage retry policy (CMS-1446)", () => {
+  beforeEach(() => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    vi.stubEnv("NODE_ENV", "production");
+    draftEnabled = false;
+    fetchPage.mockReset();
+    fetchPage.mockResolvedValue(PAGE);
+    resolveSiteLocales.mockReset();
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en"],
+    });
+    resolveWorkspaceId.mockReset();
+    resolveWorkspaceId.mockResolvedValue("ws_123");
+    resolveForms.mockReset();
+    resolveForms.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("retries queries by default on every core call it makes", async () => {
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    await Page({ params: params(["about"]) });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry: {},
+    });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: {} });
+    expect(fetchPage).toHaveBeenCalledWith(
+      expect.anything(),
+      ["about"],
+      expect.objectContaining({ retry: {} }),
+    );
+    expect(resolveForms).toHaveBeenCalledWith(
+      expect.anything(),
+      PAGE.blocks,
+      expect.anything(),
+      "en",
+      "en",
+      { retry: {} },
+    );
+  });
+
+  it("forwards the app's own retry policy unchanged", async () => {
+    const retry = { maxRetries: 7, maxRetryAfterMs: 45_000 };
+    const Page = createCmssyPage(CONFIG, BLOCKS, { retry });
+    await Page({ params: params(["about"]) });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry,
+    });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry });
+    expect(fetchPage).toHaveBeenCalledWith(
+      expect.anything(),
+      ["about"],
+      expect.objectContaining({ retry }),
+    );
+    expect(resolveForms).toHaveBeenCalledWith(
+      expect.anything(),
+      PAGE.blocks,
+      expect.anything(),
+      "en",
+      "en",
+      { retry },
+    );
+  });
+
+  it("keeps retry: false off rather than replacing it with the default", async () => {
+    const Page = createCmssyPage(CONFIG, BLOCKS, { retry: false });
+    await Page({ params: params(["about"]) });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry: false,
+    });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: false });
+    expect(fetchPage).toHaveBeenCalledWith(
+      expect.anything(),
+      ["about"],
+      expect.objectContaining({ retry: false }),
+    );
+    expect(resolveForms).toHaveBeenCalledWith(
+      expect.anything(),
+      PAGE.blocks,
+      expect.anything(),
+      "en",
+      "en",
+      { retry: false },
+    );
+  });
+
+  it("applies the same policy on the edit route", async () => {
+    const retry = { maxRetries: 2 };
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor, retry });
+    await Page({
+      params: params(["about"]),
+      searchParams: searchParams({
+        cmssyEdit: "1",
+        cmssySecret: CONFIG.draftSecret,
+      }),
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry,
+    });
+    expect(fetchPage).toHaveBeenCalledWith(
+      expect.anything(),
+      ["about"],
+      expect.objectContaining({ retry }),
+    );
   });
 });

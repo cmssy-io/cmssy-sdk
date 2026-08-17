@@ -26,7 +26,11 @@ import {
   toCspOrigin,
   cmssySecretsMatch,
 } from "@cmssy/core/internal";
-import { resolveEditorOrigin, type CmssyConfig } from "@cmssy/core";
+import {
+  resolveEditorOrigin,
+  type CmssyConfig,
+  type RetryPolicy,
+} from "@cmssy/core";
 import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
 
 export interface CmssyEditorProps {
@@ -53,6 +57,7 @@ export interface CreateCmssyPageOptions {
   editor?: ComponentType<CmssyEditorProps>;
   path?: string;
   appContext?: CmssyAppContext;
+  retry?: RetryPolicy | false;
 }
 
 interface CatchAllParams {
@@ -118,6 +123,7 @@ function buildCmssyPageRenderer(
     workspaceSlug: config.workspaceSlug,
   };
   const client = createCmssyClient(clientConfig);
+  const requestOptions = { retry: options?.retry ?? {} };
   const fixedPath = options?.path
     ?.split("/")
     .map((segment) => segment.trim())
@@ -145,7 +151,7 @@ function buildCmssyPageRenderer(
     const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
 
-    const siteLocales = await resolveSiteLocales(clientConfig);
+    const siteLocales = await resolveSiteLocales(clientConfig, requestOptions);
     const { defaultLocale, locales: enabledLocales } = siteLocales;
 
     const split = splitLocaleFromPath(path, siteLocales);
@@ -155,7 +161,7 @@ function buildCmssyPageRenderer(
       : split.locale;
 
     const devWorkspaceId = devAllowed
-      ? await client.resolveWorkspaceId()
+      ? await client.resolveWorkspaceId(requestOptions)
       : undefined;
 
     const page = await fetchPage(clientConfig, pagePath, {
@@ -163,6 +169,7 @@ function buildCmssyPageRenderer(
       devPreview: devAllowed || undefined,
       devToken: devAllowed ? config.devToken : undefined,
       workspaceId: devWorkspaceId,
+      ...requestOptions,
     });
 
     if (!page) {
@@ -181,6 +188,7 @@ function buildCmssyPageRenderer(
       blocksToSchemas(blocks),
       locale,
       defaultLocale,
+      requestOptions,
     );
     const forms =
       Object.keys(resolvedForms).length > 0 ? resolvedForms : undefined;
@@ -231,7 +239,7 @@ function buildCmssyPageRenderer(
     let workspace: CmssyBlockWorkspace | undefined;
     try {
       workspace = {
-        id: await client.resolveWorkspaceId(),
+        id: await client.resolveWorkspaceId(requestOptions),
         slug: config.workspaceSlug,
       };
     } catch {

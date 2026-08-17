@@ -22,6 +22,8 @@ export interface RetryPolicy {
 
 const DEFAULT_RETRY_STATUSES = [429, 503];
 
+export const CMSSY_RATE_LIMIT_WINDOW_MS = 60_000;
+
 function retryAfterMs(response: FetchLikeResponse): number | null {
   const raw = response.headers?.get("retry-after");
   if (!raw) return null;
@@ -62,7 +64,7 @@ async function fetchWithRetry(
   const maxRetries = retry.maxRetries ?? 3;
   const baseDelayMs = retry.baseDelayMs ?? 300;
   const maxDelayMs = retry.maxDelayMs ?? 3_000;
-  const maxRetryAfterMs = retry.maxRetryAfterMs ?? 10_000;
+  const maxRetryAfterMs = retry.maxRetryAfterMs ?? CMSSY_RATE_LIMIT_WINDOW_MS;
   const retryStatuses = retry.retryStatuses ?? DEFAULT_RETRY_STATUSES;
 
   let response = await doFetch(url, init);
