@@ -303,7 +303,10 @@ interface RetryPolicy {
 }
 ```
 
-Mutations never retry, whatever this is set to.
+This option reaches those four reads only. A mutation you send yourself through
+`client.query` is unaffected: `graphqlRequest` defaults to no retry, and it retries
+only if you hand that call a policy - which is worth doing only for a write you know
+is idempotent.
 
 ### `@cmssy/next/middleware`
 

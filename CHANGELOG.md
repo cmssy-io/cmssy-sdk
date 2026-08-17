@@ -27,8 +27,11 @@ export default createCmssyPage(config, blocks, {
 });
 ```
 
-Pass `retry: false` to turn retries off entirely. Mutations are unchanged: they
-still never retry, because retrying a write is not safe.
+Pass `retry: false` to turn retries off entirely. This covers the page's own reads
+and nothing else. Mutations are unchanged: `graphqlRequest` still defaults to no
+retry, because retrying a write on a 429 can duplicate it. If you hand a mutation
+call a policy of your own it will retry - do that only for a write you know is
+idempotent.
 
 ## 12.8.0
 
