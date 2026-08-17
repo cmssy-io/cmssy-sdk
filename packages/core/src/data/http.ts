@@ -148,7 +148,10 @@ async function fetchWithRetry(
     const base = throttled ? policy.throttleBaseDelayMs : policy.baseDelayMs;
     const wait = Math.round(
       asked !== null
-        ? asked + Math.random() * policy.throttleBaseDelayMs
+        ? Math.min(
+            asked + Math.random() * policy.throttleBaseDelayMs,
+            policy.maxRetryAfterMs,
+          )
         : Math.random() * Math.min(base * 2 ** attempt, policy.maxDelayMs),
     );
     if (waitedMs + wait > policy.maxTotalWaitMs) {

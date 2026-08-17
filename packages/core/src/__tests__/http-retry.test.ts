@@ -467,6 +467,28 @@ describe("retry modes (CMS-1463)", () => {
     await expect(pending).resolves.toEqual(OK_BODY.data);
   });
 
+  it("keeps the spread under maxRetryAfterMs, the ceiling it is documented as", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const doFetch = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "1" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+
+    const pending = postGraphql(
+      URL_,
+      "q",
+      {},
+      { fetch: doFetch, retry: "interactive", label: "page fetch" },
+    );
+    await vi.advanceTimersByTimeAsync(999);
+    expect(doFetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(pending).resolves.toEqual(OK_BODY.data);
+    expect(doFetch).toHaveBeenCalledTimes(2);
+  });
+
   it("names the retry in the log, so a slow build is diagnosable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const doFetch = vi
