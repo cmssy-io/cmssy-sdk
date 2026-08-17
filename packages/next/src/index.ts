@@ -18,6 +18,7 @@ export type {
   CmssyPageSummary,
   CmssyWebhookEvent,
   VerifyCmssyWebhookOptions,
+  RetryPolicy,
 } from "@cmssy/core";
 
 export type {

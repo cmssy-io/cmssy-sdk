@@ -103,7 +103,9 @@ interface CmssyClient {
 | `fetch`   | Custom fetch. `signal` for cancellation.                                                                                              |
 
 Errors are `CmssyRequestError`. `DEFAULT_CMSSY_API_URL` is exported for a
-self-hosted endpoint check.
+self-hosted endpoint check. `CMSSY_RATE_LIMIT_WINDOW_MS` (60_000) is the window
+the delivery API rate-limits on, and the default `maxRetryAfterMs`: a
+`Retry-After` inside that window is waited out, anything longer fails at once.
 
 There is no `fetchPage` / `fetchPages` / `fetchSiteConfig` in the public surface:
 write the query. The example's
@@ -276,12 +278,35 @@ interface CreateCmssyPageOptions {
         locale: string;
         path: string[];
       }) => Record<string, unknown> | Promise<Record<string, unknown>>);
+  retry?: RetryPolicy | false;
 }
 ```
 
 `createCmssyPage` is statically renderable: it never reads `searchParams` or
 `headers()`. Prefer the function form of `appContext` - a value fixed at module
 scope cannot vary by visitor.
+
+`retry` covers all four delivery calls a page makes - site locales, workspace id,
+the page itself and its forms. The default retries a 429 or 503 up to three
+times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS` from
+`@cmssy/core`, the window the delivery API rate-limits on); anything longer fails
+immediately rather than parking a build for minutes. Raise `maxRetryAfterMs` if
+your build may wait longer, or pass `retry: false` to fail on the first 429.
+
+```ts
+interface RetryPolicy {
+  maxRetries?: number; // 3
+  baseDelayMs?: number; // 300
+  maxDelayMs?: number; // 3_000
+  maxRetryAfterMs?: number; // 60_000
+  retryStatuses?: number[]; // [429, 503]
+}
+```
+
+This option reaches those four reads only. A mutation you send yourself through
+`client.query` is unaffected: `graphqlRequest` defaults to no retry, and it retries
+only if you hand that call a policy - which is worth doing only for a write you know
+is idempotent.
 
 ### `@cmssy/next/middleware`
 
