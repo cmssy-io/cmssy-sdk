@@ -134,9 +134,9 @@ await loadCmssyPage(cmssy, Astro.request, Astro.url, {
 would rather see a build break than wait. The policy covers every delivery call
 the loader makes, the layout slot included.
 
-Budget for it: `maxRetries * maxRetryAfterMs` is the worst case for a **single**
-call, so a static build's per-page timeout has to be larger than that, not equal
-to it.
+Budget for it: `maxRetries * maxRetryAfterMs` bounds how long a **single** call
+sleeps between attempts. The requests themselves are on top of that, so a static
+build's per-page timeout has to sit above the sum, not equal to the sleep alone.
 
 ## SEO
 

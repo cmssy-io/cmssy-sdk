@@ -316,9 +316,9 @@ A mutation you send yourself through `client.query` is unaffected: `graphqlReque
 defaults to no retry, and it retries only if you hand that call a policy - which is
 worth doing only for a write you know is idempotent.
 
-`maxRetries * maxRetryAfterMs` is the worst case for a **single** call, and a page
-makes several. Keep `staticPageGenerationTimeout` above that product, not equal to
-it.
+`maxRetries * maxRetryAfterMs` bounds how long a **single** call sleeps between
+attempts - the requests themselves are on top, and a page makes several calls.
+Keep `staticPageGenerationTimeout` above the sum, not equal to the sleep budget.
 
 ### `@cmssy/next/middleware`
 

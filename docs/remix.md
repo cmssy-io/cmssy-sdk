@@ -99,8 +99,9 @@ request-time loader, where a visitor waiting a minute is worse than an error.
 The policy covers every delivery call the loader makes, the layout slot
 included.
 
-Budget for it: `maxRetries * maxRetryAfterMs` is the worst case for a **single**
-call, so keep it under whatever timeout sits in front of the route.
+Budget for it: `maxRetries * maxRetryAfterMs` bounds how long a **single** call
+sleeps between attempts, and the requests themselves land on top. Keep the sum
+under whatever timeout sits in front of the route.
 
 ## SEO
 

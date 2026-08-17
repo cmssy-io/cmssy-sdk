@@ -28,9 +28,10 @@ Nothing to do - the default is what these calls already did. Pass `retry: false`
 to fail on the first 429 instead, which is usually what you want in a
 request-time loader: a visitor waiting a minute is worse than an error page.
 
-One number to budget: `maxRetries * maxRetryAfterMs` is the worst case for a
-**single** call, and a page makes several. A static build's per-page timeout has
-to sit above that product, not equal to it.
+One number to budget: `maxRetries * maxRetryAfterMs` bounds how long a **single**
+call sleeps between attempts. The requests themselves land on top, and a page
+makes several calls - so a static build's per-page timeout has to sit above the
+sum, not equal to the sleep budget.
 
 ## 12.9.0
 
