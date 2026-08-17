@@ -6,6 +6,27 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.12.0
+
+**`nextRetryMode()` is exported.** 12.11.0 taught the Next adapter to tell a
+build from a visitor, but kept the check to itself. An app that queries the
+delivery API through its own gateway - one `publicRequest` feeding
+`generateStaticParams`, `generateMetadata` and a dynamic route - had no way to
+ask the same question, so it had to hardcode a mode that is wrong half the time
+or reimplement the env check by hand.
+
+```ts
+import { nextRetryMode } from "@cmssy/next";
+
+graphqlRequest(cmssy, query, variables, {
+  public: true,
+  retry: nextRetryMode(),
+});
+```
+
+Nothing to do if you only use `createCmssyPage` / `CmssyLayoutSlot` - they
+already called it internally. `NEXT_BUILD_PHASE` is exported alongside it.
+
 ## 12.11.0
 
 **Retry now knows whether a build or a visitor is waiting.** Until now there was
