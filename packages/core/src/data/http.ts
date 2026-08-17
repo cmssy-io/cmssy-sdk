@@ -64,7 +64,19 @@ export function resolveRetryPolicy(
   retry: RetryOption | undefined,
 ): ResolvedRetryPolicy | null {
   if (retry === false || retry === undefined) return null;
-  if (typeof retry === "string") return CMSSY_RETRY_MODES[retry];
+  if (typeof retry === "string") {
+    const mode = CMSSY_RETRY_MODES[retry];
+    if (!mode) {
+      throw new Error(
+        `cmssy: unknown retry mode "${retry}" - use ${Object.keys(
+          CMSSY_RETRY_MODES,
+        )
+          .map((name) => `"${name}"`)
+          .join(" or ")}, false, or a retry policy object`,
+      );
+    }
+    return mode;
+  }
   const base = CMSSY_RETRY_MODES.build;
   return {
     maxRetries: retry.maxRetries ?? base.maxRetries,
@@ -134,15 +146,16 @@ async function fetchWithRetry(
       return { response, waitedMs };
     }
     const base = throttled ? policy.throttleBaseDelayMs : policy.baseDelayMs;
-    const wait =
+    const wait = Math.round(
       asked !== null
         ? asked + Math.random() * policy.throttleBaseDelayMs
-        : Math.random() * Math.min(base * 2 ** attempt, policy.maxDelayMs);
+        : Math.random() * Math.min(base * 2 ** attempt, policy.maxDelayMs),
+    );
     if (waitedMs + wait > policy.maxTotalWaitMs) {
       return { response, waitedMs };
     }
     console.warn(
-      `[cmssy] ${label} got ${response.status}, retrying in ${Math.round(wait)}ms (attempt ${attempt + 1}/${policy.maxRetries})`,
+      `[cmssy] ${label} got ${response.status}, retrying in ${wait}ms (attempt ${attempt + 1}/${policy.maxRetries})`,
     );
     await sleep(wait, init.signal);
     waitedMs += wait;
@@ -206,8 +219,7 @@ export async function postGraphql<T>(
     const asked = retryAfterMs(response);
     const wait =
       asked !== null ? ` - retry after ${Math.ceil(asked / 1000)}s` : "";
-    const spent =
-      waitedMs > 0 ? ` - gave up after waiting ${Math.round(waitedMs)}ms` : "";
+    const spent = waitedMs > 0 ? ` - gave up after waiting ${waitedMs}ms` : "";
     throw new CmssyRequestError(
       `cmssy: ${options.label} failed (${response.status})${detail}${wait}${spent}`,
       response.status,

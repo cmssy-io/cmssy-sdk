@@ -486,6 +486,70 @@ describe("retry modes (CMS-1463)", () => {
     );
   });
 
+  it("rejects an unknown mode name with the valid ones spelled out", async () => {
+    const doFetch = vi.fn().mockResolvedValue(res(200, OK_BODY));
+
+    await expect(
+      postGraphql(
+        URL_,
+        "q",
+        {},
+        {
+          fetch: doFetch,
+          retry: "agressive" as unknown as "build",
+          label: "page fetch",
+        },
+      ),
+    ).rejects.toThrow(
+      'cmssy: unknown retry mode "agressive" - use "build" or "interactive", false, or a retry policy object',
+    );
+    expect(doFetch).not.toHaveBeenCalled();
+  });
+
+  it("sleeps a whole number of ms, so the budget matches real elapsed time", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.1234567891);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doFetch = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+
+    const pending = postGraphql(
+      URL_,
+      "q",
+      {},
+      { fetch: doFetch, retry: "build", label: "page fetch" },
+    );
+
+    await vi.advanceTimersByTimeAsync(122);
+    expect(doFetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(pending).resolves.toEqual(OK_BODY.data);
+    expect(warn).toHaveBeenCalledWith(
+      "[cmssy] page fetch got 429, retrying in 123ms (attempt 1/4)",
+    );
+  });
+
+  it("reports an integer waitedMs on the error it gives up with", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(0.1234567891);
+    const doFetch = vi.fn().mockResolvedValue(res(429, {}));
+
+    const pending = postGraphql(
+      URL_,
+      "q",
+      {},
+      { fetch: doFetch, retry: "build", label: "page fetch" },
+    ).catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    const err = (await pending) as CmssyRequestError;
+    expect(err.waitedMs).toBe(123 + 247 + 494 + 988);
+    expect(err.message).toContain("gave up after waiting 1852ms");
+  });
+
   it("publishes both modes, and the interactive ceiling is a second", () => {
     expect(CMSSY_RETRY_MODES.build.maxRetryAfterMs).toBe(60_000);
     expect(CMSSY_RETRY_MODES.build.maxTotalWaitMs).toBe(180_000);

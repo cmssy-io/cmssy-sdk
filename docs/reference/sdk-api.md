@@ -303,16 +303,18 @@ same 429. A build should wait: a page that arrives 45s late is cheaper than a
 failed deploy. A visitor should not: parking a request for 45s to maybe avoid an
 error page is a worse outcome than the error page.
 
-| | `build` | `interactive` |
-| ----------------------------- | -------- | ------------- |
-| `maxRetries` | 4 | 2 |
-| `baseDelayMs` (503, transient) | 300 | 50 |
-| `throttleBaseDelayMs` (429) | 1_000 | 500 |
-| `maxDelayMs` | 20_000 | 1_000 |
-| `maxRetryAfterMs` | 60_000 | 1_000 |
-| `maxTotalWaitMs` | 180_000 | 2_000 |
+|                                | `build` | `interactive` |
+| ------------------------------ | ------- | ------------- |
+| `maxRetries`                   | 4       | 2             |
+| `baseDelayMs` (503, transient) | 300     | 50            |
+| `throttleBaseDelayMs` (429)    | 1_000   | 500           |
+| `maxDelayMs`                   | 20_000  | 1_000         |
+| `maxRetryAfterMs`              | 60_000  | 1_000         |
+| `maxTotalWaitMs`               | 180_000 | 2_000         |
 
-`CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime.
+`CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime. Any other mode
+name throws on the first request that uses it, so a typo surfaces immediately
+instead of silently disabling retries.
 
 **You do not normally pick one.** `createCmssyPage` and `CmssyLayoutSlot` read
 `process.env.NEXT_PHASE`: during `next build` they use `build`, and when the same
@@ -324,12 +326,12 @@ A policy object overrides field by field, on top of `build`:
 ```ts
 interface RetryPolicy {
   maxRetries?: number;
-  baseDelayMs?: number;          // 503 and other transient statuses
-  throttleBaseDelayMs?: number;  // 429 - a throttle needs the window to roll over
+  baseDelayMs?: number; // 503 and other transient statuses
+  throttleBaseDelayMs?: number; // 429 - a throttle needs the window to roll over
   maxDelayMs?: number;
-  maxRetryAfterMs?: number;      // a Retry-After above this is not waited out
-  maxTotalWaitMs?: number;       // wall-clock budget for the waiting itself
-  retryStatuses?: number[];      // [429, 503]
+  maxRetryAfterMs?: number; // a Retry-After above this is not waited out
+  maxTotalWaitMs?: number; // wall-clock budget for the waiting itself
+  retryStatuses?: number[]; // [429, 503]
 }
 ```
 
