@@ -26,7 +26,7 @@ export interface RetryPolicy {
   maxDelayMs?: number;
   maxRetryAfterMs?: number;
   maxTotalWaitMs?: number;
-  retryStatuses?: number[];
+  retryStatuses?: readonly number[];
 }
 
 export type CmssyRetryMode = "build" | "interactive";
@@ -37,7 +37,7 @@ const THROTTLE_STATUS = 429;
 
 export const CMSSY_RATE_LIMIT_WINDOW_MS = 60_000;
 
-type ResolvedRetryPolicy = Required<RetryPolicy>;
+type ResolvedRetryPolicy = Readonly<Required<RetryPolicy>>;
 
 export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
   build: {
@@ -47,7 +47,7 @@ export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
     maxDelayMs: 20_000,
     maxRetryAfterMs: CMSSY_RATE_LIMIT_WINDOW_MS,
     maxTotalWaitMs: 180_000,
-    retryStatuses: [429, 503],
+    retryStatuses: Object.freeze([429, 503]),
   },
   interactive: {
     maxRetries: 2,
@@ -56,9 +56,13 @@ export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
     maxDelayMs: 1_000,
     maxRetryAfterMs: 1_000,
     maxTotalWaitMs: 2_000,
-    retryStatuses: [429, 503],
+    retryStatuses: Object.freeze([429, 503]),
   },
 };
+
+Object.freeze(CMSSY_RETRY_MODES.build);
+Object.freeze(CMSSY_RETRY_MODES.interactive);
+Object.freeze(CMSSY_RETRY_MODES);
 
 export function resolveRetryPolicy(
   retry: RetryOption | undefined,

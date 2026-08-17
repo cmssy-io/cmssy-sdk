@@ -572,6 +572,33 @@ describe("retry modes (CMS-1463)", () => {
     expect(err.message).toContain("gave up after waiting 1852ms");
   });
 
+  it("cannot be reconfigured through the exported table", async () => {
+    const mutable = CMSSY_RETRY_MODES.interactive as unknown as {
+      maxRetries: number;
+      retryStatuses: number[];
+    };
+    expect(() => {
+      mutable.maxRetries = 99;
+    }).toThrow(TypeError);
+    expect(() => {
+      mutable.retryStatuses.push(500);
+    }).toThrow(TypeError);
+    expect(CMSSY_RETRY_MODES.interactive.maxRetries).toBe(2);
+
+    const doFetch = vi.fn().mockResolvedValue(res(500, {}));
+    await postGraphql(
+      URL_,
+      "q",
+      {},
+      {
+        fetch: doFetch,
+        retry: "interactive",
+        label: "page fetch",
+      },
+    ).catch(() => {});
+    expect(doFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("publishes both modes, and the interactive ceiling is a second", () => {
     expect(CMSSY_RETRY_MODES.build.maxRetryAfterMs).toBe(60_000);
     expect(CMSSY_RETRY_MODES.build.maxTotalWaitMs).toBe(180_000);

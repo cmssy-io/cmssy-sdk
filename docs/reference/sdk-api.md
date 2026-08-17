@@ -312,9 +312,10 @@ error page is a worse outcome than the error page.
 | `maxRetryAfterMs`              | 60_000  | 1_000         |
 | `maxTotalWaitMs`               | 180_000 | 2_000         |
 
-`CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime. Any other mode
-name throws on the first request that uses it, so a typo surfaces immediately
-instead of silently disabling retries.
+`CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime. It is frozen -
+read it, do not reconfigure it; pass a policy object at the call site instead.
+Any other mode name throws on the first request that uses it, so a typo surfaces
+immediately instead of silently disabling retries.
 
 **You do not normally pick one.** `createCmssyPage` and `CmssyLayoutSlot` read
 `process.env.NEXT_PHASE`: during `next build` they use `build`, and when the same
