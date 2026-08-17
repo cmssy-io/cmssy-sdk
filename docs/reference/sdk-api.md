@@ -332,7 +332,7 @@ interface RetryPolicy {
   maxDelayMs?: number;
   maxRetryAfterMs?: number; // a Retry-After above this is not waited out
   maxTotalWaitMs?: number; // wall-clock budget for the waiting itself
-  retryStatuses?: number[]; // [429, 503]
+  retryStatuses?: readonly number[]; // [429, 503]
 }
 ```
 
