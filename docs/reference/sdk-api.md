@@ -218,9 +218,9 @@ Both renderers take `appContext`: whatever your app hands them (a member, a
 feature flag, the active path) reaches every block as `context.app`, untouched.
 
 `resolveCmssyLayoutSlot` - the data half every adapter's layout slot runs on -
-takes `retry?: RetryPolicy | false`, forwarded to both delivery calls it makes
-(the site locales and the layouts). It retries by default; the adapters pass
-theirs straight through.
+takes `retry?: RetryOption`, forwarded to both delivery calls it makes (the site
+locales and the layouts). It defaults to the `build` mode; every adapter passes
+its own resolved mode straight through.
 
 Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 `CmssyClientConfig`, `RawBlock`, `RawLayoutBlock`, `CmssyPageData`,
@@ -283,7 +283,7 @@ interface CreateCmssyPageOptions {
         locale: string;
         path: string[];
       }) => Record<string, unknown> | Promise<Record<string, unknown>>);
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 ```
 
@@ -292,33 +292,64 @@ interface CreateCmssyPageOptions {
 scope cannot vary by visitor.
 
 `retry` covers all four delivery calls a page makes - site locales, workspace id,
-the page itself and its forms. The default retries a 429 or 503 up to three
-times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS` from
-`@cmssy/core`, the window the delivery API rate-limits on); anything longer fails
-immediately rather than parking a build for minutes. Raise `maxRetryAfterMs` if
-your build may wait longer, or pass `retry: false` to fail on the first 429.
+the page itself and its forms. It takes a **mode**, a policy object, or `false`.
+
+```ts
+type RetryOption = "build" | "interactive" | RetryPolicy | false;
+```
+
+The two modes exist because a build and a visitor want opposite things from the
+same 429. A build should wait: a page that arrives 45s late is cheaper than a
+failed deploy. A visitor should not: parking a request for 45s to maybe avoid an
+error page is a worse outcome than the error page.
+
+|                                | `build` | `interactive` |
+| ------------------------------ | ------- | ------------- |
+| `maxRetries`                   | 4       | 2             |
+| `baseDelayMs` (503, transient) | 300     | 50            |
+| `throttleBaseDelayMs` (429)    | 1_000   | 500           |
+| `maxDelayMs`                   | 20_000  | 1_000         |
+| `maxRetryAfterMs`              | 60_000  | 1_000         |
+| `maxTotalWaitMs`               | 180_000 | 2_000         |
+
+`CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime. It is frozen -
+read it, do not reconfigure it; pass a policy object at the call site instead.
+Any other mode name throws on the first request that uses it, so a typo surfaces
+immediately instead of silently disabling retries.
+
+**You do not normally pick one.** `createCmssyPage` and `CmssyLayoutSlot` read
+`process.env.NEXT_PHASE`: during `next build` they use `build`, and when the same
+code serves a dynamic route they use `interactive`. The adapters do the same for
+their own call sites - see the Astro and Remix guides.
+
+A policy object overrides field by field, on top of `build`:
 
 ```ts
 interface RetryPolicy {
-  maxRetries?: number; // 3
-  baseDelayMs?: number; // 300
-  maxDelayMs?: number; // 3_000
-  maxRetryAfterMs?: number; // 60_000
-  retryStatuses?: number[]; // [429, 503]
+  maxRetries?: number;
+  baseDelayMs?: number; // 503 and other transient statuses
+  throttleBaseDelayMs?: number; // 429 - a throttle needs the window to roll over
+  maxDelayMs?: number;
+  maxRetryAfterMs?: number; // a Retry-After above this is not waited out
+  maxTotalWaitMs?: number; // wall-clock budget for the waiting itself
+  retryStatuses?: readonly number[]; // [429, 503]
 }
 ```
 
-The layout fetch is not one of those four - it happens in `CmssyLayoutSlot`,
-which takes its own `retry` with the same shape and the same default. Set both
-if you render layouts and want one policy across the page.
+`maxRetryAfterMs` bounds one wait; `maxTotalWaitMs` bounds all of them together,
+and is what makes `interactive` a promise rather than an arithmetic accident.
+When the budget runs out the call surrenders and `CmssyRequestError.waitedMs`
+says how long it spent. Every scheduled retry is logged with the label, so a
+build that suddenly takes minutes names its own cause.
+
+Delays carry **full jitter** - `random(0,1) * min(maxDelayMs, base * 2 ** attempt)` -
+and a honoured `Retry-After` gets a bounded random spread on top. The delivery API
+answers the same window-aligned value to every caller, so without the spread N
+parallel workers would wake in the same millisecond and re-throttle each other.
 
 A mutation you send yourself through `client.query` is unaffected: `graphqlRequest`
 defaults to no retry, and it retries only if you hand that call a policy - which is
 worth doing only for a write you know is idempotent.
-
-`maxRetries * maxRetryAfterMs` bounds how long a **single** call sleeps between
-attempts - the requests themselves are on top, and a page makes several calls.
-Keep `staticPageGenerationTimeout` above the sum, not equal to the sleep budget.
 
 ### `@cmssy/next/middleware`
 

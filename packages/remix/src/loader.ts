@@ -6,7 +6,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
-  type RetryPolicy,
+  type RetryOption,
 } from "@cmssy/core";
 import {
   CMSSY_LOCALE_HEADER,
@@ -38,7 +38,7 @@ export interface CreateCmssyLoaderOptions {
   blocks?: BlockDefinition[];
   positions?: string[];
   appContext?: Record<string, unknown>;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 export function createCmssyLoader(
@@ -51,7 +51,7 @@ export function createCmssyLoader(
     request: Request;
   }): Promise<CmssyRouteData> {
     const url = new URL(request.url);
-    const retry = options.retry ?? {};
+    const retry = options.retry ?? "interactive";
     const isEdit = await isVerifiedEditUrl(url, config);
 
     const editRequested = url.searchParams

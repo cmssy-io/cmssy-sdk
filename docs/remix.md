@@ -82,10 +82,22 @@ uses. Three renderers, one set of rules.
 
 A route costs several delivery calls: the site locales, the layouts, the page.
 Ask for enough of them at once and the delivery API answers `429` with a
-`Retry-After`. The loader retries by default - a `429` or `503` up to three
-times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS`, the
-window the API rate-limits on). Anything longer fails at once rather than
-holding the request open.
+`Retry-After`.
+
+The loader runs while a visitor holds the connection open, so it defaults to the
+**`interactive`** mode: 2 retries, nothing above a 1s `Retry-After`, 2s of
+waiting in total. A `Retry-After: 45` is not waited out - you get the error, and
+you get it in seconds rather than a minute. That is the right trade here; it is
+the wrong one in a build, which is why the Next adapter picks its mode from the
+build phase instead.
+
+If you prerender routes with React Router 7, say so:
+
+```ts
+export const loader = createCmssyLoader(cmssy, { blocks, retry: "build" });
+```
+
+Or hand it a policy of your own:
 
 ```ts
 export const loader = createCmssyLoader(cmssy, {
@@ -94,14 +106,12 @@ export const loader = createCmssyLoader(cmssy, {
 });
 ```
 
-`retry: false` fails on the first `429` instead - the right choice for a
-request-time loader, where a visitor waiting a minute is worse than an error.
-The policy covers every delivery call the loader makes, the layout slot
-included.
+`retry: false` fails on the first 429. The policy covers every delivery call the
+loader makes, the layout slot included.
 
-Budget for it: `maxRetries * maxRetryAfterMs` bounds how long a **single** call
-sleeps between attempts, and the requests themselves land on top. Keep the sum
-under whatever timeout sits in front of the route.
+Budget for it: `maxTotalWaitMs` bounds how long a **single** call sleeps in
+total, and the requests themselves land on top. Keep the sum under whatever
+timeout sits in front of the route.
 
 ## SEO
 

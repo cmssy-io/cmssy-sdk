@@ -6,7 +6,7 @@ export type {
   CreateCmssyPageOptions,
   CmssyAppContext,
 } from "./create-cmssy-page";
-export type { RetryPolicy } from "@cmssy/core";
+export type { RetryPolicy, RetryOption, CmssyRetryMode } from "@cmssy/core";
 
 export { createDraftRoute } from "./create-draft-route";
 export type { CmssyDraftRouteConfig } from "./create-draft-route";

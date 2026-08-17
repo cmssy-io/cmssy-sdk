@@ -178,7 +178,7 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
 
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ retry: {} }),
+      expect.objectContaining({ retry: "interactive" }),
     );
   });
 

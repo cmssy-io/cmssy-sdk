@@ -10,7 +10,7 @@ import type {
   CmssyPageMeta,
 } from "@cmssy/types";
 
-import { postGraphql, type RetryPolicy } from "../data/http";
+import { postGraphql, type RetryOption } from "../data/http";
 
 export type {
   CmssyClientConfig,
@@ -65,7 +65,7 @@ export interface FetchPageOptions {
   workspaceId?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
@@ -202,7 +202,7 @@ export async function fetchPage(
       fetch: options.fetch,
       signal: options.signal,
       headers,
-      retry: options.retry ?? {},
+      retry: options.retry ?? "build",
       label: "page fetch",
     },
   );
@@ -243,7 +243,7 @@ export async function fetchPageById(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: options.retry ?? {},
+      retry: options.retry ?? "build",
       label: "page-by-id fetch",
     },
   );
@@ -274,7 +274,7 @@ export async function fetchPages(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: options.retry ?? {},
+      retry: options.retry ?? "build",
       label: "pages fetch",
     },
   );
@@ -301,7 +301,7 @@ export async function fetchPageMeta(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: options.retry ?? {},
+      retry: options.retry ?? "build",
       label: "page meta fetch",
     },
   );
@@ -330,7 +330,7 @@ export async function fetchLayouts(
     {
       fetch: options.fetch,
       signal: options.signal,
-      retry: options.retry ?? {},
+      retry: options.retry ?? "build",
       label: "layouts fetch",
     },
   );

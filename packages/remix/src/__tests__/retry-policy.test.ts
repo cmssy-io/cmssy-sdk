@@ -33,18 +33,18 @@ function arrange() {
 afterEach(() => vi.clearAllMocks());
 
 describe("createCmssyLoader retry policy (CMS-1460)", () => {
-  it("retries the layout slot and the page fetch by default", async () => {
+  it("uses the interactive mode by default, because a visitor is waiting", async () => {
     const request = arrange();
 
     await createCmssyLoader(CONFIG)({ request });
 
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ retry: {} }),
+      expect.objectContaining({ retry: "interactive" }),
     );
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 

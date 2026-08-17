@@ -113,7 +113,7 @@ describe("createCmssyPage", () => {
     expect(element.props.enabledLocales).toEqual(["pl", "en"]);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -128,7 +128,7 @@ describe("createCmssyPage", () => {
     expect(element.props.locale).toBe("pl");
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -145,7 +145,7 @@ describe("createCmssyPage", () => {
         workspaceSlug: CONFIG.workspaceSlug,
       },
       ["about"],
-      { previewSecret: undefined, retry: {} },
+      { previewSecret: undefined, retry: "interactive" },
     );
   });
 
@@ -157,7 +157,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -180,7 +180,7 @@ describe("createCmssyPage", () => {
     });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -221,7 +221,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -237,7 +237,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -253,7 +253,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -271,7 +271,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
       devPreview: true,
       devToken: "cs_devtoken",
       workspaceId: "ws_123",
@@ -298,7 +298,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "interactive",
       devPreview: true,
       devToken: "cs_devtoken",
       workspaceId: "ws_123",
@@ -315,7 +315,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -336,7 +336,7 @@ describe("createCmssyPage", () => {
     expect(element.type).not.toBe(Editor);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -370,7 +370,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -401,7 +401,7 @@ describe("createCmssyPage", () => {
     expect(element.type).toBe(CmssyServerPage);
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -549,7 +549,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
     expect(element.props.locale).toBe("no");
   });
@@ -576,7 +576,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "interactive",
       devPreview: undefined,
       devToken: undefined,
       workspaceId: undefined,
@@ -598,7 +598,7 @@ describe("createCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["de", "about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -631,7 +631,7 @@ describe("createCmssyPage", () => {
     await Page({ params: params(undefined) });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), undefined, {
       previewSecret: undefined,
-      retry: {},
+      retry: "interactive",
     });
   });
 
@@ -750,13 +750,13 @@ describe("createCmssyPage retry policy (CMS-1446)", () => {
     await Page({ params: params(["about"]) });
 
     expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
-      retry: {},
+      retry: "interactive",
     });
-    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: {} });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: "interactive" });
     expect(fetchPage).toHaveBeenCalledWith(
       expect.anything(),
       ["about"],
-      expect.objectContaining({ retry: {} }),
+      expect.objectContaining({ retry: "interactive" }),
     );
     expect(resolveForms).toHaveBeenCalledWith(
       expect.anything(),
@@ -764,7 +764,7 @@ describe("createCmssyPage retry policy (CMS-1446)", () => {
       expect.anything(),
       "en",
       "en",
-      { retry: {} },
+      { retry: "interactive" },
     );
   });
 

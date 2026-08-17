@@ -91,7 +91,7 @@ describe("loadCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
   });
 });
@@ -145,7 +145,7 @@ describe("loadCmssyPage edit-mode detection", () => {
     expect(result.isEdit).toBe(true);
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: DRAFT_SECRET,
-      retry: {},
+      retry: "build",
     });
     expect(result.editorData?.header).toBeDefined();
   });
@@ -177,18 +177,18 @@ describe("loadCmssyPage retry policy (CMS-1460)", () => {
     return new URL("https://site.test/about");
   }
 
-  it("retries the layout slot and the page fetch by default", async () => {
+  it("uses the build mode for the layout slot and the page fetch by default", async () => {
     const url = arrange();
 
     await loadCmssyPage(CONFIG, new Request(url), url, { blocks: [] });
 
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ retry: {} }),
+      expect.objectContaining({ retry: "build" }),
     );
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
   });
 
@@ -227,6 +227,63 @@ describe("loadCmssyPage retry policy (CMS-1460)", () => {
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
       retry: false,
+    });
+  });
+});
+
+describe("loadCmssyPage render mode (CMS-1463)", () => {
+  function arrange() {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    return new URL("https://site.test/about");
+  }
+
+  it("waits generously on a prerendered page", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+      prerendered: true,
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: "build",
+    });
+  });
+
+  it("fails fast on a page rendered on demand", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+      prerendered: false,
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ retry: "interactive" }),
+    );
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: "interactive",
+    });
+  });
+
+  it("an explicit policy still wins over the render mode", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+      prerendered: false,
+      retry: { maxRetries: 7 },
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: { maxRetries: 7 },
     });
   });
 });

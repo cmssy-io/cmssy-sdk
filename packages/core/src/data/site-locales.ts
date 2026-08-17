@@ -47,7 +47,7 @@ async function loadSiteLocales(
       config,
       SITE_CONFIG_QUERY,
       { workspaceSlug: config.workspaceSlug },
-      { ...options, public: true, retry: options?.retry ?? {} },
+      { ...options, public: true, retry: options?.retry ?? "build" },
       "site config",
     );
     value = localesFromSiteConfig(data.public?.siteConfig ?? null);

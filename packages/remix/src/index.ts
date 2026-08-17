@@ -20,4 +20,6 @@ export type {
   CmssyWebhookEvent,
   VerifyCmssyWebhookOptions,
   RetryPolicy,
+  RetryOption,
+  CmssyRetryMode,
 } from "@cmssy/core";
