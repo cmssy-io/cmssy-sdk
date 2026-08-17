@@ -9,8 +9,9 @@ import {
 import {
   type CmssyConfig,
   type LayoutPosition,
-  type RetryPolicy,
+  type RetryOption,
 } from "@cmssy/core";
+import { nextRetryMode } from "../retry-mode";
 
 interface CmssyLayoutSlotBaseProps {
   config: CmssyConfig;
@@ -30,7 +31,7 @@ interface CmssyLayoutSlotBaseProps {
     appContext?: Record<string, unknown>;
   }>;
   appContext?: Record<string, unknown>;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -57,7 +58,7 @@ export async function CmssyLayoutSlot({
     editMode,
     page,
     appContext,
-    retry: retry ?? {},
+    retry: retry ?? nextRetryMode(),
     ...(explicitLocale !== undefined
       ? { locale: explicitLocale }
       : { path: path ?? [] }),

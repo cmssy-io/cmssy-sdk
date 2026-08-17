@@ -29,9 +29,10 @@ import {
 import {
   resolveEditorOrigin,
   type CmssyConfig,
-  type RetryPolicy,
+  type RetryOption,
 } from "@cmssy/core";
 import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
+import { nextRetryMode } from "./retry-mode";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -57,7 +58,7 @@ export interface CreateCmssyPageOptions {
   editor?: ComponentType<CmssyEditorProps>;
   path?: string;
   appContext?: CmssyAppContext;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 interface CatchAllParams {
@@ -123,7 +124,7 @@ function buildCmssyPageRenderer(
     workspaceSlug: config.workspaceSlug,
   };
   const client = createCmssyClient(clientConfig);
-  const requestOptions = { retry: options?.retry ?? {} };
+  const requestOptions = { retry: options?.retry ?? nextRetryMode() };
   const fixedPath = options?.path
     ?.split("/")
     .map((segment) => segment.trim())

@@ -4,8 +4,12 @@ export type { CmssyConfig, CmssyEnvConfig } from "./config";
 
 export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
-export { CmssyRequestError, CMSSY_RATE_LIMIT_WINDOW_MS } from "./data/http";
-export type { RetryPolicy } from "./data/http";
+export {
+  CmssyRequestError,
+  CMSSY_RATE_LIMIT_WINDOW_MS,
+  CMSSY_RETRY_MODES,
+} from "./data/http";
+export type { RetryPolicy, RetryOption, CmssyRetryMode } from "./data/http";
 export { createCmssyClient } from "./data/client";
 export type { CmssyClient, QueryScopedOptions } from "./data/client";
 export type { CmssyTypedDocument } from "./data/document";

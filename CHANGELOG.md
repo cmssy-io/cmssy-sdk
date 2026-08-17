@@ -6,6 +6,60 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.11.0
+
+**Retry now knows whether a build or a visitor is waiting.** Until now there was
+one default for two opposite situations. A build should wait out a
+`Retry-After: 45` - a page arriving 45s late is cheaper than a failed deploy. A
+visitor should not: holding their request open for 45s to maybe avoid an error
+page is the worse outcome. Both got the build's answer.
+
+`retry` now takes a mode as well as a policy:
+
+```ts
+retry?: "build" | "interactive" | RetryPolicy | false;
+```
+
+|                             | `build` | `interactive` |
+| --------------------------- | ------- | ------------- |
+| retries                     | 4       | 2             |
+| honours `Retry-After` up to | 60s     | 1s            |
+| total waiting               | 180s    | 2s            |
+
+**You should not have to pick.** Each adapter defaults to the mode that matches
+its call site:
+
+- `createCmssyPage` and `CmssyLayoutSlot` read `process.env.NEXT_PHASE` - `build`
+  during `next build`, `interactive` when the same code serves a dynamic route.
+  Nothing to configure.
+- `createCmssyLoader` (Remix) defaults to `interactive`, because a loader runs per
+  request. Prerendering with React Router 7? Pass `retry: "build"`.
+- `loadCmssyPage` (Astro) reads a new `prerendered` option. Pass
+  `prerendered: Astro.isPrerendered` and it picks correctly; omit it and you get
+  `build`, which is Astro's own default output.
+
+**What to check:** if you render on demand, a sustained 429 now surfaces as an
+error in seconds instead of a request that hangs for a minute. That is the point
+of the change, but it is a behaviour change - if you would rather keep waiting,
+pass `retry: "build"` explicitly.
+
+Three things the modes needed in order to mean anything, all available on a
+`RetryPolicy` of your own:
+
+- **`maxTotalWaitMs`** - a wall-clock budget across all attempts, not just per
+  attempt. When it runs out the call surrenders and `CmssyRequestError.waitedMs`
+  tells you how long it spent.
+- **`throttleBaseDelayMs`** - a 429 is not a 503. A transient error resolves in
+  milliseconds; a throttle needs the rate-limit window to roll over. They now get
+  different base delays.
+- **Full jitter** on the backoff, plus a bounded spread on a honoured
+  `Retry-After`. The delivery API answers the same window-aligned value to every
+  caller, so without it parallel workers wake in the same millisecond and
+  re-throttle each other.
+
+Every scheduled retry is now logged with its label and attempt number. A build
+that suddenly takes minutes instead of seconds says why in its own log.
+
 ## 12.10.0
 
 **Retry is no longer a Next-only option.** 12.9.0 gave `createCmssyPage` a

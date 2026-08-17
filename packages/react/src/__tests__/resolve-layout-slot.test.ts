@@ -59,7 +59,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(result.groups).toBe(GROUPS);
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
     expect(result.data).toBeUndefined();
   });
@@ -76,7 +76,7 @@ describe("resolveCmssyLayoutSlot", () => {
 
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: CONFIG.draftSecret,
-      retry: {},
+      retry: "build",
     });
     expect(result.data).toEqual({ b1: { categories: [] } });
     expect(result.resolvedContent).toEqual({ b1: { heading: "Shop" } });
@@ -96,7 +96,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(result.path).toEqual(["about"]);
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
   });
 
@@ -126,7 +126,7 @@ describe("resolveCmssyLayoutSlot", () => {
 
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
   });
 
@@ -145,7 +145,7 @@ describe("resolveCmssyLayoutSlot", () => {
 });
 
 describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
-  it("retries both delivery calls by default", async () => {
+  it("uses the build mode for both delivery calls by default", async () => {
     setup();
 
     await resolveCmssyLayoutSlot(CONFIG, {
@@ -155,10 +155,10 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
       path: [],
     });
 
-    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: {} });
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: "build" });
     expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
       previewSecret: undefined,
-      retry: {},
+      retry: "build",
     });
   });
 

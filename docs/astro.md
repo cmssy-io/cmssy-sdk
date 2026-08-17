@@ -118,25 +118,36 @@ uses. Three renderers, one set of rules.
 
 A page costs several delivery calls: the site locales, the layouts, the page.
 Pre-render enough of them at once and the delivery API answers `429` with a
-`Retry-After`. `loadCmssyPage` retries by default - a `429` or `503` up to three
-times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS`, the
-window the API rate-limits on). Anything longer fails at once rather than
-parking a build.
+`Retry-After`.
 
-```ts
-await loadCmssyPage(cmssy, Astro.request, Astro.url, {
+A prerendered page and an on-demand one want opposite things from that 429. The
+build should wait it out - a page 45s late is cheaper than a failed deploy. A
+visitor should not be parked for 45s to maybe avoid an error page. Tell the
+adapter which one it is with the flag Astro already gives you:
+
+```astro
+const { page, locale } = await loadCmssyPage(cmssy, Astro.request, Astro.url, {
   blocks,
-  retry: { maxRetries: 5, maxRetryAfterMs: 120_000 },
+  prerendered: Astro.isPrerendered,
 });
 ```
 
-`retry: false` fails on the first `429` instead - the right choice when you
-would rather see a build break than wait. The policy covers every delivery call
-the loader makes, the layout slot included.
+That picks the `build` mode (4 retries, honour `Retry-After` up to 60s, 180s of
+waiting in total) or `interactive` (2 retries, nothing above 1s, 2s in total).
+Omit `prerendered` and you get `build`, matching Astro's own default output.
 
-Budget for it: `maxRetries * maxRetryAfterMs` bounds how long a **single** call
-sleeps between attempts. The requests themselves are on top of that, so a static
-build's per-page timeout has to sit above the sum, not equal to the sleep alone.
+Override it per call when you know better:
+
+```ts
+retry: { maxRetries: 5, maxRetryAfterMs: 120_000 }   // or "build" / "interactive" / false
+```
+
+`retry: false` fails on the first 429. The policy covers every delivery call the
+loader makes, the layout slot included.
+
+Budget for it: `maxTotalWaitMs` bounds how long a **single** call sleeps in
+total, and the requests themselves land on top. A static build's per-page
+timeout has to sit above that sum.
 
 ## SEO
 

@@ -3,26 +3,79 @@ import type { FetchLike, FetchLikeResponse } from "../content/content-client";
 export class CmssyRequestError extends Error {
   readonly status: number;
   readonly retryAfterMs?: number;
+  readonly waitedMs?: number;
 
-  constructor(message: string, status: number, retryAfterMs?: number) {
+  constructor(
+    message: string,
+    status: number,
+    retryAfterMs?: number,
+    waitedMs?: number,
+  ) {
     super(message);
     this.name = "CmssyRequestError";
     this.status = status;
     if (retryAfterMs !== undefined) this.retryAfterMs = retryAfterMs;
+    if (waitedMs !== undefined) this.waitedMs = waitedMs;
   }
 }
 
 export interface RetryPolicy {
   maxRetries?: number;
   baseDelayMs?: number;
+  throttleBaseDelayMs?: number;
   maxDelayMs?: number;
   maxRetryAfterMs?: number;
+  maxTotalWaitMs?: number;
   retryStatuses?: number[];
 }
 
-const DEFAULT_RETRY_STATUSES = [429, 503];
+export type CmssyRetryMode = "build" | "interactive";
+
+export type RetryOption = CmssyRetryMode | RetryPolicy | false;
+
+const THROTTLE_STATUS = 429;
 
 export const CMSSY_RATE_LIMIT_WINDOW_MS = 60_000;
+
+type ResolvedRetryPolicy = Required<RetryPolicy>;
+
+export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
+  build: {
+    maxRetries: 4,
+    baseDelayMs: 300,
+    throttleBaseDelayMs: 1_000,
+    maxDelayMs: 20_000,
+    maxRetryAfterMs: CMSSY_RATE_LIMIT_WINDOW_MS,
+    maxTotalWaitMs: 180_000,
+    retryStatuses: [429, 503],
+  },
+  interactive: {
+    maxRetries: 2,
+    baseDelayMs: 50,
+    throttleBaseDelayMs: 500,
+    maxDelayMs: 1_000,
+    maxRetryAfterMs: 1_000,
+    maxTotalWaitMs: 2_000,
+    retryStatuses: [429, 503],
+  },
+};
+
+export function resolveRetryPolicy(
+  retry: RetryOption | undefined,
+): ResolvedRetryPolicy | null {
+  if (retry === false || retry === undefined) return null;
+  if (typeof retry === "string") return CMSSY_RETRY_MODES[retry];
+  const base = CMSSY_RETRY_MODES.build;
+  return {
+    maxRetries: retry.maxRetries ?? base.maxRetries,
+    baseDelayMs: retry.baseDelayMs ?? base.baseDelayMs,
+    throttleBaseDelayMs: retry.throttleBaseDelayMs ?? base.throttleBaseDelayMs,
+    maxDelayMs: retry.maxDelayMs ?? base.maxDelayMs,
+    maxRetryAfterMs: retry.maxRetryAfterMs ?? base.maxRetryAfterMs,
+    maxTotalWaitMs: retry.maxTotalWaitMs ?? base.maxTotalWaitMs,
+    retryStatuses: retry.retryStatuses ?? base.retryStatuses,
+  };
+}
 
 function retryAfterMs(response: FetchLikeResponse): number | null {
   const raw = response.headers?.get("retry-after");
@@ -52,34 +105,50 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+interface RetriedResponse {
+  response: FetchLikeResponse;
+  waitedMs: number;
+}
+
 async function fetchWithRetry(
   doFetch: FetchLike,
   url: string,
   init: Parameters<FetchLike>[1],
-  retry: RetryPolicy | false | undefined,
-): Promise<FetchLikeResponse> {
-  if (retry === false || retry === undefined) {
-    return doFetch(url, init);
+  retry: RetryOption | undefined,
+  label: string,
+): Promise<RetriedResponse> {
+  const policy = resolveRetryPolicy(retry);
+  if (policy === null) {
+    return { response: await doFetch(url, init), waitedMs: 0 };
   }
-  const maxRetries = retry.maxRetries ?? 3;
-  const baseDelayMs = retry.baseDelayMs ?? 300;
-  const maxDelayMs = retry.maxDelayMs ?? 3_000;
-  const maxRetryAfterMs = retry.maxRetryAfterMs ?? CMSSY_RATE_LIMIT_WINDOW_MS;
-  const retryStatuses = retry.retryStatuses ?? DEFAULT_RETRY_STATUSES;
 
   let response = await doFetch(url, init);
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (response.ok || !retryStatuses.includes(response.status)) {
-      return response;
+  let waitedMs = 0;
+  for (let attempt = 0; attempt < policy.maxRetries; attempt++) {
+    if (response.ok || !policy.retryStatuses.includes(response.status)) {
+      return { response, waitedMs };
     }
+    const throttled = response.status === THROTTLE_STATUS;
     const asked = retryAfterMs(response);
-    if (asked !== null && asked > maxRetryAfterMs) return response;
-    const backoff = baseDelayMs * 2 ** attempt;
-    const wait = asked !== null ? asked : Math.min(backoff, maxDelayMs);
+    if (asked !== null && asked > policy.maxRetryAfterMs) {
+      return { response, waitedMs };
+    }
+    const base = throttled ? policy.throttleBaseDelayMs : policy.baseDelayMs;
+    const wait =
+      asked !== null
+        ? asked + Math.random() * policy.throttleBaseDelayMs
+        : Math.random() * Math.min(base * 2 ** attempt, policy.maxDelayMs);
+    if (waitedMs + wait > policy.maxTotalWaitMs) {
+      return { response, waitedMs };
+    }
+    console.warn(
+      `[cmssy] ${label} got ${response.status}, retrying in ${Math.round(wait)}ms (attempt ${attempt + 1}/${policy.maxRetries})`,
+    );
     await sleep(wait, init.signal);
+    waitedMs += wait;
     response = await doFetch(url, init);
   }
-  return response;
+  return { response, waitedMs };
 }
 
 interface GraphqlEnvelope<T> {
@@ -91,7 +160,7 @@ export interface PostGraphqlOptions {
   fetch?: FetchLike;
   signal?: AbortSignal;
   headers?: Record<string, string>;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
   label: string;
 }
 
@@ -109,7 +178,7 @@ export async function postGraphql<T>(
     );
   }
 
-  const response = await fetchWithRetry(
+  const { response, waitedMs } = await fetchWithRetry(
     doFetch,
     url,
     {
@@ -119,6 +188,7 @@ export async function postGraphql<T>(
       signal: options.signal,
     },
     options.retry,
+    options.label,
   );
 
   if (!response.ok) {
@@ -136,10 +206,13 @@ export async function postGraphql<T>(
     const asked = retryAfterMs(response);
     const wait =
       asked !== null ? ` - retry after ${Math.ceil(asked / 1000)}s` : "";
+    const spent =
+      waitedMs > 0 ? ` - gave up after waiting ${Math.round(waitedMs)}ms` : "";
     throw new CmssyRequestError(
-      `cmssy: ${options.label} failed (${response.status})${detail}${wait}`,
+      `cmssy: ${options.label} failed (${response.status})${detail}${wait}${spent}`,
       response.status,
       asked ?? undefined,
+      waitedMs > 0 ? waitedMs : undefined,
     );
   }
 

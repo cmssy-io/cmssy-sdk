@@ -2,7 +2,7 @@ import type {
   CmssyConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
-  RetryPolicy,
+  RetryOption,
 } from "@cmssy/core";
 import { fetchLayouts } from "@cmssy/core/internal";
 import {
@@ -20,7 +20,7 @@ interface ResolveCmssyLayoutSlotBase {
   page?: string;
   forms?: Record<string, CmssyFormDefinition>;
   appContext?: Record<string, unknown>;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -56,7 +56,7 @@ export async function resolveCmssyLayoutSlot(
     retry,
   } = options;
 
-  const requestOptions = { retry: retry ?? {} };
+  const requestOptions = { retry: retry ?? "build" };
 
   const siteLocales = await resolveSiteLocales(config, requestOptions);
   const fromPath = path

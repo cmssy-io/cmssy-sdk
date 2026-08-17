@@ -4,14 +4,14 @@ import {
   type CmssyClientConfig,
   type FetchLike,
 } from "../content/content-client";
-import { postGraphql, type RetryPolicy } from "./http";
+import { postGraphql, type RetryOption } from "./http";
 
 export interface GraphqlRequestOptions {
   fetch?: FetchLike;
   signal?: AbortSignal;
   headers?: Record<string, string>;
   public?: boolean;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
 }
 
 export async function graphqlRequest<T>(

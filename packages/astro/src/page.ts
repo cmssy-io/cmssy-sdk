@@ -4,7 +4,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
-  type RetryPolicy,
+  type RetryOption,
 } from "@cmssy/core";
 import { CMSSY_LOCALE_HEADER, fetchPage } from "@cmssy/core/internal";
 import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
@@ -38,7 +38,8 @@ export interface LoadCmssyPageOptions {
   blocks?: BlockDefinition[];
   positions?: string[];
   appContext?: Record<string, unknown>;
-  retry?: RetryPolicy | false;
+  retry?: RetryOption;
+  prerendered?: boolean;
 }
 
 export async function loadCmssyPage(
@@ -56,7 +57,8 @@ export async function loadCmssyPage(
   const positions = options.positions ?? ["header", "footer"];
   const blocks = options.blocks ?? [];
   const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
-  const retry = options.retry ?? {};
+  const retry =
+    options.retry ?? (options.prerendered === false ? "interactive" : "build");
 
   const slot = await resolveCmssyLayoutSlot(config, {
     position: positions[0] ?? "header",
