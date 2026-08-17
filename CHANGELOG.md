@@ -6,6 +6,33 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.10.0
+
+**Retry is no longer a Next-only option.** 12.9.0 gave `createCmssyPage` a
+`retry` policy and left the other adapters without one - so an Astro or Remix
+site had no way to raise the ceiling, cap the wait, or turn retries off. It also
+missed the layout fetch, which every adapter makes on every page, Next included.
+
+`loadCmssyPage` (Astro), `createCmssyLoader` (Remix), `CmssyLayoutSlot` (Next)
+and `resolveCmssyLayoutSlot` (React) all take the same option now, with the same
+default:
+
+```ts
+export const loader = createCmssyLoader(cmssy, {
+  blocks,
+  retry: { maxRetries: 5, maxRetryAfterMs: 120_000 },
+});
+```
+
+Nothing to do - the default is what these calls already did. Pass `retry: false`
+to fail on the first 429 instead, which is usually what you want in a
+request-time loader: a visitor waiting a minute is worse than an error page.
+
+One number to budget: `maxRetries * maxRetryAfterMs` bounds how long a **single**
+call sleeps between attempts. The requests themselves land on top, and a page
+makes several calls - so a static build's per-page timeout has to sit above the
+sum, not equal to the sleep budget.
+
 ## 12.9.0
 
 **A 429 during a build no longer fails the page.** The delivery API rate-limits

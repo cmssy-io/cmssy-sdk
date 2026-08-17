@@ -6,6 +6,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
+  type RetryPolicy,
 } from "@cmssy/core";
 import {
   CMSSY_LOCALE_HEADER,
@@ -14,10 +15,7 @@ import {
   isDevelopment,
   resolveSiteLocales,
 } from "@cmssy/core/internal";
-import {
-  resolveCmssyLayoutSlot,
-  type BlockDefinition,
-} from "@cmssy/react";
+import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
 
 export interface CmssyRouteData {
   page: CmssyPageData | null;
@@ -40,6 +38,7 @@ export interface CreateCmssyLoaderOptions {
   blocks?: BlockDefinition[];
   positions?: string[];
   appContext?: Record<string, unknown>;
+  retry?: RetryPolicy | false;
 }
 
 export function createCmssyLoader(
@@ -52,21 +51,21 @@ export function createCmssyLoader(
     request: Request;
   }): Promise<CmssyRouteData> {
     const url = new URL(request.url);
+    const retry = options.retry ?? {};
     const isEdit = await isVerifiedEditUrl(url, config);
 
     const editRequested = url.searchParams
       .getAll(CMSSY_EDIT_QUERY_PARAM)
       .includes("1");
     if (!isEdit && editRequested && isDevelopment()) {
-      const { collectEditDiagnostics, renderEditDiagnostics } = await import(
-        "@cmssy/core/preflight"
-      );
+      const { collectEditDiagnostics, renderEditDiagnostics } =
+        await import("@cmssy/core/preflight");
       const diagnosed = await collectEditDiagnostics({
         config,
         providedSecret: url.searchParams.get(CMSSY_SECRET_QUERY_PARAM),
         devOrigin: url.origin,
       });
-      const locales = await resolveSiteLocales(config);
+      const locales = await resolveSiteLocales(config, { retry });
       return {
         page: null,
         layouts: [],
@@ -92,10 +91,12 @@ export function createCmssyLoader(
       path: segments,
       locale: headerLocale,
       appContext: options.appContext,
+      retry,
     });
 
     const page = await fetchPage(config, slot.path, {
       previewSecret: isEdit ? config.draftSecret : undefined,
+      retry,
     });
 
     let editorData: Record<string, CmssyLayoutEditorData> | undefined;
@@ -114,6 +115,7 @@ export function createCmssyLoader(
           path: segments,
           locale: headerLocale,
           appContext: options.appContext,
+          retry,
         });
         if (extra.data && extra.resolvedContent) {
           editorData[position] = {

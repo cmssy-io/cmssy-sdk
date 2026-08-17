@@ -4,12 +4,10 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
+  type RetryPolicy,
 } from "@cmssy/core";
 import { CMSSY_LOCALE_HEADER, fetchPage } from "@cmssy/core/internal";
-import {
-  resolveCmssyLayoutSlot,
-  type BlockDefinition,
-} from "@cmssy/react";
+import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
 
 import { CMSSY_EDIT_PATH_PREFIX } from "./middleware";
 
@@ -40,6 +38,7 @@ export interface LoadCmssyPageOptions {
   blocks?: BlockDefinition[];
   positions?: string[];
   appContext?: Record<string, unknown>;
+  retry?: RetryPolicy | false;
 }
 
 export async function loadCmssyPage(
@@ -57,6 +56,7 @@ export async function loadCmssyPage(
   const positions = options.positions ?? ["header", "footer"];
   const blocks = options.blocks ?? [];
   const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
+  const retry = options.retry ?? {};
 
   const slot = await resolveCmssyLayoutSlot(config, {
     position: positions[0] ?? "header",
@@ -65,10 +65,12 @@ export async function loadCmssyPage(
     path: segments,
     locale: headerLocale,
     appContext: options.appContext,
+    retry,
   });
 
   const page = await fetchPage(config, slot.path, {
     previewSecret: isEdit ? config.draftSecret : undefined,
+    retry,
   });
 
   let editorData: Record<string, CmssyLayoutEditorData> | undefined;
@@ -87,6 +89,7 @@ export async function loadCmssyPage(
         path: segments,
         locale: headerLocale,
         appContext: options.appContext,
+        retry,
       });
       if (extra.data && extra.resolvedContent) {
         editorData[position] = {

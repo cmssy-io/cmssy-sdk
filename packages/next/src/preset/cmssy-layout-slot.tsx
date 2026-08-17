@@ -6,7 +6,11 @@ import {
   type CmssyLayoutGroup,
   type ResolveCmssyLayoutSlotOptions,
 } from "@cmssy/react";
-import { type CmssyConfig, type LayoutPosition } from "@cmssy/core";
+import {
+  type CmssyConfig,
+  type LayoutPosition,
+  type RetryPolicy,
+} from "@cmssy/core";
 
 interface CmssyLayoutSlotBaseProps {
   config: CmssyConfig;
@@ -26,6 +30,7 @@ interface CmssyLayoutSlotBaseProps {
     appContext?: Record<string, unknown>;
   }>;
   appContext?: Record<string, unknown>;
+  retry?: RetryPolicy | false;
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -44,6 +49,7 @@ export async function CmssyLayoutSlot({
   page = "/",
   editable: Editable,
   appContext,
+  retry,
 }: CmssyLayoutSlotProps) {
   const resolved = await resolveCmssyLayoutSlot(config, {
     position,
@@ -51,6 +57,7 @@ export async function CmssyLayoutSlot({
     editMode,
     page,
     appContext,
+    retry: retry ?? {},
     ...(explicitLocale !== undefined
       ? { locale: explicitLocale }
       : { path: path ?? [] }),

@@ -217,6 +217,11 @@ rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/
 Both renderers take `appContext`: whatever your app hands them (a member, a
 feature flag, the active path) reaches every block as `context.app`, untouched.
 
+`resolveCmssyLayoutSlot` - the data half every adapter's layout slot runs on -
+takes `retry?: RetryPolicy | false`, forwarded to both delivery calls it makes
+(the site locales and the layouts). It retries by default; the adapters pass
+theirs straight through.
+
 Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 `CmssyClientConfig`, `RawBlock`, `RawLayoutBlock`, `CmssyPageData`,
 `CmssyPageSummary`, `CmssyPageMeta`, `CmssyLayoutGroup`, `CmssySiteConfig`,
@@ -303,10 +308,17 @@ interface RetryPolicy {
 }
 ```
 
-This option reaches those four reads only. A mutation you send yourself through
-`client.query` is unaffected: `graphqlRequest` defaults to no retry, and it retries
-only if you hand that call a policy - which is worth doing only for a write you know
-is idempotent.
+The layout fetch is not one of those four - it happens in `CmssyLayoutSlot`,
+which takes its own `retry` with the same shape and the same default. Set both
+if you render layouts and want one policy across the page.
+
+A mutation you send yourself through `client.query` is unaffected: `graphqlRequest`
+defaults to no retry, and it retries only if you hand that call a policy - which is
+worth doing only for a write you know is idempotent.
+
+`maxRetries * maxRetryAfterMs` bounds how long a **single** call sleeps between
+attempts - the requests themselves are on top, and a page makes several calls.
+Keep `staticPageGenerationTimeout` above the sum, not equal to the sleep budget.
 
 ### `@cmssy/next/middleware`
 

@@ -91,6 +91,7 @@ describe("loadCmssyPage", () => {
 
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: undefined,
+      retry: {},
     });
   });
 });
@@ -144,6 +145,7 @@ describe("loadCmssyPage edit-mode detection", () => {
     expect(result.isEdit).toBe(true);
     expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
       previewSecret: DRAFT_SECRET,
+      retry: {},
     });
     expect(result.editorData?.header).toBeDefined();
   });
@@ -163,5 +165,68 @@ describe("loadCmssyPage edit-mode detection", () => {
 
     expect(result.isEdit).toBe(false);
     expect(result.editorData).toBeUndefined();
+  });
+});
+
+describe("loadCmssyPage retry policy (CMS-1460)", () => {
+  function arrange() {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    return new URL("https://site.test/about");
+  }
+
+  it("retries the layout slot and the page fetch by default", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, { blocks: [] });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ retry: {} }),
+    );
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: {},
+    });
+  });
+
+  it("forwards an explicit policy to both delivery calls", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({
+        retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+      }),
+    );
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
+  });
+
+  it("turns retry off for both delivery calls when the caller passes false", async () => {
+    const url = arrange();
+
+    await loadCmssyPage(CONFIG, new Request(url), url, {
+      blocks: [],
+      retry: false,
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ retry: false }),
+    );
+    expect(fetchPage).toHaveBeenCalledWith(CONFIG, ["about"], {
+      previewSecret: undefined,
+      retry: false,
+    });
   });
 });

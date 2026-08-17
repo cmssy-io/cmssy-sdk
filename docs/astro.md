@@ -114,6 +114,30 @@ The data half - preview secret in edit mode, language, editor data - is
 `resolveCmssyLayoutSlot` in `@cmssy/react`, the same function the Next adapter
 uses. Three renderers, one set of rules.
 
+## Rate limits and retry
+
+A page costs several delivery calls: the site locales, the layouts, the page.
+Pre-render enough of them at once and the delivery API answers `429` with a
+`Retry-After`. `loadCmssyPage` retries by default - a `429` or `503` up to three
+times, honouring `Retry-After` up to 60s (`CMSSY_RATE_LIMIT_WINDOW_MS`, the
+window the API rate-limits on). Anything longer fails at once rather than
+parking a build.
+
+```ts
+await loadCmssyPage(cmssy, Astro.request, Astro.url, {
+  blocks,
+  retry: { maxRetries: 5, maxRetryAfterMs: 120_000 },
+});
+```
+
+`retry: false` fails on the first `429` instead - the right choice when you
+would rather see a build break than wait. The policy covers every delivery call
+the loader makes, the layout slot included.
+
+Budget for it: `maxRetries * maxRetryAfterMs` bounds how long a **single** call
+sleeps between attempts. The requests themselves are on top of that, so a static
+build's per-page timeout has to sit above the sum, not equal to the sleep alone.
+
 ## SEO
 
 The adapter ships no sitemap or robots helper (10.0 removed them): both are a
