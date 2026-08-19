@@ -11,6 +11,12 @@ import { fileURLToPath } from "node:url";
 import type { PreflightResult } from "@cmssy/core/preflight";
 
 import { CliError } from "./admin-client";
+import {
+  ESLINT_CONFIG_FILE,
+  ESLINT_PLUGIN,
+  ESLINT_PURPOSE,
+  wireEslintConfig,
+} from "./eslint-config";
 import { formatResult } from "./format";
 import {
   detectFramework,
@@ -72,27 +78,46 @@ function cliVersion(): string {
   return pkg.version;
 }
 
+function sortedEntries(
+  entries: Record<string, string>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(entries).sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
+
 function addDependencies(
   root: string,
   pkg: PackageManifest,
   framework: FrameworkDef,
+  development: string[],
 ): string[] {
   const present = { ...pkg.dependencies, ...pkg.devDependencies };
-  const missing = framework.dependencies.filter(
-    (name) => present[name] === undefined,
-  );
-  if (missing.length === 0) return [];
+  const absent = (name: string) => present[name] === undefined;
+  const missing = framework.dependencies.filter(absent);
+  const missingDev = development.filter(absent);
+  if (missing.length === 0 && missingDev.length === 0) return [];
+
   const range = `^${cliVersion()}`;
-  const dependencies = { ...pkg.dependencies };
-  for (const name of missing) dependencies[name] = range;
-  pkg.dependencies = Object.fromEntries(
-    Object.entries(dependencies).sort(([a], [b]) => a.localeCompare(b)),
-  );
+  const pinned = (names: string[]) =>
+    Object.fromEntries(names.map((name) => [name, range]));
+  if (missing.length > 0) {
+    pkg.dependencies = sortedEntries({
+      ...pkg.dependencies,
+      ...pinned(missing),
+    });
+  }
+  if (missingDev.length > 0) {
+    pkg.devDependencies = sortedEntries({
+      ...pkg.devDependencies,
+      ...pinned(missingDev),
+    });
+  }
   writeFileSync(
     join(root, "package.json"),
     `${JSON.stringify(pkg, null, 2)}\n`,
   );
-  return missing.map((name) => `${name}@${range}`);
+  return [...missing, ...missingDev].map((name) => `${name}@${range}`);
 }
 
 function detectInstallCommand(root: string): string {
@@ -221,7 +246,32 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       log(`    ${file.purpose}`);
     }
 
-    const added = addDependencies(root, pkg, framework);
+    const eslint = wireEslintConfig(
+      root,
+      pkg,
+      join(ASSETS_DIR, ESLINT_CONFIG_FILE),
+    );
+    if (eslint.written) {
+      written.push(eslint.written);
+      log(formatResult({ status: "ok", message: `wrote ${eslint.written}` }));
+      log(`    ${ESLINT_PURPOSE}`);
+    }
+    if (eslint.patched) {
+      log(
+        formatResult({
+          status: "ok",
+          message: `wired ${ESLINT_PLUGIN} into ${eslint.patched}`,
+        }),
+      );
+      log(`    ${ESLINT_PURPOSE}`);
+    }
+
+    const added = addDependencies(
+      root,
+      pkg,
+      framework,
+      eslint.dependency ? [ESLINT_PLUGIN] : [],
+    );
     if (added.length > 0) {
       log(
         formatResult({
@@ -231,7 +281,10 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       );
     }
 
-    for (const note of frameworkNotes(framework, root, skipped)) {
+    for (const note of [
+      ...frameworkNotes(framework, root, skipped),
+      ...eslint.notes,
+    ]) {
       log(formatResult(note));
     }
 

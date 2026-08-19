@@ -32,11 +32,20 @@ cmssy init --dir ../my-site --force
    the CLI's own version (they release in lockstep). Dependencies you already
    have are left untouched. You run the install yourself - the hint names the
    package manager your lockfile says you use.
-4. Prints what needs your attention: a conflicting `app/page.tsx` next to the
+4. Wires the lint rules that catch what a build cannot - a provider the
+   `/cmssy-edit` route never gets, and server config pulled into a client
+   bundle. `@cmssy/eslint-plugin` goes into `devDependencies`, and the app's
+   flat config gets `...cmssy.configs.recommended` appended to its default
+   export; an app with eslint but no config gets an `eslint.config.mjs`
+   written. Your config is never overwritten, and what it cannot edit (a legacy
+   `.eslintrc`, a CommonJS config, no default export) is printed with the lines
+   to paste. An app with no eslint at all gets the note, not a linter it did
+   not ask for.
+5. Prints what needs your attention: a conflicting `app/page.tsx` next to the
    catch-all or an `app/layout.tsx` that outranks the cmssy root layouts (Next),
    the `npx astro add react node` step (Astro), or an `app/routes.ts` or
    `app/root.tsx` it refused to overwrite (React Router).
-5. Says what each file it wrote is for - one line under the file name - and ends
+6. Says what each file it wrote is for - one line under the file name - and ends
    with a **What not to break** list: the few things whose absence breaks the
    editor or the cache without failing a build. Since 11.7.0 the scaffolded files
    carry no comments of their own; that explanation is printed once, here, and
@@ -49,7 +58,7 @@ overwrites existing wiring files.
 
 | Framework      | Wiring                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js        | `cmssy.config.ts`, `proxy.ts`, `services/pages.ts` (the delivery query and `publishedPaths()` for `generateStaticParams`), `cmssy/` (registry, editor, editable layout, site providers), `blocks/hero/`, `app/[[...path]]/` and `app/cmssy-edit/[[...path]]/` (page **and** layout - these are the root layouts, so the app has no `app/layout.tsx`), `app/api/draft/` - under `src/` when the app uses one. The layout slot itself is `CmssyLayoutSlot` from `@cmssy/next/server`, so no file is written for it. |
+| Next.js        | `cmssy.config.ts`, `proxy.ts`, `services/pages.ts` (the delivery query and `publishedPaths()` for `generateStaticParams`), `cmssy/` (registry, editor, editable layout, site providers), `blocks/hero/`, `app/[[...path]]/` and `app/cmssy-edit/[[...path]]/` (page **and** layout - these are the root layouts, so the app has no `app/layout.tsx`), `app/api/draft/` - under `src/` when the app uses one, plus `eslint.config.mjs` when the app lints and has no config of its own. The layout slot itself is `CmssyLayoutSlot` from `@cmssy/next/server`, so no file is written for it. |
 | Astro          | `src/cmssy.config.ts`, `src/middleware.ts`, `src/cmssy/`, `src/components/Blocks.tsx`, `src/pages/[...path].astro`, `src/pages/cmssy-edit/`.                                                                                                                                                                                                                                                                                                                                                      |
 | React Router 7 | `cmssy.config.ts`, `app/root.tsx` (its `Layout` sets `<html lang>`), `app/routes.ts`, `app/cmssy/`, `app/routes/page.tsx`. No `/cmssy-edit` route - a React Router page always sees its query string.                                                                                                                                                                                                                                                                                             |
 

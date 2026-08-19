@@ -41,7 +41,7 @@ npx @cmssy/cli link   # connects it to your workspace
 | `@cmssy/next`          | Next.js. One entry per runtime: `/server` (RSC + route handlers), `/middleware` (edge), `/client` (browser).                                                       |
 | `@cmssy/astro`         | Astro: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                                               |
 | `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                                                              |
-| `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                                                                    |
+| `@cmssy/eslint-plugin` | Catches what a build cannot: a client component reaching the cmssy config, and a provider mounted on the public root but not on `/cmssy-edit`. `cmssy init` wires it into the app's eslint config.  |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                                                                       |
 | `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace. |
 
