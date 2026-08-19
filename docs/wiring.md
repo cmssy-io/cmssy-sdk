@@ -145,9 +145,29 @@ export function SiteProviders({ children }: { children: ReactNode }) {
 ```
 
 `cmssy init` scaffolds that file as a passthrough, so the seam exists before you
-need it. `edit-route-provider-parity` in `@cmssy/eslint-plugin` fails the build
-if a provider ever lands in one root and not the other. Global CSS and metadata
-have the same problem and no lint rule - repeat them in both.
+need it, and wires the rule that guards it: `edit-route-provider-parity` from
+`@cmssy/eslint-plugin` fails the build if a provider ever lands in one root and
+not the other. `init` adds the plugin to `devDependencies` and either writes an
+`eslint.config.mjs` or appends `...cmssy.configs.recommended` to the one you
+have - it never overwrites your config, and if it cannot edit it (a legacy
+`.eslintrc`, CommonJS, no default export) it prints the two lines to paste. Add
+them to an existing setup with:
+
+```js
+// eslint.config.mjs
+import cmssy from "@cmssy/eslint-plugin";
+
+export default [...yourConfig, ...cmssy.configs.recommended];
+```
+
+`configs.recommended` declares no `files` and no parser, so it inherits whatever
+your config already lints. In a config that is **only** cmssy rules, use
+`configs.standalone` instead - it brings the TypeScript parser and the
+`.ts`/`.tsx` patterns with it, because eslint lints neither by default. That is
+what `init` writes.
+
+Global CSS and metadata have the same split-root problem and no lint rule -
+repeat them in both.
 
 ## 5. The header and footer
 

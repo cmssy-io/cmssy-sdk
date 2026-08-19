@@ -109,13 +109,14 @@ importers:
         version: 2.1.9(@types/node@20.19.41)(jsdom@25.0.1)(lightningcss@1.32.0)
 
   packages/eslint-plugin:
+    dependencies:
+      '@typescript-eslint/parser':
+        specifier: ^8.0.0
+        version: 8.64.0(eslint@9.39.5)(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.41
-      '@typescript-eslint/parser':
-        specifier: ^8.0.0
-        version: 8.64.0(eslint@9.39.5)(typescript@5.9.3)
       eslint:
         specifier: ^9.0.0
         version: 9.39.5

@@ -263,6 +263,109 @@ describe("runInit", () => {
     );
   });
 
+  it("wires the cmssy lint rules into the app's own eslint config", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+      devDependencies: { eslint: "^9.0.0" },
+    });
+    writeFileSync(
+      join(cwd, "eslint.config.mjs"),
+      'const eslintConfig = [];\n\nexport default eslintConfig;\n',
+    );
+
+    expect(runInit({}, deps)).toBe(0);
+
+    const config = readFileSync(join(cwd, "eslint.config.mjs"), "utf8");
+    expect(config).toContain('import cmssy from "@cmssy/eslint-plugin";');
+    expect(config).toContain("...cmssy.configs.recommended");
+    expect(readPkg(cwd).devDependencies?.["@cmssy/eslint-plugin"]).toBe(
+      `^${CLI_VERSION}`,
+    );
+    const output = lines.join("\n");
+    expect(output).toContain(
+      "wired @cmssy/eslint-plugin into eslint.config.mjs",
+    );
+    expect(output).toContain("/cmssy-edit route never gets");
+  });
+
+  it("writes an eslint config when the app lints but has none, and counts it", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+      devDependencies: { eslint: "^9.0.0" },
+    });
+
+    expect(runInit({}, deps)).toBe(0);
+
+    expect(readFileSync(join(cwd, "eslint.config.mjs"), "utf8")).toContain(
+      "cmssy.configs.standalone",
+    );
+    expect(lines.join("\n")).toContain(
+      `${NEXT_FILES.length + 1} files written, 0 skipped.`,
+    );
+  });
+
+  it("adds no plugin and writes no config to an app with no eslint", () => {
+    const { deps, cwd, lines } = makeApp({ dependencies: { next: "^16.0.0" } });
+
+    expect(runInit({}, deps)).toBe(0);
+
+    expect(existsSync(join(cwd, "eslint.config.mjs"))).toBe(false);
+    expect(readPkg(cwd).devDependencies?.["@cmssy/eslint-plugin"]).toBeUndefined();
+    const output = lines.join("\n");
+    expect(output).toContain("this app has no eslint");
+    expect(output).toContain("export default [...cmssy.configs.standalone];");
+    expect(output).toContain("install eslint and rerun");
+  });
+
+  it("never overwrites the app's eslint config, not even with --force", () => {
+    const { deps, cwd } = makeApp({
+      dependencies: { next: "^16.0.0" },
+      devDependencies: { eslint: "^9.0.0" },
+    });
+    writeFileSync(join(cwd, "eslint.config.mjs"), "export default [mine];\n");
+
+    expect(runInit({ force: true }, deps)).toBe(0);
+
+    const config = readFileSync(join(cwd, "eslint.config.mjs"), "utf8");
+    expect(config).toContain("mine");
+    expect(config).toContain("cmssy.configs.recommended");
+  });
+
+  it("wires eslint once, however many times it runs", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+      devDependencies: { eslint: "^9.0.0" },
+    });
+    expect(runInit({}, deps)).toBe(0);
+    const first = readFileSync(join(cwd, "eslint.config.mjs"), "utf8");
+    const pkg = readPkg(cwd);
+
+    lines.length = 0;
+    expect(runInit({}, deps)).toBe(0);
+
+    expect(readFileSync(join(cwd, "eslint.config.mjs"), "utf8")).toBe(first);
+    expect(readPkg(cwd)).toEqual(pkg);
+    expect(lines.join("\n")).not.toContain("@cmssy/eslint-plugin");
+  });
+
+  it("wires the lint rules on every framework, not just next", () => {
+    for (const dependencies of [
+      { astro: "^5.0.0" },
+      { "react-router": "^7.5.0" },
+    ]) {
+      const { deps, cwd } = makeApp({
+        dependencies,
+        devDependencies: { eslint: "^9.0.0" },
+      });
+      expect(runInit({}, deps)).toBe(0);
+      expect(
+        readPkg(cwd).devDependencies?.["@cmssy/eslint-plugin"],
+        Object.keys(dependencies)[0],
+      ).toBe(`^${CLI_VERSION}`);
+      expect(existsSync(join(cwd, "eslint.config.mjs"))).toBe(true);
+    }
+  });
+
   it("writes the astro wiring and points at astro add", () => {
     const { deps, cwd, lines } = makeApp({
       dependencies: { astro: "^5.0.0" },
