@@ -236,6 +236,33 @@ describe("wireEslintConfig", () => {
     expect(readFileSync(join(cwd, "eslint.config.mjs"), "utf8")).toBe(once);
   });
 
+  it("wires a config that only names the plugin in a comment", () => {
+    const { cwd, pkg } = makeApp(
+      {
+        "eslint.config.mjs": `// import cmssy from "@cmssy/eslint-plugin";\nexport default [];\n`,
+      },
+      { devDependencies: { eslint: "^9.0.0" } },
+    );
+
+    expect(wireEslintConfig(cwd, pkg, ASSET).patched).toBe("eslint.config.mjs");
+    expect(readFileSync(join(cwd, "eslint.config.mjs"), "utf8")).toContain(
+      SPREAD,
+    );
+  });
+
+  it("counts a require of the plugin as already wired", () => {
+    const source = `const cmssy = require("@cmssy/eslint-plugin");\nmodule.exports = [...cmssy.configs.recommended];\n`;
+    const { cwd, pkg } = makeApp(
+      { "eslint.config.cjs": source },
+      { devDependencies: { eslint: "^9.0.0" } },
+    );
+
+    const result = wireEslintConfig(cwd, pkg, ASSET);
+
+    expect(result.notes).toEqual([]);
+    expect(readFileSync(join(cwd, "eslint.config.cjs"), "utf8")).toBe(source);
+  });
+
   it("leaves a commonjs config alone and prints the require form", () => {
     const source = "module.exports = [];\n";
     const { cwd, pkg } = makeApp(
@@ -275,9 +302,9 @@ describe("wireEslintConfig", () => {
     const result = wireEslintConfig(cwd, pkg, ASSET);
 
     expect(result.written).toBeUndefined();
-    expect(result.dependency).toBe(false);
     expect(result.notes[0]?.message).toContain(".eslintrc.json");
     expect(result.notes[0]?.fix).toContain("flat config");
+    expect(result.dependency, "the snippet imports the plugin").toBe(true);
   });
 
   it("prefers the flat config when a legacy one is still lying around", () => {

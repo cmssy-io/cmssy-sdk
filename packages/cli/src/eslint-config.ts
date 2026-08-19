@@ -50,6 +50,8 @@ const BUILDERS = new Set([
   "tseslint.config",
 ]);
 
+const WIRED = /(?:import|require)[\s\S]{0,200}?["']@cmssy\/eslint-plugin["']/;
+
 const RULES =
   "cmssy/edit-route-provider-parity and cmssy/no-server-config-in-client";
 
@@ -209,6 +211,51 @@ export function patchFlatConfig(source: string): string | null {
   return result;
 }
 
+function withoutComments(source: string): string {
+  let out = "";
+
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i]!;
+
+    if (char === '"' || char === "'" || char === "`") {
+      out += char;
+      i += 1;
+      while (i < source.length && source[i] !== char) {
+        if (source[i] === "\\") {
+          out += source[i];
+          i += 1;
+        }
+        out += source[i] ?? "";
+        i += 1;
+      }
+      out += source[i] ?? "";
+      continue;
+    }
+
+    if (char === "/" && source[i + 1] === "/") {
+      while (i < source.length && source[i] !== "\n") i += 1;
+      out += "\n";
+      continue;
+    }
+
+    if (char === "/" && source[i + 1] === "*") {
+      i += 2;
+      while (
+        i < source.length &&
+        !(source[i] === "*" && source[i + 1] === "/")
+      ) {
+        i += 1;
+      }
+      i += 1;
+      continue;
+    }
+
+    out += char;
+  }
+
+  return out;
+}
+
 function findFile(root: string, names: string[]): string | undefined {
   return names.find((name) => existsSync(join(root, name)));
 }
@@ -226,7 +273,7 @@ export function wireEslintConfig(
 
   if (!flat && legacy) {
     return {
-      dependency: false,
+      dependency: true,
       notes: [
         {
           status: "fail",
@@ -255,7 +302,7 @@ export function wireEslintConfig(
   }
 
   const source = readFileSync(join(root, flat), "utf8");
-  if (source.includes(ESLINT_PLUGIN)) {
+  if (WIRED.test(withoutComments(source))) {
     return { dependency: true, notes: [] };
   }
 

@@ -348,6 +348,23 @@ describe("runInit", () => {
     expect(lines.join("\n")).not.toContain("@cmssy/eslint-plugin");
   });
 
+  it("adds the plugin the snippet needs when it cannot edit a legacy config", () => {
+    const { deps, cwd, lines } = makeApp({
+      dependencies: { next: "^16.0.0" },
+      devDependencies: { eslint: "^8.0.0" },
+    });
+    writeFileSync(join(cwd, ".eslintrc.json"), "{}\n");
+
+    expect(runInit({}, deps)).toBe(0);
+
+    expect(existsSync(join(cwd, "eslint.config.mjs"))).toBe(false);
+    expect(readFileSync(join(cwd, ".eslintrc.json"), "utf8")).toBe("{}\n");
+    expect(readPkg(cwd).devDependencies?.["@cmssy/eslint-plugin"]).toBe(
+      `^${CLI_VERSION}`,
+    );
+    expect(lines.join("\n")).toContain("legacy eslintrc format");
+  });
+
   it("wires the lint rules on every framework, not just next", () => {
     for (const dependencies of [
       { astro: "^5.0.0" },
