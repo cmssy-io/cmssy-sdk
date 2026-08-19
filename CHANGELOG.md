@@ -6,6 +6,36 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.13.0
+
+**`cmssy init` wires the lint rules into your eslint config.** The two rules
+that catch what a build cannot - server config pulled into a client bundle, and
+a provider mounted on the public root but not on `/cmssy-edit` - were opt-in.
+`init` wrote no eslint config and added no plugin, so the only static detector
+for a blank editor preview reached you if you read `wiring.md`.
+
+`init` now adds `@cmssy/eslint-plugin` to `devDependencies` and appends
+`...cmssy.configs.recommended` to the default export of your flat config - an
+array literal, a named const, `defineConfig([...])`, or a variadic builder like
+`tseslint.config(...)`. An app that lints but has no config of its own gets an
+`eslint.config.mjs`. Your config is never overwritten, not even with `--force`,
+and a second run changes nothing. What it cannot edit - a legacy `.eslintrc`, a
+CommonJS config, a config with no default export - is printed with the lines to
+paste.
+
+**New: `cmssy.configs.standalone`.** `configs.recommended` declares no `files`
+and no parser, so it inherits whatever your config already lints. In a config
+that is *only* cmssy rules that means it fires nowhere: eslint lints `.js` by
+default and skips every `.tsx` layout the parity rule is about. `standalone` is
+that preset plus the TypeScript parser, the ts/tsx patterns, and the build
+directories eslint does not ignore on its own. It is what `init` writes.
+
+Nothing to do on an existing app. Rerun `npx @cmssy/cli init` in one to have
+the rules wired for you - it skips every file it already wrote and only
+touches the eslint config. `@typescript-eslint/parser` is now a dependency of
+`@cmssy/eslint-plugin` rather than a dev one, because a preset that ships a
+parser has to bring it.
+
 ## 12.12.0
 
 **`nextRetryMode()` is exported.** 12.11.0 taught the Next adapter to tell a
