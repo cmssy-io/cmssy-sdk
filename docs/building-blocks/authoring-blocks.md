@@ -164,6 +164,40 @@ Empty-array guards (`items = []`) and boolean/config defaults
 (`showCta = true`, `variant = "default"`) are fine - they are behaviour, not
 content. The CMS is the single source of truth for content.
 
+### One field, one piece of UI
+
+Gate each value on itself. A block must never make its whole output depend on
+one field - an author who fills the heading first would watch the block stay
+blank, and in the editor a block that paints nothing has no box to click.
+
+```tsx
+// bad - the heading is invisible until the first question exists
+if (!entries.length) return null;
+return (
+  <section>
+    {content.heading ? <h2>{content.heading}</h2> : null}
+    <div>{entries.map(renderEntry)}</div>
+  </section>
+);
+
+// good - each value appears the moment it is written
+return (
+  <section>
+    {content.heading ? <h2>{content.heading}</h2> : null}
+    {entries.length ? <div>{entries.map(renderEntry)}</div> : null}
+  </section>
+);
+```
+
+Gate a list on what it will actually paint, not on the raw array: filter the
+items down first, or a list whose every entry drops out still leaves an empty
+container behind. The same holds inside a repeater item - an empty `title`
+renders no heading, not an empty `<h2>` collecting margins.
+
+A block with nothing written yet renders its own frame - padding, background -
+and that frame is what makes it selectable in the editor. Do not fill it with
+placeholder copy or an empty state.
+
 ## Registration
 
 Collect your blocks into one array and pass it to `createCmssyPage`:
