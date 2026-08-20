@@ -119,25 +119,23 @@ export const testimonialsProps = {
 export default function Testimonials({
   content,
 }: BlockProps<typeof testimonialsProps>) {
-  const items = content.testimonials ?? [];
+  const quoted = (content.testimonials ?? []).flatMap((item) => {
+    const quote = typeof item.data.quote === "string" ? item.data.quote : "";
+    if (!quote) return [];
+    const author = typeof item.data.author === "string" ? item.data.author : "";
+    return [{ id: item.id, quote, author }];
+  });
   return (
     <section>
       {content.heading ? <h2>{content.heading}</h2> : null}
-      {items.length ? (
+      {quoted.length ? (
         <ul>
-          {items.map((item) => {
-            const quote =
-              typeof item.data.quote === "string" ? item.data.quote : "";
-            const author =
-              typeof item.data.author === "string" ? item.data.author : "";
-            if (!quote) return null;
-            return (
-              <li key={item.id}>
-                <blockquote>{quote}</blockquote>
-                {author ? <cite>{author}</cite> : null}
-              </li>
-            );
-          })}
+          {quoted.map((item) => (
+            <li key={item.id}>
+              <blockquote>{item.quote}</blockquote>
+              {item.author ? <cite>{item.author}</cite> : null}
+            </li>
+          ))}
         </ul>
       ) : null}
     </section>

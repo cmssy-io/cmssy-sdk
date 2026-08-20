@@ -189,10 +189,14 @@ return (
 );
 ```
 
-The same holds inside a repeater item: an empty `title` renders no heading, not
-an empty `<h2>` collecting margins. A block with nothing written yet renders its
-own frame - padding, background - and that frame is what makes it selectable in
-the editor. Do not fill it with placeholder copy or an empty state.
+Gate a list on what it will actually paint, not on the raw array: filter the
+items down first, or a list whose every entry drops out still leaves an empty
+container behind. The same holds inside a repeater item - an empty `title`
+renders no heading, not an empty `<h2>` collecting margins.
+
+A block with nothing written yet renders its own frame - padding, background -
+and that frame is what makes it selectable in the editor. Do not fill it with
+placeholder copy or an empty state.
 
 ## Registration
 
