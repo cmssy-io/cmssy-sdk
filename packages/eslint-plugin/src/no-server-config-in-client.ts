@@ -10,7 +10,13 @@ const SERVER_SYMBOLS = new Set(["defineCmssyConfig"]);
 // server-only by construction. An app that writes its config object by hand
 // imports the type and calls nothing, so this is the only thing about the
 // module that still says server.
-const SERVER_ENV = /^CMSSY_[A-Z0-9_]+$/;
+const SERVER_ENV_NAME = "CMSSY_[A-Z0-9_]+";
+
+const SERVER_ENV = new RegExp(`^${SERVER_ENV_NAME}$`);
+
+const SERVER_ENV_READ = new RegExp(
+  `\\bprocess\\s*\\.\\s*env\\s*(?:\\.\\s*${SERVER_ENV_NAME}|\\[\\s*["'\`]${SERVER_ENV_NAME}["'\`]\\s*\\])`,
+);
 
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
@@ -186,9 +192,7 @@ function valueImports(code: string): string[] {
 }
 
 function readsServerEnv(code: string): boolean {
-  return /\bprocess\s*\.\s*env\s*(?:\.\s*CMSSY_[A-Z0-9_]+|\[\s*["'`]CMSSY_[A-Z0-9_]+["'`]\s*\])/.test(
-    code,
-  );
+  return SERVER_ENV_READ.test(code);
 }
 
 function serverEnvName(node: unknown): string | null {
