@@ -120,25 +120,26 @@ export default function Testimonials({
   content,
 }: BlockProps<typeof testimonialsProps>) {
   const items = content.testimonials ?? [];
-  if (items.length === 0) return null;
   return (
     <section>
-      <h2>{content.heading}</h2>
-      <ul>
-        {items.map((item) => {
-          const quote =
-            typeof item.data.quote === "string" ? item.data.quote : "";
-          const author =
-            typeof item.data.author === "string" ? item.data.author : "";
-          if (!quote) return null;
-          return (
-            <li key={item.id}>
-              <blockquote>{quote}</blockquote>
-              {author ? <cite>{author}</cite> : null}
-            </li>
-          );
-        })}
-      </ul>
+      {content.heading ? <h2>{content.heading}</h2> : null}
+      {items.length ? (
+        <ul>
+          {items.map((item) => {
+            const quote =
+              typeof item.data.quote === "string" ? item.data.quote : "";
+            const author =
+              typeof item.data.author === "string" ? item.data.author : "";
+            if (!quote) return null;
+            return (
+              <li key={item.id}>
+                <blockquote>{quote}</blockquote>
+                {author ? <cite>{author}</cite> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
     </section>
   );
 }
