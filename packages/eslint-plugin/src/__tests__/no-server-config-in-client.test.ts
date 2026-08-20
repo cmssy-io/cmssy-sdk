@@ -10,6 +10,9 @@ import { noServerConfigInClient } from "../no-server-config-in-client";
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const clientFile = resolve(FIXTURES, "editor.ts");
 
+const HANDWRITTEN = resolve(FIXTURES, "handwritten");
+const handwrittenClient = resolve(HANDWRITTEN, "editor.ts");
+
 const ALIASED = resolve(FIXTURES, "aliased");
 const aliasedClient = resolve(ALIASED, "editor.ts");
 const registry = resolve(ALIASED, "registry/blocks.ts");
@@ -114,6 +117,76 @@ describe("no-server-config-in-client", () => {
         },
       ],
       invalid: [],
+    });
+  });
+
+  it("reports a config the app wrote by hand, which calls nothing (CMS-1496)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: '"use client";\nimport { editorOrigin } from "./public-env";\nexport const x = editorOrigin;',
+          filename: handwrittenClient,
+        },
+        {
+          code: 'import { cmssy } from "./cmssy.config";\nexport const x = cmssy;',
+          filename: resolve(HANDWRITTEN, "page.ts"),
+        },
+      ],
+      invalid: [
+        {
+          code: '"use client";\nimport { cmssy } from "./cmssy.config";\nexport const x = cmssy;',
+          filename: handwrittenClient,
+          errors: [{ messageId: "reachesConfig" }],
+        },
+        {
+          code: '"use client";\nimport { deliveryPath } from "./lib/site";\nexport const x = deliveryPath;',
+          filename: handwrittenClient,
+          errors: [{ messageId: "reachesConfig" }],
+        },
+      ],
+    });
+  });
+
+  it("reports a CMSSY_ variable read in the browser, and only that (CMS-1496)", () => {
+    ruleTester.run("no-server-config-in-client", noServerConfigInClient, {
+      valid: [
+        {
+          code: '"use client";\nexport const x = process.env.NEXT_PUBLIC_CMSSY_EDITOR_ORIGIN;',
+          filename: clientFile,
+        },
+        {
+          code: '"use client";\nexport const x = process.env.NODE_ENV;',
+          filename: clientFile,
+        },
+        {
+          code: "export const x = process.env.CMSSY_DRAFT_SECRET;",
+          filename: resolve(FIXTURES, "page.ts"),
+        },
+      ],
+      invalid: [
+        {
+          code: '"use client";\nexport const x = process.env.CMSSY_DRAFT_SECRET;',
+          filename: clientFile,
+          errors: [
+            { messageId: "readsServerEnv", data: { name: "CMSSY_DRAFT_SECRET" } },
+          ],
+        },
+        {
+          code: '"use client";\nexport const x = process.env["CMSSY_API_URL"];',
+          filename: clientFile,
+          errors: [
+            { messageId: "readsServerEnv", data: { name: "CMSSY_API_URL" } },
+          ],
+        },
+        {
+          code: 'export const x = process.env.CMSSY_ORG_SLUG;',
+          filename: registry,
+          options: [{ clientEntries: ["registry/blocks.ts"] }],
+          errors: [
+            { messageId: "readsServerEnv", data: { name: "CMSSY_ORG_SLUG" } },
+          ],
+        },
+      ],
     });
   });
 

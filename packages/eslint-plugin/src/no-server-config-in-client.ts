@@ -6,6 +6,12 @@ const SERVER_MODULES = [/^@cmssy\/next\/server$/];
 
 const SERVER_SYMBOLS = new Set(["defineCmssyConfig"]);
 
+// The bundler inlines NEXT_PUBLIC_* and nothing else, so a CMSSY_* read is
+// server-only by construction. An app that writes its config object by hand
+// imports the type and calls nothing, so this is the only thing about the
+// module that still says server.
+const SERVER_ENV = /^CMSSY_[A-Z0-9_]+$/;
+
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx", ".mjs"];
 
 interface AliasConfig {
@@ -179,7 +185,47 @@ function valueImports(code: string): string[] {
   ].map(([, specifier]) => specifier ?? "");
 }
 
+function readsServerEnv(code: string): boolean {
+  return /\bprocess\s*\.\s*env\s*(?:\.\s*CMSSY_[A-Z0-9_]+|\[\s*["'`]CMSSY_[A-Z0-9_]+["'`]\s*\])/.test(
+    code,
+  );
+}
+
+function serverEnvName(node: unknown): string | null {
+  const member = node as {
+    computed?: boolean;
+    object?: {
+      type?: string;
+      computed?: boolean;
+      object?: { type?: string; name?: string };
+      property?: { type?: string; name?: string };
+    };
+    property?: { type?: string; name?: string; value?: unknown };
+  };
+
+  const env = member.object;
+  if (env?.type !== "MemberExpression" || env.computed) return null;
+  if (env.object?.type !== "Identifier" || env.object.name !== "process") {
+    return null;
+  }
+  if (env.property?.type !== "Identifier" || env.property.name !== "env") {
+    return null;
+  }
+
+  const property = member.property;
+  const name = member.computed
+    ? typeof property?.value === "string"
+      ? property.value
+      : null
+    : property?.type === "Identifier"
+      ? (property.name ?? null)
+      : null;
+
+  return name && SERVER_ENV.test(name) ? name : null;
+}
+
 function importsServerConfig(code: string): boolean {
+  if (readsServerEnv(code)) return true;
   if (
     SERVER_MODULES.some((pattern) =>
       valueImports(code).some((s) => pattern.test(s)),
@@ -270,7 +316,7 @@ export const noServerConfigInClient: Rule.RuleModule = {
     type: "problem",
     docs: {
       description:
-        "Disallow a client component from importing values that read the cmssy server config",
+        "Disallow a client component from importing values that read the cmssy server config, or reading a CMSSY_* variable itself",
     },
     schema: [
       {
@@ -286,9 +332,11 @@ export const noServerConfigInClient: Rule.RuleModule = {
     ],
     messages: {
       reachesConfig:
-        'This client component pulls the cmssy config into the browser bundle, where server env does not exist - the page will fail at runtime with "missing required configuration".\n  {{chain}}\nImport the type instead (types are erased), or move the value into a module that does not touch the config.',
+        'This client component pulls the cmssy config into the browser bundle, where server env does not exist - the page fails at runtime with "missing required configuration", or reads whatever the config falls back to, which is usually "".\n  {{chain}}\nImport the type instead (types are erased), or move the value into a module that does not touch the config.',
       reachesConfigFromEntry:
         "This module is loaded in the browser, so it pulls the cmssy config there, where server env does not exist.\n  {{chain}}\nImport the type instead (types are erased), or load the value with a dynamic import inside the function that needs it.",
+      readsServerEnv:
+        "{{name}} is read here and this module runs in the browser, where it is undefined - the bundler only inlines NEXT_PUBLIC_* names, and a draft secret must never be one.\nRead it in a server component and pass the value down as a prop.",
     },
   },
   create(context) {
@@ -303,6 +351,11 @@ export const noServerConfigInClient: Rule.RuleModule = {
     const messageId = client ? "reachesConfig" : "reachesConfigFromEntry";
 
     return {
+      MemberExpression(node) {
+        const name = serverEnvName(node);
+        if (!name) return;
+        context.report({ node, messageId: "readsServerEnv", data: { name } });
+      },
       ImportDeclaration(node) {
         const typed = node as { importKind?: string };
         const onlyTypes =
