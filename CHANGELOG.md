@@ -6,6 +6,37 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.14.0
+
+**`no-server-config-in-client` no longer needs you to have called
+`defineCmssyConfig`.** The rule decided a module was "the config" by finding
+that call or an import of `@cmssy/next/server`. An app that builds the object
+itself - importing the type, calling nothing - matched neither, so the rule
+walked its imports, found nothing, and reported nothing. Measured on a live
+consumer: a `"use client"` component importing `{ cmssy }` from its config
+linted clean, with every value in that object `""` in the browser.
+
+A `CMSSY_*` variable is server-only by construction, because the bundler inlines
+`NEXT_PUBLIC_*` and nothing else. Reading one is now what marks a module as the
+config, whatever the module calls:
+
+```ts
+// reported from a client component from 12.14.0 - it was silent before
+export const cmssy: CmssyConfig = {
+  org: process.env.CMSSY_ORG_SLUG ?? "",
+  draftSecret: process.env.CMSSY_DRAFT_SECRET ?? "",
+};
+```
+
+The same read **inside** a client component is reported too, on the read itself:
+it evaluates to `undefined` in the browser, and a draft secret must never be a
+`NEXT_PUBLIC_` name to make it work.
+
+**Do I have to do anything?** Lint may now fail where it passed, and every hit is
+a value that is empty or `undefined` in the browser today. Import the type
+instead of the value, or move the read into a server component and pass the
+result down as a prop. `NEXT_PUBLIC_CMSSY_*` reads are untouched.
+
 ## 12.13.0
 
 **`cmssy init` wires the lint rules into your eslint config.** The two rules
