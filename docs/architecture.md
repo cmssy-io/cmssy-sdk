@@ -79,6 +79,13 @@ Nothing in that chain imports a server-only module - and it took a live site
 down (CMS-968). `@cmssy/eslint-plugin` follows the chain across the consumer's
 own files and reports it, which is the only place it can be caught.
 
+The end of that chain is not `defineCmssyConfig`. An app is free to build the
+config object itself, importing the type and calling nothing, and then the only
+thing about the module that still says server is what it reads: a `CMSSY_*`
+variable, which the bundler never inlines because it is not `NEXT_PUBLIC_*`.
+That read is what the rule looks for (CMS-1496), in the module and in the client
+component itself.
+
 ## The rule is enforced, not documented
 
 `packages/core/src/__tests__/framework-boundary.test.ts` fails if **any** file in
