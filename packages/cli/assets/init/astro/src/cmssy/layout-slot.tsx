@@ -63,6 +63,8 @@ export default function LayoutSlot({
             locale={locale}
             defaultLocale={defaultLocale}
             context={context}
+            resolvedContent={resolvedContent?.[block.id]}
+            data={data?.[block.id]}
           />
         ))}
     </>
