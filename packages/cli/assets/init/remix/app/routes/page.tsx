@@ -3,7 +3,9 @@ import {
   buildBlockContext,
   buildBlockMap,
   resolveEditorBlockData,
+  resolveEditorLayoutBlockData,
   type EditorBlockData,
+  type ResolveLayoutBlockDataOptions,
 } from "@cmssy/react";
 import { createCmssyHeaders, createCmssyLoader } from "@cmssy/remix";
 import { cmssy } from "../../cmssy.config";
@@ -13,6 +15,16 @@ import { LayoutSlot } from "../cmssy/layout-slot";
 import type { Route } from "./+types/page";
 
 const cmssyLoader = createCmssyLoader(cmssy, { blocks });
+
+type Position = "header" | "footer";
+
+async function resolveSlot(
+  options: Omit<ResolveLayoutBlockDataOptions, "position">,
+  position: Position,
+) {
+  const resolved = await resolveEditorLayoutBlockData({ ...options, position });
+  return { data: resolved.data, resolvedContent: resolved.content };
+}
 
 export async function loader(args: Route.LoaderArgs) {
   const data = await cmssyLoader(args);
@@ -27,7 +39,27 @@ export async function loader(args: Route.LoaderArgs) {
         config: cmssy,
       });
 
-  return { ...data, blockData: resolved.data, blockContent: resolved.content };
+  const slotOptions = {
+    groups: data.layouts,
+    blocks,
+    locale: data.locale,
+    defaultLocale: data.defaultLocale,
+    enabledLocales: data.enabledLocales,
+    config: cmssy,
+  };
+  const [header, footer] = data.isEdit
+    ? [data.editorData?.header, data.editorData?.footer]
+    : await Promise.all([
+        resolveSlot(slotOptions, "header"),
+        resolveSlot(slotOptions, "footer"),
+      ]);
+
+  return {
+    ...data,
+    blockData: resolved.data,
+    blockContent: resolved.content,
+    layoutData: { header, footer },
+  };
 }
 
 export const headers = createCmssyHeaders(cmssy);
@@ -42,7 +74,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     isEdit,
     editorOrigin,
     diagnostics,
-    editorData,
+    layoutData,
     blockData,
     blockContent,
   } = loaderData;
@@ -51,7 +83,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     return <div dangerouslySetInnerHTML={{ __html: diagnostics }} />;
   }
 
-  const slot = (position: "header" | "footer") => (
+  const slot = (position: Position) => (
     <LayoutSlot
       groups={layouts}
       position={position}
@@ -59,8 +91,8 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
       edit={isEdit ? { editorOrigin } : undefined}
-      data={editorData?.[position]?.data}
-      resolvedContent={editorData?.[position]?.resolvedContent}
+      data={layoutData[position]?.data}
+      resolvedContent={layoutData[position]?.resolvedContent}
     />
   );
 

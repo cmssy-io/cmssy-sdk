@@ -23,19 +23,12 @@ function framework(file: string): string {
 
 const sources = walk(ASSETS).filter((file) => /\.(tsx?|astro)$/.test(file));
 
-const pageBlockRenderers = sources.filter((file) =>
-  readFileSync(file, "utf8").includes("page.blocks"),
-);
+function renderersOf(marker: string): string[] {
+  return sources.filter((file) => readFileSync(file, "utf8").includes(marker));
+}
 
-describe("scaffolded page blocks receive both halves of the resolution", () => {
-  it("finds the render sites", () => {
-    expect(pageBlockRenderers.map(relative).sort()).toEqual([
-      "astro/src/components/Blocks.tsx",
-      "remix/app/routes/page.tsx",
-    ]);
-  });
-
-  for (const file of pageBlockRenderers) {
+function expectBothHalves(renderers: string[]) {
+  for (const file of renderers) {
     const elements =
       readFileSync(file, "utf8").match(/<CmssyBlock\b[\s\S]*?\/>/g) ?? [];
 
@@ -53,18 +46,47 @@ describe("scaffolded page blocks receive both halves of the resolution", () => {
       });
     }
   }
-});
+}
 
-describe("every scaffold that renders page blocks resolves them first", () => {
-  const resolvers = new Set(
-    sources
-      .filter((file) => readFileSync(file, "utf8").includes("resolveEditorBlockData"))
-      .map(framework),
-  );
+function expectResolvedFirst(renderers: string[], resolver: string) {
+  const resolvers = new Set(renderersOf(resolver).map(framework));
 
-  for (const name of new Set(pageBlockRenderers.map(framework))) {
-    it(`${name} calls resolveEditorBlockData`, () => {
+  for (const name of new Set(renderers.map(framework))) {
+    it(`${name} calls ${resolver}`, () => {
       expect(resolvers).toContain(name);
     });
   }
+}
+
+const pageBlockRenderers = renderersOf("page.blocks");
+const layoutBlockRenderers = renderersOf("group.blocks");
+
+describe("scaffolded page blocks receive both halves of the resolution", () => {
+  it("finds the render sites", () => {
+    expect(pageBlockRenderers.map(relative).sort()).toEqual([
+      "astro/src/components/Blocks.tsx",
+      "remix/app/routes/page.tsx",
+    ]);
+  });
+
+  expectBothHalves(pageBlockRenderers);
+});
+
+describe("every scaffold that renders page blocks resolves them first", () => {
+  expectResolvedFirst(pageBlockRenderers, "resolveEditorBlockData");
+});
+
+describe("scaffolded layout blocks receive both halves of the resolution", () => {
+  it("finds the render sites", () => {
+    expect(layoutBlockRenderers.map(relative).sort()).toEqual([
+      "astro/src/cmssy/layout-slot.tsx",
+      "remix/app/cmssy/layout-slot.tsx",
+    ]);
+  });
+
+  expectBothHalves(layoutBlockRenderers);
+});
+
+describe("every scaffold that renders layout blocks resolves them first", () => {
+  expectResolvedFirst(layoutBlockRenderers, "resolveEditorLayoutBlockData");
 });

@@ -1,6 +1,9 @@
 ---
 import { loadCmssyPage } from "@cmssy/astro";
-import { resolveEditorBlockData } from "@cmssy/react";
+import {
+  resolveEditorBlockData,
+  resolveEditorLayoutBlockData,
+} from "@cmssy/react";
 import { cmssy } from "../cmssy.config";
 import { blocks } from "../cmssy/blocks";
 import { Blocks } from "../components/Blocks";
@@ -27,6 +30,19 @@ const { data: blockData, content: blockContent } = await resolveEditorBlockData(
   enabledLocales,
   config: cmssy,
 });
+
+const layoutSlot = {
+  groups: layouts,
+  blocks,
+  locale,
+  defaultLocale,
+  enabledLocales,
+  config: cmssy,
+};
+const [header, footer] = await Promise.all([
+  resolveEditorLayoutBlockData({ ...layoutSlot, position: "header" }),
+  resolveEditorLayoutBlockData({ ...layoutSlot, position: "footer" }),
+]);
 ---
 
 <html lang={locale}>
@@ -41,6 +57,8 @@ const { data: blockData, content: blockContent } = await resolveEditorBlockData(
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
+      data={header.data}
+      resolvedContent={header.content}
     />
     {
       page ? (
@@ -62,6 +80,8 @@ const { data: blockData, content: blockContent } = await resolveEditorBlockData(
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
+      data={footer.data}
+      resolvedContent={footer.content}
     />
   </body>
 </html>
