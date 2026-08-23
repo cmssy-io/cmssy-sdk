@@ -1,5 +1,6 @@
 ---
 import { loadCmssyPage } from "@cmssy/astro";
+import { resolveEditorBlockData } from "@cmssy/react";
 import { cmssy } from "../cmssy.config";
 import { blocks } from "../cmssy/blocks";
 import { Blocks } from "../components/Blocks";
@@ -17,6 +18,15 @@ const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssy
 if (!page) {
   Astro.response.status = 404;
 }
+
+const { data: blockData, content: blockContent } = await resolveEditorBlockData({
+  page,
+  blocks,
+  locale,
+  defaultLocale,
+  enabledLocales,
+  config: cmssy,
+});
 ---
 
 <html lang={locale}>
@@ -39,6 +49,8 @@ if (!page) {
           locale={locale}
           defaultLocale={defaultLocale}
           enabledLocales={enabledLocales}
+          blockData={blockData}
+          blockContent={blockContent}
         />
       ) : (
         <main><h1>Not found</h1></main>
