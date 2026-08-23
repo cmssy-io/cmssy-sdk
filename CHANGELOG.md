@@ -6,6 +6,37 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.14.2
+
+**The same fix as 12.14.1, one level up: `cmssy init`'s Astro and Remix
+scaffolds rendered *layout* blocks with neither `data` nor `resolvedContent`.**
+A header or footer block with a loader or a relation field looked right in the
+editor and wrong on the live site - the edit branch of the generated
+`cmssy/layout-slot.tsx` passed both halves, the public branch passed neither.
+Next apps were never affected: `CmssyServerLayout` resolves per block itself.
+
+Both scaffolds now resolve the layout positions where `await` is already
+available - the Astro frontmatter and the Remix loader - with
+`resolveEditorLayoutBlockData`, which has been public API of `@cmssy/react` all
+along. Nothing in `@cmssy/react`, `@cmssy/astro`, `@cmssy/remix` or
+`@cmssy/next` changed.
+
+**Do I have to do anything?** Nothing if you scaffold with 12.14.2 or later,
+nothing for a Next app, and nothing if your header and footer blocks read only
+plain fields. A site scaffolded earlier that puts a loader or a relation in a
+layout block keeps rendering it unresolved until you copy the fix in:
+
+- `cmssy/layout-slot.tsx`: the public branch passes
+  `data={data?.[block.id]}` and `resolvedContent={resolvedContent?.[block.id]}`
+  to `CmssyBlock`.
+- Astro `src/pages/[...path].astro`: call `resolveEditorLayoutBlockData` for
+  each position and pass the result into that position's `LayoutSlot`.
+- Remix `app/routes/page.tsx`: resolve both positions in the loader on the
+  public path, keep using the adapter's `editorData` on the edit path, and read
+  one map in the component.
+
+Scaffold a throwaway app with the new CLI and diff those files against yours.
+
 ## 12.14.1
 
 **`cmssy init` scaffolded an Astro or Remix site whose blocks never got their
