@@ -1,4 +1,10 @@
-import { CmssyBlock, buildBlockContext, buildBlockMap } from "@cmssy/react";
+import {
+  CmssyBlock,
+  buildBlockContext,
+  buildBlockMap,
+  resolveEditorBlockData,
+  type EditorBlockData,
+} from "@cmssy/react";
 import { createCmssyHeaders, createCmssyLoader } from "@cmssy/remix";
 import { cmssy } from "../../cmssy.config";
 import { blocks } from "../cmssy/blocks";
@@ -6,7 +12,23 @@ import { CmssyEditor } from "../cmssy/editor";
 import { LayoutSlot } from "../cmssy/layout-slot";
 import type { Route } from "./+types/page";
 
-export const loader = createCmssyLoader(cmssy, { blocks });
+const cmssyLoader = createCmssyLoader(cmssy, { blocks });
+
+export async function loader(args: Route.LoaderArgs) {
+  const data = await cmssyLoader(args);
+  const resolved: EditorBlockData = data.isEdit
+    ? { data: {}, content: {} }
+    : await resolveEditorBlockData({
+        page: data.page,
+        blocks,
+        locale: data.locale,
+        defaultLocale: data.defaultLocale,
+        enabledLocales: data.enabledLocales,
+        config: cmssy,
+      });
+
+  return { ...data, blockData: resolved.data, blockContent: resolved.content };
+}
 
 export const headers = createCmssyHeaders(cmssy);
 
@@ -21,6 +43,8 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     editorOrigin,
     diagnostics,
     editorData,
+    blockData,
+    blockContent,
   } = loaderData;
 
   if (diagnostics) {
@@ -82,6 +106,8 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
             locale={locale}
             defaultLocale={defaultLocale}
             context={context}
+            resolvedContent={blockContent[block.id]}
+            data={blockData[block.id]}
           />
         ))}
       </main>
