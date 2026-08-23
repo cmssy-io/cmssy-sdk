@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/eslint-plugin",
-  "version": "12.14.0",
+  "version": "12.14.1",
   "description": "Catches the cmssy wiring mistakes that a build cannot: server config dragged into a client bundle, a provider the editor route never gets.",
   "keywords": [
     "cmssy",
