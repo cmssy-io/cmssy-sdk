@@ -6,6 +6,40 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 12.14.1
+
+**`cmssy init` scaffolded an Astro or Remix site whose blocks never got their
+resolved content.** The generated page rendered `<CmssyBlock>` with neither
+`data` nor `resolvedContent`, so every block fell back to the raw stored
+bucket. Three things silently did not happen: no block loader ran, so `data`
+was always `undefined`; `resolveRelationContent` never ran, so a
+`fields.relation` or `fields.pageSelector` reached the component as the bare id
+string it is stored as, not the record its type promises; and
+`normalizeBlockContent` was skipped, because `CmssyBlock` only normalizes when
+it was handed a schema. Nothing threw. The page rendered, with the wrong
+content.
+
+The Next scaffold was never affected - `CmssyServerLayout` resolves for it.
+
+Both scaffolds now call `resolveEditorBlockData` and pass **both** halves of
+what it returns. `{ data, content }` are different things: `data` is the
+loaders' output, `content` is the resolved content. Taking only `.data` is the
+same bug wearing a different shape.
+
+**Do I have to do anything?** Nothing if you scaffold with 12.14.1 or later,
+and nothing for a Next app. A site scaffolded with 12.14.0 or earlier keeps
+rendering unresolved content until you copy the fix in - `cmssy init` writes
+these files once and never touches them again:
+
+- Astro: `src/pages/[...path].astro` destructures `const { data: blockData,
+  content: blockContent } = await resolveEditorBlockData({...})` and passes
+  `blockContent` into `src/components/Blocks.tsx`, which sets both
+  `data={blockData[block.id]}` and `resolvedContent={blockContent[block.id]}`.
+- Remix: `app/routes/page.tsx` wraps `createCmssyLoader` so the loader returns
+  `blockData` and `blockContent`, and the component passes both down.
+
+Scaffold a throwaway app with the new CLI and diff those files against yours.
+
 ## 12.14.0
 
 **`no-server-config-in-client` no longer needs you to have called
