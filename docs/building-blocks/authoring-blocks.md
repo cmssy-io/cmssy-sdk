@@ -87,6 +87,7 @@ from the schema:
 | `fields.radio`        | Single choice (radios)    | union of its `options`    | `options`                                                        |
 | `fields.multiselect`  | Multiple choice           | array of its `options`    | `options`                                                        |
 | `fields.color`        | Color picker              | `string`                  | `defaultValue`                                                   |
+| `fields.table`        | Table (columns and rows)  | `TableValue`              | `maxColumns`                                                     |
 | `fields.repeater`     | Repeatable group          | array of its `itemSchema` | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible` |
 | `fields.pageSelector` | Page picker               | `PageRef[]`               | `pageType`, `multiple`                                           |
 | `fields.json`         | JSON                      | `JsonValue`               | -                                                                |
@@ -96,6 +97,10 @@ Every control accepts `label`, `helperText`, and `required`.
 
 `required: true` makes the key required in `content`. Everything else is
 optional - the editor lets an author leave a field empty, and the type says so.
+
+`maxColumns` on `fields.table` says how many columns the block can render. cmssy
+warns on a save that goes past it, so a block that lays out three columns says
+so rather than leaving an author to find out from the rendered page.
 
 ```ts
 export const cardProps = {
