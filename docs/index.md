@@ -43,12 +43,12 @@ npx @cmssy/cli link   # connects it to your workspace
 | `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                                                                                                                                                                                     |
 | `@cmssy/eslint-plugin` | Catches what a build cannot: a client component reaching the cmssy config - written with `defineCmssyConfig` or by hand - or reading a `CMSSY_*` variable itself, and a provider mounted on the public root but not on `/cmssy-edit`. `cmssy init` wires it into the app's eslint config. |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                                                                                                                                                                                              |
-| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace.                                                                                                                        |
+| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace; `cmssy sync-manifest` pushes the block and layout manifest from the build.                                             |
 
 ## Documentation map
 
 - **Getting Started** - [Quickstart](./getting-started/quickstart.md): a working headless project end to end.
-- **CLI** - [`cmssy init` + `cmssy add block` + `cmssy link`](./cli.md): generate the wiring, scaffold blocks, then connect a workspace without hand-copying secrets.
+- **CLI** - [`cmssy init` + `cmssy add block` + `cmssy link` + `cmssy sync-manifest`](./cli.md): generate the wiring, scaffold blocks, connect a workspace without hand-copying secrets, push the manifest from the build.
 - **Architecture** - [What lives where, and why](./architecture.md): the layering, and the two outages that forced it.
 - **Frameworks**
   - [Next.js wiring](./wiring.md) - the complete, correct way to mount cmssy. Copy it whole.

@@ -151,6 +151,10 @@ folder is a working example, `codegen` included.
 | `FieldDefinition` `TypedField` | types                        | What a builder returns.                                           |
 | `InferBlockContent`            | type                         | Schema → the `content` object a component receives.               |
 | `evaluateFieldConditionGroup`  | `(group, values) => boolean` | Conditional-field (`showWhen`) evaluation, for a custom renderer. |
+| `buildBlockManifest`           | `(blocks, { category?, regions? }) => BlockManifest` | The manifest `cmssy sync-manifest` pushes: blocks folded with their meta, sorted by type, plus the bridge-shaped regions. |
+| `blocksToSchemas` `blocksToMeta` `layoutRegionsToBridge` `propsToSchema` | functions | The serializers the `cmssy:ready` handshake sends with; `@cmssy/react`'s registry re-exports them. |
+| `registryToManifestBlocks`     | `(schemas, blockMeta) => BlockManifestBlock[]` | The fold from handshake shape to stored manifest shape. |
+| `BlockManifest` `BlockManifestBlock` `BlockManifestSource` | types | What `buildBlockManifest` takes and returns. |
 
 `fields.` builders: `text`, `textarea`, `richText`, `markdown`, `number`, `date`,
 `datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,

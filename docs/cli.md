@@ -1,6 +1,6 @@
 ---
 title: The cmssy CLI
-description: cmssy init generates the cmssy wiring into an existing app; cmssy add block scaffolds and registers a new block; cmssy link connects the app to a workspace; cmssy types generates TypeScript for the workspace models, so a record is typed instead of unknown.
+description: cmssy init generates the cmssy wiring into an existing app; cmssy add block scaffolds and registers a new block; cmssy link connects the app to a workspace; cmssy types generates TypeScript for the workspace models, so a record is typed instead of unknown; cmssy sync-manifest pushes the block and layout manifest from the build.
 ---
 
 # `cmssy init` (@cmssy/cli)
@@ -340,3 +340,77 @@ for (const record of data.public.model.records.items) {
 Commit the generated file and re-run the command after changing a model in the
 CMS - a field you removed there becomes a compile error here, which is the whole
 point.
+
+# `cmssy sync-manifest` (@cmssy/cli)
+
+The editor learns which blocks, layout regions and region settings your site
+declares from the `cmssy:ready` handshake - which fires only when someone opens
+the editor canvas. A deploy that adds a region or a setting is invisible in
+`/layouts` until then. This command sends the same manifest from the build:
+
+```bash
+npx @cmssy/cli sync-manifest
+cmssy sync-manifest --dry-run          # print the manifest, push nothing
+cmssy sync-manifest --blocks lib/registry.ts --config lib/site.ts
+```
+
+Wire it as the `postbuild` step, and set `CMSSY_API_TOKEN` in the deploy
+environment:
+
+```json
+{
+  "scripts": {
+    "build": "next build",
+    "postbuild": "cmssy sync-manifest"
+  }
+}
+```
+
+## What it does
+
+1. Loads `.env.local` and `.env` like the other commands, then compiles and
+   imports the app's own block registry (`cmssy/blocks.ts`, or `src/` / `app/`
+   variants) and config (`cmssy.config.ts`) - the same modules the app renders
+   from, TypeScript, JSX, path aliases and all. Stylesheets and asset imports
+   are dropped; `server-only` is honoured. `--blocks` and `--config` name the
+   files when they live elsewhere.
+2. Serializes them with the functions the handshake itself uses -
+   `blocksToSchemas`, `blocksToMeta` and `layoutRegionsToBridge` from
+   `@cmssy/core`, folded by `buildBlockManifest`. There is no CLI-side copy
+   of the shape to drift: the same input yields byte for byte the manifest an
+   open editor would have pushed.
+3. Resolves the workspace from `--org` / `--workspace`, else the config's
+   `org` and `workspaceSlug`, else `CMSSY_ORG_SLUG` / `CMSSY_WORKSPACE_SLUG`,
+   and confirms the token's user is a member of it.
+4. Calls `blockManifest.save` with the token. The token's user needs the
+   `PAGES_EDIT` permission in that workspace. The backend hashes the manifest
+   and skips the write when it is unchanged, so running the command on every
+   deploy is free.
+
+Every failure is one line with a fix under it, and a non-zero exit: no token,
+no workspace, a workspace the token cannot reach, a registry without an
+`export const blocks` array, a config whose `layout` is not a
+`defineCmssyLayout()` result, a compile error with its file and line, or the
+backend's own validation message when it refuses the manifest.
+
+The config is evaluated for real, so `defineCmssyConfig` sees the same
+environment the build does - a missing `CMSSY_DRAFT_SECRET` fails here the way
+it fails the build.
+
+A site whose config declares no `layout` sends `regions: null`, and the
+backend keeps whatever regions it already stores - the same thing an open
+editor sends for that site. A push whose hash the workspace already holds is
+reported as unchanged.
+
+The command talks to the **admin** API - `https://api.cmssy.io/graphql` by
+default, `CMSSY_API_URL` to override (self-hosted, staging). That is the same
+endpoint `cmssy link` uses and needs the token; it is not the per-workspace
+delivery path (`/public/<org>/<workspace>/graphql`) the quickstart's `apiUrl`
+and `cmssy types` read from without one.
+
+Flags: `--blocks <path>` and `--config <path>` name the modules, relative to
+the working directory or absolute; `--token <cs_...>` overrides
+`CMSSY_API_TOKEN`; `--org <slug>` and `--workspace <slug>` override the config
+and the env; `--dry-run` prints the manifest as JSON and sends nothing;
+`--help` prints the usage. A flag given without a value is an error, never a
+silent fallback.

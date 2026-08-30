@@ -44,6 +44,19 @@ export { fields } from "./fields";
 export { mediaAlt, mediaUrl, mediaUrls } from "./media";
 export type { MediaLike } from "./media";
 export { defineCmssyLayout } from "./layout";
+export {
+  blocksToMeta,
+  blocksToSchemas,
+  buildBlockManifest,
+  layoutRegionsToBridge,
+  propsToSchema,
+  registryToManifestBlocks,
+} from "./manifest";
+export type {
+  BlockManifest,
+  BlockManifestBlock,
+  BlockManifestSource,
+} from "./manifest";
 export type {
   CmssyLayout,
   CmssyRegion,

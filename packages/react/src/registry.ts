@@ -1,12 +1,6 @@
 import type { ComponentType } from "react";
 import type { CmssyBlockContext, InferBlockContent } from "@cmssy/core";
-import type {
-  BlockMeta,
-  BlockPropsSchema,
-  BlockSchema,
-  FieldDefinition,
-  LayoutRegion,
-} from "@cmssy/core";
+import type { BlockPropsSchema, FieldDefinition } from "@cmssy/core";
 
 export interface BlockProps<P extends BlockPropsSchema, D = unknown> {
   content: InferBlockContent<P>;
@@ -118,48 +112,9 @@ export function buildLoaderMap(blocks: BlockDefinition[]): LoaderMap {
   return map;
 }
 
-export function propsToSchema(props: BlockPropsSchema): BlockSchema {
-  const schema: BlockSchema = {};
-  for (const [key, def] of Object.entries(props)) {
-    schema[key] = { ...def, label: def.label || key };
-  }
-  return schema;
-}
-
-export function blocksToSchemas(
-  blocks: BlockDefinition[],
-): Record<string, BlockSchema> {
-  const out: Record<string, BlockSchema> = Object.create(null);
-  for (const block of blocks) out[block.type] = propsToSchema(block.props);
-  return out;
-}
-
-export function layoutRegionsToBridge(
-  regions: readonly LayoutRegion[],
-): LayoutRegion[] {
-  return regions.map((region) =>
-    region.settings
-      ? { ...region, settings: propsToSchema(region.settings) }
-      : { ...region },
-  );
-}
-
-export function blocksToMeta(
-  blocks: BlockDefinition[],
-  defaults: { category?: string } = {},
-): Record<string, BlockMeta> {
-  const out: Record<string, BlockMeta> = Object.create(null);
-  for (const block of blocks) {
-    const category = block.category ?? defaults.category;
-    out[block.type] = {
-      label: block.label ?? block.type,
-      ...(category ? { category } : {}),
-      ...(block.icon ? { icon: block.icon } : {}),
-      ...(block.layoutPositions
-        ? { layoutPositions: block.layoutPositions }
-        : {}),
-      ...(block.description ? { description: block.description } : {}),
-    };
-  }
-  return out;
-}
+export {
+  blocksToMeta,
+  blocksToSchemas,
+  layoutRegionsToBridge,
+  propsToSchema,
+} from "@cmssy/core";
