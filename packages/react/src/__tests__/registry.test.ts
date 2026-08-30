@@ -15,8 +15,7 @@ const Dummy = () => null;
 describe("defineBlock", () => {
   it("returns the definition unchanged", () => {
     const props = { heading: fields.text({ required: true }) };
-    const Typed = ({ content }: BlockProps<typeof props>) =>
-      content.heading;
+    const Typed = ({ content }: BlockProps<typeof props>) => content.heading;
 
     const block = defineBlock({
       type: "typed",
@@ -241,5 +240,17 @@ describe("protocol", () => {
     expect(PROTOCOL_VERSION).toBe(2);
     expect(isProtocolCompatible(2)).toBe(true);
     expect(isProtocolCompatible(1)).toBe(false);
+  });
+});
+
+describe("the manifest serializers are @cmssy/core's, not a copy", () => {
+  it("re-exports the very same functions the CLI serializes with", async () => {
+    const core = await import("@cmssy/core");
+    const registry = await import("../registry");
+
+    expect(registry.blocksToSchemas).toBe(core.blocksToSchemas);
+    expect(registry.blocksToMeta).toBe(core.blocksToMeta);
+    expect(registry.layoutRegionsToBridge).toBe(core.layoutRegionsToBridge);
+    expect(registry.propsToSchema).toBe(core.propsToSchema);
   });
 });

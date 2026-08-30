@@ -30,7 +30,7 @@ npx @cmssy/cli link   # connects it to your workspace
 | `@cmssy/astro`         | Astro bindings: middleware, page loader. Depends on `@cmssy/core`; `@cmssy/react` is a peer - blocks render as React islands.                                                    |
 | `@cmssy/eslint-plugin` | Catches the crash a build cannot: a client component reaching the cmssy config.                                                                                                  |
 | `@cmssy/codemod`       | `npx @cmssy/codemod v5 .` - rewrites imports across a major.                                                                                                                     |
-| `@cmssy/cli`           | [`cmssy init`](docs/cli.md) generates the cmssy wiring; `cmssy link` connects it to a workspace; [`cmssy types`](docs/cli.md#cmssy-types-cmssycli) types the workspace's models. |
+| `@cmssy/cli`           | [`cmssy init`](docs/cli.md) generates the cmssy wiring; `cmssy link` connects it to a workspace; [`cmssy types`](docs/cli.md#cmssy-types-cmssycli) types the workspace's models; [`cmssy sync-manifest`](docs/cli.md#cmssy-sync-manifest-cmssycli) pushes the block and layout manifest from the build. |
 
 ## Docs
 

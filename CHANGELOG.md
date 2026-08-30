@@ -6,6 +6,39 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 14.2.0
+
+**The block and layout manifest is pushed at deploy time, not only from the
+editor.** Until now the manifest - block types, their schemas, the layout
+regions and their settings schemas - reached cmssy only when someone opened the
+editor canvas: a deploy that added a region or a setting was invisible in
+`/layouts` until then. `cmssy sync-manifest` pushes it from the build:
+
+```json
+{
+  "scripts": {
+    "build": "next build",
+    "postbuild": "cmssy sync-manifest"
+  }
+}
+```
+
+It loads the same `cmssy/blocks.ts` and `cmssy.config.ts` the app renders from,
+serializes them with the very functions the `cmssy:ready` handshake uses - now
+exported from `@cmssy/core` as `blocksToSchemas`, `blocksToMeta`,
+`layoutRegionsToBridge` and the folded `buildBlockManifest` - and calls
+`blockManifest.save` with `CMSSY_API_TOKEN`. The token's user needs
+`PAGES_EDIT` in the workspace; a missing token, a missing permission, a
+workspace the token cannot reach and a manifest the backend refuses are each
+reported as exactly that, with a non-zero exit. The push is idempotent: the
+backend hashes the manifest and skips the write when nothing changed.
+`--dry-run` prints the manifest and touches nothing. Docs:
+[the CLI](docs/cli.md#cmssy-sync-manifest-cmssycli), [wiring](docs/wiring.md#9-push-the-manifest-from-the-build).
+
+Nothing to do for an app that does not add the step - the editor handshake
+keeps pushing the manifest as before. `@cmssy/react` still exports the
+serializers from its registry; they are re-exports of `@cmssy/core` now.
+
 ## 14.1.0
 
 **Layout blocks know which page they are on.** `context.page` is no longer

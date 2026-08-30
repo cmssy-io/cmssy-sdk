@@ -18,6 +18,11 @@ export const BAD_TOKEN_HINT: DeniedHint = {
   fix: "create an API token in the cmssy dashboard (Settings → API Tokens) and pass it via --token or CMSSY_API_TOKEN",
 };
 
+export const NEEDS_MANIFEST_WRITE_HINT: DeniedHint = {
+  message: "the token's user cannot write this workspace's block manifest",
+  fix: "the token's user needs the PAGES_EDIT permission in the selected workspace",
+};
+
 export const NEEDS_PAGES_EDIT_HINT: DeniedHint = {
   message: "the token's user cannot read this workspace's settings",
   fix: "the token's user needs the PAGES_EDIT permission in the selected workspace",
@@ -100,8 +105,11 @@ export async function adminGraphql<T>(
         .join("; ")}`,
     );
   }
-  if (!response.ok || envelope?.data === undefined) {
-    throw new CliError(`the cmssy API responded with HTTP ${response.status}`);
+  if (!response.ok || envelope?.data == null) {
+    throw new CliError(
+      `the cmssy API returned no data (HTTP ${response.status})`,
+      "check that CMSSY_API_URL points at the cmssy admin API (https://api.cmssy.io/graphql), not the delivery endpoint",
+    );
   }
   return envelope.data;
 }
@@ -127,6 +135,15 @@ export const UPDATE_PREVIEW_URL_MUTATION = `mutation CliSetPreviewUrl($input: Up
   siteConfig {
     update(input: $input) {
       previewUrl
+    }
+  }
+}`;
+
+export const SAVE_BLOCK_MANIFEST_MUTATION = `mutation CliSaveBlockManifest($blocks: JSON!, $regions: JSON) {
+  blockManifest {
+    save(blocks: $blocks, regions: $regions) {
+      hash
+      updatedAt
     }
   }
 }`;
@@ -167,4 +184,46 @@ export async function setPreviewUrl(
     { input: { previewUrl } },
     { ...options, denied: NEEDS_PAGES_EDIT_HINT },
   );
+}
+
+export const BLOCK_MANIFEST_HASH_QUERY = `query CliBlockManifestHash {
+  blockManifest {
+    get {
+      hash
+    }
+  }
+}`;
+
+export async function fetchBlockManifestHash(
+  options: AdminRequestOptions,
+): Promise<string | null> {
+  const data = await adminGraphql<{
+    blockManifest: { get: { hash: string } | null };
+  }>(
+    BLOCK_MANIFEST_HASH_QUERY,
+    {},
+    {
+      ...options,
+      denied: NEEDS_MANIFEST_WRITE_HINT,
+    },
+  );
+  return data.blockManifest.get?.hash ?? null;
+}
+
+export interface SavedBlockManifest {
+  hash: string;
+  updatedAt: string;
+}
+
+export async function saveBlockManifest(
+  manifest: { blocks: unknown[]; regions: unknown[] | null },
+  options: AdminRequestOptions,
+): Promise<SavedBlockManifest> {
+  const data = await adminGraphql<{
+    blockManifest: { save: SavedBlockManifest };
+  }>(SAVE_BLOCK_MANIFEST_MUTATION, manifest, {
+    ...options,
+    denied: NEEDS_MANIFEST_WRITE_HINT,
+  });
+  return data.blockManifest.save;
 }

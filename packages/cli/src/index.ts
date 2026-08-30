@@ -1,8 +1,10 @@
 import { createInterface } from "node:readline/promises";
 
 import { runAddBlock } from "./add-block";
+import { flagValue, hasFlag } from "./args";
 import { runInit } from "./init";
 import { runLink } from "./link";
+import { runSyncManifest, SYNC_MANIFEST_USAGE } from "./sync-manifest";
 import { runTypes } from "./types-command";
 
 const USAGE = [
@@ -12,17 +14,8 @@ const USAGE = [
   "  cmssy link [--token <cs_...>] [--workspace <slug>] [--preview-url <url>]",
   "  cmssy types [--out <path>] [--operations-out <path>] [--no-operations]",
   "              [--check] [--org <slug>] [--workspace <slug>]",
+  ...SYNC_MANIFEST_USAGE,
 ].join("\n");
-
-function flagValue(args: string[], name: string): string | undefined {
-  const index = args.findIndex((arg) => arg === name);
-  if (index !== -1) return args[index + 1];
-  return args.find((arg) => arg.startsWith(`${name}=`))?.slice(name.length + 1);
-}
-
-function hasFlag(args: string[], name: string): boolean {
-  return args.includes(name);
-}
 
 async function runLinkCommand(args: string[]): Promise<number> {
   const rl = process.stdin.isTTY
@@ -84,6 +77,26 @@ async function main(): Promise<void> {
         check: hasFlag(args, "--check"),
         operationsOut: flagValue(args, "--operations-out"),
         noOperations: hasFlag(args, "--no-operations"),
+      },
+      {
+        cwd: process.cwd(),
+        env: process.env,
+        log: (line) => console.log(line),
+        fetch: globalThis.fetch,
+      },
+    );
+    return;
+  }
+  if (command === "sync-manifest") {
+    process.exitCode = await runSyncManifest(
+      {
+        help: hasFlag(args, "--help"),
+        blocks: flagValue(args, "--blocks"),
+        config: flagValue(args, "--config"),
+        token: flagValue(args, "--token"),
+        org: flagValue(args, "--org"),
+        workspace: flagValue(args, "--workspace"),
+        dryRun: hasFlag(args, "--dry-run"),
       },
       {
         cwd: process.cwd(),

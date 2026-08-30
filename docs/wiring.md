@@ -430,3 +430,24 @@ A build proves the site compiles. It says nothing about whether the site can be
 Called with `baseUrl` and `secret` alone, four of its six assertions stand down
 and say so in `skipped`. An empty `failures` answers "did anything fail", not
 "was anything checked" - print `skipped` in CI. See [testing](testing.md).
+
+## 9. Push the manifest from the build
+
+The editor learns your blocks, regions and region settings from the handshake in
+step 6 - which only fires when someone opens the canvas. Push the same manifest
+from every deploy instead, so a new region or setting shows in `/layouts` the
+moment the build is live:
+
+```json
+{
+  "scripts": {
+    "build": "next build",
+    "postbuild": "cmssy sync-manifest"
+  }
+}
+```
+
+Set `CMSSY_API_TOKEN` in the deploy environment; the token's user needs
+`PAGES_EDIT` in the workspace. The command loads `cmssy/blocks.ts` and
+`cmssy.config.ts` themselves and serializes them with the handshake's own
+functions - see [the CLI](cli.md#cmssy-sync-manifest-cmssycli).
