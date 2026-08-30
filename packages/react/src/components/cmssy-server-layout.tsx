@@ -26,6 +26,7 @@ export interface CmssyServerLayoutProps {
   config?: CmssyClientConfig;
   appContext?: Record<string, unknown>;
   editMode?: boolean;
+  preview?: boolean;
 }
 
 export async function CmssyServerLayout({
@@ -39,6 +40,7 @@ export async function CmssyServerLayout({
   config,
   appContext,
   editMode,
+  preview = false,
 }: CmssyServerLayoutProps) {
   const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
     locale: localeProp,
@@ -60,7 +62,7 @@ export async function CmssyServerLayout({
     locale,
     defaultLocale,
     enabledLocales,
-    false,
+    preview,
     undefined,
     { page, app: appContext },
   );

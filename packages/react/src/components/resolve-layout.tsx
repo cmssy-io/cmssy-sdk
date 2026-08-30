@@ -29,7 +29,10 @@ export interface CmssyLayoutEditableProps {
 export type ResolveCmssyLayoutOptions<
   C extends CmssyConfig,
   P extends CmssyRegionOf<C>,
-> = Omit<ResolveCmssyLayoutSlotOptions, "position" | keyof CmssyLayoutSlotLocaleSource> &
+> = Omit<
+  ResolveCmssyLayoutSlotOptions,
+  "position" | keyof CmssyLayoutSlotLocaleSource
+> &
   CmssyLayoutSlotLocaleSource & {
     position: P;
     editable?: ComponentType<CmssyLayoutEditableProps>;
@@ -86,7 +89,12 @@ export async function resolveCmssyLayout<
         resolvedContent={resolved.resolvedContent}
       />
     ) : (
-      <CmssyServerLayout {...shared} blocks={options.blocks} config={config} />
+      <CmssyServerLayout
+        {...shared}
+        blocks={options.blocks}
+        config={config}
+        preview={slotOptions.preview}
+      />
     );
 
   return {

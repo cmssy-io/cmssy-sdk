@@ -87,6 +87,29 @@ describe("scaffolded layout blocks receive both halves of the resolution", () =>
   expectBothHalves(layoutBlockRenderers);
 });
 
+describe("scaffolded layout slots receive the routed page (CMS-1708)", () => {
+  const sites = [
+    "astro/src/pages/[...path].astro",
+    "astro/src/pages/cmssy-edit/[...path].astro",
+    "remix/app/routes/page.tsx",
+  ];
+  for (const site of sites) {
+    it(`${site} passes page={pageContext} to every layout slot`, () => {
+      const source = readFileSync(join(ASSETS, site), "utf8");
+      const slots = source.match(/<LayoutSlot\b[\s\S]*?\/>/g) ?? [];
+      expect(slots.length).toBeGreaterThan(0);
+      for (const slot of slots) expect(slot).toContain("page={pageContext}");
+    });
+  }
+  for (const file of layoutBlockRenderers) {
+    it(`${relative(file)} builds the block context from the page it was given`, () => {
+      const source = readFileSync(file, "utf8");
+      expect(source).toMatch(/buildBlockContext\([\s\S]*?\{ page \}/);
+      expect(source).toMatch(/<CmssyLazyLayout[\s\S]*?page=\{page\}/);
+    });
+  }
+});
+
 describe("every scaffold that renders layout blocks resolves them first", () => {
   expectResolvedFirst(layoutBlockRenderers, "resolveEditorLayoutBlockData");
 });

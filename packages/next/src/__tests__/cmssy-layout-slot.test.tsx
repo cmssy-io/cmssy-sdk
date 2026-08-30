@@ -43,9 +43,7 @@ const Header = ({
 }: {
   content: { brand?: string };
   data?: unknown;
-}) => (
-  <header data-page={JSON.stringify(data ?? null)}>{content.brand}</header>
-);
+}) => <header data-page={JSON.stringify(data ?? null)}>{content.brand}</header>;
 
 const blocks = [
   defineBlock({
@@ -225,6 +223,28 @@ describe("CmssyLayoutSlot", () => {
     expect(element.props.edit).toEqual({ editorOrigin: CONFIG.editorOrigin });
   });
 
+  it("renders a draftMode visitor's chrome server-side: preview fetches the draft, not the editable (CMS-1708)", async () => {
+    setup();
+
+    const element = await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks,
+      position: "header",
+      path: ["docs"],
+      editMode: false,
+      preview: true,
+      editable: Editable,
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/docs", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
+    expect(element.type).toBe(CmssyServerLayout);
+    expect(element.props.preview).toBe(true);
+    expect(element.props).not.toHaveProperty("edit");
+  });
+
   it("hands the bridge every editor origin, not just the first (CMS-1096)", async () => {
     const origins = ["https://cmssy.io", "https://www.cmssy.io"];
     setup();
@@ -319,7 +339,9 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     const tree = await renderServerElement(received!.element);
     expect(tree).toBe(await renderServerElement(plain));
     expect(tree).toContain('"brand":"Shop"');
-    expect(tree).toContain('"data":{"slug":"/docs","path":["docs"],"pageType":null}');
+    expect(tree).toContain(
+      '"data":{"slug":"/docs","path":["docs"],"pageType":null}',
+    );
   });
 
   it("returns what children render, wrapped so the slot stays a single node", async () => {

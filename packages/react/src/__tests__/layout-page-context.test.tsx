@@ -66,11 +66,40 @@ describe("a layout block's loader sees the routed page (CMS-1708)", () => {
       slug: "/docs/blocks",
       path: ["docs", "blocks"],
     });
-    expect(seen).toHaveBeenCalledWith({
+    const context = seen.mock.calls[0]?.[0];
+    expect(context).toStrictEqual({
       slug: "/docs/blocks",
       path: ["docs", "blocks"],
       pageType: null,
     });
+    expect(context).not.toHaveProperty("id");
+  });
+
+  it("runs the loaders as a preview when the layout is a draft the visitor asked for", async () => {
+    const previews = vi.fn();
+    const html = renderToStaticMarkup(
+      await CmssyServerLayout({
+        ...shared,
+        blocks: [
+          defineBlock({
+            type: "docs-sidebar",
+            label: "Docs sidebar",
+            component: Sidebar,
+            layoutPositions: ["sidebar_left"],
+            props: {},
+            loader: async ({ context }: { context?: CmssyBlockContext }) => {
+              previews(context?.isPreview);
+              return context?.isPreview ?? null;
+            },
+          }),
+        ],
+        page: { slug: "/docs" },
+        preview: true,
+      }),
+    );
+
+    expect(previews).toHaveBeenCalledWith(true);
+    expect(html).toContain("<nav>true</nav>");
   });
 
   it("in the public render: the page prop reaches the loader and the component", async () => {

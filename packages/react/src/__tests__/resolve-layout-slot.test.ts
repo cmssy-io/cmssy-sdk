@@ -198,6 +198,26 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(missing.settings).toBeNull();
   });
 
+  it("fetches the draft for a preview visitor without going through the editor half (CMS-1708)", async () => {
+    setup();
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      preview: true,
+      path: [],
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "build",
+    });
+    expect(resolveEditorLayoutBlockData).not.toHaveBeenCalled();
+    expect(result.data).toBeUndefined();
+    expect(result.editorOrigin).toBeUndefined();
+  });
+
   it("returns every configured editor origin, not the first", async () => {
     setup();
 

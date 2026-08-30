@@ -16,13 +16,20 @@ import { nextRetryMode } from "../retry-mode";
 export type CmssyLayoutSlotRenderProps<
   C extends CmssyConfig = CmssyConfig,
   P extends CmssyRegionOf<C> = CmssyRegionOf<C>,
-> = Pick<CmssyLayoutResolution<C, P>, "groups" | "settings" | "page" | "element">;
+> = Pick<
+  CmssyLayoutResolution<C, P>,
+  "groups" | "settings" | "page" | "element"
+>;
 
-interface CmssyLayoutSlotBaseProps<C extends CmssyConfig, P extends CmssyRegionOf<C>> {
+interface CmssyLayoutSlotBaseProps<
+  C extends CmssyConfig,
+  P extends CmssyRegionOf<C>,
+> {
   config: C;
   blocks: BlockDefinition[];
   position: P;
   editMode: boolean;
+  preview?: boolean;
   page?: string;
   editable: ComponentType<CmssyLayoutEditableProps>;
   appContext?: Record<string, unknown>;
@@ -48,6 +55,7 @@ export async function CmssyLayoutSlot<
   path,
   locale: explicitLocale,
   editMode,
+  preview,
   page,
   editable,
   appContext,
@@ -58,6 +66,7 @@ export async function CmssyLayoutSlot<
     position,
     blocks,
     editMode,
+    preview,
     editable,
     ...(page !== undefined ? { page } : {}),
     appContext,

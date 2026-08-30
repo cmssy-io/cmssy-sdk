@@ -18,6 +18,7 @@ interface ResolveCmssyLayoutSlotBase {
   position: string;
   blocks: BlockDefinition[];
   editMode: boolean;
+  preview?: boolean;
   page?: string;
   forms?: Record<string, CmssyFormDefinition>;
   appContext?: Record<string, unknown>;
@@ -55,6 +56,7 @@ export async function resolveCmssyLayoutSlot(
     position,
     blocks,
     editMode,
+    preview = false,
     page: explicitPage,
     forms,
     appContext,
@@ -75,7 +77,7 @@ export async function resolveCmssyLayoutSlot(
   const page = layoutSlotPage(explicitPage ?? "/" + slugSegments.join("/"));
 
   const groups = await fetchLayouts(config, page.slug, {
-    previewSecret: editMode ? config.draftSecret : undefined,
+    previewSecret: editMode || preview ? config.draftSecret : undefined,
     ...requestOptions,
   });
 

@@ -29,7 +29,10 @@ export const layout = defineCmssyLayout({
     {
       id: "sidebar_left",
       label: "Aside",
-      settings: { showOnMobile: fields.boolean({ label: "Show on mobile" }) },
+      settings: {
+        showOnMobile: fields.boolean({ label: "Show on mobile" }),
+        width: fields.number({ label: "Width (rem)" }),
+      },
     },
   ],
 });
@@ -347,6 +350,14 @@ and is `null` until someone authors it. When the region decides something
 outside the slot's own subtree, `resolveCmssyLayout(cmssy, { position, path,
 blocks, editMode, editable })` from `@cmssy/next/server` returns the same
 `{ groups, settings, element }` for you to place.
+
+A `draftMode()` visitor is not the editor: they want the draft chrome, rendered
+server-side like everyone else's. That is `preview`, not `editMode` -
+`<CmssyLayoutSlot editMode={false} preview={draft} ...>` fetches the layouts
+with the draft secret, renders `CmssyServerLayout` on the server and runs the
+loaders with `context.isPreview` set. `editMode` alone would render the
+client-side editable (no chrome in the HTML); `editMode={false}` alone would
+show the published chrome under a draft page.
 
 Every layout block, in both modes, sees the routed page as `context.page` -
 `{ slug, path }` - so a block that renders "the section I am in" reads

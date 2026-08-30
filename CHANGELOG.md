@@ -25,9 +25,18 @@ for this - switch it to `context.page.path` and drop the prop.
 **`CmssyLayoutSlot` shows you what it fetched.** The slot takes a render prop:
 
 ```tsx
-<CmssyLayoutSlot config={cmssy} blocks={blocks} position="sidebar" path={path} editMode={false} editable={EditableLayout}>
+<CmssyLayoutSlot
+  config={cmssy}
+  blocks={blocks}
+  position="sidebar"
+  path={path}
+  editMode={false}
+  editable={EditableLayout}
+>
   {({ groups, settings, element }) =>
-    groups.some((g) => g.position === "sidebar" && g.blocks.some((b) => b.isActive)) ? (
+    groups.some(
+      (g) => g.position === "sidebar" && g.blocks.some((b) => b.isActive),
+    ) ? (
       <aside style={{ width: settings?.width }}>{element}</aside>
     ) : null
   }
@@ -49,8 +58,19 @@ the data before it can decide on its shell. Exported from `@cmssy/next/server`
 (with the Next retry default), `@cmssy/astro`, `@cmssy/remix` and
 `@cmssy/react`. In edit mode it needs `editable` and refuses without it.
 
-`@cmssy/types` 0.39.0: `CmssyBlockPage.id` is optional and `path: string[]`
-is new; `BuildBlockContextExtra.page` accepts a partial page.
+**Migration - `context.page.id` is now optional.** `@cmssy/types` 0.39.0 makes
+`CmssyBlockPage.id` optional: a page block still always has it, a layout block
+receives `page` without `id` unless the caller had the page fetched. Code that
+reads `context.page?.id` as a `string` no longer type-checks - guard it
+(`if (!context.page?.id) return null`). `path: string[]` is new;
+`BuildBlockContextExtra.page` accepts a partial page.
+
+**`preview` on the layout slot.** A `draftMode()` visitor wants the draft
+chrome rendered server-side, which is neither `editMode` (client-side editable,
+no chrome in the HTML) nor the published layouts. `CmssyLayoutSlot`,
+`resolveCmssyLayout`, `resolveCmssyLayoutSlot` and `CmssyServerLayout` take
+`preview?: boolean`: the layouts are fetched with the draft secret, rendered
+with `CmssyServerLayout`, and the loaders run with `context.isPreview`.
 
 ## 14.0.0
 

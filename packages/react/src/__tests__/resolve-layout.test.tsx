@@ -106,6 +106,26 @@ describe("resolveCmssyLayout", () => {
     expect(layout.element.props.data).toBeDefined();
   });
 
+  it("renders a preview visitor's draft server-side, as the public layout with preview on", async () => {
+    setup();
+
+    const layout = await resolveCmssyLayout(CONFIG, {
+      position: "sidebar",
+      blocks: [],
+      editMode: false,
+      preview: true,
+      path: [],
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(
+      CONFIG,
+      "/",
+      expect.objectContaining({ previewSecret: CONFIG.draftSecret }),
+    );
+    expect(layout.element.type).toBe(CmssyServerLayout);
+    expect(layout.element.props.preview).toBe(true);
+  });
+
   it("refuses edit mode without an editable component instead of rendering a dead bridge", async () => {
     setup();
 
