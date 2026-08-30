@@ -23,7 +23,7 @@ const hero = {
 
 const header = {
   type: "header",
-  layoutPositions: ["header"],
+  layoutRegions: ["header"],
   props: { logo: fields.media() },
 };
 
@@ -72,7 +72,7 @@ describe("buildBlockManifest", () => {
       {
         type: "header",
         label: "header",
-        layoutPositions: ["header"],
+        layoutRegions: ["header"],
         schema: { logo: { ...fields.media(), label: "logo" } },
       },
       {
@@ -134,9 +134,9 @@ describe("buildBlockManifest", () => {
     ]);
   });
 
-  it("drops a layoutPositions list that is empty", () => {
-    const manifest = buildBlockManifest([{ ...header, layoutPositions: [] }]);
+  it("drops a layoutRegions list that is empty", () => {
+    const manifest = buildBlockManifest([{ ...header, layoutRegions: [] }]);
 
-    expect(manifest.blocks[0]).not.toHaveProperty("layoutPositions");
+    expect(manifest.blocks[0]).not.toHaveProperty("layoutRegions");
   });
 });

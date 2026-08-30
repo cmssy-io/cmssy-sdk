@@ -29,7 +29,7 @@ describe("resolveCmssyLayout (@cmssy/next/server)", () => {
     resolveWithReact.mockResolvedValue({ groups: [] });
 
     await resolveCmssyLayout(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -42,7 +42,7 @@ describe("resolveCmssyLayout (@cmssy/next/server)", () => {
 
     delete process.env.NEXT_PHASE;
     await resolveCmssyLayout(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -58,7 +58,7 @@ describe("resolveCmssyLayout (@cmssy/next/server)", () => {
     resolveWithReact.mockResolvedValue(resolution);
 
     const result = await resolveCmssyLayout(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],

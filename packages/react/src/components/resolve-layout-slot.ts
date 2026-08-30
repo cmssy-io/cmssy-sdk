@@ -15,7 +15,7 @@ import type { BlockDefinition } from "../registry";
 import { resolveEditorLayoutBlockData } from "./resolve-block-data";
 
 interface ResolveCmssyLayoutSlotBase {
-  position: string;
+  region: string;
   blocks: BlockDefinition[];
   editMode: boolean;
   preview?: boolean;
@@ -53,7 +53,7 @@ export async function resolveCmssyLayoutSlot(
   options: ResolveCmssyLayoutSlotOptions,
 ): Promise<CmssyLayoutSlotResolution> {
   const {
-    position,
+    region,
     blocks,
     editMode,
     preview = false,
@@ -83,7 +83,7 @@ export async function resolveCmssyLayoutSlot(
 
   const base = {
     groups,
-    settings: groups.find((g) => g.position === position)?.settings ?? null,
+    settings: groups.find((g) => g.region === region)?.settings ?? null,
     page,
     locale,
     defaultLocale: siteLocales.defaultLocale,
@@ -96,7 +96,7 @@ export async function resolveCmssyLayoutSlot(
   const editorData = await resolveEditorLayoutBlockData({
     groups,
     blocks,
-    position,
+    region,
     page,
     locale,
     defaultLocale: siteLocales.defaultLocale,

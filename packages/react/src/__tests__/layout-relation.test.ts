@@ -19,14 +19,14 @@ const blocks = [
     type: "site-header",
     label: "Header",
     component: () => null,
-    layoutPositions: ["header"],
+    layoutRegions: ["header"],
     props: headerProps,
   }),
 ];
 
 const groups = [
   {
-    position: "header",
+    region: "header",
     blocks: [
       {
         id: "h1",
@@ -93,7 +93,7 @@ describe("a relation field in a layout block", () => {
     const result = await resolveEditorLayoutBlockData({
       groups,
       blocks,
-      position: "header",
+      region: "header",
       locale: "en",
       defaultLocale: "en",
       enabledLocales: ["en"],
@@ -119,7 +119,7 @@ describe("a relation field in a layout block", () => {
     await resolveEditorLayoutBlockData({
       groups: [
         {
-          position: "header",
+          region: "header",
           blocks: [
             {
               id: "h1",
@@ -136,11 +136,11 @@ describe("a relation field in a layout block", () => {
           type: "site-header",
           label: "Header",
           component: () => null,
-          layoutPositions: ["header"],
+          layoutRegions: ["header"],
           props: { brand: fields.text() },
         }),
       ],
-      position: "header",
+      region: "header",
       locale: "en",
       defaultLocale: "en",
       enabledLocales: ["en"],

@@ -21,14 +21,14 @@ const blocks = [
     type: "site-header",
     label: "Header",
     component: Header,
-    layoutPositions: ["header"],
+    layoutRegions: ["header"],
     props: headerProps,
   }),
 ];
 
 const groups = [
   {
-    position: "header",
+    region: "header",
     blocks: [
       {
         id: "h2",
@@ -68,7 +68,7 @@ function setParent(value: unknown) {
 function patchEvent(
   blockId: string,
   content: Record<string, unknown>,
-  layoutPosition?: string,
+  layoutRegion?: string,
 ) {
   return new MessageEvent("message", {
     origin: editorOrigin,
@@ -77,7 +77,7 @@ function patchEvent(
       type: "cmssy:patch",
       blockId,
       content,
-      layoutPosition,
+      layoutRegion,
       protocolVersion: PROTOCOL_VERSION,
     },
   });
@@ -94,12 +94,12 @@ describe("CmssyEditableLayout", () => {
     setParent(window);
   });
 
-  it("renders active blocks for the position, sorted by order, filtering inactive, tagged with data-layout-position", () => {
+  it("renders active blocks for the region, sorted by order, filtering inactive, tagged with data-layout-region", () => {
     const { container } = render(
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
       />,
@@ -110,7 +110,7 @@ describe("CmssyEditableLayout", () => {
     expect(headers).toEqual(["First", "Second"]);
     expect(container.textContent).not.toContain("Off");
     const wrapper = container.querySelector('[data-block-id="h1"]');
-    expect(wrapper?.getAttribute("data-layout-position")).toBe("header");
+    expect(wrapper?.getAttribute("data-layout-region")).toBe("header");
     expect(wrapper?.getAttribute("draggable")).toBeNull();
   });
 
@@ -119,7 +119,7 @@ describe("CmssyEditableLayout", () => {
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
         page={{ slug: "/docs" }}
@@ -133,7 +133,7 @@ describe("CmssyEditableLayout", () => {
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
         page={{ slug: "/pricing" }}
@@ -142,12 +142,12 @@ describe("CmssyEditableLayout", () => {
     expect(pageOf()).toBe("/pricing");
   });
 
-  it("renders nothing for a position with no active blocks", () => {
+  it("renders nothing for a region with no active blocks", () => {
     const { container } = render(
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="footer"
+        region="footer"
         locale="en"
         edit={{ editorOrigin }}
       />,
@@ -155,12 +155,12 @@ describe("CmssyEditableLayout", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("live-patches a layout block on a matching-position cmssy:patch", async () => {
+  it("live-patches a layout block on a matching-region cmssy:patch", async () => {
     const { container } = render(
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
       />,
@@ -173,12 +173,12 @@ describe("CmssyEditableLayout", () => {
     expect(container.textContent).not.toContain("First");
   });
 
-  it("ignores a cmssy:patch targeting a different layout position", async () => {
+  it("ignores a cmssy:patch targeting a different layout region", async () => {
     const { container } = render(
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
       />,
@@ -190,12 +190,12 @@ describe("CmssyEditableLayout", () => {
     expect(container.textContent).not.toContain("Footer");
   });
 
-  it("ignores a page-scoped cmssy:patch (no layoutPosition)", async () => {
+  it("ignores a page-scoped cmssy:patch (no layoutRegion)", async () => {
     const { container } = render(
       <CmssyEditableLayout
         groups={groups}
         blocks={blocks}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
       />,

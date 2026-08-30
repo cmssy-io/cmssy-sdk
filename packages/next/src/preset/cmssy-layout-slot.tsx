@@ -27,7 +27,7 @@ interface CmssyLayoutSlotBaseProps<
 > {
   config: C;
   blocks: BlockDefinition[];
-  position: P;
+  region: P;
   editMode: boolean;
   preview?: boolean;
   page?: string;
@@ -51,7 +51,7 @@ export async function CmssyLayoutSlot<
 >({
   config,
   blocks,
-  position,
+  region,
   path,
   locale: explicitLocale,
   editMode,
@@ -63,7 +63,7 @@ export async function CmssyLayoutSlot<
   children,
 }: CmssyLayoutSlotProps<C, P>) {
   const layout = await resolveCmssyLayout(config, {
-    position,
+    region,
     blocks,
     editMode,
     preview,

@@ -29,7 +29,7 @@ export interface ReadyMessage {
     id: string;
     type: string;
     bounds: BlockRect;
-    layoutPosition?: string;
+    layoutRegion?: string;
   }>;
   schemas: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
@@ -47,7 +47,7 @@ export interface ClickMessage {
   type: "cmssy:click";
   blockId: string;
   rect: BlockRect;
-  layoutPosition?: string;
+  layoutRegion?: string;
 }
 
 export interface DeselectMessage {
@@ -107,7 +107,7 @@ export interface PatchMessage {
   content: Record<string, unknown>;
   style?: Record<string, unknown>;
   advanced?: Record<string, unknown>;
-  layoutPosition?: string;
+  layoutRegion?: string;
 }
 
 export interface ParentReadyMessage {

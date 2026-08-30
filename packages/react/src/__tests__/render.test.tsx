@@ -340,7 +340,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
   it("renders only active layout blocks sorted by order", async () => {
     const groups = [
       {
-        position: "footer",
+        region: "footer",
         blocks: [
           {
             id: "f2",
@@ -370,7 +370,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
       await CmssyServerLayout({
         groups,
         blocks: [heroBlock],
-        position: "footer",
+        region: "footer",
         locale: "en",
       }),
     );
@@ -389,7 +389,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
       await CmssyServerLayout({
         groups: [
           {
-            position: "header",
+            region: "header",
             blocks: [
               {
                 id: "h1",
@@ -402,7 +402,7 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
           },
         ],
         blocks: [headerBlock],
-        position: "header",
+        region: "header",
         locale: "en",
       }),
     );

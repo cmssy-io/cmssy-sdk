@@ -10,9 +10,9 @@ const CONFIG = {
 };
 
 const GROUPS = [
-  { position: "header", blocks: [{ id: "b1", type: "site-header" }] },
+  { region: "header", blocks: [{ id: "b1", type: "site-header" }] },
   {
-    position: "sidebar_left",
+    region: "sidebar_left",
     blocks: [],
     settings: { width: 18, sticky: true },
   },
@@ -55,7 +55,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -73,7 +73,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: true,
       path: [],
@@ -91,7 +91,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: ["no", "about"],
@@ -109,7 +109,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       locale: "no",
@@ -122,7 +122,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: ["no", "about"],
@@ -139,7 +139,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: true,
       path: ["no", "docs", "blocks"],
@@ -156,7 +156,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: ["about"],
@@ -174,7 +174,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const sidebar = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "sidebar_left",
+      region: "sidebar_left",
       blocks: [],
       editMode: false,
       path: [],
@@ -182,7 +182,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(sidebar.settings).toStrictEqual({ width: 18, sticky: true });
 
     const header = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -190,7 +190,7 @@ describe("resolveCmssyLayoutSlot", () => {
     expect(header.settings).toBeNull();
 
     const missing = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "footer",
+      region: "footer",
       blocks: [],
       editMode: false,
       path: [],
@@ -202,7 +202,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       preview: true,
@@ -222,7 +222,7 @@ describe("resolveCmssyLayoutSlot", () => {
     setup();
 
     const result = await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: true,
       path: [],
@@ -237,7 +237,7 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     setup();
 
     await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -254,7 +254,7 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     setup();
 
     await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],
@@ -274,7 +274,7 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     setup();
 
     await resolveCmssyLayoutSlot(CONFIG, {
-      position: "header",
+      region: "header",
       blocks: [],
       editMode: false,
       path: [],

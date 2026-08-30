@@ -63,7 +63,7 @@ export type {
   CmssyRegionSettings,
   CmssyRegionSettingsOf,
 } from "./layout";
-export type { LayoutPosition, LayoutRegion } from "@cmssy/types";
+export type { LayoutRegionId, LayoutRegion } from "@cmssy/types";
 export type {
   BlockPropsSchema,
   FieldControl,

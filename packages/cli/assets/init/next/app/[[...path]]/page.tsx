@@ -22,11 +22,11 @@ const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 
 export default async function Page(props: PageProps) {
   const { path } = await props.params;
-  const slot = (position: CmssyRegion<typeof layout>) => (
+  const slot = (region: CmssyRegion<typeof layout>) => (
     <CmssyLayoutSlot
       config={cmssy}
       blocks={blocks}
-      position={position}
+      region={region}
       path={path ?? []}
       editMode={false}
       editable={EditableLayout}

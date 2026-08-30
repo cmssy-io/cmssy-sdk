@@ -16,7 +16,7 @@ const CONFIG = {
 
 const GROUPS = [
   {
-    position: "sidebar",
+    region: "sidebar",
     blocks: [
       {
         id: "b1",
@@ -59,7 +59,7 @@ describe("resolveCmssyLayout", () => {
     setup();
 
     const layout = await resolveCmssyLayout(CONFIG, {
-      position: "sidebar",
+      region: "sidebar",
       blocks: [],
       editMode: false,
       path: ["no", "docs"],
@@ -72,7 +72,7 @@ describe("resolveCmssyLayout", () => {
     expect(layout.element.type).toBe(CmssyServerLayout);
     expect(layout.element.props).toMatchObject({
       groups: GROUPS,
-      position: "sidebar",
+      region: "sidebar",
       page: { slug: "/docs", path: ["docs"] },
       locale: "no",
       defaultLocale: "en",
@@ -86,7 +86,7 @@ describe("resolveCmssyLayout", () => {
     setup();
 
     const layout = await resolveCmssyLayout(CONFIG, {
-      position: "sidebar",
+      region: "sidebar",
       blocks: [],
       editMode: true,
       editable: Editable,
@@ -97,7 +97,7 @@ describe("resolveCmssyLayout", () => {
     expect(layout.element.type).toBe(Editable);
     expect(layout.element.props).toMatchObject({
       groups: GROUPS,
-      position: "sidebar",
+      region: "sidebar",
       page: { slug: "/docs", path: ["docs"] },
       edit: { editorOrigin: CONFIG.editorOrigin },
       appContext: { flag: true },
@@ -110,7 +110,7 @@ describe("resolveCmssyLayout", () => {
     setup();
 
     const layout = await resolveCmssyLayout(CONFIG, {
-      position: "sidebar",
+      region: "sidebar",
       blocks: [],
       editMode: false,
       preview: true,
@@ -131,7 +131,7 @@ describe("resolveCmssyLayout", () => {
 
     await expect(
       resolveCmssyLayout(CONFIG, {
-        position: "sidebar",
+        region: "sidebar",
         blocks: [],
         editMode: true,
         path: [],

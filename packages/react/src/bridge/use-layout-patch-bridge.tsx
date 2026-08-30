@@ -3,7 +3,7 @@ import type { EditBridgeConfig, PatchMap } from "./use-edit-bridge";
 import { parseEditorMessage } from "@cmssy/core";
 
 export function useLayoutPatchBridge(
-  position: string,
+  region: string,
   config: EditBridgeConfig,
 ): PatchMap {
   const [patches, setPatches] = useState<PatchMap>({});
@@ -22,7 +22,7 @@ export function useLayoutPatchBridge(
       if (!message) return;
       if (
         message.type === "cmssy:patch" &&
-        message.layoutPosition === position
+        message.layoutRegion === region
       ) {
         setPatches((prev) => ({
           ...prev,
@@ -32,7 +32,7 @@ export function useLayoutPatchBridge(
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [config.editorOrigin, position]);
+  }, [config.editorOrigin, region]);
 
   return patches;
 }

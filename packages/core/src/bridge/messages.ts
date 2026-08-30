@@ -88,8 +88,8 @@ export function parseEditorMessage(
             protocolVersion: PROTOCOL_VERSION,
             ...(isObject(data.style) ? { style: data.style } : {}),
             ...(isObject(data.advanced) ? { advanced: data.advanced } : {}),
-            ...(typeof data.layoutPosition === "string"
-              ? { layoutPosition: data.layoutPosition }
+            ...(typeof data.layoutRegion === "string"
+              ? { layoutRegion: data.layoutRegion }
               : {}),
           }
         : null;

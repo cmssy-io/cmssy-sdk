@@ -70,13 +70,13 @@ The loader data carries `layoutRegions` - your declaration - so the route can
 pass it to `CmssyEditor` as `edit={{ editorOrigin, layoutRegions }}`; that is
 how the editor learns which regions this site has.
 
-`editorData` is keyed by position, because the header and the footer hold
+`editorData` is keyed by region, because the header and the footer hold
 different blocks and resolve to different data. Hand it to the slot:
 
 ```tsx
 <LayoutSlot
   groups={layouts}
-  position="header"
+  region="header"
   page={pageContext}
   locale={locale}
   defaultLocale={defaultLocale}

@@ -23,9 +23,9 @@ vi.mock("@cmssy/core/internal", async (importActual) => {
   return { ...actual, fetchPage };
 });
 
-function slotFor(position: string, editMode: boolean) {
+function slotFor(region: string, editMode: boolean) {
   return {
-    groups: [{ position, blocks: [] }],
+    groups: [{ region, blocks: [] }],
     locale: "en",
     defaultLocale: "en",
     enabledLocales: ["en"],
@@ -33,8 +33,8 @@ function slotFor(position: string, editMode: boolean) {
     page: { slug: "/about", path: ["about"] },
     ...(editMode
       ? {
-          data: { [`${position}-block`]: { categories: [] } },
-          resolvedContent: { [`${position}-block`]: { heading: position } },
+          data: { [`${region}-block`]: { categories: [] } },
+          resolvedContent: { [`${region}-block`]: { heading: region } },
           editorOrigin: "https://cmssy.io",
         }
       : {}),
@@ -46,7 +46,7 @@ afterEach(() => vi.clearAllMocks());
 describe("loadCmssyPage", () => {
   it("exposes the routed page the layout blocks were resolved for (CMS-1708)", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
     const result = await loadCmssyPage(
@@ -63,7 +63,7 @@ describe("loadCmssyPage", () => {
 
   it("resolves editor data for every declared region, not the header/footer pair", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
     const layout = defineCmssyLayout({
@@ -83,7 +83,7 @@ describe("loadCmssyPage", () => {
 
   it("hands the declared layout regions to the page, and nothing when undeclared", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
     const request = new Request("https://site.test/about");
@@ -97,9 +97,9 @@ describe("loadCmssyPage", () => {
     expect("layoutRegions" in bare).toBe(false);
   });
 
-  it("resolves the editor data for every position, not just the first", async () => {
+  it("resolves the editor data for every region, not just the first", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -122,7 +122,7 @@ describe("loadCmssyPage", () => {
 
   it("resolves nothing for the editor on a published request", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -157,7 +157,7 @@ describe("loadCmssyPage", () => {
 describe("loadCmssyPage path handling", () => {
   it("does not slice the edit prefix out of a page slugged like it", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -172,7 +172,7 @@ describe("loadCmssyPage path handling", () => {
 
   it("strips the edit prefix when it really is one", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -189,7 +189,7 @@ describe("loadCmssyPage path handling", () => {
 describe("loadCmssyPage edit-mode detection", () => {
   it("treats a verified edit URL as edit mode, with no header at all", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -210,7 +210,7 @@ describe("loadCmssyPage edit-mode detection", () => {
 
   it("does not open edit mode for an unverified URL", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
 
@@ -229,7 +229,7 @@ describe("loadCmssyPage edit-mode detection", () => {
 describe("loadCmssyPage retry policy (CMS-1460)", () => {
   function arrange() {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
     return new URL("https://site.test/about");
@@ -292,7 +292,7 @@ describe("loadCmssyPage retry policy (CMS-1460)", () => {
 describe("loadCmssyPage render mode (CMS-1463)", () => {
   function arrange() {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
-      Promise.resolve(slotFor(options.position, options.editMode)),
+      Promise.resolve(slotFor(options.region, options.editMode)),
     );
     fetchPage.mockResolvedValue({ id: "p1" });
     return new URL("https://site.test/about");

@@ -20,13 +20,13 @@ import type { Route } from "./+types/page";
 
 const cmssyLoader = createCmssyLoader(cmssy, { blocks });
 
-type Position = CmssyRegion<typeof layout>;
+type Region = CmssyRegion<typeof layout>;
 
 async function resolveSlot(
-  options: Omit<ResolveLayoutBlockDataOptions, "position">,
-  position: Position,
+  options: Omit<ResolveLayoutBlockDataOptions, "region">,
+  region: Region,
 ) {
-  const resolved = await resolveEditorLayoutBlockData({ ...options, position });
+  const resolved = await resolveEditorLayoutBlockData({ ...options, region });
   return { data: resolved.data, resolvedContent: resolved.content };
 }
 
@@ -90,17 +90,17 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     return <div dangerouslySetInnerHTML={{ __html: diagnostics }} />;
   }
 
-  const slot = (position: Position) => (
+  const slot = (region: Region) => (
     <LayoutSlot
       groups={layouts}
-      position={position}
+      region={region}
       page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
       edit={isEdit ? { editorOrigin } : undefined}
-      data={layoutData[position]?.data}
-      resolvedContent={layoutData[position]?.resolvedContent}
+      data={layoutData[region]?.data}
+      resolvedContent={layoutData[region]?.resolvedContent}
     />
   );
 

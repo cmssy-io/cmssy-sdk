@@ -6,6 +6,7 @@ import { transform as transformV7 } from "./v7";
 import { transform as transformV8 } from "./v8";
 import { transform as transformV9 } from "./v9";
 import { transform as transformV12 } from "./v12";
+import { transform as transformV15 } from "./v15";
 
 const TRANSFORMS = {
   v5: transformV5,
@@ -13,6 +14,7 @@ const TRANSFORMS = {
   v8: transformV8,
   v9: transformV9,
   v12: transformV12,
+  v15: transformV15,
 };
 type Version = keyof typeof TRANSFORMS;
 
@@ -22,6 +24,7 @@ const PREVIOUS_MAJOR: Record<Version, string> = {
   v8: "7.x",
   v9: "8.x",
   v12: "11.x",
+  v15: "14.x",
 };
 
 const MIGRATION_GUIDE: Record<Version, string> = {
@@ -30,6 +33,7 @@ const MIGRATION_GUIDE: Record<Version, string> = {
   v8: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v7-to-v8.md",
   v9: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v8-to-v9.md",
   v12: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v11-to-v12.md",
+  v15: "https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/migrations/v14-to-v15.md",
 };
 
 const SKIP = new Set(["node_modules", "dist", "build", "out", "coverage"]);
@@ -58,7 +62,7 @@ async function main(): Promise<void> {
   const version = args[0] as Version;
   const transform = TRANSFORMS[version];
   if (!transform) {
-    console.error("usage: cmssy-codemod v5|v7|v8|v9|v12 [path] [--dry]");
+    console.error("usage: cmssy-codemod v5|v7|v8|v9|v12|v15 [path] [--dry]");
     process.exitCode = 1;
     return;
   }

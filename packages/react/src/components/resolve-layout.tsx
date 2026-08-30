@@ -15,7 +15,7 @@ import {
 
 export interface CmssyLayoutEditableProps {
   groups: CmssyLayoutGroup[];
-  position: string;
+  region: string;
   page?: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
@@ -31,10 +31,10 @@ export type ResolveCmssyLayoutOptions<
   P extends CmssyRegionOf<C>,
 > = Omit<
   ResolveCmssyLayoutSlotOptions,
-  "position" | keyof CmssyLayoutSlotLocaleSource
+  "region" | keyof CmssyLayoutSlotLocaleSource
 > &
   CmssyLayoutSlotLocaleSource & {
-    position: P;
+    region: P;
     editable?: ComponentType<CmssyLayoutEditableProps>;
   };
 
@@ -72,7 +72,7 @@ export async function resolveCmssyLayout<
     resolved;
   const shared = {
     groups,
-    position: options.position,
+    region: options.region,
     page,
     locale,
     defaultLocale,

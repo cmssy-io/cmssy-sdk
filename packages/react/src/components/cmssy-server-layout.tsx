@@ -18,7 +18,7 @@ import type { LayoutBlockPage } from "./resolve-block-data";
 export interface CmssyServerLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
-  position: string;
+  region: string;
   page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
@@ -32,7 +32,7 @@ export interface CmssyServerLayoutProps {
 export async function CmssyServerLayout({
   groups,
   blocks,
-  position,
+  region,
   page,
   locale: localeProp,
   defaultLocale: defaultLocaleProp,
@@ -48,7 +48,7 @@ export async function CmssyServerLayout({
     enabledLocales: enabledLocalesProp,
     config,
   });
-  const group = groups.find((g) => g.position === position);
+  const group = groups.find((g) => g.region === region);
   const layoutBlocks: RawLayoutBlock[] = group
     ? group.blocks
         .filter((b) => b.isActive !== false)

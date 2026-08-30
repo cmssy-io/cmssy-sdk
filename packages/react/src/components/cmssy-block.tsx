@@ -25,7 +25,7 @@ export interface CmssyBlockProps {
   schema?: Record<string, FieldDefinition>;
   editable?: boolean;
   editMode?: boolean;
-  layoutPosition?: string;
+  layoutRegion?: string;
   context?: CmssyBlockContext;
   data?: unknown;
 }
@@ -42,7 +42,7 @@ export function CmssyBlock({
   schema,
   editable,
   editMode,
-  layoutPosition,
+  layoutRegion,
   context,
   data,
 }: CmssyBlockProps) {
@@ -56,7 +56,7 @@ export function CmssyBlock({
     <div
       data-block-id={block.id}
       data-block-type={block.type}
-      data-layout-position={layoutPosition}
+      data-layout-region={layoutRegion}
       draggable={editable || undefined}
       style={hidden ? { display: "none" } : undefined}
     >

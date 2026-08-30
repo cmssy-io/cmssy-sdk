@@ -138,7 +138,7 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug
   public {
     page {
       layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
-        position
+        region
         blocks { id type content style advanced order isActive }
         settings
       }

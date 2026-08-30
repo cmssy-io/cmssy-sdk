@@ -41,6 +41,7 @@ npx @cmssy/cli link   # connects it to your workspace
 | [**Troubleshooting**](docs/troubleshooting.md)        | Symptom → cause. Every row cost us half a day, and none of them failed a build.                          |
 | [**Testing**](docs/testing.md)                        | `checkCmssyEditMode` - the editor is the one path a build cannot check.                                  |
 | [**API reference**](docs/reference/sdk-api.md)        | Every public export, with signatures: gateway, editor wiring, blocks.                                    |
+| [**Migrating to v15**](docs/migrations/v14-to-v15.md) | One word for layout regions: `layoutRegions`, `region=`, `CmssyLayoutGroup.region`. Codemod: `npx @cmssy/codemod v15 ./`. |
 | [**Migrating to v14**](docs/migrations/v13-to-v14.md) | Region settings are yours to declare. `CmssyLayoutSettings` is gone; `group.settings` is the JSON of your schema.     |
 | [**Migrating to v13**](docs/migrations/v12-to-v13.md) | Layout regions are yours to declare. `layoutPositionValues` is gone; `position` is typed to your config. |
 | [**Migrating to v12**](docs/migrations/v11-to-v12.md) | A media value is the asset's identity, not its address; read `url` off it.                               |
@@ -74,7 +75,7 @@ export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 
 Where a layout block can live is yours to declare: `defineCmssyLayout({ regions })`
 in `cmssy.config.ts` names the regions, the editor shows exactly those, and the
-slot's `position` is typed to them. The header and footer are layout **blocks**, so they need a slot of their own -
+slot's `region` is typed to them. The header and footer are layout **blocks**, so they need a slot of their own -
 one that fetches with the preview secret in edit mode and renders through the
 edit bridge. On Next that slot is `CmssyLayoutSlot` from `@cmssy/next/server`,
 and `cmssy init` mounts it for you; the client half it renders in edit mode

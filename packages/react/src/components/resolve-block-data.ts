@@ -96,7 +96,7 @@ export async function resolveBlockData(
 export interface ResolveLayoutBlockDataOptions {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
-  position: string;
+  region: string;
   page?: LayoutBlockPage;
   locale: string;
   defaultLocale: string;
@@ -110,7 +110,7 @@ export interface ResolveLayoutBlockDataOptions {
 export async function resolveEditorLayoutBlockData({
   groups,
   blocks,
-  position,
+  region,
   page,
   locale,
   defaultLocale,
@@ -120,7 +120,7 @@ export async function resolveEditorLayoutBlockData({
   config,
   appContext,
 }: ResolveLayoutBlockDataOptions): Promise<EditorBlockData> {
-  const group = groups.find((g) => g.position === position);
+  const group = groups.find((g) => g.region === region);
   const layoutBlocks: RawLayoutBlock[] = group
     ? group.blocks
         .filter((b) => b.isActive !== false)
