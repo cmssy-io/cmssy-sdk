@@ -1,3 +1,5 @@
+import type { CmssyLayout } from "./layout";
+
 export const DEFAULT_CMSSY_EDITOR_ORIGINS = [
   "https://cmssy.io",
   "https://www.cmssy.io",
@@ -51,7 +53,7 @@ export function resolveEditorOrigin(
   return fromEnv;
 }
 
-export interface CmssyConfig {
+export interface CmssyConfig<L extends CmssyLayout = CmssyLayout> {
   apiUrl?: string;
   org: string;
   workspaceSlug: string;
@@ -60,10 +62,15 @@ export interface CmssyConfig {
   editorOrigin?: string | string[];
   siteUrl?: string;
   resolveLocale?: () => string | Promise<string>;
+  layout?: L;
 }
 
-export type CmssyEnvConfig = Omit<
-  CmssyConfig,
+export type CmssyRegionOf<C extends CmssyConfig> = NonNullable<
+  C["layout"]
+>["regions"][number]["id"];
+
+export type CmssyEnvConfig<L extends CmssyLayout = CmssyLayout> = Omit<
+  CmssyConfig<L>,
   "org" | "workspaceSlug" | "draftSecret"
 > & {
   org?: string;
@@ -77,8 +84,10 @@ const REQUIRED_CONFIG_ENV = [
   ["draftSecret", "CMSSY_DRAFT_SECRET"],
 ] as const;
 
-export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
-  const resolved: CmssyEnvConfig = { ...config };
+export function defineCmssyConfig<L extends CmssyLayout = CmssyLayout>(
+  config: CmssyEnvConfig<L>,
+): CmssyConfig<L> {
+  const resolved: CmssyEnvConfig<L> = { ...config };
   const missing: string[] = [];
   for (const [key, env] of REQUIRED_CONFIG_ENV) {
     const value = config[key];
@@ -107,5 +116,5 @@ export function defineCmssyConfig(config: CmssyEnvConfig): CmssyConfig {
       )}\nSet the listed environment variables (e.g. in .env.local) and restart the dev server.`,
     );
   }
-  return resolved as CmssyConfig;
+  return resolved as CmssyConfig<L>;
 }

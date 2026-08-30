@@ -33,11 +33,16 @@ editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 
 ### Config
 
-| Export              | Signature                                 | Notes                                                          |
-| ------------------- | ----------------------------------------- | -------------------------------------------------------------- |
-| `defineCmssyConfig` | `(config: CmssyEnvConfig) => CmssyConfig` | Validates env-sourced values; throws naming every missing one. |
-| `CmssyConfig`       | type                                      | The validated config (see [below](#config-types)).             |
-| `CmssyEnvConfig`    | type                                      | The same with the required fields widened to `\| undefined`.   |
+| Export              | Signature                                       | Notes                                                                                                                    |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `defineCmssyConfig` | `(config: CmssyEnvConfig<L>) => CmssyConfig<L>` | Validates env-sourced values; throws naming every missing one.                                                           |
+| `defineCmssyLayout` | `({ regions }) => CmssyLayout`                  | Declares the layout regions the site has; throws on a bad id, a duplicate, more than 20, or a label over 100 characters. |
+| `CmssyConfig`       | type                                            | The validated config (see [below](#config-types)).                                                                       |
+| `CmssyEnvConfig`    | type                                            | The same with the required fields widened to `\| undefined`.                                                             |
+| `CmssyLayout`       | type                                            | `{ regions: readonly LayoutRegion[] }`; `LayoutRegion` is `{ id, label? }`.                                              |
+| `CmssyRegion<L>`    | type                                            | The union of region ids a `CmssyLayout` declares.                                                                        |
+| `LayoutPosition`    | type                                            | `string` - kept as an alias; prefer `CmssyRegion`.                                                                       |
+| `CmssyRegionOf<C>`  | type                                            | The same, read off a `CmssyConfig`; `string` when no layout is declared.                                                 |
 
 ### Gateway
 
@@ -232,6 +237,14 @@ Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
 `CmssyEditablePage`, `CmssyEditableLayout`, `useEditBridge`, `EditBridgeConfig`.
 
+`EditBridgeConfig` is `{ editorOrigin, schemas?, blockMeta?, layoutRegions? }`.
+`layoutRegions` is the site's `config.layout.regions`; when present it rides
+along in `cmssy:ready` so the editor lists exactly those regions. Next fills it
+in from the config inside `createCmssyPage`; on Astro and React Router the
+page result / loader data carries it back as `layoutRegions` for you to pass
+to `CmssyEditor`. The same field picks the positions `loadCmssyPage` and
+`createCmssyLoader` resolve editor data for, unless you pass `positions`.
+
 ### Editor data
 
 | Export                         | Signature                                 |
@@ -263,14 +276,14 @@ the middleware preset.
 
 ### `@cmssy/next/server`
 
-| Export                                    | Signature                                                                           | Use in                        |
-| ----------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------- |
-| `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                       | `app/[[...path]]/page.tsx`    |
-| `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                       | `app/cmssy-edit/[[...path]]/` |
-| `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                        | `app/api/draft/route.ts`      |
-| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`            | any route                     |
-| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half | any adapter                   |
-| `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic         | `/cmssy-edit` only            |
+| Export                                    | Signature                                                                                                        | Use in                        |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                                                    | `app/[[...path]]/page.tsx`    |
+| `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                                                    | `app/cmssy-edit/[[...path]]/` |
+| `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                                                     | `app/api/draft/route.ts`      |
+| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `position` is typed to `config.layout` | any route                     |
+| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                              | any adapter                   |
+| `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic                                      | `/cmssy-edit` only            |
 
 ```ts
 interface CreateCmssyPageOptions {
@@ -429,5 +442,6 @@ interface CmssyConfig {
   devToken?: string; // cs_… API token; opts into editor-controlled dev preview (development only)
   siteUrl?: string; // canonical origin, for your own SEO code
   resolveLocale?: () => string | Promise<string>; // fallback for URLs that carry no language; the workspace owns the locale set
+  layout?: CmssyLayout; // defineCmssyLayout({ regions }) - the regions a layout block can live in; absent = header + footer
 }
 ```

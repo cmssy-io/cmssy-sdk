@@ -34,16 +34,16 @@ npx @cmssy/cli link   # connects it to your workspace
 
 ## Packages
 
-| Package                | Use it for                                                                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@cmssy/core`          | The foundation: delivery client, config, secrets, webhooks, the editor protocol, `checkCmssyEditMode`. No framework.                                               |
-| `@cmssy/react`         | Rendering: block registry (`defineBlock`, `fields`), `CmssyServerPage`, the edit bridge, hooks.                                                                    |
-| `@cmssy/next`          | Next.js. One entry per runtime: `/server` (RSC + route handlers), `/middleware` (edge), `/client` (browser).                                                       |
-| `@cmssy/astro`         | Astro: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                                               |
-| `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                                                              |
-| `@cmssy/eslint-plugin` | Catches what a build cannot: a client component reaching the cmssy config - written with `defineCmssyConfig` or by hand - or reading a `CMSSY_*` variable itself, and a provider mounted on the public root but not on `/cmssy-edit`. `cmssy init` wires it into the app's eslint config.  |
-| `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                                                                       |
-| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace. |
+| Package                | Use it for                                                                                                                                                                                                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@cmssy/core`          | The foundation: delivery client, config, secrets, webhooks, the editor protocol, `checkCmssyEditMode`. No framework.                                                                                                                                                                      |
+| `@cmssy/react`         | Rendering: block registry (`defineBlock`, `fields`), `CmssyServerPage`, the edit bridge, hooks.                                                                                                                                                                                           |
+| `@cmssy/next`          | Next.js. One entry per runtime: `/server` (RSC + route handlers), `/middleware` (edge), `/client` (browser).                                                                                                                                                                              |
+| `@cmssy/astro`         | Astro: middleware, page loader, sitemap, robots. Depends on `@cmssy/core` alone - no React, no Next.                                                                                                                                                                                      |
+| `@cmssy/remix`         | React Router 7: loader, framing CSP, sitemap, robots.                                                                                                                                                                                                                                     |
+| `@cmssy/eslint-plugin` | Catches what a build cannot: a client component reaching the cmssy config - written with `defineCmssyConfig` or by hand - or reading a `CMSSY_*` variable itself, and a provider mounted on the public root but not on `/cmssy-edit`. `cmssy init` wires it into the app's eslint config. |
+| `@cmssy/codemod`       | `npx @cmssy/codemod v8 .` - rewrites imports across a major.                                                                                                                                                                                                                              |
+| `@cmssy/cli`           | `cmssy init` generates the cmssy wiring into an existing app; `cmssy add block` scaffolds and registers a new block; `cmssy link` connects the app to a workspace.                                                                                                                        |
 
 ## Documentation map
 
@@ -63,7 +63,7 @@ npx @cmssy/cli link   # connects it to your workspace
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
 - **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.
 - **Releasing** - [How these packages reach npm](./releasing.md): trusted publishing, the publish order, and why schema drift is not a PR gate.
-- **Migrating** - [v10 → v11](./migrations/v10-to-v11.md) · [v9 → v10](./migrations/v9-to-v10.md) · [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
+- **Migrating** - [v12 → v13](./migrations/v12-to-v13.md) · [v11 → v12](./migrations/v11-to-v12.md) · [v10 → v11](./migrations/v10-to-v11.md) · [v9 → v10](./migrations/v9-to-v10.md) · [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
 - **Reference**
   - [API reference](./reference/sdk-api.md) - every export.
   - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.

@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_CMSSY_EDITOR_ORIGINS } from "@cmssy/core";
+import {
+  DEFAULT_CMSSY_EDITOR_ORIGINS,
+  defineCmssyLayout,
+  type CmssyConfig,
+} from "@cmssy/core";
 
 import { createCmssyHeaders, createCmssyLoader } from "../loader";
 
@@ -15,7 +19,7 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: "draft-secret-1234",
-} as never;
+} as unknown as CmssyConfig;
 
 function stubApi() {
   const calls: Array<Record<string, unknown>> = [];
@@ -59,6 +63,32 @@ afterEach(() => {
 });
 
 describe("createCmssyLoader", () => {
+  it("resolves editor data for every declared region, not the header/footer pair", async () => {
+    stubApi();
+    const layout = defineCmssyLayout({
+      regions: [{ id: "header" }, { id: "promo" }],
+    });
+    const data = await createCmssyLoader({ ...CONFIG, layout })({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+      ),
+    });
+    expect(Object.keys(data.editorData ?? {})).toEqual(["header", "promo"]);
+  });
+
+  it("hands the declared layout regions to the route, and nothing when undeclared", async () => {
+    stubApi();
+    const layout = defineCmssyLayout({ regions: [{ id: "header" }] });
+    const declared = await createCmssyLoader({ ...CONFIG, layout })({
+      request: new Request("https://shop.test/about"),
+    });
+    expect(declared.layoutRegions).toEqual([{ id: "header" }]);
+    const bare = await createCmssyLoader(CONFIG)({
+      request: new Request("https://shop.test/about"),
+    });
+    expect("layoutRegions" in bare).toBe(false);
+  });
+
   it("reads the language off the path - the prefix IS the language", async () => {
     stubApi();
     const data = await createCmssyLoader(CONFIG)({
@@ -117,10 +147,7 @@ describe("createCmssyLoader", () => {
   it("refuses an explicit wildcard outside development (CMS-1092)", async () => {
     vi.stubEnv("NODE_ENV", "production");
     stubApi();
-    const load = createCmssyLoader({
-      ...(CONFIG as Record<string, unknown>),
-      editorOrigin: "*",
-    } as never);
+    const load = createCmssyLoader({ ...CONFIG, editorOrigin: "*" });
 
     await expect(
       load({ request: new Request("https://shop.test/about") }),

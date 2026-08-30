@@ -5,6 +5,7 @@ import {
   type BlockMeta,
   type BlockRect,
   type BlockSchema,
+  type LayoutRegion,
 } from "@cmssy/core";
 import { parseEditorMessage, postToEditor } from "@cmssy/core";
 import { resolveInitialTarget } from "@cmssy/core/internal";
@@ -19,6 +20,7 @@ export interface EditBridgeConfig {
   editorOrigin: string | string[];
   schemas?: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
+  layoutRegions?: readonly LayoutRegion[] | undefined;
 }
 
 export type PatchMap = Partial<Record<string, Record<string, unknown>>>;
@@ -208,6 +210,9 @@ export function useEditBridge(
           capabilities: canDetectInvisibleBlocks()
             ? ["shortcuts", "invisible-blocks"]
             : ["shortcuts"],
+          ...(config.layoutRegions
+            ? { layoutRegions: [...config.layoutRegions] }
+            : {}),
         });
       } catch (error) {
         if (typeof console !== "undefined") {

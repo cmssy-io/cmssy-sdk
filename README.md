@@ -34,20 +34,22 @@ npx @cmssy/cli link   # connects it to your workspace
 
 ## Docs
 
-|                                                       |                                                                                                 |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [**Architecture**](docs/architecture.md)              | What lives in which package, and why. The framework is an adapter, never the foundation.        |
-| [**Reference wiring**](docs/wiring.md)                | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other.      |
-| [**Troubleshooting**](docs/troubleshooting.md)        | Symptom → cause. Every row cost us half a day, and none of them failed a build.                 |
-| [**Testing**](docs/testing.md)                        | `checkCmssyEditMode` - the editor is the one path a build cannot check.                         |
-| [**API reference**](docs/reference/sdk-api.md)        | Every public export, with signatures: gateway, editor wiring, blocks.                           |
-| [**Migrating to v11**](docs/migrations/v10-to-v11.md) | Public routes were never cached. `editMode` is now a prop, and you generate your static params. |
-| [**Migrating to v10**](docs/migrations/v9-to-v10.md)  | The SDK stopped mirroring the graph. Your queries, your SEO, your auth.                         |
-| [**Migrating to v9**](docs/migrations/v8-to-v9.md)    | The config locale override is gone. The workspace languages rule everywhere.                    |
-| [**Migrating to v8**](docs/migrations/v7-to-v8.md)    | A block's content is typed by its schema. A renamed field is now a build error.                 |
-| [**Migrating to v5**](docs/migrations/v4-to-v5.md)    | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not.                  |
-| [**Migrating to v4**](docs/migrations/v3-to-v4.md)    | The editor moved to its own route. Skip this and your preview goes blank.                       |
-| [**Changelog**](CHANGELOG.md)                         | Every entry answers one question: do I have to do anything?                                     |
+|                                                       |                                                                                                          |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [**Architecture**](docs/architecture.md)              | What lives in which package, and why. The framework is an adapter, never the foundation.                 |
+| [**Reference wiring**](docs/wiring.md)                | The complete, correct way to mount cmssy - copy it whole. The pieces depend on each other.               |
+| [**Troubleshooting**](docs/troubleshooting.md)        | Symptom → cause. Every row cost us half a day, and none of them failed a build.                          |
+| [**Testing**](docs/testing.md)                        | `checkCmssyEditMode` - the editor is the one path a build cannot check.                                  |
+| [**API reference**](docs/reference/sdk-api.md)        | Every public export, with signatures: gateway, editor wiring, blocks.                                    |
+| [**Migrating to v13**](docs/migrations/v12-to-v13.md) | Layout regions are yours to declare. `layoutPositionValues` is gone; `position` is typed to your config. |
+| [**Migrating to v12**](docs/migrations/v11-to-v12.md) | A media value is the asset's identity, not its address; read `url` off it.                               |
+| [**Migrating to v11**](docs/migrations/v10-to-v11.md) | Public routes were never cached. `editMode` is now a prop, and you generate your static params.          |
+| [**Migrating to v10**](docs/migrations/v9-to-v10.md)  | The SDK stopped mirroring the graph. Your queries, your SEO, your auth.                                  |
+| [**Migrating to v9**](docs/migrations/v8-to-v9.md)    | The config locale override is gone. The workspace languages rule everywhere.                             |
+| [**Migrating to v8**](docs/migrations/v7-to-v8.md)    | A block's content is typed by its schema. A renamed field is now a build error.                          |
+| [**Migrating to v5**](docs/migrations/v4-to-v5.md)    | One command: `npx @cmssy/codemod v5 .`. The imports moved; the wiring did not.                           |
+| [**Migrating to v4**](docs/migrations/v3-to-v4.md)    | The editor moved to its own route. Skip this and your preview goes blank.                                |
+| [**Changelog**](CHANGELOG.md)                         | Every entry answers one question: do I have to do anything?                                              |
 
 ## Wiring, the short version
 
@@ -69,7 +71,9 @@ export const dynamic = "force-dynamic"; //  preview is blank.
 export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 ```
 
-The header and footer are layout **blocks**, so they need a slot of their own -
+Where a layout block can live is yours to declare: `defineCmssyLayout({ regions })`
+in `cmssy.config.ts` names the regions, the editor shows exactly those, and the
+slot's `position` is typed to them. The header and footer are layout **blocks**, so they need a slot of their own -
 one that fetches with the preview secret in edit mode and renders through the
 edit bridge. On Next that slot is `CmssyLayoutSlot` from `@cmssy/next/server`,
 and `cmssy init` mounts it for you; the client half it renders in edit mode

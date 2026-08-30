@@ -1,6 +1,6 @@
 export { defineCmssyConfig } from "./config";
 export { resolveEditorOrigin, DEFAULT_CMSSY_EDITOR_ORIGINS } from "./config";
-export type { CmssyConfig, CmssyEnvConfig } from "./config";
+export type { CmssyConfig, CmssyEnvConfig, CmssyRegionOf } from "./config";
 
 export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
@@ -44,8 +44,9 @@ export type {
 export { fields } from "./fields";
 export { mediaAlt, mediaUrl, mediaUrls } from "./media";
 export type { MediaLike } from "./media";
-export { layoutPositionValues } from "@cmssy/types";
-export type { LayoutPosition } from "@cmssy/types";
+export { defineCmssyLayout } from "./layout";
+export type { CmssyLayout, CmssyRegion } from "./layout";
+export type { LayoutPosition, LayoutRegion } from "@cmssy/types";
 export type {
   BlockPropsSchema,
   FieldControl,

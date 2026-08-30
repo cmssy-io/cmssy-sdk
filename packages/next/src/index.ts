@@ -1,5 +1,6 @@
 export {
   defineCmssyConfig,
+  defineCmssyLayout,
   resolveEditorOrigin,
   DEFAULT_CMSSY_EDITOR_ORIGINS,
   CMSSY_EDIT_HEADER,
@@ -13,6 +14,10 @@ export {
 export type {
   CmssyConfig,
   CmssyEnvConfig,
+  CmssyLayout,
+  CmssyRegion,
+  CmssyRegionOf,
+  LayoutRegion,
   CmssyPageData,
   CmssyPageMeta,
   CmssyPageSummary,

@@ -7,8 +7,12 @@ import {
   type EditorBlockData,
   type ResolveLayoutBlockDataOptions,
 } from "@cmssy/react";
-import { createCmssyHeaders, createCmssyLoader } from "@cmssy/remix";
-import { cmssy } from "../../cmssy.config";
+import {
+  createCmssyHeaders,
+  createCmssyLoader,
+  type CmssyRegion,
+} from "@cmssy/remix";
+import { cmssy, type layout } from "../../cmssy.config";
 import { blocks } from "../cmssy/blocks";
 import { CmssyEditor } from "../cmssy/editor";
 import { LayoutSlot } from "../cmssy/layout-slot";
@@ -16,7 +20,7 @@ import type { Route } from "./+types/page";
 
 const cmssyLoader = createCmssyLoader(cmssy, { blocks });
 
-type Position = "header" | "footer";
+type Position = CmssyRegion<typeof layout>;
 
 async function resolveSlot(
   options: Omit<ResolveLayoutBlockDataOptions, "position">,
@@ -73,6 +77,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     enabledLocales,
     isEdit,
     editorOrigin,
+    layoutRegions,
     diagnostics,
     layoutData,
     blockData,
@@ -105,7 +110,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
           locale={locale}
           defaultLocale={defaultLocale}
           enabledLocales={enabledLocales}
-          edit={{ editorOrigin }}
+          edit={{ editorOrigin, layoutRegions }}
         />
         {slot("footer")}
       </>

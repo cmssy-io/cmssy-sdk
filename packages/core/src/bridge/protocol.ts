@@ -4,6 +4,7 @@ import type {
   BlockSchema,
   BlockMeta,
   BlockRect,
+  LayoutRegion,
 } from "@cmssy/types";
 
 export const PROTOCOL_VERSION = 2;
@@ -33,6 +34,7 @@ export interface ReadyMessage {
   schemas: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
   capabilities?: string[];
+  layoutRegions?: LayoutRegion[];
 }
 
 export interface BoundsMessage {

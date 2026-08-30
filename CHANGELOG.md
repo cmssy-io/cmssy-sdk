@@ -6,10 +6,35 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 13.0.0
+
+**Layout regions are yours to declare.** `defineCmssyLayout({ regions })` in
+`cmssy.config.ts` names the places a layout block can live on your site - a
+header, a footer, a sidebar, a cookie bar - and the editor's Layouts page shows
+exactly those, nothing else. `CmssyLayoutSlot`'s `position` is typed to the
+ids you declared (`CmssyRegion<typeof layout>` is that union for your own
+code), so a slot for a region you never declared does not compile. The edit
+page announces the declaration to the editor in `cmssy:ready`; Next does it
+inside `createCmssyPage`, Astro and React Router hand it back as
+`layoutRegions` for you to pass to `CmssyEditor`.
+
+**Breaking:** `layoutPositionValues` is gone from `@cmssy/core` and
+`@cmssy/react`, and `LayoutPosition` is `string` instead of the six-name
+union - cmssy no longer knows a fixed list of positions. `@cmssy/types` moves
+to 0.37.0. The declaration files now use a `const` type parameter, so the
+consumer needs TypeScript 5.0 or newer.
+
+**Do I have to do anything?** Add `layout` to your config (a site without it
+keeps the old `header` + `footer` pair), replace `LayoutPosition` /
+`layoutPositionValues` in your own code with `CmssyRegion<typeof layout>` /
+`layout.regions`, and on Astro or React Router pass `layoutRegions` through to
+`CmssyEditor`. [Migration guide](docs/migrations/v12-to-v13.md). `cmssy init`
+scaffolds all of this from 13.0.0 on.
+
 ## 12.14.2
 
 **The same fix as 12.14.1, one level up: `cmssy init`'s Astro and Remix
-scaffolds rendered *layout* blocks with neither `data` nor `resolvedContent`.**
+scaffolds rendered _layout_ blocks with neither `data` nor `resolvedContent`.**
 A header or footer block with a loader or a relation field looked right in the
 editor and wrong on the live site - the edit branch of the generated
 `cmssy/layout-slot.tsx` passed both halves, the public branch passed neither.
@@ -63,7 +88,7 @@ rendering unresolved content until you copy the fix in - `cmssy init` writes
 these files once and never touches them again:
 
 - Astro: `src/pages/[...path].astro` destructures `const { data: blockData,
-  content: blockContent } = await resolveEditorBlockData({...})` and passes
+content: blockContent } = await resolveEditorBlockData({...})` and passes
   `blockContent` into `src/components/Blocks.tsx`, which sets both
   `data={blockData[block.id]}` and `resolvedContent={blockContent[block.id]}`.
 - Remix: `app/routes/page.tsx` wraps `createCmssyLoader` so the loader returns
@@ -121,7 +146,7 @@ paste.
 
 **New: `cmssy.configs.standalone`.** `configs.recommended` declares no `files`
 and no parser, so it inherits whatever your config already lints. In a config
-that is *only* cmssy rules that means it fires nowhere: eslint lints `.js` by
+that is _only_ cmssy rules that means it fires nowhere: eslint lints `.js` by
 default and skips every `.tsx` layout the parity rule is about. `standalone` is
 that preset plus the TypeScript parser, the ts/tsx patterns, and the build
 directories eslint does not ignore on its own. It is what `init` writes.

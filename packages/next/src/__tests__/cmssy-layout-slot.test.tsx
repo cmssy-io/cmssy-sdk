@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/core";
 import { CmssyServerLayout } from "@cmssy/react";
-import { CmssyLayoutSlot } from "../preset/cmssy-layout-slot";
+import {
+  CmssyLayoutSlot,
+  type CmssyLayoutSlotProps,
+} from "../preset/cmssy-layout-slot";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
@@ -220,5 +224,21 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
       CONFIG,
       expect.objectContaining({ retry: false }),
     );
+  });
+});
+
+describe("CmssyLayoutSlot position typing", () => {
+  it("narrows position to the regions the config declares", () => {
+    const layout = defineCmssyLayout({
+      regions: [{ id: "header" }, { id: "sidebar_left" }],
+    });
+    const declared = defineCmssyConfig({ ...CONFIG, layout });
+    expectTypeOf<
+      CmssyLayoutSlotProps<typeof declared>["position"]
+    >().toEqualTypeOf<"header" | "sidebar_left">();
+    const undeclared = defineCmssyConfig(CONFIG);
+    expectTypeOf<
+      CmssyLayoutSlotProps<typeof undeclared>["position"]
+    >().toEqualTypeOf<string>();
   });
 });

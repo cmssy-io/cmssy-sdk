@@ -35,6 +35,7 @@ exports[`@cmssy/next public surface > exports exactly these names from the root 
   "DEFAULT_CMSSY_EDITOR_ORIGINS",
   "NEXT_BUILD_PHASE",
   "defineCmssyConfig",
+  "defineCmssyLayout",
   "localizeHref",
   "nextRetryMode",
   "resolveEditorOrigin",

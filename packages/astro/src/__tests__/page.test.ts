@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CMSSY_EDIT_HEADER } from "@cmssy/core";
+import {
+  CMSSY_EDIT_HEADER,
+  defineCmssyLayout,
+  type CmssyConfig,
+} from "@cmssy/core";
 import { loadCmssyPage } from "../page";
 
 const DRAFT_SECRET = "draft-secret-1234";
@@ -8,7 +12,7 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: DRAFT_SECRET,
-} as never;
+} as unknown as CmssyConfig;
 
 const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", () => ({ resolveCmssyLayoutSlot }));
@@ -39,6 +43,42 @@ function slotFor(position: string, editMode: boolean) {
 afterEach(() => vi.clearAllMocks());
 
 describe("loadCmssyPage", () => {
+  it("resolves editor data for every declared region, not the header/footer pair", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    const layout = defineCmssyLayout({
+      regions: [{ id: "header" }, { id: "promo" }],
+    });
+    const request = new Request("https://site.test/about", {
+      headers: { [CMSSY_EDIT_HEADER]: "1" },
+    });
+    const result = await loadCmssyPage(
+      { ...CONFIG, layout },
+      request,
+      new URL("https://site.test/about"),
+      { blocks: [] },
+    );
+    expect(Object.keys(result.editorData ?? {})).toEqual(["header", "promo"]);
+  });
+
+  it("hands the declared layout regions to the page, and nothing when undeclared", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    const request = new Request("https://site.test/about");
+    const url = new URL("https://site.test/about");
+    const layout = defineCmssyLayout({ regions: [{ id: "header" }] });
+    const declared = await loadCmssyPage({ ...CONFIG, layout }, request, url, {
+      blocks: [],
+    });
+    expect(declared.layoutRegions).toEqual([{ id: "header" }]);
+    const bare = await loadCmssyPage(CONFIG, request, url, { blocks: [] });
+    expect("layoutRegions" in bare).toBe(false);
+  });
+
   it("resolves the editor data for every position, not just the first", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.position, options.editMode)),

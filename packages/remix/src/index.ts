@@ -4,6 +4,7 @@ export { useCmssyLocale } from "./use-cmssy-locale";
 
 export {
   defineCmssyConfig,
+  defineCmssyLayout,
   createCmssyClient,
   isVerifiedEditUrl,
   localizeHref,
@@ -14,6 +15,10 @@ export {
 export type {
   CmssyConfig,
   CmssyEnvConfig,
+  CmssyLayout,
+  CmssyRegion,
+  CmssyRegionOf,
+  LayoutRegion,
   CmssyPageData,
   CmssyLayoutGroup,
   CmssyBlockContext,

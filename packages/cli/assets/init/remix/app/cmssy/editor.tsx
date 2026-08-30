@@ -1,4 +1,4 @@
-import { CmssyLazyEditor } from "@cmssy/react/client";
+import { CmssyLazyEditor, type EditBridgeConfig } from "@cmssy/react/client";
 import type { CmssyPageData } from "@cmssy/core";
 
 export function CmssyEditor(props: {
@@ -6,7 +6,7 @@ export function CmssyEditor(props: {
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];
-  edit: { editorOrigin: string | string[] };
+  edit: EditBridgeConfig;
 }) {
   return <CmssyLazyEditor {...props} load={() => import("./blocks")} />;
 }

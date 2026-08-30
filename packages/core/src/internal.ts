@@ -51,3 +51,4 @@ export { cmssyCspHeaders, toCspOrigin } from "./csp";
 export { isDevelopment } from "./config";
 
 export { CMSSY_DELIVERY_OPERATIONS } from "./data/delivery-operations";
+export { layoutRegionIds } from "./layout";

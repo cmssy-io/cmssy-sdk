@@ -19,14 +19,32 @@ The third one is why `/cmssy-edit` exists. Everything below follows from it.
 
 ```ts
 // cmssy.config.ts
-import { defineCmssyConfig } from "@cmssy/next";
+import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/next";
+
+export const layout = defineCmssyLayout({
+  regions: [
+    { id: "header", label: "Header" },
+    { id: "footer", label: "Footer" },
+  ],
+});
 
 export const cmssy = defineCmssyConfig({
   org: process.env.CMSSY_ORG_SLUG,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
   draftSecret: process.env.CMSSY_DRAFT_SECRET,
+  layout,
 });
 ```
+
+`layout` is the list of places on your page a layout block can live - a
+header, a footer, a sidebar, a cookie bar - and **you** name them. The editor
+shows exactly these regions under Layouts, and `CmssyLayoutSlot` accepts
+exactly these ids as `position`; `CmssyRegion<typeof layout>` is that union
+for your own code. Ids start with a letter or digit and continue with
+`[a-z0-9_-]`, at most 50 characters, at most 20 of them. Write the `regions`
+array inline (or `as const`): ids coming from a plain variable widen to
+`string`. Leave `layout` out and the editor falls back to `header` and
+`footer`.
 
 Pass `process.env` **raw**. A `?? ""` fallback turns a missing variable into an
 empty one, and the error surfaces later, somewhere unrelated.
@@ -276,9 +294,11 @@ response. Both go away when publishing revalidates on demand
 as the staleness you can live with, not the largest number that still looks
 fast.
 
-Mount it per route, not in `app/layout.tsx`: a route knows its path. There are
-six positions - `top`, `header`, `sidebar_left`, `sidebar_right`, `footer`,
-`bottom` - and `LayoutPosition` / `layoutPositionValues` name them.
+Mount it per route, not in `app/layout.tsx`: a route knows its path. Mount one
+slot per region you declared in `cmssy.config.ts` - `position` is typed to
+those ids, so a slot for a region you did not declare does not compile, and a
+region you declared but never mounted is content the editor can fill and the
+site never shows.
 
 ## 6. The editor bridge
 

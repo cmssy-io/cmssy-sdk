@@ -6,6 +6,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
+  type LayoutRegion,
   type RetryOption,
 } from "@cmssy/core";
 import {
@@ -14,6 +15,7 @@ import {
   fetchPage,
   isDevelopment,
   resolveSiteLocales,
+  layoutRegionIds,
 } from "@cmssy/core/internal";
 import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
 
@@ -27,6 +29,7 @@ export interface CmssyRouteData {
   editorOrigin: string | string[];
   diagnostics?: string;
   editorData?: Record<string, CmssyLayoutEditorData>;
+  layoutRegions?: readonly LayoutRegion[];
 }
 
 export interface CmssyLayoutEditorData {
@@ -80,7 +83,7 @@ export function createCmssyLoader(
 
     const segments = url.pathname.split("/").filter(Boolean);
 
-    const positions = options.positions ?? ["header", "footer"];
+    const positions = options.positions ?? layoutRegionIds(config.layout);
     const blocks = options.blocks ?? [];
     const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
 
@@ -135,6 +138,7 @@ export function createCmssyLoader(
       isEdit,
       editorOrigin: resolveEditorOrigin(config.editorOrigin),
       editorData,
+      ...(config.layout ? { layoutRegions: config.layout.regions } : {}),
     };
   };
 }

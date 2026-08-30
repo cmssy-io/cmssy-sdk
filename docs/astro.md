@@ -10,14 +10,26 @@ build if a single file imports React or Next.
 
 ```ts
 // src/cmssy.config.ts
-import { defineCmssyConfig } from "@cmssy/astro";
+import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/astro";
+
+export const layout = defineCmssyLayout({
+  regions: [
+    { id: "header", label: "Header" },
+    { id: "footer", label: "Footer" },
+  ],
+});
 
 export const cmssy = defineCmssyConfig({
   org: import.meta.env.CMSSY_ORG_SLUG,
   workspaceSlug: import.meta.env.CMSSY_WORKSPACE_SLUG,
   draftSecret: import.meta.env.CMSSY_DRAFT_SECRET,
+  layout,
 });
 ```
+
+`layout` names the regions a layout block can live in; the editor shows exactly
+these, and `CmssyRegion<typeof layout>` is the union of their ids for your slot
+component. See [wiring §1](wiring.md#1-config).
 
 ```ts
 // src/middleware.ts
@@ -86,9 +98,19 @@ editor filled in. `loadCmssyPage` does the work; you pass it your block
 registry:
 
 ```ts
-const { layouts, locale, defaultLocale, enabledLocales, editorData } =
-  await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
+const {
+  layouts,
+  locale,
+  defaultLocale,
+  enabledLocales,
+  editorData,
+  layoutRegions,
+} = await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
 ```
+
+`layoutRegions` is your declaration, handed back so the edit page can pass it
+to `CmssyEditor` as `edit={{ editorOrigin, layoutRegions }}` - that is how the
+editor learns which regions this site has.
 
 `editorData` is keyed by position, because the header and the footer hold
 different blocks and resolve to different data. Hand it to the slot:
