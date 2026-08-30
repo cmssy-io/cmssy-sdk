@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CMSSY_EDIT_HEADER } from "@cmssy/core";
+import { CMSSY_EDIT_HEADER, defineCmssyLayout } from "@cmssy/core";
 import { loadCmssyPage } from "../page";
 
 const DRAFT_SECRET = "draft-secret-1234";
@@ -39,6 +39,22 @@ function slotFor(position: string, editMode: boolean) {
 afterEach(() => vi.clearAllMocks());
 
 describe("loadCmssyPage", () => {
+  it("hands the declared layout regions to the page, and nothing when undeclared", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    const request = new Request("https://site.test/about");
+    const url = new URL("https://site.test/about");
+    const layout = defineCmssyLayout({ regions: [{ id: "header" }] });
+    const declared = await loadCmssyPage({ ...CONFIG, layout }, request, url, {
+      blocks: [],
+    });
+    expect(declared.layoutRegions).toEqual([{ id: "header" }]);
+    const bare = await loadCmssyPage(CONFIG, request, url, { blocks: [] });
+    expect("layoutRegions" in bare).toBe(false);
+  });
+
   it("resolves the editor data for every position, not just the first", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.position, options.editMode)),

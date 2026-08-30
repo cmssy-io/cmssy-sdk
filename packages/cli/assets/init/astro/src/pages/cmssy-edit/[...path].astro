@@ -7,8 +7,15 @@ import LayoutSlot from "../../cmssy/layout-slot";
 
 export const prerender = false;
 
-const { page, layouts, locale, defaultLocale, enabledLocales, editorData } =
-  await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
+const {
+  page,
+  layouts,
+  locale,
+  defaultLocale,
+  enabledLocales,
+  editorData,
+  layoutRegions,
+} = await loadCmssyPage(cmssy, Astro.request, Astro.url, { blocks });
 const editorOrigin = resolveEditorOrigin(cmssy.editorOrigin);
 ---
 
@@ -35,7 +42,7 @@ const editorOrigin = resolveEditorOrigin(cmssy.editorOrigin);
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
-      edit={{ editorOrigin }}
+      edit={{ editorOrigin, layoutRegions }}
     />
     <LayoutSlot
       client:load

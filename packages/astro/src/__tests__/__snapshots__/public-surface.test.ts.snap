@@ -9,6 +9,7 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "cmssyMiddleware",
   "createCmssyClient",
   "defineCmssyConfig",
+  "defineCmssyLayout",
   "loadCmssyPage",
   "localizeHref",
   "resolveEditorOrigin",

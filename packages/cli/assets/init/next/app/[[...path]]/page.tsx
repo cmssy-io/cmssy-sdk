@@ -1,5 +1,6 @@
 import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
-import { cmssy } from "@/cmssy.config";
+import type { CmssyRegion } from "@cmssy/next";
+import { cmssy, type layout } from "@/cmssy.config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
 import { EditableLayout } from "@/cmssy/editable-layout";
@@ -21,7 +22,7 @@ const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 
 export default async function Page(props: PageProps) {
   const { path } = await props.params;
-  const slot = (position: "header" | "footer") => (
+  const slot = (position: CmssyRegion<typeof layout>) => (
     <CmssyLayoutSlot
       config={cmssy}
       blocks={blocks}

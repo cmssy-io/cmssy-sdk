@@ -8,14 +8,26 @@
 
 ```ts
 // cmssy.config.ts
-import { defineCmssyConfig } from "@cmssy/remix";
+import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/remix";
+
+export const layout = defineCmssyLayout({
+  regions: [
+    { id: "header", label: "Header" },
+    { id: "footer", label: "Footer" },
+  ],
+});
 
 export const cmssy = defineCmssyConfig({
   org: process.env.CMSSY_ORG_SLUG,
   workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
   draftSecret: process.env.CMSSY_DRAFT_SECRET,
+  layout,
 });
 ```
+
+`layout` names the regions a layout block can live in; the editor shows exactly
+these, and `CmssyRegion<typeof layout>` is the union of their ids for your slot
+component. See [wiring §1](wiring.md#1-config).
 
 ```tsx
 // app/routes/page.tsx
@@ -53,6 +65,10 @@ registry:
 ```ts
 export const loader = createCmssyLoader(cmssy, { blocks });
 ```
+
+The loader data carries `layoutRegions` - your declaration - so the route can
+pass it to `CmssyEditor` as `edit={{ editorOrigin, layoutRegions }}`; that is
+how the editor learns which regions this site has.
 
 `editorData` is keyed by position, because the header and the footer hold
 different blocks and resolve to different data. Hand it to the slot:

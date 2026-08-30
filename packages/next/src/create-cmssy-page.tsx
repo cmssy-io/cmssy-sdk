@@ -225,7 +225,12 @@ function buildCmssyPageRenderer(
             locale={locale}
             defaultLocale={defaultLocale}
             enabledLocales={enabledLocales}
-            edit={{ editorOrigin: bridgeOrigin }}
+            edit={{
+              editorOrigin: bridgeOrigin,
+              ...(config.layout
+                ? { layoutRegions: config.layout.regions }
+                : {}),
+            }}
             forms={forms}
             data={editorData.data}
             resolvedContent={editorData.content}

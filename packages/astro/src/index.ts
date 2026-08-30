@@ -5,6 +5,7 @@ export type { CmssyPageResult, LoadCmssyPageOptions } from "./page";
 
 export {
   defineCmssyConfig,
+  defineCmssyLayout,
   resolveEditorOrigin,
   createCmssyClient,
   CMSSY_EDIT_HEADER,
@@ -16,6 +17,10 @@ export {
 export type {
   CmssyConfig,
   CmssyEnvConfig,
+  CmssyLayout,
+  CmssyRegion,
+  CmssyRegionOf,
+  LayoutRegion,
   CmssyPageData,
   CmssyLayoutGroup,
   CmssyBlockContext,

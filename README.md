@@ -69,7 +69,9 @@ export const dynamic = "force-dynamic"; //  preview is blank.
 export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 ```
 
-The header and footer are layout **blocks**, so they need a slot of their own -
+Where a layout block can live is yours to declare: `defineCmssyLayout({ regions })`
+in `cmssy.config.ts` names the regions, the editor shows exactly those, and the
+slot's `position` is typed to them. The header and footer are layout **blocks**, so they need a slot of their own -
 one that fetches with the preview secret in edit mode and renders through the
 edit bridge. On Next that slot is `CmssyLayoutSlot` from `@cmssy/next/server`,
 and `cmssy init` mounts it for you; the client half it renders in edit mode

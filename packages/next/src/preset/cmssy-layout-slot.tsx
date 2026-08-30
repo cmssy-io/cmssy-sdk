@@ -8,15 +8,15 @@ import {
 } from "@cmssy/react";
 import {
   type CmssyConfig,
-  type LayoutPosition,
+  type CmssyRegionOf,
   type RetryOption,
 } from "@cmssy/core";
 import { nextRetryMode } from "../retry-mode";
 
-interface CmssyLayoutSlotBaseProps {
-  config: CmssyConfig;
+interface CmssyLayoutSlotBaseProps<C extends CmssyConfig> {
+  config: C;
   blocks: BlockDefinition[];
-  position: LayoutPosition;
+  position: CmssyRegionOf<C>;
   editMode: boolean;
   page?: string;
   editable: ComponentType<{
@@ -37,10 +37,10 @@ interface CmssyLayoutSlotBaseProps {
 export type CmssyLayoutSlotLocaleSource =
   { path: string[]; locale?: never } | { locale: string; path?: never };
 
-export type CmssyLayoutSlotProps = CmssyLayoutSlotBaseProps &
-  CmssyLayoutSlotLocaleSource;
+export type CmssyLayoutSlotProps<C extends CmssyConfig = CmssyConfig> =
+  CmssyLayoutSlotBaseProps<C> & CmssyLayoutSlotLocaleSource;
 
-export async function CmssyLayoutSlot({
+export async function CmssyLayoutSlot<C extends CmssyConfig>({
   config,
   blocks,
   position,
@@ -51,7 +51,7 @@ export async function CmssyLayoutSlot({
   editable: Editable,
   appContext,
   retry,
-}: CmssyLayoutSlotProps) {
+}: CmssyLayoutSlotProps<C>) {
   const resolved = await resolveCmssyLayoutSlot(config, {
     position,
     blocks,

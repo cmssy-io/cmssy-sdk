@@ -1,7 +1,28 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineCmssyConfig } from "../config";
+import { defineCmssyLayout } from "../layout";
 
 describe("defineCmssyConfig", () => {
+  it("carries the declared layout through untouched", () => {
+    const layout = defineCmssyLayout({
+      regions: [{ id: "header" }, { id: "footer", label: "Footer" }],
+    });
+    const config = defineCmssyConfig({
+      org: "acme-org",
+      workspaceSlug: "acme",
+      draftSecret: "shhh",
+      layout,
+    });
+    expect(config.layout).toBe(layout);
+    expect(
+      defineCmssyConfig({
+        org: "acme-org",
+        workspaceSlug: "acme",
+        draftSecret: "shhh",
+      }).layout,
+    ).toBeUndefined();
+  });
+
   it("passes env-shaped values through when required fields are present", () => {
     const config = defineCmssyConfig({
       apiUrl: process.env.CMSSY_API_URL,

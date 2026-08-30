@@ -452,6 +452,41 @@ describe("edit bridge (blocks-driven)", () => {
     expect(container.textContent).not.toContain("Gone|");
   });
 
+  it("announces the declared layout regions in cmssy:ready", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{
+          editorOrigin,
+          layoutRegions: [
+            { id: "header" },
+            { id: "sidebar_left", label: "Aside" },
+          ],
+        }}
+        blocks={blocks}
+      />,
+    );
+    const ready = readyMessage() as unknown as Record<string, unknown>;
+    expect(ready.layoutRegions).toEqual([
+      { id: "header" },
+      { id: "sidebar_left", label: "Aside" },
+    ]);
+  });
+
+  it("omits layoutRegions from cmssy:ready when the site declares none", () => {
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    const ready = readyMessage() as unknown as Record<string, unknown>;
+    expect("layoutRegions" in ready).toBe(false);
+  });
+
   it("re-sends cmssy:ready on cmssy:parent-ready", async () => {
     render(
       <CmssyEditablePage

@@ -44,6 +44,7 @@ vi.mock("@cmssy/core/internal", async (importActual) => {
   };
 });
 
+import { defineCmssyLayout } from "@cmssy/core";
 import { createCmssyPage, createCmssyEditPage } from "../create-cmssy-page";
 
 const CONFIG = {
@@ -175,12 +176,35 @@ describe("createCmssyPage", () => {
     );
     expect(element.type).toBe(Editor);
     expect(element.props.page).toBe(PAGE);
-    expect(element.props.edit).toEqual({
+    expect(element.props.edit).toStrictEqual({
       editorOrigin: "https://app.cmssy.io",
     });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
       retry: "interactive",
+    });
+  });
+
+  it("hands the declared layout regions to the editor bridge", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const layout = defineCmssyLayout({
+      regions: [{ id: "header" }, { id: "sidebar_left", label: "Aside" }],
+    });
+    const Page = createCmssyEditPage({ ...CONFIG, layout }, BLOCKS, {
+      editor: Editor,
+    });
+    const element = unwrap(
+      await Page({
+        params: params([]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    );
+    expect(element.props.edit).toStrictEqual({
+      editorOrigin: "https://app.cmssy.io",
+      layoutRegions: [{ id: "header" }, { id: "sidebar_left", label: "Aside" }],
     });
   });
 

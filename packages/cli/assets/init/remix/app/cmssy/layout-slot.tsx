@@ -5,11 +5,13 @@ import {
   type CmssyLayoutGroup,
 } from "@cmssy/react";
 import { CmssyLazyLayout } from "@cmssy/react/client";
+import type { CmssyRegion } from "@cmssy/remix";
+import type { layout } from "../../cmssy.config";
 import { blocks } from "./blocks";
 
 export interface LayoutSlotProps {
   groups: CmssyLayoutGroup[];
-  position: "header" | "footer";
+  position: CmssyRegion<typeof layout>;
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];

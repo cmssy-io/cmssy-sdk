@@ -2,8 +2,14 @@ export { graphqlRequest } from "@cmssy/core";
 export type { GraphqlRequestOptions } from "@cmssy/core";
 export { CmssyRequestError } from "@cmssy/core";
 export type { RetryPolicy, RetryOption, CmssyRetryMode } from "@cmssy/core";
-export { createCmssyClient, layoutPositionValues } from "@cmssy/core";
-export type { LayoutPosition } from "@cmssy/core";
+export { createCmssyClient, defineCmssyLayout } from "@cmssy/core";
+export type {
+  CmssyLayout,
+  CmssyRegion,
+  CmssyRegionOf,
+  LayoutPosition,
+  LayoutRegion,
+} from "@cmssy/core";
 export type {
   CmssyClient,
   CmssyTypedDocument,

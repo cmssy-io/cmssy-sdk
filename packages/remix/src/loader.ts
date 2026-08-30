@@ -6,6 +6,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
+  type LayoutRegion,
   type RetryOption,
 } from "@cmssy/core";
 import {
@@ -27,6 +28,7 @@ export interface CmssyRouteData {
   editorOrigin: string | string[];
   diagnostics?: string;
   editorData?: Record<string, CmssyLayoutEditorData>;
+  layoutRegions?: readonly LayoutRegion[];
 }
 
 export interface CmssyLayoutEditorData {
@@ -135,6 +137,7 @@ export function createCmssyLoader(
       isEdit,
       editorOrigin: resolveEditorOrigin(config.editorOrigin),
       editorData,
+      ...(config.layout ? { layoutRegions: config.layout.regions } : {}),
     };
   };
 }

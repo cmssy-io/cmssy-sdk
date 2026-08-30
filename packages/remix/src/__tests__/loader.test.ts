@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_CMSSY_EDITOR_ORIGINS } from "@cmssy/core";
+import { DEFAULT_CMSSY_EDITOR_ORIGINS, defineCmssyLayout } from "@cmssy/core";
 
 import { createCmssyHeaders, createCmssyLoader } from "../loader";
 
@@ -59,6 +59,19 @@ afterEach(() => {
 });
 
 describe("createCmssyLoader", () => {
+  it("hands the declared layout regions to the route, and nothing when undeclared", async () => {
+    stubApi();
+    const layout = defineCmssyLayout({ regions: [{ id: "header" }] });
+    const declared = await createCmssyLoader({ ...CONFIG, layout })({
+      request: new Request("https://shop.test/about"),
+    });
+    expect(declared.layoutRegions).toEqual([{ id: "header" }]);
+    const bare = await createCmssyLoader(CONFIG)({
+      request: new Request("https://shop.test/about"),
+    });
+    expect("layoutRegions" in bare).toBe(false);
+  });
+
   it("reads the language off the path - the prefix IS the language", async () => {
     stubApi();
     const data = await createCmssyLoader(CONFIG)({

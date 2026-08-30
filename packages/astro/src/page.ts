@@ -4,6 +4,7 @@ import {
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
+  type LayoutRegion,
   type RetryOption,
 } from "@cmssy/core";
 import { CMSSY_LOCALE_HEADER, fetchPage } from "@cmssy/core/internal";
@@ -27,6 +28,7 @@ export interface CmssyPageResult {
   isEdit: boolean;
   editorData?: Record<string, CmssyLayoutEditorData>;
   editorOrigin?: string | string[];
+  layoutRegions?: readonly LayoutRegion[];
 }
 
 export interface CmssyLayoutEditorData {
@@ -111,5 +113,6 @@ export async function loadCmssyPage(
     isEdit,
     editorData,
     editorOrigin: slot.editorOrigin,
+    ...(config.layout ? { layoutRegions: config.layout.regions } : {}),
   };
 }
