@@ -16,15 +16,20 @@ export interface CmssyLayout<
 
 export type CmssyRegion<L extends CmssyLayout> = L["regions"][number]["id"];
 
+type RegionSettingsOf<Region> = [Region] extends [
+  { settings: infer S extends BlockPropsSchema },
+]
+  ? BlockPropsSchema extends S
+    ? Record<string, never>
+    : InferBlockContent<S>
+  : Record<string, never>;
+
 export type CmssyRegionSettings<
   L extends CmssyLayout,
   R extends CmssyRegion<L>,
-> =
-  Extract<L["regions"][number], { id: R }> extends {
-    settings: infer S extends BlockPropsSchema;
-  }
-    ? InferBlockContent<S>
-    : Record<string, never>;
+> = string extends CmssyRegion<L>
+  ? Record<string, never>
+  : RegionSettingsOf<Extract<L["regions"][number], { id: R }>>;
 
 export function defineCmssyLayout<const R extends readonly LayoutRegion[]>(
   layout: CmssyLayout<R>,

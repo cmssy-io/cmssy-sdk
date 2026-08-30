@@ -34,7 +34,10 @@ the values as JSON and delivers them as `settings` on each layout group -
 object (`{ showOnMobile?: boolean; width: number }` above), inferred the same
 way block content is inferred from `props`. A region without `settings` has
 no settings at all. The edit page announces the schema in `cmssy:ready`
-alongside the region ids, serialized the way block props are.
+alongside the region ids, serialized the way block props are. Needs the
+admin side, live on cmssy.io: the `PublicPageLayouts` query a 14 site sends
+selects `settings` as a scalar, and a backend without CMS-1704 answers it
+with a 400 on every page that mounts a layout slot.
 
 **Breaking:** cmssy no longer invents region settings. `CmssyLayoutSettings`
 (`{ desktopWidth, mobileBehavior }`) is gone from `@cmssy/core`, `@cmssy/react`

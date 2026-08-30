@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { defineCmssyConfig, type CmssyRegionOf } from "../config";
 import { fields } from "../fields";
+import type { LayoutRegion } from "@cmssy/types";
 import {
   defineCmssyLayout,
   type CmssyRegion,
@@ -103,6 +104,35 @@ describe("defineCmssyLayout", () => {
     expectTypeOf<
       CmssyRegionSettings<typeof layout, "header">
     >().toEqualTypeOf<Record<string, never>>();
+  });
+
+  it("distributes over a union of region ids", () => {
+    const layout = defineCmssyLayout({
+      regions: [
+        { id: "header", settings: { sticky: fields.boolean() } },
+        { id: "sidebar_left", settings: { width: fields.number() } },
+      ],
+    });
+    type Both = CmssyRegionSettings<typeof layout, "header" | "sidebar_left">;
+    expectTypeOf<Both>().toEqualTypeOf<
+      { sticky?: boolean } | { width?: number }
+    >();
+    const sticky: Both = { sticky: true };
+    const width: Both = { width: 3 };
+    void sticky;
+    void width;
+  });
+
+  it("resolves a widened layout to no settings at all", () => {
+    const regions: LayoutRegion[] = [
+      { id: "header", settings: { sticky: fields.boolean() } },
+    ];
+    const layout = defineCmssyLayout({ regions });
+    type Widened = CmssyRegionSettings<typeof layout, "header">;
+    expectTypeOf<Widened>().toEqualTypeOf<Record<string, never>>();
+    // @ts-expect-error a widened layout promises no settings key
+    const anything: Widened = { anything: "goes" };
+    void anything;
   });
 
   it("refuses settings that are not a schema object", () => {
