@@ -36,13 +36,38 @@ editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 | Export              | Signature                                       | Notes                                                                                                                    |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `defineCmssyConfig` | `(config: CmssyEnvConfig<L>) => CmssyConfig<L>` | Validates env-sourced values; throws naming every missing one.                                                           |
-| `defineCmssyLayout` | `({ regions }) => CmssyLayout`                  | Declares the layout regions the site has; throws on a bad id, a duplicate, more than 20, or a label over 100 characters. |
+| `defineCmssyLayout` | `({ regions }) => CmssyLayout`                  | Declares the layout regions the site has and, per region, an optional `settings` schema built with `fields.*` (the same `BlockPropsSchema` a block's `props` is); throws on a bad id, a duplicate, more than 20, a label over 100 characters, or settings that are not a schema object. |
 | `CmssyConfig`       | type                                            | The validated config (see [below](#config-types)).                                                                       |
 | `CmssyEnvConfig`    | type                                            | The same with the required fields widened to `\| undefined`.                                                             |
-| `CmssyLayout`       | type                                            | `{ regions: readonly LayoutRegion[] }`; `LayoutRegion` is `{ id, label? }`.                                              |
+| `CmssyLayout`       | type                                            | `{ regions: readonly LayoutRegion[] }`; `LayoutRegion` is `{ id, label?, settings? }`.                                   |
 | `CmssyRegion<L>`    | type                                            | The union of region ids a `CmssyLayout` declares.                                                                        |
+| `CmssyRegionSettings<L, R>` | type                                    | The values object of region `R`'s `settings` schema, inferred like block content from `props`; `Record<string, never>` for a region without settings. |
 | `LayoutPosition`    | type                                            | `string` - kept as an alias; prefer `CmssyRegion`.                                                                       |
 | `CmssyRegionOf<C>`  | type                                            | The same, read off a `CmssyConfig`; `string` when no layout is declared.                                                 |
+
+```ts
+export const layout = defineCmssyLayout({
+  regions: [
+    { id: "header", label: "Header" },
+    {
+      id: "sidebar_left",
+      label: "Aside",
+      settings: {
+        showOnMobile: fields.boolean({ label: "Show on mobile" }),
+        width: fields.number({ label: "Width (px)", required: true }),
+      },
+    },
+  ],
+});
+
+type AsideSettings = CmssyRegionSettings<typeof layout, "sidebar_left">;
+// { showOnMobile?: boolean; width: number }
+```
+
+The editor renders a form from each region's `settings` schema on the Layouts
+page and stores the values as JSON; `fetchLayouts` delivers them as
+`settings` on the matching `CmssyLayoutGroup` (`null` when nothing was
+authored). A region without `settings` has no settings section.
 
 ### Gateway
 
@@ -239,7 +264,8 @@ Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
 
 `EditBridgeConfig` is `{ editorOrigin, schemas?, blockMeta?, layoutRegions? }`.
 `layoutRegions` is the site's `config.layout.regions`; when present it rides
-along in `cmssy:ready` so the editor lists exactly those regions. Next fills it
+along in `cmssy:ready` so the editor lists exactly those regions, each
+`settings` schema serialized the way block `props` are into `schemas`. Next fills it
 in from the config inside `createCmssyPage`; on Astro and React Router the
 page result / loader data carries it back as `layoutRegions` for you to pass
 to `CmssyEditor`. The same field picks the positions `loadCmssyPage` and

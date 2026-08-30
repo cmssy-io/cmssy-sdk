@@ -26,7 +26,6 @@ export type {
   CmssyLocalizedValue,
   RawLayoutBlock,
   CmssyLayoutGroup,
-  CmssyLayoutSettings,
 } from "./content/content-client";
 export type {
   CmssySiteConfig,
@@ -45,7 +44,11 @@ export { fields } from "./fields";
 export { mediaAlt, mediaUrl, mediaUrls } from "./media";
 export type { MediaLike } from "./media";
 export { defineCmssyLayout } from "./layout";
-export type { CmssyLayout, CmssyRegion } from "./layout";
+export type {
+  CmssyLayout,
+  CmssyRegion,
+  CmssyRegionSettings,
+} from "./layout";
 export type { LayoutPosition, LayoutRegion } from "@cmssy/types";
 export type {
   BlockPropsSchema,

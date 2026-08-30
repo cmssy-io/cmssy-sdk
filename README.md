@@ -41,6 +41,7 @@ npx @cmssy/cli link   # connects it to your workspace
 | [**Troubleshooting**](docs/troubleshooting.md)        | Symptom → cause. Every row cost us half a day, and none of them failed a build.                          |
 | [**Testing**](docs/testing.md)                        | `checkCmssyEditMode` - the editor is the one path a build cannot check.                                  |
 | [**API reference**](docs/reference/sdk-api.md)        | Every public export, with signatures: gateway, editor wiring, blocks.                                    |
+| [**Migrating to v14**](docs/migrations/v13-to-v14.md) | Region settings are yours to declare. `CmssyLayoutSettings` is gone; `group.settings` is the JSON of your schema.     |
 | [**Migrating to v13**](docs/migrations/v12-to-v13.md) | Layout regions are yours to declare. `layoutPositionValues` is gone; `position` is typed to your config. |
 | [**Migrating to v12**](docs/migrations/v11-to-v12.md) | A media value is the asset's identity, not its address; read `url` off it.                               |
 | [**Migrating to v11**](docs/migrations/v10-to-v11.md) | Public routes were never cached. `editMode` is now a prop, and you generate your static params.          |

@@ -6,6 +6,53 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 14.0.0
+
+**A region's settings are yours to declare, exactly like a block's props.** A
+region in `defineCmssyLayout({ regions })` takes an optional `settings` schema
+built from the same `fields.*` builders a block uses for `props`:
+
+```ts
+export const layout = defineCmssyLayout({
+  regions: [
+    { id: "header", label: "Header" },
+    {
+      id: "sidebar_left",
+      label: "Aside",
+      settings: {
+        showOnMobile: fields.boolean({ label: "Show on mobile" }),
+        width: fields.number({ label: "Width (px)", required: true }),
+      },
+    },
+  ],
+});
+```
+
+The editor's Layouts page renders a form from that schema per region, stores
+the values as JSON and delivers them as `settings` on each layout group -
+`CmssyRegionSettings<typeof layout, "sidebar_left">` is the typed value
+object (`{ showOnMobile?: boolean; width: number }` above), inferred the same
+way block content is inferred from `props`. A region without `settings` has
+no settings at all. The edit page announces the schema in `cmssy:ready`
+alongside the region ids, serialized the way block props are. Needs the
+admin side, live on cmssy.io: the `PublicPageLayouts` query a 14 site sends
+selects `settings` as a scalar, and a backend without CMS-1704 answers it
+with a 400 on every page that mounts a layout slot.
+
+**Breaking:** cmssy no longer invents region settings. `CmssyLayoutSettings`
+(`{ desktopWidth, mobileBehavior }`) is gone from `@cmssy/core`, `@cmssy/react`
+and `@cmssy/types`; `CmssyLayoutGroup.settings` is now
+`Record<string, unknown> | null` - the values of the schema you declared, or
+`null` when nothing was authored. The public `layouts` query selects
+`settings` as a bare JSON scalar. `@cmssy/types` moves to 0.38.0.
+
+**Do I have to do anything?** Only if your own code read
+`group.settings.desktopWidth` / `mobileBehavior` - nothing in the SDK ever
+did, and cmssy never rendered them. Declare the settings your regions need,
+read them back typed with `CmssyRegionSettings`, and if you wrote your own
+`PublicPageLayouts` operation drop the `{ desktopWidth mobileBehavior }`
+sub-selection. [Migration guide](docs/migrations/v13-to-v14.md).
+
 ## 13.0.1
 
 **`CmssyLayoutSlot` in `@cmssy/next` fetched the root page's layouts for every

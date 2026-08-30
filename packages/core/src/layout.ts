@@ -3,6 +3,8 @@ import {
   LAYOUT_REGION_ID_PATTERN,
   LAYOUT_REGION_LABEL_MAX,
   LAYOUT_REGIONS_MAX,
+  type BlockPropsSchema,
+  type InferBlockContent,
   type LayoutRegion,
 } from "@cmssy/types";
 
@@ -13,6 +15,21 @@ export interface CmssyLayout<
 }
 
 export type CmssyRegion<L extends CmssyLayout> = L["regions"][number]["id"];
+
+type RegionSettingsOf<Region> = [Region] extends [
+  { settings: infer S extends BlockPropsSchema },
+]
+  ? BlockPropsSchema extends S
+    ? Record<string, never>
+    : InferBlockContent<S>
+  : Record<string, never>;
+
+export type CmssyRegionSettings<
+  L extends CmssyLayout,
+  R extends CmssyRegion<L>,
+> = string extends CmssyRegion<L>
+  ? Record<string, never>
+  : RegionSettingsOf<Extract<L["regions"][number], { id: R }>>;
 
 export function defineCmssyLayout<const R extends readonly LayoutRegion[]>(
   layout: CmssyLayout<R>,
@@ -48,6 +65,17 @@ export function defineCmssyLayout<const R extends readonly LayoutRegion[]>(
       ) {
         throw new Error(
           `cmssy: layout region "${region.id}" label must be 1-${LAYOUT_REGION_LABEL_MAX} characters`,
+        );
+      }
+    }
+    if (region.settings !== undefined) {
+      if (
+        typeof region.settings !== "object" ||
+        region.settings === null ||
+        Array.isArray(region.settings)
+      ) {
+        throw new Error(
+          `cmssy: layout region "${region.id}" settings must be a fields.* schema object`,
         );
       }
     }

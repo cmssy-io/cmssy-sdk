@@ -15,6 +15,7 @@ import {
   resolveShortcutAction,
 } from "./shortcut-keys";
 import { useInvisibleBlocks } from "./use-invisible-blocks";
+import { layoutRegionsToBridge } from "../registry";
 
 export interface EditBridgeConfig {
   editorOrigin: string | string[];
@@ -211,7 +212,7 @@ export function useEditBridge(
             ? ["shortcuts", "invisible-blocks"]
             : ["shortcuts"],
           ...(config.layoutRegions
-            ? { layoutRegions: [...config.layoutRegions] }
+            ? { layoutRegions: layoutRegionsToBridge(config.layoutRegions) }
             : {}),
         });
       } catch (error) {

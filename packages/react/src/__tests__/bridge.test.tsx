@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { CmssyServerPage } from "../components/cmssy-server-page";
 import { CmssyEditablePage } from "../components/editable-page";
-import { defineBlock, type BlockProps } from "../registry";
+import { defineBlock, propsToSchema, type BlockProps } from "../registry";
 import { fields } from "@cmssy/core";
 import { PROTOCOL_VERSION } from "@cmssy/core";
 
@@ -472,6 +472,38 @@ describe("edit bridge (blocks-driven)", () => {
       { id: "header" },
       { id: "sidebar_left", label: "Aside" },
     ]);
+  });
+
+  it("serializes region settings into cmssy:ready like block props", () => {
+    const settings = {
+      showOnMobile: fields.boolean(),
+      width: fields.number({ label: "Width (px)", required: true }),
+    };
+    render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{
+          editorOrigin,
+          layoutRegions: [{ id: "header" }, { id: "sidebar_left", settings }],
+        }}
+        blocks={blocks}
+      />,
+    );
+    const ready = readyMessage() as unknown as {
+      layoutRegions: Array<Record<string, unknown>>;
+    };
+    expect(ready.layoutRegions).toStrictEqual([
+      { id: "header" },
+      {
+        id: "sidebar_left",
+        settings: propsToSchema(settings),
+      },
+    ]);
+    expect(ready.layoutRegions[1]?.settings).toStrictEqual({
+      showOnMobile: { type: "boolean", label: "showOnMobile" },
+      width: { type: "number", label: "Width (px)", required: true },
+    });
   });
 
   it("omits layoutRegions from cmssy:ready when the site declares none", () => {

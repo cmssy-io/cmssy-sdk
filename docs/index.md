@@ -63,7 +63,7 @@ npx @cmssy/cli link   # connects it to your workspace
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
 - **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.
 - **Releasing** - [How these packages reach npm](./releasing.md): trusted publishing, the publish order, and why schema drift is not a PR gate.
-- **Migrating** - [v12 → v13](./migrations/v12-to-v13.md) · [v11 → v12](./migrations/v11-to-v12.md) · [v10 → v11](./migrations/v10-to-v11.md) · [v9 → v10](./migrations/v9-to-v10.md) · [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
+- **Migrating** - [v13 → v14](./migrations/v13-to-v14.md) · [v12 → v13](./migrations/v12-to-v13.md) · [v11 → v12](./migrations/v11-to-v12.md) · [v10 → v11](./migrations/v10-to-v11.md) · [v9 → v10](./migrations/v9-to-v10.md) · [v8 → v9](./migrations/v8-to-v9.md) · [v7 → v8](./migrations/v7-to-v8.md) · [v4 → v5](./migrations/v4-to-v5.md) · [v3 → v4](./migrations/v3-to-v4.md)
 - **Reference**
   - [API reference](./reference/sdk-api.md) - every export.
   - [Delivery API](./reference/delivery-api.md) - the public GraphQL queries you can run.

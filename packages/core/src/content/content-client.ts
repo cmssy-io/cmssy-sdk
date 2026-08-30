@@ -3,7 +3,6 @@ import type {
   RawBlock,
   CmssyPageData,
   RawLayoutBlock,
-  CmssyLayoutSettings,
   CmssyLayoutGroup,
   CmssyPageSummary,
   CmssyLocalizedValue,
@@ -17,7 +16,6 @@ export type {
   RawBlock,
   CmssyPageData,
   RawLayoutBlock,
-  CmssyLayoutSettings,
   CmssyLayoutGroup,
   CmssyPageSummary,
   CmssyLocalizedValue,
@@ -142,7 +140,7 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug
       layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
         position
         blocks { id type content style advanced order isActive }
-        settings { desktopWidth mobileBehavior }
+        settings
       }
     }
   }

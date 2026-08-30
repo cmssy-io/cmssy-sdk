@@ -86,8 +86,8 @@ importers:
   packages/core:
     dependencies:
       '@cmssy/types':
-        specifier: 0.37.0
-        version: 0.37.0
+        specifier: 0.38.0
+        version: 0.38.0
       jose:
         specifier: ^6.2.3
         version: 6.2.3
@@ -136,8 +136,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@cmssy/types':
-        specifier: 0.37.0
-        version: 0.37.0
+        specifier: 0.38.0
+        version: 0.38.0
       react-dom:
         specifier: ^18.2.0 || ^19.0.0
         version: 19.2.6(react@19.2.6)
@@ -179,8 +179,8 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@cmssy/types':
-        specifier: 0.37.0
-        version: 0.37.0
+        specifier: 0.38.0
+        version: 0.38.0
     devDependencies:
       '@testing-library/react':
         specifier: ^16.1.0
@@ -415,8 +415,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@cmssy/types@0.37.0':
-    resolution: {integrity: sha512-0Ja5xdFdNPwy7deUYGf3yBWHiZAL+9p1r/xT181VVM1rHUuWH4SB+iPLneoHcbeEPVHDonyiGn+O8ct/xwR96A==}
+  '@cmssy/types@0.38.0':
+    resolution: {integrity: sha512-vNh1iIyLg2l+LWeFGE7zjB6QT4GcSN5FDdwhNDbkp3WNBTSA8rWvyoEo82iOx/zRzzZrAscDlj8eYi7am8U6rA==}
 
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -3524,7 +3524,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@cmssy/types@0.37.0': {}
+  '@cmssy/types@0.38.0': {}
 
   '@colors/colors@1.5.0':
     optional: true
