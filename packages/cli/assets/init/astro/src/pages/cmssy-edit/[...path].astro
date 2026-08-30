@@ -10,6 +10,7 @@ export const prerender = false;
 const {
   page,
   layouts,
+  pageContext,
   locale,
   defaultLocale,
   enabledLocales,
@@ -29,6 +30,7 @@ const editorOrigin = resolveEditorOrigin(cmssy.editorOrigin);
       client:load
       groups={layouts}
       position="header"
+      page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
@@ -48,6 +50,7 @@ const editorOrigin = resolveEditorOrigin(cmssy.editorOrigin);
       client:load
       groups={layouts}
       position="footer"
+      page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}

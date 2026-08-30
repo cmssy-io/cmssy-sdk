@@ -77,6 +77,7 @@ different blocks and resolve to different data. Hand it to the slot:
 <LayoutSlot
   groups={layouts}
   position="header"
+  page={pageContext}
   locale={locale}
   defaultLocale={defaultLocale}
   enabledLocales={enabledLocales}
@@ -89,6 +90,12 @@ different blocks and resolve to different data. Hand it to the slot:
 Skip `resolvedContent` and the canvas shows a relation field as the raw ids it
 stores: the published site looks right, and the editor cannot fill the header.
 That was this adapter's behaviour before 11.1.0.
+
+`pageContext` is the routed page as the layout blocks were given it -
+`{ slug, path }` - and the scaffolded slot passes it on as `page`, so every
+layout block sees it as `context.page` in both modes. Its `settings` live on
+the matching group in `layouts`; `resolveCmssyLayout` (re-exported here) returns
+`{ groups, settings, page, element }` for a route that wants the slot as one call.
 
 The data half - preview secret in edit mode, language, editor data - is
 `resolveCmssyLayoutSlot` in `@cmssy/react`, the same function the Next adapter

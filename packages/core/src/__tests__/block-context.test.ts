@@ -57,11 +57,31 @@ describe("buildBlockContext", () => {
         blocks: [{ id: "b1", type: "hero", content: {} }],
       },
     });
-    expect(ctx.page).toEqual({
+    expect(ctx.page).toStrictEqual({
       id: "page_1",
       slug: "/docs/blocks",
+      path: ["docs", "blocks"],
       pageType: "page",
     });
+  });
+
+  it("describes a page known only by its route - slug and path, no id key (CMS-1708)", () => {
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      page: { slug: "/docs/blocks/define" },
+    });
+    expect(ctx.page).toStrictEqual({
+      slug: "/docs/blocks/define",
+      path: ["docs", "blocks", "define"],
+      pageType: null,
+    });
+    expect(ctx.page && "id" in ctx.page).toBe(false);
+  });
+
+  it("gives the site root an empty path", () => {
+    const ctx = buildBlockContext("en", "en", undefined, false, undefined, {
+      page: { slug: "/" },
+    });
+    expect(ctx.page?.path).toStrictEqual([]);
   });
 
   it("reports no page rather than one without a slug", () => {

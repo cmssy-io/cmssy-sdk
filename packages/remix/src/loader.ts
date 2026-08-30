@@ -3,6 +3,7 @@ import {
   CMSSY_SECRET_QUERY_PARAM,
   isVerifiedEditUrl,
   resolveEditorOrigin,
+  type CmssyBlockPage,
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
@@ -22,6 +23,7 @@ import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
 export interface CmssyRouteData {
   page: CmssyPageData | null;
   layouts: CmssyLayoutGroup[];
+  pageContext: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];
@@ -72,6 +74,7 @@ export function createCmssyLoader(
       return {
         page: null,
         layouts: [],
+        pageContext: { slug: "/", path: [] },
         locale: locales.defaultLocale,
         defaultLocale: locales.defaultLocale,
         enabledLocales: locales.locales,
@@ -132,6 +135,7 @@ export function createCmssyLoader(
     return {
       page,
       layouts: slot.groups,
+      pageContext: slot.page,
       locale: slot.locale,
       defaultLocale: slot.defaultLocale,
       enabledLocales: slot.enabledLocales,

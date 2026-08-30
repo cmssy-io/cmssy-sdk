@@ -10,8 +10,10 @@ const editorOrigin = "https://editor.cmssy.io";
 
 const headerProps = { brand: fields.text() };
 
-const Header = ({ content }: BlockProps<typeof headerProps>) => (
-  <header>{content.brand ?? ""}</header>
+const Header = ({ content, context }: BlockProps<typeof headerProps>) => (
+  <header data-page={context?.page?.slug ?? "none"}>
+    {content.brand ?? ""}
+  </header>
 );
 
 const blocks = [
@@ -110,6 +112,34 @@ describe("CmssyEditableLayout", () => {
     const wrapper = container.querySelector('[data-block-id="h1"]');
     expect(wrapper?.getAttribute("data-layout-position")).toBe("header");
     expect(wrapper?.getAttribute("draggable")).toBeNull();
+  });
+
+  it("hands every block the routed page, and follows it when the route changes (CMS-1708)", () => {
+    const { container, rerender } = render(
+      <CmssyEditableLayout
+        groups={groups}
+        blocks={blocks}
+        position="header"
+        locale="en"
+        edit={{ editorOrigin }}
+        page={{ slug: "/docs" }}
+      />,
+    );
+    const pageOf = () =>
+      container.querySelector("header")?.getAttribute("data-page");
+    expect(pageOf()).toBe("/docs");
+
+    rerender(
+      <CmssyEditableLayout
+        groups={groups}
+        blocks={blocks}
+        position="header"
+        locale="en"
+        edit={{ editorOrigin }}
+        page={{ slug: "/pricing" }}
+      />,
+    );
+    expect(pageOf()).toBe("/pricing");
   });
 
   it("renders nothing for a position with no active blocks", () => {

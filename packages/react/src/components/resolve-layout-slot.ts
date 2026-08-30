@@ -1,4 +1,5 @@
 import type {
+  CmssyBlockPage,
   CmssyConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
@@ -17,6 +18,7 @@ interface ResolveCmssyLayoutSlotBase {
   position: string;
   blocks: BlockDefinition[];
   editMode: boolean;
+  preview?: boolean;
   page?: string;
   forms?: Record<string, CmssyFormDefinition>;
   appContext?: Record<string, unknown>;
@@ -31,6 +33,8 @@ export type ResolveCmssyLayoutSlotOptions = ResolveCmssyLayoutSlotBase &
 
 export interface CmssyLayoutSlotResolution {
   groups: CmssyLayoutGroup[];
+  settings: Record<string, unknown> | null;
+  page: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];
@@ -38,6 +42,10 @@ export interface CmssyLayoutSlotResolution {
   data?: Record<string, unknown>;
   resolvedContent?: Record<string, Record<string, unknown>>;
   editorOrigin?: string | string[];
+}
+
+export function layoutSlotPage(slug: string): CmssyBlockPage {
+  return { slug, path: slug.split("/").filter(Boolean) };
 }
 
 export async function resolveCmssyLayoutSlot(
@@ -48,7 +56,8 @@ export async function resolveCmssyLayoutSlot(
     position,
     blocks,
     editMode,
-    page,
+    preview = false,
+    page: explicitPage,
     forms,
     appContext,
     path,
@@ -65,15 +74,17 @@ export async function resolveCmssyLayoutSlot(
 
   const locale = explicitLocale ?? fromPath.locale;
   const slugSegments = fromPath.path ?? [];
-  const pageSlug = page ?? "/" + slugSegments.join("/");
+  const page = layoutSlotPage(explicitPage ?? "/" + slugSegments.join("/"));
 
-  const groups = await fetchLayouts(config, pageSlug, {
-    previewSecret: editMode ? config.draftSecret : undefined,
+  const groups = await fetchLayouts(config, page.slug, {
+    previewSecret: editMode || preview ? config.draftSecret : undefined,
     ...requestOptions,
   });
 
   const base = {
     groups,
+    settings: groups.find((g) => g.position === position)?.settings ?? null,
+    page,
     locale,
     defaultLocale: siteLocales.defaultLocale,
     enabledLocales: siteLocales.locales,
@@ -86,6 +97,7 @@ export async function resolveCmssyLayoutSlot(
     groups,
     blocks,
     position,
+    page,
     locale,
     defaultLocale: siteLocales.defaultLocale,
     enabledLocales: siteLocales.locales,

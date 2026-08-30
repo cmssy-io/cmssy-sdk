@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
-import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/core";
-import { CmssyServerLayout } from "@cmssy/react";
+import type { ReactElement } from "react";
+import {
+  defineCmssyConfig,
+  defineCmssyLayout,
+  fields,
+  type CmssyBlockContext,
+} from "@cmssy/core";
+import { CmssyServerLayout, defineBlock } from "@cmssy/react";
 import {
   CmssyLayoutSlot,
   type CmssyLayoutSlotProps,
+  type CmssyLayoutSlotRenderProps,
 } from "../preset/cmssy-layout-slot";
 
 const CONFIG = {
@@ -15,26 +22,61 @@ const CONFIG = {
 };
 
 const GROUPS = [
-  { position: "header", blocks: [{ id: "b1", type: "site-header" }] },
+  {
+    position: "header",
+    blocks: [
+      {
+        id: "b1",
+        type: "site-header",
+        content: { en: { brand: "Shop" } },
+        order: 0,
+        isActive: true,
+      },
+    ],
+    settings: { sticky: true },
+  },
+];
+
+const Header = ({
+  content,
+  data,
+}: {
+  content: { brand?: string };
+  data?: unknown;
+}) => <header data-page={JSON.stringify(data ?? null)}>{content.brand}</header>;
+
+const blocks = [
+  defineBlock({
+    type: "site-header",
+    label: "Header",
+    component: Header,
+    layoutPositions: ["header"],
+    props: { brand: fields.text() },
+    loader: async ({ context }: { context?: CmssyBlockContext }) =>
+      context?.page ?? null,
+  }),
 ];
 
 const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
-const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
-vi.mock("@cmssy/react", async (importActual) => {
+const fetchLayouts = vi.hoisted(() => vi.fn());
+vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual = await importActual<Record<string, unknown>>();
-  return { ...actual, resolveCmssyLayoutSlot };
+  return { ...actual, fetchLayouts };
 });
 
-function setup(overrides: Record<string, unknown> = {}) {
-  resolveCmssyLayoutSlot.mockResolvedValue({
-    groups: GROUPS,
-    locale: "en",
+const resolveSiteLocales = vi.hoisted(() => vi.fn());
+vi.mock("@cmssy/core/internal/locale", async (importActual) => {
+  const actual = await importActual<Record<string, unknown>>();
+  return { ...actual, resolveSiteLocales };
+});
+
+function setup() {
+  fetchLayouts.mockResolvedValue(GROUPS);
+  resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
-    enabledLocales: ["en", "no"],
-    path: [],
-    ...overrides,
+    locales: ["en", "no"],
   });
   headersMock.mockResolvedValue(new Headers());
 }
@@ -44,6 +86,13 @@ const Editable = () => null;
 afterEach(() => {
   vi.clearAllMocks();
 });
+
+async function renderServerElement(element: ReactElement) {
+  const inner = await (
+    element.type as (props: unknown) => Promise<ReactElement>
+  )(element.props);
+  return JSON.stringify(inner);
+}
 
 describe("CmssyLayoutSlot", () => {
   it("server-renders the layout blocks for a visitor", async () => {
@@ -60,16 +109,16 @@ describe("CmssyLayoutSlot", () => {
 
     expect(element.type).toBe(CmssyServerLayout);
     expect(element.props.groups).toBe(GROUPS);
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
-      CONFIG,
-      expect.objectContaining({ editMode: false, path: [] }),
-    );
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: "interactive",
+    });
   });
 
   it("leaves the page slug to the resolver so the routed path decides which layouts apply", async () => {
-    setup({ path: ["pricing"] });
+    setup();
 
-    await CmssyLayoutSlot({
+    const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
       position: "header",
@@ -78,13 +127,19 @@ describe("CmssyLayoutSlot", () => {
       editable: Editable,
     });
 
-    const options = vi.mocked(resolveCmssyLayoutSlot).mock.calls[0]?.[1];
-    expect(options).not.toHaveProperty("page");
-    expect(options?.path).toEqual(["pricing"]);
+    expect(fetchLayouts).toHaveBeenCalledWith(
+      CONFIG,
+      "/pricing",
+      expect.anything(),
+    );
+    expect(element.props.page).toStrictEqual({
+      slug: "/pricing",
+      path: ["pricing"],
+    });
   });
 
   it("forwards an explicit page slug over the routed path", async () => {
-    setup({ path: ["pricing"] });
+    setup();
 
     await CmssyLayoutSlot({
       config: CONFIG,
@@ -96,14 +151,15 @@ describe("CmssyLayoutSlot", () => {
       editable: Editable,
     });
 
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+    expect(fetchLayouts).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ page: "/about", path: ["pricing"] }),
+      "/about",
+      expect.anything(),
     );
   });
 
   it("takes the language from the routed path, without reading headers", async () => {
-    setup({ locale: "no", path: ["about"] });
+    setup();
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
@@ -114,15 +170,15 @@ describe("CmssyLayoutSlot", () => {
     });
 
     expect(element.props.locale).toBe("no");
+    expect(element.props.page).toStrictEqual({
+      slug: "/about",
+      path: ["about"],
+    });
     expect(headersMock).not.toHaveBeenCalled();
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
-      CONFIG,
-      expect.objectContaining({ path: ["no", "about"] }),
-    );
   });
 
   it("takes an explicit locale where there are no params to read", async () => {
-    setup({ locale: "no" });
+    setup();
 
     const element = await CmssyLayoutSlot({
       config: CONFIG,
@@ -138,30 +194,60 @@ describe("CmssyLayoutSlot", () => {
   });
 
   it("goes through the edit bridge with the draft, in edit mode", async () => {
-    setup({
-      data: { b1: { categories: [] } },
-      resolvedContent: { b1: { heading: "Shop" } },
-      editorOrigin: CONFIG.editorOrigin,
-    });
+    setup();
 
     const element = await CmssyLayoutSlot({
       config: CONFIG,
-      blocks: [],
+      blocks,
       position: "header",
-      path: [],
+      path: ["docs"],
       editMode: true,
       editable: Editable,
     });
 
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/docs", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
     expect(element.type).toBe(Editable);
-    expect(element.props.data).toEqual({ b1: { categories: [] } });
-    expect(element.props.resolvedContent).toEqual({ b1: { heading: "Shop" } });
+    expect(element.props.data).toStrictEqual({
+      b1: { slug: "/docs", path: ["docs"], pageType: null },
+    });
+    expect(element.props.resolvedContent).toStrictEqual({
+      b1: { brand: "Shop" },
+    });
+    expect(element.props.page).toStrictEqual({
+      slug: "/docs",
+      path: ["docs"],
+    });
     expect(element.props.edit).toEqual({ editorOrigin: CONFIG.editorOrigin });
+  });
+
+  it("renders a draftMode visitor's chrome server-side: preview fetches the draft, not the editable (CMS-1708)", async () => {
+    setup();
+
+    const element = await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks,
+      position: "header",
+      path: ["docs"],
+      editMode: false,
+      preview: true,
+      editable: Editable,
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/docs", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
+    expect(element.type).toBe(CmssyServerLayout);
+    expect(element.props.preview).toBe(true);
+    expect(element.props).not.toHaveProperty("edit");
   });
 
   it("hands the bridge every editor origin, not just the first (CMS-1096)", async () => {
     const origins = ["https://cmssy.io", "https://www.cmssy.io"];
-    setup({ editorOrigin: origins });
+    setup();
 
     const element = await CmssyLayoutSlot({
       config: { ...CONFIG, editorOrigin: origins },
@@ -203,6 +289,131 @@ describe("CmssyLayoutSlot", () => {
   });
 });
 
+describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
+  it("hands children the groups, the region's settings and the routed page from one fetch", async () => {
+    setup();
+    let received: CmssyLayoutSlotRenderProps | undefined;
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks,
+      position: "header",
+      path: ["docs"],
+      editMode: false,
+      editable: Editable,
+      children: (layout) => {
+        received = layout;
+        return null;
+      },
+    });
+
+    expect(received?.groups).toBe(GROUPS);
+    expect(received?.settings).toStrictEqual({ sticky: true });
+    expect(received?.page).toStrictEqual({ slug: "/docs", path: ["docs"] });
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
+    expect(resolveSiteLocales).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives children the element the plain form would have rendered - same markup", async () => {
+    setup();
+    let received: CmssyLayoutSlotRenderProps | undefined;
+    const shared = {
+      config: CONFIG,
+      blocks,
+      position: "header",
+      path: ["docs"],
+      editMode: false,
+      editable: Editable,
+    };
+
+    const plain = await CmssyLayoutSlot(shared);
+    await CmssyLayoutSlot({
+      ...shared,
+      children: (layout) => {
+        received = layout;
+        return null;
+      },
+    });
+
+    expect(received?.element).toEqual(plain);
+    const tree = await renderServerElement(received!.element);
+    expect(tree).toBe(await renderServerElement(plain));
+    expect(tree).toContain('"brand":"Shop"');
+    expect(tree).toContain(
+      '"data":{"slug":"/docs","path":["docs"],"pageType":null}',
+    );
+  });
+
+  it("returns what children render, wrapped so the slot stays a single node", async () => {
+    setup();
+
+    const rendered = await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+      children: ({ settings }) => (
+        <aside data-sticky={String(settings?.sticky)}>slot</aside>
+      ),
+    });
+
+    expect(rendered.props.children).toEqual(
+      <aside data-sticky="true">slot</aside>,
+    );
+  });
+
+  it("in edit mode, the element is the editable with data and resolvedContent already resolved", async () => {
+    setup();
+    let received: CmssyLayoutSlotRenderProps | undefined;
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks,
+      position: "header",
+      path: ["docs"],
+      editMode: true,
+      editable: Editable,
+      children: (layout) => {
+        received = layout;
+        return null;
+      },
+    });
+
+    expect(received?.element.type).toBe(Editable);
+    expect(received?.element.props.data).toStrictEqual({
+      b1: { slug: "/docs", path: ["docs"], pageType: null },
+    });
+    expect(received?.element.props.resolvedContent).toStrictEqual({
+      b1: { brand: "Shop" },
+    });
+    expect(received?.settings).toStrictEqual({ sticky: true });
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports null settings for a region the layouts do not carry", async () => {
+    setup();
+    let received: CmssyLayoutSlotRenderProps | undefined;
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "footer",
+      path: [],
+      editMode: false,
+      editable: Editable,
+      children: (layout) => {
+        received = layout;
+        return null;
+      },
+    });
+
+    expect(received?.settings).toBeNull();
+    expect(received?.groups).toBe(GROUPS);
+  });
+});
+
 describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
   it("retries the layout resolution by default", async () => {
     setup();
@@ -216,10 +427,9 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
       editable: Editable,
     });
 
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
-      CONFIG,
-      expect.objectContaining({ retry: "interactive" }),
-    );
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
+      retry: "interactive",
+    });
   });
 
   it("forwards an explicit policy", async () => {
@@ -235,12 +445,9 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
       retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
     });
 
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
-      CONFIG,
-      expect.objectContaining({
-        retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
-      }),
-    );
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
+      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
+    });
   });
 
   it("turns retry off when the caller passes false", async () => {
@@ -256,10 +463,7 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
       retry: false,
     });
 
-    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
-      CONFIG,
-      expect.objectContaining({ retry: false }),
-    );
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: false });
   });
 });
 
@@ -276,5 +480,18 @@ describe("CmssyLayoutSlot position typing", () => {
     expectTypeOf<
       CmssyLayoutSlotProps<typeof undeclared>["position"]
     >().toEqualTypeOf<string>();
+  });
+
+  it("types the render prop's settings from the declared region", () => {
+    const layout = defineCmssyLayout({
+      regions: [
+        { id: "header" },
+        { id: "sidebar", settings: { width: fields.number() } },
+      ],
+    });
+    const declared = defineCmssyConfig({ ...CONFIG, layout });
+    expectTypeOf<
+      CmssyLayoutSlotRenderProps<typeof declared, "sidebar">["settings"]
+    >().toEqualTypeOf<{ width?: number } | null>();
   });
 });

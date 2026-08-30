@@ -21,13 +21,21 @@ export type {
   CmssyRegion,
   CmssyRegionOf,
   CmssyRegionSettings,
+  CmssyRegionSettingsOf,
   LayoutRegion,
   CmssyPageData,
   CmssyLayoutGroup,
   CmssyBlockContext,
+  CmssyBlockPage,
   CmssyWebhookEvent,
   VerifyCmssyWebhookOptions,
   RetryPolicy,
   RetryOption,
   CmssyRetryMode,
 } from "@cmssy/core";
+export { resolveCmssyLayout } from "@cmssy/react";
+export type {
+  CmssyLayoutEditableProps,
+  CmssyLayoutResolution,
+  ResolveCmssyLayoutOptions,
+} from "@cmssy/react";

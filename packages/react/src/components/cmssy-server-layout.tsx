@@ -13,29 +13,34 @@ import { buildBlockContext } from "@cmssy/core/internal";
 import { renderResolvedBlock } from "./render-resolved-block";
 import { resolveBlocks } from "./resolve-blocks";
 import { resolveRenderLocale } from "./resolve-render-locale";
+import type { LayoutBlockPage } from "./resolve-block-data";
 
 export interface CmssyServerLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
   position: string;
+  page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
   enabledLocales?: string[];
   config?: CmssyClientConfig;
   appContext?: Record<string, unknown>;
   editMode?: boolean;
+  preview?: boolean;
 }
 
 export async function CmssyServerLayout({
   groups,
   blocks,
   position,
+  page,
   locale: localeProp,
   defaultLocale: defaultLocaleProp,
   enabledLocales: enabledLocalesProp,
   config,
   appContext,
   editMode,
+  preview = false,
 }: CmssyServerLayoutProps) {
   const { locale, defaultLocale, enabledLocales } = await resolveRenderLocale({
     locale: localeProp,
@@ -57,9 +62,9 @@ export async function CmssyServerLayout({
     locale,
     defaultLocale,
     enabledLocales,
-    false,
+    preview,
     undefined,
-    { app: appContext },
+    { page, app: appContext },
   );
   const resolved = await resolveBlocks(
     layoutBlocks,

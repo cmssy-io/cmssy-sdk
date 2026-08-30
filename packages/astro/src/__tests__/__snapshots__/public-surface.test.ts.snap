@@ -12,6 +12,7 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "defineCmssyLayout",
   "loadCmssyPage",
   "localizeHref",
+  "resolveCmssyLayout",
   "resolveEditorOrigin",
   "verifyCmssyWebhook",
 ]

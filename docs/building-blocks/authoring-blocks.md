@@ -130,7 +130,7 @@ A block component receives three props, all of them typed by
 `BlockProps<typeof props>`:
 
 - `content` - the resolved field values for the current locale, typed by the schema.
-- `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`, and (when configured) `auth` and `workspace`. See [Member auth](../auth/member-auth.md) for `context.auth`.
+- `context` - `CmssyBlockContext`: `locale`, `isPreview`, `forms`, `page` (`{ slug, path, id?, pageType }` - the routed page, for layout blocks too; `id` only when the page was fetched) and (when configured) `auth` and `workspace`. See [Member auth](../auth/member-auth.md) for `context.auth`.
 - `data` - the [server loader](./server-loaders.md) result, or `undefined` in the editor. Pass the loader's type as the second parameter: `BlockProps<typeof props, Posts>`.
 
 ```tsx

@@ -44,8 +44,9 @@ export function buildBlockContext(
     ...(extra?.page?.slug
       ? {
           page: {
-            id: extra.page.id,
+            ...(extra.page.id !== undefined ? { id: extra.page.id } : {}),
             slug: extra.page.slug,
+            path: extra.page.slug.split("/").filter(Boolean),
             pageType: extra.page.pageType ?? null,
           },
         }

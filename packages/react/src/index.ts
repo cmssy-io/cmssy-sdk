@@ -8,6 +8,7 @@ export type {
   CmssyRegion,
   CmssyRegionOf,
   CmssyRegionSettings,
+  CmssyRegionSettingsOf,
   LayoutPosition,
   LayoutRegion,
 } from "@cmssy/core";
@@ -73,6 +74,7 @@ export { CmssyServerPage } from "./components/cmssy-server-page";
 export type { CmssyServerPageProps } from "./components/cmssy-server-page";
 export type {
   EditorBlockData,
+  LayoutBlockPage,
   ResolveBlockDataOptions,
   ResolveLayoutBlockDataOptions,
 } from "./components/resolve-block-data";
@@ -86,6 +88,12 @@ export type {
   CmssyLayoutSlotResolution,
   CmssyLayoutSlotLocaleSource,
 } from "./components/resolve-layout-slot";
+export { resolveCmssyLayout } from "./components/resolve-layout";
+export type {
+  CmssyLayoutEditableProps,
+  CmssyLayoutResolution,
+  ResolveCmssyLayoutOptions,
+} from "./components/resolve-layout";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
 export { CmssyBlock } from "./components/cmssy-block";

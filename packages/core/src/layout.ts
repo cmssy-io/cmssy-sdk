@@ -31,6 +31,15 @@ export type CmssyRegionSettings<
   ? Record<string, never>
   : RegionSettingsOf<Extract<L["regions"][number], { id: R }>>;
 
+export type CmssyRegionSettingsOf<
+  C extends { layout?: CmssyLayout },
+  R extends string,
+> = string extends CmssyRegion<NonNullable<C["layout"]>>
+  ? Record<string, unknown>
+  : R extends CmssyRegion<NonNullable<C["layout"]>>
+    ? CmssyRegionSettings<NonNullable<C["layout"]>, R>
+    : Record<string, never>;
+
 export function defineCmssyLayout<const R extends readonly LayoutRegion[]>(
   layout: CmssyLayout<R>,
 ): CmssyLayout<R> {
