@@ -17,6 +17,7 @@ export type {
   CmssyLayout,
   CmssyRegion,
   CmssyRegionOf,
+  CmssyRegionSettings,
   LayoutRegion,
   CmssyPageData,
   CmssyPageMeta,

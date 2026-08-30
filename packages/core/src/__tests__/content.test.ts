@@ -6,6 +6,7 @@ import {
   fetchPageById,
   fetchPages,
   fetchLayouts,
+  PUBLIC_PAGE_LAYOUTS_QUERY,
   type FetchLike,
 } from "../content/content-client";
 
@@ -560,7 +561,7 @@ describe("fetchLayouts", () => {
     expect(await fetchLayouts(config, "/", { fetch })).toEqual([]);
   });
 
-  it("carries the position settings authored in the admin", async () => {
+  it("carries the region settings values authored in the admin as JSON", async () => {
     const fetch = mockFetch({
       data: {
         public: {
@@ -569,18 +570,25 @@ describe("fetchLayouts", () => {
               {
                 position: "sidebar_left",
                 blocks: [],
-                settings: { desktopWidth: 320, mobileBehavior: "collapse" },
+                settings: { showOnMobile: false, width: 320 },
               },
+              { position: "header", blocks: [], settings: null },
             ],
           },
         },
       },
     });
     const groups = await fetchLayouts(config, "/", { fetch });
-    expect(groups[0]?.settings).toEqual({
-      desktopWidth: 320,
-      mobileBehavior: "collapse",
+    expect(groups[0]?.settings).toStrictEqual({
+      showOnMobile: false,
+      width: 320,
     });
+    expect(groups[1]?.settings).toBeNull();
+  });
+
+  it("selects settings as a bare JSON scalar", () => {
+    expect(PUBLIC_PAGE_LAYOUTS_QUERY).toMatch(/\n\s*settings\n/);
+    expect(PUBLIC_PAGE_LAYOUTS_QUERY).not.toMatch(/settings\s*\{/);
   });
 });
 

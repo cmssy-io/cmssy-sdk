@@ -5,6 +5,7 @@ import type {
   BlockPropsSchema,
   BlockSchema,
   FieldDefinition,
+  LayoutRegion,
 } from "@cmssy/core";
 
 export interface BlockProps<P extends BlockPropsSchema, D = unknown> {
@@ -117,18 +118,30 @@ export function buildLoaderMap(blocks: BlockDefinition[]): LoaderMap {
   return map;
 }
 
+export function propsToSchema(props: BlockPropsSchema): BlockSchema {
+  const schema: BlockSchema = {};
+  for (const [key, def] of Object.entries(props)) {
+    schema[key] = { ...def, label: def.label || key };
+  }
+  return schema;
+}
+
 export function blocksToSchemas(
   blocks: BlockDefinition[],
 ): Record<string, BlockSchema> {
   const out: Record<string, BlockSchema> = Object.create(null);
-  for (const block of blocks) {
-    const schema: BlockSchema = {};
-    for (const [key, def] of Object.entries(block.props)) {
-      schema[key] = { ...def, label: def.label || key };
-    }
-    out[block.type] = schema;
-  }
+  for (const block of blocks) out[block.type] = propsToSchema(block.props);
   return out;
+}
+
+export function layoutRegionsToBridge(
+  regions: readonly LayoutRegion[],
+): LayoutRegion[] {
+  return regions.map((region) =>
+    region.settings
+      ? { ...region, settings: propsToSchema(region.settings) }
+      : { ...region },
+  );
 }
 
 export function blocksToMeta(

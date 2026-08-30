@@ -7,6 +7,7 @@ export type {
   CmssyLayout,
   CmssyRegion,
   CmssyRegionOf,
+  CmssyRegionSettings,
   LayoutPosition,
   LayoutRegion,
 } from "@cmssy/core";
@@ -27,7 +28,6 @@ export type {
   CmssyLocalizedValue,
   RawLayoutBlock,
   CmssyLayoutGroup,
-  CmssyLayoutSettings,
 } from "@cmssy/core";
 export type {
   CmssySiteConfig,

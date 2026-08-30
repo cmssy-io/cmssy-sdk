@@ -20,11 +20,17 @@ The third one is why `/cmssy-edit` exists. Everything below follows from it.
 ```ts
 // cmssy.config.ts
 import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/next";
+import { fields } from "@cmssy/core";
 
 export const layout = defineCmssyLayout({
   regions: [
     { id: "header", label: "Header" },
     { id: "footer", label: "Footer" },
+    {
+      id: "sidebar_left",
+      label: "Aside",
+      settings: { showOnMobile: fields.boolean({ label: "Show on mobile" }) },
+    },
   ],
 });
 
@@ -45,6 +51,12 @@ for your own code. Ids start with a letter or digit and continue with
 array inline (or `as const`): ids coming from a plain variable widen to
 `string`. Leave `layout` out and the editor falls back to `header` and
 `footer`.
+
+A region may carry a `settings` schema built with the same `fields.*` a block
+uses for `props`. The editor renders it as a form on the Layouts page, the
+values come back as JSON in `group.settings`, and
+`CmssyRegionSettings<typeof layout, "sidebar_left">` is their type. No
+`settings`, no form.
 
 Pass `process.env` **raw**. A `?? ""` fallback turns a missing variable into an
 empty one, and the error surfaces later, somewhere unrelated.
