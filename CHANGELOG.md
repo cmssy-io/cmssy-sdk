@@ -6,6 +6,24 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 13.0.1
+
+**`CmssyLayoutSlot` in `@cmssy/next` fetched the root page's layouts for every
+route.** The slot defaulted `page` to `/` before handing off to
+`resolveCmssyLayoutSlot`, so the resolver's own fallback - the slug it derives
+from the routed `path` - never ran. A header set on a section, or a sidebar a
+page inherits from its parent, rendered only if the root page carried the same
+blocks; with an unpublished root the slot rendered nothing at all. Astro and
+Remix were not affected: they call the resolver directly.
+
+The slot now passes `page` only when you set it. With `path`, leave it out and
+the routed path decides, which is what the docs described all along. With the
+`locale` form there is no path to derive a slug from, so the resolver still
+falls back to `/` - pass `page` there to name the page.
+
+**Do I have to do anything?** No. If you had worked around this by passing
+`page` next to `path`, you can drop it.
+
 ## 13.0.0
 
 **Layout regions are yours to declare.** `defineCmssyLayout({ regions })` in

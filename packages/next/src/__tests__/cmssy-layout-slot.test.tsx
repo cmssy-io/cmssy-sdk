@@ -62,7 +62,43 @@ describe("CmssyLayoutSlot", () => {
     expect(element.props.groups).toBe(GROUPS);
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ editMode: false, page: "/", path: [] }),
+      expect.objectContaining({ editMode: false, path: [] }),
+    );
+  });
+
+  it("leaves the page slug to the resolver so the routed path decides which layouts apply", async () => {
+    setup({ path: ["pricing"] });
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: ["pricing"],
+      editMode: false,
+      editable: Editable,
+    });
+
+    const options = vi.mocked(resolveCmssyLayoutSlot).mock.calls[0]?.[1];
+    expect(options).not.toHaveProperty("page");
+    expect(options?.path).toEqual(["pricing"]);
+  });
+
+  it("forwards an explicit page slug over the routed path", async () => {
+    setup({ path: ["pricing"] });
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      position: "header",
+      path: ["pricing"],
+      page: "/about",
+      editMode: false,
+      editable: Editable,
+    });
+
+    expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
+      CONFIG,
+      expect.objectContaining({ page: "/about", path: ["pricing"] }),
     );
   });
 

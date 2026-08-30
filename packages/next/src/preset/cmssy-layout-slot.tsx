@@ -47,7 +47,7 @@ export async function CmssyLayoutSlot<C extends CmssyConfig>({
   path,
   locale: explicitLocale,
   editMode,
-  page = "/",
+  page,
   editable: Editable,
   appContext,
   retry,
@@ -56,7 +56,7 @@ export async function CmssyLayoutSlot<C extends CmssyConfig>({
     position,
     blocks,
     editMode,
-    page,
+    ...(page !== undefined ? { page } : {}),
     appContext,
     retry: retry ?? nextRetryMode(),
     ...(explicitLocale !== undefined
