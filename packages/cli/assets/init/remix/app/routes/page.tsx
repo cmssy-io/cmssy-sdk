@@ -45,6 +45,7 @@ export async function loader(args: Route.LoaderArgs) {
 
   const slotOptions = {
     groups: data.layouts,
+    page: data.pageContext,
     blocks,
     locale: data.locale,
     defaultLocale: data.defaultLocale,
@@ -72,6 +73,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
   const {
     page,
     layouts,
+    pageContext,
     locale,
     defaultLocale,
     enabledLocales,
@@ -92,6 +94,7 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
     <LayoutSlot
       groups={layouts}
       position={position}
+      page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}

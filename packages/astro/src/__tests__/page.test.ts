@@ -30,6 +30,7 @@ function slotFor(position: string, editMode: boolean) {
     defaultLocale: "en",
     enabledLocales: ["en"],
     path: ["about"],
+    page: { slug: "/about", path: ["about"] },
     ...(editMode
       ? {
           data: { [`${position}-block`]: { categories: [] } },
@@ -43,6 +44,23 @@ function slotFor(position: string, editMode: boolean) {
 afterEach(() => vi.clearAllMocks());
 
 describe("loadCmssyPage", () => {
+  it("exposes the routed page the layout blocks were resolved for (CMS-1708)", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.position, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+    const result = await loadCmssyPage(
+      CONFIG,
+      new Request("https://site.test/about"),
+      new URL("https://site.test/about"),
+      { blocks: [] },
+    );
+    expect(result.pageContext).toStrictEqual({
+      slug: "/about",
+      path: ["about"],
+    });
+  });
+
   it("resolves editor data for every declared region, not the header/footer pair", async () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.position, options.editMode)),

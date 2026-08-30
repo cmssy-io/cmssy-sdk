@@ -6,6 +6,52 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 14.1.0
+
+**Layout blocks know which page they are on.** `context.page` is no longer
+"absent for layout blocks": a layout block's loader and component get the page
+the layout was resolved for - `{ slug, path }`, plus `id`/`pageType` when the
+caller had the page fetched. `path` is the slug split into segments without a
+locale prefix, so a docs sidebar reads `context.page.path` instead of the app
+threading `appContext={{ path }}` through both routes by hand.
+`CmssyServerLayout`, `CmssyEditableLayout`, `CmssyLazyLayout`,
+`resolveEditorLayoutBlockData` and `resolveLayoutBlockData` take an optional
+`page`; `CmssyLayoutSlot` and `resolveCmssyLayoutSlot` fill it in from the
+routed path (or the explicit `page` slug), and `loadCmssyPage` /
+`createCmssyLoader` return it as `pageContext` for the Astro and React Router
+slots to pass on. Nothing to do unless a layout block reads `context.app.path`
+for this - switch it to `context.page.path` and drop the prop.
+
+**`CmssyLayoutSlot` shows you what it fetched.** The slot takes a render prop:
+
+```tsx
+<CmssyLayoutSlot config={cmssy} blocks={blocks} position="sidebar" path={path} editMode={false} editable={EditableLayout}>
+  {({ groups, settings, element }) =>
+    groups.some((g) => g.position === "sidebar" && g.blocks.some((b) => b.isActive)) ? (
+      <aside style={{ width: settings?.width }}>{element}</aside>
+    ) : null
+  }
+</CmssyLayoutSlot>
+```
+
+`groups` are the page's layouts, `settings` the region's authored values (typed
+through `CmssyRegionSettingsOf<typeof cmssy, "sidebar">` when `config.layout`
+is declared, `null` when nothing was authored) and `element` is exactly what
+the plain form renders - public or editable, editor data already resolved. One
+fetch serves gating, settings and rendering, in both modes; the second
+`layouts` request a route used to make just for `settings` goes away. The
+plain form is unchanged.
+
+`resolveCmssyLayout(config, { position, path | locale, blocks, editMode,
+editable?, appContext?, retry? })` is the same as a function -
+`{ groups, settings, page, locale, defaultLocale, enabledLocales, element }` - for a route that needs
+the data before it can decide on its shell. Exported from `@cmssy/next/server`
+(with the Next retry default), `@cmssy/astro`, `@cmssy/remix` and
+`@cmssy/react`. In edit mode it needs `editable` and refuses without it.
+
+`@cmssy/types` 0.39.0: `CmssyBlockPage.id` is optional and `path: string[]`
+is new; `BuildBlockContextExtra.page` accepts a partial page.
+
 ## 14.0.0
 
 **A region's settings are yours to declare, exactly like a block's props.** A

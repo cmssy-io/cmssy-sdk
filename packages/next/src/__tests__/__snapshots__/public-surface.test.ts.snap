@@ -22,6 +22,7 @@ exports[`@cmssy/next public surface > exports exactly these names from /server 1
   "createDraftRoute",
   "isCmssyEditMode",
   "nextRetryMode",
+  "resolveCmssyLayout",
 ]
 `;
 

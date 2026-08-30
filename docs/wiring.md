@@ -312,6 +312,47 @@ those ids, so a slot for a region you did not declare does not compile, and a
 region you declared but never mounted is content the editor can fill and the
 site never shows.
 
+### When the shell depends on the region
+
+A sidebar that is only worth a column when it has blocks, a width the editor
+authored in the region's `settings` - the slot has already fetched both, so ask
+it rather than fetching `layouts` a second time. Give the slot a render prop:
+
+```tsx
+<CmssyLayoutSlot
+  config={cmssy}
+  blocks={blocks}
+  position="sidebar_left"
+  path={path ?? []}
+  editMode={false}
+  editable={EditableLayout}
+>
+  {({ groups, settings, element }) => {
+    const mounted = groups
+      .find((g) => g.position === "sidebar_left")
+      ?.blocks.some((b) => b.isActive);
+    if (!mounted) return null;
+    return (
+      <aside style={{ width: `${settings?.width ?? 16}rem` }}>{element}</aside>
+    );
+  }}
+</CmssyLayoutSlot>
+```
+
+`element` is exactly what the plain form renders - the server layout for a
+visitor, the editable one with its editor data in edit mode - so both routes
+stay on the slot and keep the automatic editor loaders. `settings` is typed
+from `config.layout` (`CmssyRegionSettingsOf<typeof cmssy, "sidebar_left">`)
+and is `null` until someone authors it. When the region decides something
+outside the slot's own subtree, `resolveCmssyLayout(cmssy, { position, path,
+blocks, editMode, editable })` from `@cmssy/next/server` returns the same
+`{ groups, settings, element }` for you to place.
+
+Every layout block, in both modes, sees the routed page as `context.page` -
+`{ slug, path }` - so a block that renders "the section I am in" reads
+`context.page.path`. There is nothing to pass for it; `appContext` stays for
+what cmssy does not know about.
+
 ## 6. The editor bridge
 
 ```tsx

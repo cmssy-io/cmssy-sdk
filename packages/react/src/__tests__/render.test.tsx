@@ -193,7 +193,9 @@ describe("CmssyServerPage / CmssyServerLayout (static-map, no registry)", () => 
         locale: "en",
       }),
     );
-    expect(seen).toEqual([{ id: "p", slug: "/blog/hello", pageType: "post" }]);
+    expect(seen).toEqual([
+      { id: "p", slug: "/blog/hello", path: ["blog", "hello"], pageType: "post" },
+    ]);
     expect(html).toContain("/blog/hello|post");
   });
 

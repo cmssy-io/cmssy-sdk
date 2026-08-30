@@ -11,6 +11,11 @@ const CONFIG = {
 
 const GROUPS = [
   { position: "header", blocks: [{ id: "b1", type: "site-header" }] },
+  {
+    position: "sidebar_left",
+    blocks: [],
+    settings: { width: 18, sticky: true },
+  },
 ];
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
@@ -128,6 +133,69 @@ describe("resolveCmssyLayoutSlot", () => {
       previewSecret: undefined,
       retry: "build",
     });
+  });
+
+  it("hands the editor resolution the routed page - slug and path, no id (CMS-1708)", async () => {
+    setup();
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: true,
+      path: ["no", "docs", "blocks"],
+    });
+
+    const page = { slug: "/docs/blocks", path: ["docs", "blocks"] };
+    expect(result.page).toStrictEqual(page);
+    expect(resolveEditorLayoutBlockData).toHaveBeenCalledWith(
+      expect.objectContaining({ page }),
+    );
+  });
+
+  it("describes the explicit page, not the routed one, when both are given", async () => {
+    setup();
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      path: ["about"],
+      page: "/pricing/teams",
+    });
+
+    expect(result.page).toStrictEqual({
+      slug: "/pricing/teams",
+      path: ["pricing", "teams"],
+    });
+    expect(result.path).toEqual(["about"]);
+  });
+
+  it("returns the region's settings, and null for a region without any", async () => {
+    setup();
+
+    const sidebar = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "sidebar_left",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+    expect(sidebar.settings).toStrictEqual({ width: 18, sticky: true });
+
+    const header = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+    expect(header.settings).toBeNull();
+
+    const missing = await resolveCmssyLayoutSlot(CONFIG, {
+      position: "footer",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+    expect(missing.settings).toBeNull();
   });
 
   it("returns every configured editor origin, not the first", async () => {

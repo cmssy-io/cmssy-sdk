@@ -15,4 +15,13 @@ export type { CmssyDraftRouteConfig } from "./create-draft-route";
 export { isCmssyEditMode } from "./edit-mode";
 
 export { CmssyLayoutSlot } from "./preset/cmssy-layout-slot";
-export type { CmssyLayoutSlotProps } from "./preset/cmssy-layout-slot";
+export type {
+  CmssyLayoutSlotProps,
+  CmssyLayoutSlotRenderProps,
+} from "./preset/cmssy-layout-slot";
+export { resolveCmssyLayout } from "./preset/resolve-cmssy-layout";
+export type {
+  CmssyLayoutResolution,
+  CmssyLayoutEditableProps,
+  ResolveCmssyLayoutOptions,
+} from "@cmssy/react";

@@ -11,7 +11,7 @@ import LayoutSlot from "../cmssy/layout-slot";
 
 export const prerender = false;
 
-const { page, layouts, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
+const { page, layouts, pageContext, locale, defaultLocale, enabledLocales } = await loadCmssyPage(
   cmssy,
   Astro.request,
   Astro.url,
@@ -33,6 +33,7 @@ const { data: blockData, content: blockContent } = await resolveEditorBlockData(
 
 const layoutSlot = {
   groups: layouts,
+  page: pageContext,
   blocks,
   locale,
   defaultLocale,
@@ -54,6 +55,7 @@ const [header, footer] = await Promise.all([
     <LayoutSlot
       groups={layouts}
       position="header"
+      page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}
@@ -77,6 +79,7 @@ const [header, footer] = await Promise.all([
     <LayoutSlot
       groups={layouts}
       position="footer"
+      page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
       enabledLocales={enabledLocales}

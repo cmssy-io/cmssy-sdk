@@ -1,4 +1,5 @@
 import type {
+  BuildBlockContextExtra,
   CmssyClientConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
@@ -13,6 +14,8 @@ import {
 } from "../registry";
 import { markBlockError } from "./block-error";
 import { resolveBlocks, type ResolvedBlock } from "./resolve-blocks";
+
+export type LayoutBlockPage = NonNullable<BuildBlockContextExtra["page"]>;
 
 export interface EditorBlockData {
   data: Record<string, unknown>;
@@ -94,6 +97,7 @@ export interface ResolveLayoutBlockDataOptions {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
   position: string;
+  page?: LayoutBlockPage;
   locale: string;
   defaultLocale: string;
   enabledLocales?: string[];
@@ -107,6 +111,7 @@ export async function resolveEditorLayoutBlockData({
   groups,
   blocks,
   position,
+  page,
   locale,
   defaultLocale,
   enabledLocales,
@@ -130,7 +135,7 @@ export async function resolveEditorLayoutBlockData({
     enabledLocales,
     isPreview,
     forms,
-    { app: appContext },
+    { page, app: appContext },
   );
   const resolved = await resolveBlocks(
     layoutBlocks,

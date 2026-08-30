@@ -5,10 +5,12 @@ import type { CmssyLayoutGroup } from "@cmssy/core";
 import type { BlockDefinition } from "../registry";
 import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { CmssyEditableLayout } from "./cmssy-editable-layout";
+import type { LayoutBlockPage } from "./resolve-block-data";
 
 export interface CmssyLazyLayoutProps {
   groups: CmssyLayoutGroup[];
   position: string;
+  page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
   enabledLocales?: string[];

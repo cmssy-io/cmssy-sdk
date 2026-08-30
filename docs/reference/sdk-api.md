@@ -41,6 +41,7 @@ editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 | `CmssyEnvConfig`    | type                                            | The same with the required fields widened to `\| undefined`.                                                             |
 | `CmssyLayout`       | type                                            | `{ regions: readonly LayoutRegion[] }`; `LayoutRegion` is `{ id, label?, settings? }`.                                   |
 | `CmssyRegion<L>`    | type                                            | The union of region ids a `CmssyLayout` declares.                                                                        |
+| `CmssyRegionSettingsOf<C, R>` | type | The same from a config: `CmssyRegionSettingsOf<typeof cmssy, "sidebar">`; `Record<string, unknown>` when the config declares no layout. What `CmssyLayoutSlot`'s render prop and `resolveCmssyLayout` type `settings` as. |
 | `CmssyRegionSettings<L, R>` | type                                    | The values object of region `R`'s `settings` schema, inferred like block content from `props`; `Record<string, never>` for a region without settings. |
 | `LayoutPosition`    | type                                            | `string` - kept as an alias; prefer `CmssyRegion`.                                                                       |
 | `CmssyRegionOf<C>`  | type                                            | The same, read off a `CmssyConfig`; `string` when no layout is declared.                                                 |
@@ -245,12 +246,33 @@ rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/
 | `buildBlockContext` | Builds the `CmssyBlockContext` passed to blocks.                  |
 
 Both renderers take `appContext`: whatever your app hands them (a member, a
-feature flag, the active path) reaches every block as `context.app`, untouched.
+feature flag, an A/B bucket) reaches every block as `context.app`, untouched.
+
+Both take `page`, and so do `CmssyEditableLayout`, `CmssyLazyLayout` and the
+editor-data resolvers below. `CmssyServerPage` fills it from the page it
+fetched; for a layout renderer you pass what you know - `{ slug }` at least,
+the fetched `CmssyPageData` when you have it - and every layout block sees it
+as `context.page`: `{ slug, path, id?, pageType }`, `path` being the slug split
+into segments without a locale prefix. `CmssyLayoutSlot` and
+`resolveCmssyLayoutSlot` derive it from the routed path, so a layout block that
+depends on the routed page (a docs sidebar) reads `context.page.path` and the
+route passes nothing.
 
 `resolveCmssyLayoutSlot` - the data half every adapter's layout slot runs on -
 takes `retry?: RetryOption`, forwarded to both delivery calls it makes (the site
 locales and the layouts). It defaults to the `build` mode; every adapter passes
-its own resolved mode straight through.
+its own resolved mode straight through. It returns `groups`, the region's
+`settings` (`null` when nothing was authored) and `page` (`CmssyBlockPage`,
+what the layout blocks were given) next to the locale triple and, in edit
+mode, `data`/`resolvedContent`/`editorOrigin`.
+
+`resolveCmssyLayout(config, options)` is the whole slot as a function:
+`resolveCmssyLayoutSlot` plus the element the slot would render - `{ groups,
+settings, page, locale, defaultLocale, enabledLocales, element }`. `settings` is
+typed `CmssyRegionSettingsOf<typeof config, typeof position> | null`; `element`
+is `CmssyServerLayout` for a visitor and the `editable` component with
+`data`/`resolvedContent` in edit mode, so `editable` is required there. The
+adapters re-export it; `@cmssy/next/server` adds the Next retry default.
 
 Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 `CmssyClientConfig`, `RawBlock`, `RawLayoutBlock`, `CmssyPageData`,
@@ -307,7 +329,8 @@ the middleware preset.
 | `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                                                    | `app/[[...path]]/page.tsx`    |
 | `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                                                    | `app/cmssy-edit/[[...path]]/` |
 | `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                                                     | `app/api/draft/route.ts`      |
-| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `position` is typed to `config.layout` | any route                     |
+| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `position` is typed to `config.layout`; optional `children({ groups, settings, page, element })` render prop | any route                     |
+| `resolveCmssyLayout`                      | `(config, options) => Promise<CmssyLayoutResolution>` - the slot as a function: `{ groups, settings, page, element, ... }`, Next retry default applied | any route                     |
 | `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                              | any adapter                   |
 | `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic                                      | `/cmssy-edit` only            |
 

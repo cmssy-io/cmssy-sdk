@@ -11,11 +11,13 @@ import type { EditBridgeConfig } from "../bridge/use-edit-bridge";
 import { useLayoutPatchBridge } from "../bridge/use-layout-patch-bridge";
 import { buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
+import type { LayoutBlockPage } from "./resolve-block-data";
 
 export interface CmssyEditableLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
   position: string;
+  page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
   enabledLocales?: string[];
@@ -29,6 +31,7 @@ export function CmssyEditableLayout({
   groups,
   blocks,
   position,
+  page,
   locale = "en",
   defaultLocale = "en",
   enabledLocales,
@@ -55,9 +58,10 @@ export function CmssyEditableLayout({
   const context = useMemo(
     () =>
       buildBlockContext(locale, defaultLocale, enabledLocales, true, undefined, {
+        page,
         app: appContext,
       }),
-    [locale, defaultLocale, enabledLocales, appContext],
+    [locale, defaultLocale, enabledLocales, page, appContext],
   );
 
   if (layoutBlocks.length === 0) return null;

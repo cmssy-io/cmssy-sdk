@@ -11,6 +11,7 @@ exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
   "defineCmssyLayout",
   "isVerifiedEditUrl",
   "localizeHref",
+  "resolveCmssyLayout",
   "useCmssyLocale",
   "verifyCmssyWebhook",
 ]

@@ -2,6 +2,7 @@ import {
   CmssyBlock,
   buildBlockContext,
   buildBlockMap,
+  type CmssyBlockPage,
   type CmssyLayoutGroup,
 } from "@cmssy/react";
 import { CmssyLazyLayout } from "@cmssy/react/client";
@@ -12,6 +13,7 @@ import { blocks } from "./blocks";
 export interface LayoutSlotProps {
   groups: CmssyLayoutGroup[];
   position: CmssyRegion<typeof layout>;
+  page: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];
@@ -23,6 +25,7 @@ export interface LayoutSlotProps {
 export function LayoutSlot({
   groups,
   position,
+  page,
   locale,
   defaultLocale,
   enabledLocales,
@@ -35,6 +38,7 @@ export function LayoutSlot({
       <CmssyLazyLayout
         groups={groups}
         position={position}
+        page={page}
         locale={locale}
         defaultLocale={defaultLocale}
         enabledLocales={enabledLocales}
@@ -50,7 +54,14 @@ export function LayoutSlot({
   if (!group) return null;
 
   const blockMap = buildBlockMap(blocks);
-  const context = buildBlockContext(locale, defaultLocale, enabledLocales);
+  const context = buildBlockContext(
+    locale,
+    defaultLocale,
+    enabledLocales,
+    false,
+    undefined,
+    { page },
+  );
 
   return (
     <>

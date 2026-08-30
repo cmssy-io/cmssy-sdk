@@ -48,6 +48,7 @@ export type {
   CmssyLayout,
   CmssyRegion,
   CmssyRegionSettings,
+  CmssyRegionSettingsOf,
 } from "./layout";
 export type { LayoutPosition, LayoutRegion } from "@cmssy/types";
 export type {

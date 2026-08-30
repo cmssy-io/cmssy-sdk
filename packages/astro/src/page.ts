@@ -1,6 +1,7 @@
 import {
   CMSSY_EDIT_HEADER,
   isVerifiedEditUrl,
+  type CmssyBlockPage,
   type CmssyConfig,
   type CmssyLayoutGroup,
   type CmssyPageData,
@@ -26,6 +27,7 @@ function withoutEditPrefix(pathname: string): string {
 export interface CmssyPageResult {
   page: CmssyPageData | null;
   layouts: CmssyLayoutGroup[];
+  pageContext: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
   enabledLocales: string[];
@@ -111,6 +113,7 @@ export async function loadCmssyPage(
   return {
     page,
     layouts: slot.groups,
+    pageContext: slot.page,
     locale: slot.locale,
     defaultLocale: slot.defaultLocale,
     enabledLocales: slot.enabledLocales,

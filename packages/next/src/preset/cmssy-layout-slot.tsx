@@ -1,10 +1,10 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import {
-  CmssyServerLayout,
-  resolveCmssyLayoutSlot,
+  resolveCmssyLayout,
   type BlockDefinition,
-  type CmssyLayoutGroup,
-  type ResolveCmssyLayoutSlotOptions,
+  type CmssyLayoutEditableProps,
+  type CmssyLayoutResolution,
+  type ResolveCmssyLayoutOptions,
 } from "@cmssy/react";
 import {
   type CmssyConfig,
@@ -13,34 +13,35 @@ import {
 } from "@cmssy/core";
 import { nextRetryMode } from "../retry-mode";
 
-interface CmssyLayoutSlotBaseProps<C extends CmssyConfig> {
+export type CmssyLayoutSlotRenderProps<
+  C extends CmssyConfig = CmssyConfig,
+  P extends CmssyRegionOf<C> = CmssyRegionOf<C>,
+> = Pick<CmssyLayoutResolution<C, P>, "groups" | "settings" | "page" | "element">;
+
+interface CmssyLayoutSlotBaseProps<C extends CmssyConfig, P extends CmssyRegionOf<C>> {
   config: C;
   blocks: BlockDefinition[];
-  position: CmssyRegionOf<C>;
+  position: P;
   editMode: boolean;
   page?: string;
-  editable: ComponentType<{
-    groups: CmssyLayoutGroup[];
-    position: string;
-    locale: string;
-    defaultLocale: string;
-    enabledLocales: string[];
-    edit: { editorOrigin: string | string[] };
-    data?: Record<string, unknown>;
-    resolvedContent?: Record<string, Record<string, unknown>>;
-    appContext?: Record<string, unknown>;
-  }>;
+  editable: ComponentType<CmssyLayoutEditableProps>;
   appContext?: Record<string, unknown>;
   retry?: RetryOption;
+  children?: (layout: CmssyLayoutSlotRenderProps<C, P>) => ReactNode;
 }
 
 export type CmssyLayoutSlotLocaleSource =
   { path: string[]; locale?: never } | { locale: string; path?: never };
 
-export type CmssyLayoutSlotProps<C extends CmssyConfig = CmssyConfig> =
-  CmssyLayoutSlotBaseProps<C> & CmssyLayoutSlotLocaleSource;
+export type CmssyLayoutSlotProps<
+  C extends CmssyConfig = CmssyConfig,
+  P extends CmssyRegionOf<C> = CmssyRegionOf<C>,
+> = CmssyLayoutSlotBaseProps<C, P> & CmssyLayoutSlotLocaleSource;
 
-export async function CmssyLayoutSlot<C extends CmssyConfig>({
+export async function CmssyLayoutSlot<
+  C extends CmssyConfig,
+  P extends CmssyRegionOf<C>,
+>({
   config,
   blocks,
   position,
@@ -48,52 +49,25 @@ export async function CmssyLayoutSlot<C extends CmssyConfig>({
   locale: explicitLocale,
   editMode,
   page,
-  editable: Editable,
+  editable,
   appContext,
   retry,
-}: CmssyLayoutSlotProps<C>) {
-  const resolved = await resolveCmssyLayoutSlot(config, {
+  children,
+}: CmssyLayoutSlotProps<C, P>) {
+  const layout = await resolveCmssyLayout(config, {
     position,
     blocks,
     editMode,
+    editable,
     ...(page !== undefined ? { page } : {}),
     appContext,
     retry: retry ?? nextRetryMode(),
     ...(explicitLocale !== undefined
       ? { locale: explicitLocale }
       : { path: path ?? [] }),
-  } as ResolveCmssyLayoutSlotOptions);
+  } as ResolveCmssyLayoutOptions<C, P>);
 
-  const { groups, locale, defaultLocale, enabledLocales } = resolved;
-
-  if (!editMode) {
-    return (
-      <CmssyServerLayout
-        groups={groups}
-        blocks={blocks}
-        position={position}
-        locale={locale}
-        defaultLocale={defaultLocale}
-        enabledLocales={enabledLocales}
-        config={config}
-        appContext={appContext}
-      />
-    );
-  }
-
-  const origin = resolved.editorOrigin;
-
-  return (
-    <Editable
-      groups={groups}
-      position={position}
-      locale={locale}
-      defaultLocale={defaultLocale}
-      enabledLocales={enabledLocales}
-      edit={{ editorOrigin: origin ?? "" }}
-      data={resolved.data}
-      resolvedContent={resolved.resolvedContent}
-      appContext={appContext}
-    />
-  );
+  if (!children) return layout.element;
+  const { groups, settings, page: routed, element } = layout;
+  return <>{children({ groups, settings, page: routed, element })}</>;
 }
