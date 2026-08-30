@@ -16,12 +16,13 @@ page inherits from its parent, rendered only if the root page carried the same
 blocks; with an unpublished root the slot rendered nothing at all. Astro and
 Remix were not affected: they call the resolver directly.
 
-The slot now passes `page` only when you set it. Pass it explicitly to pin a
-slot to one page regardless of the route; leave it out and the routed path
-decides, which is what the docs described all along.
+The slot now passes `page` only when you set it. With `path`, leave it out and
+the routed path decides, which is what the docs described all along. With the
+`locale` form there is no path to derive a slug from, so the resolver still
+falls back to `/` - pass `page` there to name the page.
 
 **Do I have to do anything?** No. If you had worked around this by passing
-`page` yourself, you can drop it.
+`page` next to `path`, you can drop it.
 
 ## 13.0.0
 

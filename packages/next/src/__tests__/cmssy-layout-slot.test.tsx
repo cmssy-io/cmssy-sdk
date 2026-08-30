@@ -91,14 +91,14 @@ describe("CmssyLayoutSlot", () => {
       blocks: [],
       position: "header",
       path: ["pricing"],
-      page: "/",
+      page: "/about",
       editMode: false,
       editable: Editable,
     });
 
     expect(resolveCmssyLayoutSlot).toHaveBeenCalledWith(
       CONFIG,
-      expect.objectContaining({ page: "/", path: ["pricing"] }),
+      expect.objectContaining({ page: "/about", path: ["pricing"] }),
     );
   });
 
