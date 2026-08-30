@@ -40,8 +40,10 @@ export const cmssy = defineCmssyConfig({
 header, a footer, a sidebar, a cookie bar - and **you** name them. The editor
 shows exactly these regions under Layouts, and `CmssyLayoutSlot` accepts
 exactly these ids as `position`; `CmssyRegion<typeof layout>` is that union
-for your own code. Ids are lowercase `[a-z0-9_-]`, at most 50 characters, at
-most 20 of them. Leave `layout` out and the editor falls back to `header` and
+for your own code. Ids start with a letter or digit and continue with
+`[a-z0-9_-]`, at most 50 characters, at most 20 of them. Write the `regions`
+array inline (or `as const`): ids coming from a plain variable widen to
+`string`. Leave `layout` out and the editor falls back to `header` and
 `footer`.
 
 Pass `process.env` **raw**. A `?? ""` fallback turns a missing variable into an

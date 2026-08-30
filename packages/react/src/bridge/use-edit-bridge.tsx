@@ -20,7 +20,7 @@ export interface EditBridgeConfig {
   editorOrigin: string | string[];
   schemas?: Record<string, BlockSchema>;
   blockMeta?: Record<string, BlockMeta>;
-  layoutRegions?: readonly LayoutRegion[];
+  layoutRegions?: readonly LayoutRegion[] | undefined;
 }
 
 export type PatchMap = Partial<Record<string, Record<string, unknown>>>;

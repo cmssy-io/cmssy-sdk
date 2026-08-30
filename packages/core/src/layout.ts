@@ -1,4 +1,5 @@
 import {
+  DEFAULT_LAYOUT_REGIONS,
   LAYOUT_REGION_ID_PATTERN,
   LAYOUT_REGION_LABEL_MAX,
   LAYOUT_REGIONS_MAX,
@@ -52,4 +53,8 @@ export function defineCmssyLayout<const R extends readonly LayoutRegion[]>(
     }
   }
   return { regions };
+}
+
+export function layoutRegionIds(layout: CmssyLayout | undefined): string[] {
+  return (layout?.regions ?? DEFAULT_LAYOUT_REGIONS).map((region) => region.id);
 }

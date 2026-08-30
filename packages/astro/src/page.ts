@@ -7,7 +7,11 @@ import {
   type LayoutRegion,
   type RetryOption,
 } from "@cmssy/core";
-import { CMSSY_LOCALE_HEADER, fetchPage } from "@cmssy/core/internal";
+import {
+  CMSSY_LOCALE_HEADER,
+  fetchPage,
+  layoutRegionIds,
+} from "@cmssy/core/internal";
 import { resolveCmssyLayoutSlot, type BlockDefinition } from "@cmssy/react";
 
 import { CMSSY_EDIT_PATH_PREFIX } from "./middleware";
@@ -56,7 +60,7 @@ export async function loadCmssyPage(
 
   const segments = withoutEditPrefix(url.pathname).split("/").filter(Boolean);
 
-  const positions = options.positions ?? ["header", "footer"];
+  const positions = options.positions ?? layoutRegionIds(config.layout);
   const blocks = options.blocks ?? [];
   const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
   const retry =

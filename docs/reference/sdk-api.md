@@ -41,6 +41,7 @@ editor-data resolvers moved onto `@cmssy/react` in 10.9.0.
 | `CmssyEnvConfig`    | type                                            | The same with the required fields widened to `\| undefined`.                                                             |
 | `CmssyLayout`       | type                                            | `{ regions: readonly LayoutRegion[] }`; `LayoutRegion` is `{ id, label? }`.                                              |
 | `CmssyRegion<L>`    | type                                            | The union of region ids a `CmssyLayout` declares.                                                                        |
+| `LayoutPosition`    | type                                            | `string` - kept as an alias; prefer `CmssyRegion`.                                                                       |
 | `CmssyRegionOf<C>`  | type                                            | The same, read off a `CmssyConfig`; `string` when no layout is declared.                                                 |
 
 ### Gateway
@@ -235,6 +236,14 @@ Types: `CmssyBlockContext`, `CmssyLocaleContext`, `CmssyBlockPage`,
 
 Client-only editor bridge: `CmssyLazyEditor`, `CmssyLazyLayout`,
 `CmssyEditablePage`, `CmssyEditableLayout`, `useEditBridge`, `EditBridgeConfig`.
+
+`EditBridgeConfig` is `{ editorOrigin, schemas?, blockMeta?, layoutRegions? }`.
+`layoutRegions` is the site's `config.layout.regions`; when present it rides
+along in `cmssy:ready` so the editor lists exactly those regions. Next fills it
+in from the config inside `createCmssyPage`; on Astro and React Router the
+page result / loader data carries it back as `layoutRegions` for you to pass
+to `CmssyEditor`. The same field picks the positions `loadCmssyPage` and
+`createCmssyLoader` resolve editor data for, unless you pass `positions`.
 
 ### Editor data
 

@@ -21,7 +21,8 @@ inside `createCmssyPage`, Astro and React Router hand it back as
 **Breaking:** `layoutPositionValues` is gone from `@cmssy/core` and
 `@cmssy/react`, and `LayoutPosition` is `string` instead of the six-name
 union - cmssy no longer knows a fixed list of positions. `@cmssy/types` moves
-to 0.37.0.
+to 0.37.0. The declaration files now use a `const` type parameter, so the
+consumer needs TypeScript 5.0 or newer.
 
 **Do I have to do anything?** Add `layout` to your config (a site without it
 keeps the old `header` + `footer` pair), replace `LayoutPosition` /
