@@ -63,4 +63,22 @@ describe("v15 codemod", () => {
     expect(code).toBe(source);
     expect(changed).toBe(false);
   });
+
+  it("renames position= even after an arrow-function prop", () => {
+    const { code } = transform(
+      '<CmssyLayoutSlot onSelect={() => pick()} position="header" />',
+    );
+    expect(code).toBe(
+      '<CmssyLayoutSlot onSelect={() => pick()} region="header" />',
+    );
+  });
+
+  it("leaves position= on a nested foreign component inside a prop alone", () => {
+    const { code } = transform(
+      '<CmssyLayoutSlot fallback={<Tooltip position="top" />} position="header" />',
+    );
+    expect(code).toBe(
+      '<CmssyLayoutSlot fallback={<Tooltip position="top" />} region="header" />',
+    );
+  });
 });

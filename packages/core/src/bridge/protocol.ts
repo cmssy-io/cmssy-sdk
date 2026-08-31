@@ -7,7 +7,7 @@ import type {
   LayoutRegion,
 } from "@cmssy/types";
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 export type { FieldType, FieldDefinition, BlockSchema, BlockMeta, BlockRect };
 
