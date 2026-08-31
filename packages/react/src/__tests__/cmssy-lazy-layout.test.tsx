@@ -18,14 +18,14 @@ const blocks = [
     type: "site-header",
     label: "Header",
     component: Header,
-    layoutPositions: ["header"],
+    layoutRegions: ["header"],
     props: headerProps,
   }),
 ];
 
 const groups = [
   {
-    position: "header",
+    region: "header",
     blocks: [
       {
         id: "h1",
@@ -64,7 +64,7 @@ describe("CmssyLazyLayout", () => {
     const { container } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         locale="en"
         edit={{ editorOrigin }}
         load={load}
@@ -80,7 +80,7 @@ describe("CmssyLazyLayout", () => {
     const { container } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         edit={{ editorOrigin }}
         load={() => Promise.reject(new Error("boom"))}
       />,
@@ -95,7 +95,7 @@ describe("CmssyLazyLayout", () => {
     const { container } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         edit={{ editorOrigin }}
         load={() => Promise.resolve({ blocks: undefined as unknown as never })}
       />,
@@ -110,7 +110,7 @@ describe("CmssyLazyLayout", () => {
     const { container, rerender } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         edit={{ editorOrigin }}
         load={load1}
       />,
@@ -120,7 +120,7 @@ describe("CmssyLazyLayout", () => {
     rerender(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         edit={{ editorOrigin }}
         load={load2}
       />,
@@ -134,7 +134,7 @@ describe("editor-content marker", () => {
     const { container } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         locale="en"
         defaultLocale="en"
         edit={{ editorOrigin }}
@@ -151,7 +151,7 @@ describe("editor-content marker", () => {
     const { container } = render(
       <CmssyLazyLayout
         groups={groups}
-        position="header"
+        region="header"
         locale="en"
         defaultLocale="en"
         edit={{ editorOrigin }}

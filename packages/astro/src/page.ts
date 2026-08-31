@@ -44,7 +44,7 @@ export interface CmssyLayoutEditorData {
 
 export interface LoadCmssyPageOptions {
   blocks?: BlockDefinition[];
-  positions?: string[];
+  regions?: string[];
   appContext?: Record<string, unknown>;
   retry?: RetryOption;
   prerendered?: boolean;
@@ -62,14 +62,14 @@ export async function loadCmssyPage(
 
   const segments = withoutEditPrefix(url.pathname).split("/").filter(Boolean);
 
-  const positions = options.positions ?? layoutRegionIds(config.layout);
+  const regions = options.regions ?? layoutRegionIds(config.layout);
   const blocks = options.blocks ?? [];
   const headerLocale = request.headers.get(CMSSY_LOCALE_HEADER) ?? undefined;
   const retry =
     options.retry ?? (options.prerendered === false ? "interactive" : "build");
 
   const slot = await resolveCmssyLayoutSlot(config, {
-    position: positions[0] ?? "header",
+    region: regions[0] ?? "header",
     blocks,
     editMode: isEdit,
     path: segments,
@@ -86,14 +86,14 @@ export async function loadCmssyPage(
   let editorData: Record<string, CmssyLayoutEditorData> | undefined;
   if (isEdit && slot.data && slot.resolvedContent) {
     editorData = {
-      [positions[0] ?? "header"]: {
+      [regions[0] ?? "header"]: {
         data: slot.data,
         resolvedContent: slot.resolvedContent,
       },
     };
-    for (const position of positions.slice(1)) {
+    for (const region of regions.slice(1)) {
       const extra = await resolveCmssyLayoutSlot(config, {
-        position,
+        region,
         blocks,
         editMode: true,
         path: segments,
@@ -102,7 +102,7 @@ export async function loadCmssyPage(
         retry,
       });
       if (extra.data && extra.resolvedContent) {
-        editorData[position] = {
+        editorData[region] = {
           data: extra.data,
           resolvedContent: extra.resolvedContent,
         };

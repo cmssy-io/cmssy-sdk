@@ -41,7 +41,7 @@ export interface BlockDefinition {
   label?: string;
   category?: string;
   icon?: string;
-  layoutPositions?: string[];
+  layoutRegions?: string[];
   description?: string;
   props: Record<string, FieldDefinition>;
   loader?: BlockLoader;
@@ -66,7 +66,7 @@ export function defineBlock<
     label?: string;
     category?: string;
     icon?: string;
-    layoutPositions?: string[];
+    layoutRegions?: string[];
     description?: string;
     props: P;
     loader?: (args: {

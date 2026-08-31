@@ -102,7 +102,7 @@ interface ReadyBlock {
   id: string;
   type: string;
   bounds: BlockRect;
-  layoutPosition?: string;
+  layoutRegion?: string;
 }
 
 function collectLayoutBlocks(
@@ -112,14 +112,14 @@ function collectLayoutBlocks(
   const out: ReadyBlock[] = [];
   if (typeof document === "undefined") return out;
   const seen = new Set<string>();
-  for (const el of document.querySelectorAll("[data-layout-position]")) {
+  for (const el of document.querySelectorAll("[data-layout-region]")) {
     const id = el.getAttribute("data-block-id");
     const type = el.getAttribute("data-block-type");
-    const layoutPosition = el.getAttribute("data-layout-position");
+    const layoutRegion = el.getAttribute("data-layout-region");
     if (
       id &&
       type &&
-      layoutPosition !== null &&
+      layoutRegion !== null &&
       !pageIds.has(id) &&
       !seen.has(id)
     ) {
@@ -127,7 +127,7 @@ function collectLayoutBlocks(
       out.push({
         id,
         type,
-        layoutPosition,
+        layoutRegion,
         bounds: rects.get(id) ?? ZERO_RECT,
       });
     }
@@ -232,7 +232,7 @@ export function useEditBridge(
       if (!message) return;
       postTarget = event.origin;
       if (message.type === "cmssy:patch") {
-        if (message.layoutPosition !== undefined) return;
+        if (message.layoutRegion !== undefined) return;
         setPatches((prev) => ({
           ...prev,
           [message.blockId]: { ...prev[message.blockId], ...message.content },
@@ -304,12 +304,12 @@ export function useEditBridge(
         event.stopPropagation();
       }
       const r = el.getBoundingClientRect();
-      const layoutPosition = el.getAttribute("data-layout-position");
+      const layoutRegion = el.getAttribute("data-layout-region");
       postSafe({
         type: "cmssy:click",
         blockId: id,
         rect: { x: r.x, y: r.y, width: r.width, height: r.height },
-        ...(layoutPosition !== null ? { layoutPosition } : {}),
+        ...(layoutRegion !== null ? { layoutRegion } : {}),
       });
     };
 

@@ -965,11 +965,11 @@ describe("edit bridge (blocks-driven)", () => {
     ).toThrow(/requires a blocks array/);
   });
 
-  it("includes DOM layout blocks (data-layout-position) in cmssy:ready, tagged with layoutPosition", () => {
+  it("includes DOM layout blocks (data-layout-region) in cmssy:ready, tagged with layoutRegion", () => {
     const layoutEl = document.createElement("div");
     layoutEl.setAttribute("data-block-id", "lay1");
     layoutEl.setAttribute("data-block-type", "site-header");
-    layoutEl.setAttribute("data-layout-position", "header");
+    layoutEl.setAttribute("data-layout-region", "header");
     document.body.appendChild(layoutEl);
     try {
       render(
@@ -981,15 +981,15 @@ describe("edit bridge (blocks-driven)", () => {
         />,
       );
       const ready = readyMessage() as unknown as {
-        blocks: Array<{ id: string; type: string; layoutPosition?: string }>;
+        blocks: Array<{ id: string; type: string; layoutRegion?: string }>;
       };
       expect(ready.blocks.find((b) => b.id === "lay1")).toMatchObject({
         id: "lay1",
         type: "site-header",
-        layoutPosition: "header",
+        layoutRegion: "header",
       });
       expect(
-        ready.blocks.find((b) => b.id === "b1")?.layoutPosition,
+        ready.blocks.find((b) => b.id === "b1")?.layoutRegion,
       ).toBeUndefined();
     } finally {
       document.body.removeChild(layoutEl);
@@ -1001,7 +1001,7 @@ describe("edit bridge (blocks-driven)", () => {
       const el = document.createElement("div");
       el.setAttribute("data-block-id", "dup1");
       el.setAttribute("data-block-type", "site-header");
-      el.setAttribute("data-layout-position", "header");
+      el.setAttribute("data-layout-region", "header");
       return el;
     };
     const a = make();
@@ -1027,11 +1027,11 @@ describe("edit bridge (blocks-driven)", () => {
     }
   });
 
-  it("emits layoutPosition on cmssy:click for a layout block", () => {
+  it("emits layoutRegion on cmssy:click for a layout block", () => {
     const layoutEl = document.createElement("div");
     layoutEl.setAttribute("data-block-id", "lay1");
     layoutEl.setAttribute("data-block-type", "site-header");
-    layoutEl.setAttribute("data-layout-position", "header");
+    layoutEl.setAttribute("data-layout-region", "header");
     document.body.appendChild(layoutEl);
     try {
       render(
@@ -1049,7 +1049,7 @@ describe("edit bridge (blocks-driven)", () => {
         expect.objectContaining({
           type: "cmssy:click",
           blockId: "lay1",
-          layoutPosition: "header",
+          layoutRegion: "header",
         }),
         editorOrigin,
       );
@@ -1058,7 +1058,7 @@ describe("edit bridge (blocks-driven)", () => {
     }
   });
 
-  it("ignores a cmssy:patch carrying a layoutPosition (page render unchanged)", async () => {
+  it("ignores a cmssy:patch carrying a layoutRegion (page render unchanged)", async () => {
     const { container } = render(
       <CmssyEditablePage
         page={page}
@@ -1076,7 +1076,7 @@ describe("edit bridge (blocks-driven)", () => {
             type: "cmssy:patch",
             blockId: "b1",
             content: { heading: "Layout" },
-            layoutPosition: "header",
+            layoutRegion: "header",
             protocolVersion: PROTOCOL_VERSION,
           },
         }),
@@ -1086,7 +1086,7 @@ describe("edit bridge (blocks-driven)", () => {
     expect(container.textContent).not.toContain("Layout");
   });
 
-  it("ignores a cmssy:patch carrying an empty-string layoutPosition", async () => {
+  it("ignores a cmssy:patch carrying an empty-string layoutRegion", async () => {
     const { container } = render(
       <CmssyEditablePage
         page={page}
@@ -1104,7 +1104,7 @@ describe("edit bridge (blocks-driven)", () => {
             type: "cmssy:patch",
             blockId: "b1",
             content: { heading: "EmptyPos" },
-            layoutPosition: "",
+            layoutRegion: "",
             protocolVersion: PROTOCOL_VERSION,
           },
         }),

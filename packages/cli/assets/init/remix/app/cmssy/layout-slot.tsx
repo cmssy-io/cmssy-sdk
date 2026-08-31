@@ -12,7 +12,7 @@ import { blocks } from "./blocks";
 
 export interface LayoutSlotProps {
   groups: CmssyLayoutGroup[];
-  position: CmssyRegion<typeof layout>;
+  region: CmssyRegion<typeof layout>;
   page: CmssyBlockPage;
   locale: string;
   defaultLocale: string;
@@ -24,7 +24,7 @@ export interface LayoutSlotProps {
 
 export function LayoutSlot({
   groups,
-  position,
+  region,
   page,
   locale,
   defaultLocale,
@@ -37,7 +37,7 @@ export function LayoutSlot({
     return (
       <CmssyLazyLayout
         groups={groups}
-        position={position}
+        region={region}
         page={page}
         locale={locale}
         defaultLocale={defaultLocale}
@@ -50,7 +50,7 @@ export function LayoutSlot({
     );
   }
 
-  const group = groups.find((candidate) => candidate.position === position);
+  const group = groups.find((candidate) => candidate.region === region);
   if (!group) return null;
 
   const blockMap = buildBlockMap(blocks);

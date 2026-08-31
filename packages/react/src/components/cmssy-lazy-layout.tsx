@@ -9,7 +9,7 @@ import type { LayoutBlockPage } from "./resolve-block-data";
 
 export interface CmssyLazyLayoutProps {
   groups: CmssyLayoutGroup[];
-  position: string;
+  region: string;
   page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
@@ -55,7 +55,7 @@ export function CmssyLazyLayout({ load, ...props }: CmssyLazyLayoutProps) {
   return (
     <>
       <div
-        data-cmssy-layout-slot={props.position}
+        data-cmssy-layout-slot={props.region}
         data-cmssy-editor-content={resolvedCount}
         hidden
       />

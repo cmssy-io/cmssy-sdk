@@ -40,7 +40,7 @@ export const CMSSY_DELIVERY_OPERATIONS: readonly CmssyDeliveryOperation[] = [
     document: PUBLIC_PAGE_META_QUERY,
   },
   {
-    purpose: "Header, footer and the other layout positions for a page.",
+    purpose: "Header, footer and the other layout regions for a page.",
     document: PUBLIC_PAGE_LAYOUTS_QUERY,
   },
   {

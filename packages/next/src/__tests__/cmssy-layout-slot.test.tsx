@@ -23,7 +23,7 @@ const CONFIG = {
 
 const GROUPS = [
   {
-    position: "header",
+    region: "header",
     blocks: [
       {
         id: "b1",
@@ -50,7 +50,7 @@ const blocks = [
     type: "site-header",
     label: "Header",
     component: Header,
-    layoutPositions: ["header"],
+    layoutRegions: ["header"],
     props: { brand: fields.text() },
     loader: async ({ context }: { context?: CmssyBlockContext }) =>
       context?.page ?? null,
@@ -101,7 +101,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -121,7 +121,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: ["pricing"],
       editMode: false,
       editable: Editable,
@@ -144,7 +144,7 @@ describe("CmssyLayoutSlot", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: ["pricing"],
       page: "/about",
       editMode: false,
@@ -163,7 +163,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: ["no", "about"],
       editMode: false,
       editable: Editable,
@@ -183,7 +183,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       locale: "no",
       editMode: false,
       editable: Editable,
@@ -199,7 +199,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks,
-      position: "header",
+      region: "header",
       path: ["docs"],
       editMode: true,
       editable: Editable,
@@ -229,7 +229,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: CONFIG,
       blocks,
-      position: "header",
+      region: "header",
       path: ["docs"],
       editMode: false,
       preview: true,
@@ -252,7 +252,7 @@ describe("CmssyLayoutSlot", () => {
     const element = await CmssyLayoutSlot({
       config: { ...CONFIG, editorOrigin: origins },
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: true,
       editable: Editable,
@@ -268,7 +268,7 @@ describe("CmssyLayoutSlot", () => {
     const published = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -279,7 +279,7 @@ describe("CmssyLayoutSlot", () => {
     const editing = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: true,
       editable: Editable,
@@ -297,7 +297,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks,
-      position: "header",
+      region: "header",
       path: ["docs"],
       editMode: false,
       editable: Editable,
@@ -320,7 +320,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     const shared = {
       config: CONFIG,
       blocks,
-      position: "header",
+      region: "header",
       path: ["docs"],
       editMode: false,
       editable: Editable,
@@ -350,7 +350,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     const rendered = await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -371,7 +371,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks,
-      position: "header",
+      region: "header",
       path: ["docs"],
       editMode: true,
       editable: Editable,
@@ -399,7 +399,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "footer",
+      region: "footer",
       path: [],
       editMode: false,
       editable: Editable,
@@ -421,7 +421,7 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -438,7 +438,7 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -456,7 +456,7 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
     await CmssyLayoutSlot({
       config: CONFIG,
       blocks: [],
-      position: "header",
+      region: "header",
       path: [],
       editMode: false,
       editable: Editable,
@@ -467,18 +467,18 @@ describe("CmssyLayoutSlot retry policy (CMS-1460)", () => {
   });
 });
 
-describe("CmssyLayoutSlot position typing", () => {
-  it("narrows position to the regions the config declares", () => {
+describe("CmssyLayoutSlot region typing", () => {
+  it("narrows region to the regions the config declares", () => {
     const layout = defineCmssyLayout({
       regions: [{ id: "header" }, { id: "sidebar_left" }],
     });
     const declared = defineCmssyConfig({ ...CONFIG, layout });
     expectTypeOf<
-      CmssyLayoutSlotProps<typeof declared>["position"]
+      CmssyLayoutSlotProps<typeof declared>["region"]
     >().toEqualTypeOf<"header" | "sidebar_left">();
     const undeclared = defineCmssyConfig(CONFIG);
     expectTypeOf<
-      CmssyLayoutSlotProps<typeof undeclared>["position"]
+      CmssyLayoutSlotProps<typeof undeclared>["region"]
     >().toEqualTypeOf<string>();
   });
 

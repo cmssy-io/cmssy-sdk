@@ -167,14 +167,14 @@ describe("blocksToSchemas", () => {
 });
 
 describe("blocksToMeta", () => {
-  it("derives label/category/icon/layoutPositions and applies the default category", () => {
+  it("derives label/category/icon/layoutRegions and applies the default category", () => {
     const meta = blocksToMeta(
       [
         defineBlock({
           type: "site-header",
           label: "Site Header",
           icon: "layout-panel-top",
-          layoutPositions: ["header"],
+          layoutRegions: ["header"],
           component: Dummy,
           props: {},
         }),
@@ -191,7 +191,7 @@ describe("blocksToMeta", () => {
       label: "Site Header",
       category: "kancelaria",
       icon: "layout-panel-top",
-      layoutPositions: ["header"],
+      layoutRegions: ["header"],
     });
     expect(meta.hero).toEqual({ label: "Hero", category: "kancelaria" });
   });
@@ -236,10 +236,10 @@ describe("blocksToMeta", () => {
 });
 
 describe("protocol", () => {
-  it("is version 2 and compatibility-checked", () => {
-    expect(PROTOCOL_VERSION).toBe(2);
-    expect(isProtocolCompatible(2)).toBe(true);
-    expect(isProtocolCompatible(1)).toBe(false);
+  it("is version 3 and compatibility-checked", () => {
+    expect(PROTOCOL_VERSION).toBe(3);
+    expect(isProtocolCompatible(3)).toBe(true);
+    expect(isProtocolCompatible(2)).toBe(false);
   });
 });
 

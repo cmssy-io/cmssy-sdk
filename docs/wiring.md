@@ -48,7 +48,7 @@ export const cmssy = defineCmssyConfig({
 `layout` is the list of places on your page a layout block can live - a
 header, a footer, a sidebar, a cookie bar - and **you** name them. The editor
 shows exactly these regions under Layouts, and `CmssyLayoutSlot` accepts
-exactly these ids as `position`; `CmssyRegion<typeof layout>` is that union
+exactly these ids as `region`; `CmssyRegion<typeof layout>` is that union
 for your own code. Ids start with a letter or digit and continue with
 `[a-z0-9_-]`, at most 50 characters, at most 20 of them. Write the `regions`
 array inline (or `as const`): ids coming from a plain variable widen to
@@ -235,11 +235,11 @@ export function generateStaticParams() {
 
 export default async function Page(props) {
   const { path } = await props.params;
-  const slot = (position) => (
+  const slot = (region) => (
     <CmssyLayoutSlot
       config={cmssy}
       blocks={blocks}
-      position={position}
+      region={region}
       path={path ?? []} // the language prefix in it IS the language
       editMode={false} // true only on the /cmssy-edit route
       editable={EditableLayout}
@@ -310,7 +310,7 @@ as the staleness you can live with, not the largest number that still looks
 fast.
 
 Mount it per route, not in `app/layout.tsx`: a route knows its path. Mount one
-slot per region you declared in `cmssy.config.ts` - `position` is typed to
+slot per region you declared in `cmssy.config.ts` - `region` is typed to
 those ids, so a slot for a region you did not declare does not compile, and a
 region you declared but never mounted is content the editor can fill and the
 site never shows.
@@ -325,14 +325,14 @@ it rather than fetching `layouts` a second time. Give the slot a render prop:
 <CmssyLayoutSlot
   config={cmssy}
   blocks={blocks}
-  position="sidebar_left"
+  region="sidebar_left"
   path={path ?? []}
   editMode={false}
   editable={EditableLayout}
 >
   {({ groups, settings, element }) => {
     const mounted = groups
-      .find((g) => g.position === "sidebar_left")
+      .find((g) => g.region === "sidebar_left")
       ?.blocks.some((b) => b.isActive);
     if (!mounted) return null;
     return (
@@ -347,7 +347,7 @@ visitor, the editable one with its editor data in edit mode - so both routes
 stay on the slot and keep the automatic editor loaders. `settings` is typed
 from `config.layout` (`CmssyRegionSettingsOf<typeof cmssy, "sidebar_left">`)
 and is `null` until someone authors it. When the region decides something
-outside the slot's own subtree, `resolveCmssyLayout(cmssy, { position, path,
+outside the slot's own subtree, `resolveCmssyLayout(cmssy, { region, path,
 blocks, editMode, editable })` from `@cmssy/next/server` returns the same
 `{ groups, settings, element }` for you to place.
 

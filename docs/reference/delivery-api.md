@@ -52,7 +52,7 @@ fields.
 | `public.page.getById`          | `fetchPageById`                          | `{ id, publishedBlocks }`                                    |
 | `public.page.list`             | `fetchPages`                             | `[{ id, slug, updatedAt, publishedAt }]`                     |
 | `public.page.get` (SEO fields) | `fetchPageMeta`                          | `{ id, seoTitle, seoDescription, seoKeywords, displayName }` |
-| `public.page.layouts`          | `fetchLayouts`                           | `[{ position, blocks }]`                                     |
+| `public.page.layouts`          | `fetchLayouts`                           | `[{ region, blocks }]`                                     |
 | `public.siteConfig`            | `fetchSiteConfig` / `resolveSiteLocales` | site name, locales, features, branding                       |
 | `public.form.get`              | `resolveForms` (and `context.forms`)     | form fields + settings                                       |
 | `public.form.submit`           | `SUBMIT_FORM_MUTATION`                   | `{ success, message, submissionId, ... }`                    |

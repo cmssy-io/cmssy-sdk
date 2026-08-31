@@ -16,7 +16,7 @@ import type { LayoutBlockPage } from "./resolve-block-data";
 export interface CmssyEditableLayoutProps {
   groups: CmssyLayoutGroup[];
   blocks: BlockDefinition[];
-  position: string;
+  region: string;
   page?: LayoutBlockPage;
   locale?: string;
   defaultLocale?: string;
@@ -30,7 +30,7 @@ export interface CmssyEditableLayoutProps {
 export function CmssyEditableLayout({
   groups,
   blocks,
-  position,
+  region,
   page,
   locale = "en",
   defaultLocale = "en",
@@ -46,15 +46,15 @@ export function CmssyEditableLayout({
     [edit.schemas, blocks],
   );
   const layoutBlocks = useMemo<RawLayoutBlock[]>(() => {
-    const group = groups.find((g) => g.position === position);
+    const group = groups.find((g) => g.region === region);
     return group
       ? group.blocks
           .filter((b) => b.isActive !== false)
           .slice()
           .sort((a, b) => a.order - b.order)
       : [];
-  }, [groups, position]);
-  const patches = useLayoutPatchBridge(position, edit);
+  }, [groups, region]);
+  const patches = useLayoutPatchBridge(region, edit);
   const context = useMemo(
     () =>
       buildBlockContext(locale, defaultLocale, enabledLocales, true, undefined, {
@@ -78,7 +78,7 @@ export function CmssyEditableLayout({
           resolvedContent={resolvedContent?.[block.id]}
           schema={schemas[block.type]}
           editMode
-          layoutPosition={position}
+          layoutRegion={region}
           context={context}
           data={data?.[block.id]}
         />

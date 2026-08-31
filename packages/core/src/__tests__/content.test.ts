@@ -512,7 +512,7 @@ describe("fetchLayouts", () => {
           page: {
             layouts: [
               {
-                position: "header",
+                region: "header",
                 blocks: [
                   {
                     id: "h1",
@@ -523,7 +523,7 @@ describe("fetchLayouts", () => {
                   },
                 ],
               },
-              { position: "footer", blocks: [] },
+              { region: "footer", blocks: [] },
             ],
           },
         },
@@ -531,7 +531,7 @@ describe("fetchLayouts", () => {
     });
     const groups = await fetchLayouts(config, "/", { fetch });
     expect(groups).toHaveLength(2);
-    expect(groups[0]?.position).toBe("header");
+    expect(groups[0]?.region).toBe("header");
     expect(groups[0]?.blocks[0]?.id).toBe("h1");
   });
 
@@ -568,11 +568,11 @@ describe("fetchLayouts", () => {
           page: {
             layouts: [
               {
-                position: "sidebar_left",
+                region: "sidebar_left",
                 blocks: [],
                 settings: { showOnMobile: false, width: 320 },
               },
-              { position: "header", blocks: [], settings: null },
+              { region: "header", blocks: [], settings: null },
             ],
           },
         },

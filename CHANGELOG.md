@@ -6,6 +6,32 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 15.0.0
+
+**One word for layout regions: `position` is now `region`, everywhere.** The
+SDK, the GraphQL API, the admin editor and the MCP tools renamed in lockstep
+(CMS-1709). Nothing else changed - this is a pure vocabulary release.
+
+You have to act. Run the codemod, then sweep the renames it cannot reach:
+
+```bash
+npx @cmssy/codemod v15 ./
+```
+
+- `defineBlock({ layoutPositions })` -> `defineBlock({ layoutRegions })`
+- `CmssyLayoutSlot` / `CmssyServerLayout` / `CmssyEditableLayout` /
+  `CmssyLazyLayout` take `region=` instead of `position=`
+- `resolveCmssyLayout(cmssy, { region })`, `resolveEditorLayoutBlockData({ region })`
+- `CmssyLayoutGroup.region`; astro/remix loaders take `regions` instead of `positions`
+- `@cmssy/types`: `LayoutRegionId` replaces `LayoutPosition`,
+  `TemplateLayoutRegion` replaces `TemplateLayoutPosition` (0.40.0)
+- bridge + manifest keys: `layoutRegion` / `layoutRegions`, DOM attribute
+  `data-layout-region`
+
+Deploy against a backend serving the renamed schema - the delivery query now
+selects `region`, and the manifest push sends `layoutRegions`. Full guide:
+[docs/migrations/v14-to-v15.md](docs/migrations/v14-to-v15.md).
+
 ## 14.2.0
 
 **The block and layout manifest is pushed at deploy time, not only from the

@@ -87,7 +87,7 @@ describe("loader failures", () => {
       await CmssyServerLayout({
         groups: [
           {
-            position: "header",
+            region: "header",
             blocks: [
               {
                 id: "h1",
@@ -100,7 +100,7 @@ describe("loader failures", () => {
           },
         ],
         blocks: [brokenBlock],
-        position: "header",
+        region: "header",
         locale: "en",
         editMode: true,
       }),

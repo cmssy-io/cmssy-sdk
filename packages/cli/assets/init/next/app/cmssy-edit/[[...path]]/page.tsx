@@ -25,11 +25,11 @@ export default async function EditPage(props: PageProps) {
 
   const editMode = await isCmssyEditMode();
 
-  const slot = (position: CmssyRegion<typeof layout>) => (
+  const slot = (region: CmssyRegion<typeof layout>) => (
     <CmssyLayoutSlot
       config={cmssy}
       blocks={blocks}
-      position={position}
+      region={region}
       path={path ?? []}
       editMode={editMode}
       editable={EditableLayout}

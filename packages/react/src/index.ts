@@ -9,7 +9,7 @@ export type {
   CmssyRegionOf,
   CmssyRegionSettings,
   CmssyRegionSettingsOf,
-  LayoutPosition,
+  LayoutRegionId,
   LayoutRegion,
 } from "@cmssy/core";
 export type {

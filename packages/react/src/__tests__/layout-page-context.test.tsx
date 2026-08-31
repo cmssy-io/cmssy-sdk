@@ -16,7 +16,7 @@ const blocks = [
     type: "docs-sidebar",
     label: "Docs sidebar",
     component: Sidebar,
-    layoutPositions: ["sidebar_left"],
+    layoutRegions: ["sidebar_left"],
     props: {},
     loader: async ({ context }: { context?: CmssyBlockContext }) => {
       seen(context?.page);
@@ -30,7 +30,7 @@ const blocks = [
 
 const groups = [
   {
-    position: "sidebar_left",
+    region: "sidebar_left",
     blocks: [
       {
         id: "s1",
@@ -46,7 +46,7 @@ const groups = [
 const shared = {
   groups,
   blocks,
-  position: "sidebar_left",
+  region: "sidebar_left",
   locale: "en",
   defaultLocale: "en",
   enabledLocales: ["en"],
@@ -85,7 +85,7 @@ describe("a layout block's loader sees the routed page (CMS-1708)", () => {
             type: "docs-sidebar",
             label: "Docs sidebar",
             component: Sidebar,
-            layoutPositions: ["sidebar_left"],
+            layoutRegions: ["sidebar_left"],
             props: {},
             loader: async ({ context }: { context?: CmssyBlockContext }) => {
               previews(context?.isPreview);

@@ -25,7 +25,7 @@ const heroBlock = {
 
 const headerBlock = {
   type: "header",
-  layoutPositions: ["header"],
+  layoutRegions: ["header"],
   props: { logo: fields.media() },
   component: () => null,
 };
@@ -158,7 +158,7 @@ describe("cmssy sync-manifest", () => {
           type: "header",
           label: "header",
           category: "Site",
-          layoutPositions: ["header"],
+          layoutRegions: ["header"],
           schema: { logo: { ...fields.media(), label: "logo" } },
         },
         {

@@ -148,10 +148,10 @@ describe("drag agent", () => {
     );
   });
 
-  it("excludes layout blocks (data-layout-position) from the page drop index", () => {
+  it("excludes layout blocks (data-layout-region) from the page drop index", () => {
     const layoutEl = document.createElement("div");
     layoutEl.setAttribute("data-block-id", "lay1");
-    layoutEl.setAttribute("data-layout-position", "header");
+    layoutEl.setAttribute("data-layout-region", "header");
     document.body.appendChild(layoutEl);
     try {
       render(

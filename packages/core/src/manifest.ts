@@ -12,7 +12,7 @@ export interface BlockManifestSource {
   label?: string;
   category?: string;
   icon?: string;
-  layoutPositions?: string[];
+  layoutRegions?: string[];
   description?: string;
   props: Record<string, FieldDefinition>;
 }
@@ -23,7 +23,7 @@ export interface BlockManifestBlock {
   category?: string;
   icon?: string;
   description?: string;
-  layoutPositions?: string[];
+  layoutRegions?: string[];
   schema: BlockSchema;
 }
 
@@ -59,8 +59,8 @@ export function blocksToMeta(
       label: block.label ?? block.type,
       ...(category ? { category } : {}),
       ...(block.icon ? { icon: block.icon } : {}),
-      ...(block.layoutPositions
-        ? { layoutPositions: block.layoutPositions }
+      ...(block.layoutRegions
+        ? { layoutRegions: block.layoutRegions }
         : {}),
       ...(block.description ? { description: block.description } : {}),
     };
@@ -92,8 +92,8 @@ export function registryToManifestBlocks(
         ...(meta?.category ? { category: meta.category } : {}),
         ...(meta?.icon ? { icon: meta.icon } : {}),
         ...(meta?.description ? { description: meta.description } : {}),
-        ...(meta?.layoutPositions?.length
-          ? { layoutPositions: meta.layoutPositions }
+        ...(meta?.layoutRegions?.length
+          ? { layoutRegions: meta.layoutRegions }
           : {}),
         schema,
       };

@@ -62,7 +62,7 @@ Full shape:
 | `label`           | no       | Display name in the editor.                                                   |
 | `category`        | no       | Groups the block in the editor's picker.                                      |
 | `icon`            | no       | Icon id for the picker.                                                       |
-| `layoutPositions` | no       | Restrict where the block may be placed.                                       |
+| `layoutRegions` | no       | Restrict where the block may be placed.                                       |
 | `loader`          | no       | Server-side data fetch (SSR only). See [Server loaders](./server-loaders.md). |
 
 ## The `fields` registry
