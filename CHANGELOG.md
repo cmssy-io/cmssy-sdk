@@ -32,8 +32,8 @@ nothing to verify - and a verification call on the backend.
 `requireLogin`, the other half of that ticket, **is** enforced and stays.
 
 Deploy against a backend that still serves the field or one that has removed
-it - a query that selects less is valid against both, so this release is safe
-to ship ahead of the backend.
+it - a query that selects fewer fields is valid against both, so this release
+is safe to ship ahead of the backend.
 
 ## 15.0.0
 
