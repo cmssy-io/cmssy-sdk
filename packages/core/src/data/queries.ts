@@ -84,7 +84,7 @@ export const FORM_QUERY = `query PublicForm($formId: ID!) {
         }
         settings {
           actionType submitButtonLabel successMessage errorMessage
-          redirectUrl requireLogin enableCaptcha
+          redirectUrl requireLogin
         }
       }
     }

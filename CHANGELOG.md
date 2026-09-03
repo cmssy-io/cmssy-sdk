@@ -6,6 +6,35 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.0.0
+
+**`form.settings.enableCaptcha` is gone.** cmssy stored it, defaulted it, put a
+toggle in the admin editor - and no submit path ever read it (CMS-1600). A form
+with the toggle on was not protected by anything, so the field told you
+something that was not true.
+
+You have to act only if you read it. Two shapes to look for:
+
+```ts
+// gone - the field is no longer selected, and no longer on the type
+if (form.settings?.enableCaptcha) renderCaptcha()
+
+// gone - CmssyFormSettings no longer declares it (@cmssy/types 0.41.0)
+const enabled: boolean | null = settings.enableCaptcha
+```
+
+There is no replacement flag to switch to, because there was never an
+enforcement behind it. If you want a captcha on a cmssy form, it is a real
+feature and not a flag: it needs a provider, a secret, a token argument on
+`SubmitFormInput` - which today is `{ data: JSON!, website: String }`, with
+nothing to verify - and a verification call on the backend.
+
+`requireLogin`, the other half of that ticket, **is** enforced and stays.
+
+Deploy against a backend that still serves the field or one that has removed
+it - a query that selects less is valid against both, so this release is safe
+to ship ahead of the backend.
+
 ## 15.0.0
 
 **One word for layout regions: `position` is now `region`, everywhere.** The
