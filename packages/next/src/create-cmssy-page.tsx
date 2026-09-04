@@ -33,6 +33,7 @@ import {
 } from "@cmssy/core";
 import { CMSSY_EDIT_QUERY_PARAM, CMSSY_SECRET_QUERY_PARAM } from "@cmssy/core";
 import { nextRetryMode } from "./retry-mode";
+import { cmssyCachedFetch, type CmssyDataCacheOptions } from "./data-cache";
 
 export interface CmssyEditorProps {
   page: CmssyPageData;
@@ -59,6 +60,7 @@ export interface CreateCmssyPageOptions {
   path?: string;
   appContext?: CmssyAppContext;
   retry?: RetryOption;
+  cache?: CmssyDataCacheOptions;
 }
 
 interface CatchAllParams {
@@ -124,7 +126,10 @@ function buildCmssyPageRenderer(
     workspaceSlug: config.workspaceSlug,
   };
   const client = createCmssyClient(clientConfig);
-  const requestOptions = { retry: options?.retry ?? nextRetryMode() };
+  const retryOptions = { retry: options?.retry ?? nextRetryMode() };
+  const cachedFetch = options?.cache
+    ? cmssyCachedFetch(options.cache)
+    : undefined;
   const fixedPath = options?.path
     ?.split("/")
     .map((segment) => segment.trim())
@@ -151,6 +156,10 @@ function buildCmssyPageRenderer(
     }
     const editMode = isEnabled || editorActive;
     const devAllowed = isDevelopment() && Boolean(config.devToken?.trim());
+    const requestOptions =
+      cachedFetch && !editMode && !devAllowed
+        ? { ...retryOptions, fetch: cachedFetch }
+        : retryOptions;
 
     const siteLocales = await resolveSiteLocales(clientConfig, requestOptions);
     const { defaultLocale, locales: enabledLocales } = siteLocales;

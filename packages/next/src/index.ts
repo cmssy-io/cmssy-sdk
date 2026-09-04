@@ -31,6 +31,8 @@ export type {
 } from "@cmssy/core";
 
 export { nextRetryMode, NEXT_BUILD_PHASE } from "./retry-mode";
+export { CMSSY_CONTENT_TAG, cmssyCachedFetch } from "./data-cache";
+export type { CmssyDataCacheOptions } from "./data-cache";
 
 export type {
   CmssyEditorProps,

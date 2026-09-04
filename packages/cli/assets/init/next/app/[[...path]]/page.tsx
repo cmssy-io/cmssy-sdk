@@ -14,11 +14,16 @@ type PageProps = {
 export const revalidate = 3600;
 export const dynamicParams = true;
 
+const cache = { revalidate };
+
 export function generateStaticParams() {
   return publishedPaths();
 }
 
-const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
+const CmssyPage = createCmssyPage(cmssy, blocks, {
+  editor: CmssyEditor,
+  cache,
+});
 
 export default async function Page(props: PageProps) {
   const { path } = await props.params;
@@ -30,6 +35,7 @@ export default async function Page(props: PageProps) {
       path={path ?? []}
       editMode={false}
       editable={EditableLayout}
+      cache={cache}
     />
   );
 

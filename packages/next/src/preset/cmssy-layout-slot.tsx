@@ -1,17 +1,19 @@
 import type { ComponentType, ReactNode } from "react";
 import {
-  resolveCmssyLayout,
   type BlockDefinition,
   type CmssyLayoutEditableProps,
   type CmssyLayoutResolution,
-  type ResolveCmssyLayoutOptions,
 } from "@cmssy/react";
 import {
   type CmssyConfig,
   type CmssyRegionOf,
   type RetryOption,
 } from "@cmssy/core";
-import { nextRetryMode } from "../retry-mode";
+import type { CmssyDataCacheOptions } from "../data-cache";
+import {
+  resolveCmssyLayout,
+  type ResolveCmssyLayoutOptions,
+} from "./resolve-cmssy-layout";
 
 export type CmssyLayoutSlotRenderProps<
   C extends CmssyConfig = CmssyConfig,
@@ -34,6 +36,7 @@ interface CmssyLayoutSlotBaseProps<
   editable: ComponentType<CmssyLayoutEditableProps>;
   appContext?: Record<string, unknown>;
   retry?: RetryOption;
+  cache?: CmssyDataCacheOptions;
   children?: (layout: CmssyLayoutSlotRenderProps<C, P>) => ReactNode;
 }
 
@@ -60,6 +63,7 @@ export async function CmssyLayoutSlot<
   editable,
   appContext,
   retry,
+  cache,
   children,
 }: CmssyLayoutSlotProps<C, P>) {
   const layout = await resolveCmssyLayout(config, {
@@ -70,7 +74,8 @@ export async function CmssyLayoutSlot<
     editable,
     ...(page !== undefined ? { page } : {}),
     appContext,
-    retry: retry ?? nextRetryMode(),
+    retry,
+    cache,
     ...(explicitLocale !== undefined
       ? { locale: explicitLocale }
       : { path: path ?? [] }),

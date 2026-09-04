@@ -39,6 +39,7 @@ const NEXT_FILES = [
   "app/cmssy-edit/[[...path]]/layout.tsx",
   "app/cmssy-edit/[[...path]]/page.tsx",
   "app/api/draft/route.ts",
+  "app/api/revalidate/route.ts",
 ];
 
 function makeApp(pkg: Record<string, unknown>): {
