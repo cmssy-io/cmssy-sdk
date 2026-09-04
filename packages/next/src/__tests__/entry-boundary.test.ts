@@ -71,6 +71,7 @@ describe("entry boundaries", () => {
         /^server-only$/,
         /^next\/headers$/,
         /^next\/navigation$/,
+        /^next\/cache$/,
       ]),
     ).toEqual([]);
   });

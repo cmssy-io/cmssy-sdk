@@ -104,6 +104,9 @@ import { buildPageMetadata } from "@/services/seo";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
+// The SDK's own reads join the Next data cache under this; /api/revalidate
+// expires them when the content.changed webhook fires. §5 explains both.
+const cache = { revalidate };
 
 // Not optional: without it this route is served on demand on every request and
 // the `revalidate` above does nothing. §5 explains what that costs.
@@ -117,7 +120,7 @@ export async function generateMetadata({ params }) {
   return buildPageMetadata(path);
 }
 
-export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
+export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor, cache });
 ```
 
 That is the page for a site with no header or footer. Those are layout blocks
@@ -221,11 +224,13 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 
 ```tsx
 // app/[[...path]]/page.tsx
+import { draftMode } from "next/headers";
 import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
 import { publishedPaths } from "@/services/pages";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
+const cache = { revalidate };
 
 // Without this the route is served on demand every request and the
 // `revalidate` above does nothing at all - see the note below.
@@ -235,6 +240,7 @@ export function generateStaticParams() {
 
 export default async function Page(props) {
   const { path } = await props.params;
+  const { isEnabled: preview } = await draftMode();
   const slot = (region) => (
     <CmssyLayoutSlot
       config={cmssy}
@@ -242,7 +248,9 @@ export default async function Page(props) {
       region={region}
       path={path ?? []} // the language prefix in it IS the language
       editMode={false} // true only on the /cmssy-edit route
+      preview={preview} // a draftMode() visitor gets the draft header too
       editable={EditableLayout}
+      cache={cache}
     />
   );
   return (
@@ -275,9 +283,13 @@ Making it optional is what leaves an editor that can select the header and not
 fill it, so the type says no.
 
 `editMode` is required for the same reason. It is a parameter rather than a
-lookup because every way of asking the request - `headers()`, `draftMode()` - is
-a dynamic API, and one read makes the whole route uncacheable. The route segment
-already knows: the public route passes `false`, `/cmssy-edit` passes `true`.
+lookup because asking the request through `headers()` is a dynamic API, and one
+read makes the whole route uncacheable. The route segment already knows: the
+public route passes `false`, `/cmssy-edit` passes `true`. `preview` is the one
+request-dependent input, and `draftMode().isEnabled` is the read that keeps a
+route static - `createCmssyPage` makes the same read - so the public route
+passes it through: a draft-mode visitor sees the draft header with the draft
+page, and neither read touches the data cache.
 
 ### Why `generateStaticParams` is not optional
 
@@ -304,10 +316,35 @@ request renders them and they are cached from then on.
 published in the CMS takes up to an hour to appear. And because an unknown path
 renders as not-found, a URL someone visited _before_ you published it keeps
 serving 404 for the rest of that window - the 404 is cached like any other
-response. Both go away when publishing revalidates on demand
-(`revalidatePath` from a webhook route); until you wire that, pick `revalidate`
-as the staleness you can live with, not the largest number that still looks
-fast.
+response. Both go away when publishing expires the cache on demand, and that
+takes two things: the SDK's reads have to be **in** a cache Next can expire,
+and something has to expire it.
+
+`cache` on `createCmssyPage` and on every `CmssyLayoutSlot` is the first. It
+puts the site locales, the workspace id, the page, its forms and the layouts
+into the Next data cache, tagged `cmssy-content` (`CMSSY_CONTENT_TAG`), and only
+for published reads - draft mode, the editor and the dev preview always read
+live. It is also what makes the static route safe: a plain POST during
+on-demand generation of a statically declared route is a `DYNAMIC_SERVER_USAGE`
+error, a cached one is a page.
+
+The route below is the second. `cmssy init` writes it; point a
+`content.changed` webhook (Settings -> Webhooks) at `/api/revalidate` and put
+its signing secret in `CMSSY_WEBHOOK_SECRET`:
+
+```ts
+// app/api/revalidate/route.ts
+import { createCmssyRevalidateRoute } from "@cmssy/next/server";
+
+export const POST = createCmssyRevalidateRoute({
+  secret: process.env.CMSSY_WEBHOOK_SECRET,
+});
+```
+
+It verifies the delivery with `verifyCmssyWebhook` and expires `cmssy-content`
+with `{ expire: 0 }`, so the next visitor renders the published content and the
+cached 404 is gone with it. Until both are wired, pick `revalidate` as the
+staleness you can live with, not the largest number that still looks fast.
 
 Mount it per route, not in `app/layout.tsx`: a route knows its path. Mount one
 slot per region you declared in `cmssy.config.ts` - `region` is typed to

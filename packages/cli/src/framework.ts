@@ -97,6 +97,11 @@ export const FRAMEWORKS: FrameworkDef[] = [
         purpose:
           "draft preview without the editor - enters draft mode for a verified secret",
       },
+      {
+        path: "app/api/revalidate/route.ts",
+        purpose:
+          "the content.changed webhook lands here and expires the cmssy-content data cache, so a publish shows up now instead of after revalidate seconds",
+      },
     ],
     warnings: [
       'pass process.env values raw into defineCmssyConfig - a `?? ""` fallback turns a missing variable into an empty one and the error surfaces somewhere unrelated',

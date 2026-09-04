@@ -495,3 +495,49 @@ describe("CmssyLayoutSlot region typing", () => {
     >().toEqualTypeOf<{ width?: number } | null>();
   });
 });
+
+describe("CmssyLayoutSlot data cache (CMS-952)", () => {
+  it("reads a visitor's layouts through the data-cache fetch", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      region: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+      cache: { revalidate: 3600 },
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
+      retry: "interactive",
+      fetch: expect.any(Function),
+    });
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: "interactive",
+      fetch: expect.any(Function),
+    });
+  });
+
+  it("reads a draft preview live even when the slot has a cache", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      region: "header",
+      path: [],
+      editMode: false,
+      preview: true,
+      editable: Editable,
+      cache: { revalidate: 3600 },
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
+  });
+});

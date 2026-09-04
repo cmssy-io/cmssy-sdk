@@ -288,3 +288,41 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     });
   });
 });
+
+describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
+  it("hands the caller's fetch to both reads, next to the retry policy", async () => {
+    setup();
+    const own = vi.fn();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      fetch: own,
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
+      retry: "build",
+      fetch: own,
+    });
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
+      retry: "build",
+      fetch: own,
+    });
+  });
+
+  it("adds no fetch key when the caller passes none", async () => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: "build" });
+  });
+});

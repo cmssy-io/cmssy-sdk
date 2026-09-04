@@ -134,6 +134,11 @@ your app - the deployed site or `localhost` during development - and the site
 renders draft content until you exit with `/api/draft?disable=1`. `cmssy link`
 prints this URL ready to open.
 
+`cmssy init` also writes `app/api/revalidate/route.ts`. Once your page passes
+`cache: { revalidate }` (the [wiring guide](../wiring.md) §5 shows where) and a
+`content.changed` webhook points at that route, a publish shows up on the next
+request instead of after `revalidate` seconds.
+
 ## 6. Let the editor frame your app
 
 ```ts

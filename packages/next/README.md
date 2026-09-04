@@ -45,9 +45,28 @@ the live-edit bridge. A published build does **not** require `editorOrigin`.
 
 ```ts
 // app/api/draft/route.ts
-import { createDraftRoute } from "@cmssy/next";
+import { createDraftRoute } from "@cmssy/next/server";
 export const GET = createDraftRoute(cmssy);
 ```
+
+## Cache, and expire it on publish
+
+```ts
+// app/[[...path]]/page.tsx
+export const revalidate = 3600;
+const cache = { revalidate };
+export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor, cache });
+
+// app/api/revalidate/route.ts
+import { createCmssyRevalidateRoute } from "@cmssy/next/server";
+export const POST = createCmssyRevalidateRoute({
+  secret: process.env.CMSSY_WEBHOOK_SECRET,
+});
+```
+
+`cache` puts the SDK's published reads into the Next data cache under the
+`cmssy-content` tag; the route expires that tag for a verified `content.changed`
+webhook. Draft mode and the editor always read live.
 
 ## Edit-mode CSP
 
@@ -93,9 +112,13 @@ re-exported from `@cmssy/next` (and `@cmssy/core`).
 
 ## Exports
 
-`createCmssyPage`, `createDraftRoute`, `cmssyCspHeaders` / `applyCmssyCsp`,
-`isCmssyEditRequest` / `isCmssyEditMode`, `createCmssyLocaleMiddleware` /
-`resolveLocaleFromPathname`, and the `CmssyConfig` type.
+`@cmssy/next/server`: `createCmssyPage`, `createCmssyEditPage`,
+`createDraftRoute`, `createCmssyRevalidateRoute`, `CmssyLayoutSlot`,
+`resolveCmssyLayout`, `isCmssyEditMode`. `@cmssy/next/middleware`:
+`createCmssyProxy`, `cmssyEditRewrite`, `applyCmssyCsp`, `isCmssyEditRequest`.
+Root: `defineCmssyConfig`, `localizeHref`, `nextRetryMode`, `cmssyCachedFetch`,
+`CMSSY_CONTENT_TAG` and the types. The full list, with signatures, is in
+[docs/reference/sdk-api.md](../../docs/reference/sdk-api.md).
 
 ## License
 

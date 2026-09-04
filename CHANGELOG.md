@@ -6,6 +6,29 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.1.0
+
+**Nothing to do.** Three additions to `@cmssy/next`, all opt-in (CMS-952).
+
+- `createCmssyPage(..., { cache: { revalidate, tags? } })` and
+  `<CmssyLayoutSlot cache={...} />` put the SDK's own delivery reads into the
+  Next data cache, tagged `cmssy-content`. Published reads only: draft mode, a
+  verified editor request and the dev preview keep reading live. This is what
+  the 2026-07-13 `DYNAMIC_SERVER_USAGE` incident was missing - a statically
+  declared catch-all whose fetches were not cacheable.
+- `createCmssyRevalidateRoute({ secret })` from `@cmssy/next/server` mounts the
+  `content.changed` webhook endpoint: it verifies the delivery and expires
+  `cmssy-content`, so a publish shows on the next request instead of after
+  `revalidate` seconds. `cmssy init` now writes it as
+  `app/api/revalidate/route.ts` next to the draft route, and `.env.example`
+  lists `CMSSY_WEBHOOK_SECRET`.
+- `cmssyCachedFetch({ revalidate })` from the root for your own delivery
+  queries, and `CMSSY_CONTENT_TAG` if you expire the tag yourself.
+
+`@cmssy/react`'s `resolveCmssyLayoutSlot` accepts `fetch`, the same option the
+core client already had, so the adapter needs nothing framework-specific from
+core.
+
 ## 16.0.0
 
 **`form.settings.enableCaptcha` is gone.** cmssy stored it, defaulted it, put a

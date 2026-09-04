@@ -210,7 +210,10 @@ for a rotation window: hold the new and the previous secret at once and either
 verifies. A non-string is rejected rather than stringified into the key.
 
 Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
-`CmssyWebhookOrder`. All from `@cmssy/core`.
+`CmssyWebhookOrder`. All from `@cmssy/core`. A Next app that only needs the
+`content.changed` webhook to expire its cache mounts
+`createCmssyRevalidateRoute` from `@cmssy/next/server` instead of calling this
+by hand.
 
 ### `@cmssy/core/testing` and `/preflight`
 
@@ -333,6 +336,7 @@ the middleware preset.
 | `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                 | `app/[[...path]]/page.tsx`    |
 | `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                 | `app/cmssy-edit/[[...path]]/` |
 | `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                                                                                                                                                                                                                  | `app/api/draft/route.ts`      |
+| `createCmssyRevalidateRoute`              | `({ secret, tags?, toleranceSeconds? }) => (request) => Promise<Response>` - verifies a cmssy webhook delivery and expires `cmssy-content` (plus `tags`); 500 without a secret, 401 on a bad signature                                                                          | `app/api/revalidate/route.ts` |
 | `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `preview` fetches the draft for a `draftMode()` visitor but still renders server-side; `region` is typed to `config.layout`; optional `children({ groups, settings, page, element })` render prop | any route                     |
 | `resolveCmssyLayout`                      | `(config, options) => Promise<CmssyLayoutResolution>` - the slot as a function: `{ groups, settings, page, element, ... }`, Next retry default applied                                                                                                                        | any route                     |
 | `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                                                                                                                                                                                           | any adapter                   |
@@ -350,6 +354,7 @@ interface CreateCmssyPageOptions {
         path: string[];
       }) => Record<string, unknown> | Promise<Record<string, unknown>>);
   retry?: RetryOption;
+  cache?: CmssyDataCacheOptions; // { revalidate: number | false; tags?: string[] }
 }
 ```
 
@@ -437,6 +442,64 @@ A mutation you send yourself through `client.query` is unaffected: `graphqlReque
 defaults to no retry, and it retries only if you hand that call a policy - which is
 worth doing only for a write you know is idempotent.
 
+**Caching the reads.** Without `cache`, the four delivery calls a page makes are
+plain POST fetches: Next never caches them, so `export const revalidate` on the
+route is the only cache the site has, a publish takes up to that long to show,
+and on a statically generated route an uncached fetch during on-demand
+generation is a `DYNAMIC_SERVER_USAGE` error rather than a slow page. `cache`
+opts the SDK's own reads into the Next data cache:
+
+```ts
+// app/[[...path]]/page.tsx
+export const revalidate = 3600;
+const cache = { revalidate };
+
+const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor, cache });
+// and on every slot: <CmssyLayoutSlot ... cache={cache} />
+```
+
+Every read then carries `next: { revalidate, tags: ["cmssy-content", ...tags] }`.
+Only **published** reads are cached: draft mode, a verified editor request and
+the dev preview always read live, whatever `cache` says, because a preview that
+shows the cache is not a preview. `revalidate: false` keeps a read until a
+webhook expires it.
+
+`CMSSY_CONTENT_TAG` (`"cmssy-content"`) is the tag `createCmssyRevalidateRoute`
+expires; mount that route and point a `content.changed` webhook at it and a
+publish shows up on the next request instead of after `revalidate` seconds:
+
+```ts
+// app/api/revalidate/route.ts
+import { createCmssyRevalidateRoute } from "@cmssy/next/server";
+
+export const POST = createCmssyRevalidateRoute({
+  secret: process.env.CMSSY_WEBHOOK_SECRET,
+});
+```
+
+The secret is passed raw, like the draft secret: a missing variable answers 500
+on the first delivery and names the variable, instead of a route that verifies
+nothing. `secret` also takes an array during a rotation. `tags` adds your own
+tags to the expiry (`cmssy-content` is always first), `toleranceSeconds` is the
+replay window `verifyCmssyWebhook` applies (300 by default). The route expires
+tags for **any** verified delivery, so subscribe it to `content.changed` and
+nothing else.
+
+Your own delivery queries join the same cache with `cmssyCachedFetch`, exported
+from the root the way `nextRetryMode` is:
+
+```ts
+import { cmssyCachedFetch } from "@cmssy/next";
+
+client.query(document, variables, {
+  public: true,
+  fetch: cmssyCachedFetch({ revalidate: 3600 }),
+});
+```
+
+It wraps the global `fetch` and adds nothing else, so `@cmssy/core` stays
+framework-neutral: the `fetch` option it already had is the whole seam.
+
 ### `@cmssy/next/middleware`
 
 | Export                      | Signature                                                      |
@@ -473,7 +536,9 @@ steps themselves.
 
 `defineCmssyConfig`, `localizeHref`, `resolveEditorOrigin`,
 `DEFAULT_CMSSY_EDITOR_ORIGINS`, the `CMSSY_LOCALE_HEADER` / `CMSSY_EDIT_*`
-constants, and the `CmssyEditorProps` / `CreateCmssyPageOptions` types. This
+constants, `nextRetryMode`, `cmssyCachedFetch` with `CMSSY_CONTENT_TAG`, and
+the `CmssyEditorProps` / `CreateCmssyPageOptions` / `CmssyDataCacheOptions`
+types. This
 module reads server env - never import a **value** from it into a `"use client"`
 component (types are erased, values are not).
 

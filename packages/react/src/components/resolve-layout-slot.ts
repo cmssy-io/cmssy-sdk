@@ -3,6 +3,7 @@ import type {
   CmssyConfig,
   CmssyFormDefinition,
   CmssyLayoutGroup,
+  FetchLike,
   RetryOption,
 } from "@cmssy/core";
 import { fetchLayouts } from "@cmssy/core/internal";
@@ -23,6 +24,7 @@ interface ResolveCmssyLayoutSlotBase {
   forms?: Record<string, CmssyFormDefinition>;
   appContext?: Record<string, unknown>;
   retry?: RetryOption;
+  fetch?: FetchLike;
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -63,9 +65,13 @@ export async function resolveCmssyLayoutSlot(
     path,
     locale: explicitLocale,
     retry,
+    fetch: fetchImpl,
   } = options;
 
-  const requestOptions = { retry: retry ?? "build" };
+  const requestOptions = {
+    retry: retry ?? "build",
+    ...(fetchImpl ? { fetch: fetchImpl } : {}),
+  };
 
   const siteLocales = await resolveSiteLocales(config, requestOptions);
   const fromPath = path

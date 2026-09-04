@@ -860,3 +860,141 @@ describe("createCmssyPage retry policy (CMS-1446)", () => {
     );
   });
 });
+
+describe("createCmssyPage data cache (CMS-952)", () => {
+  const cache = { revalidate: 3600, tags: ["site"] };
+  const cached = { retry: "interactive", fetch: expect.any(Function) };
+
+  beforeEach(() => {
+    vi.stubEnv("CMSSY_EDITOR_ORIGIN", "");
+    vi.stubEnv("NODE_ENV", "production");
+    draftEnabled = false;
+    fetchPage.mockReset();
+    fetchPage.mockResolvedValue(PAGE);
+    resolveSiteLocales.mockReset();
+    resolveSiteLocales.mockResolvedValue({
+      defaultLocale: "en",
+      locales: ["en"],
+    });
+    resolveWorkspaceId.mockReset();
+    resolveWorkspaceId.mockResolvedValue("ws_123");
+    resolveForms.mockReset();
+    resolveForms.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("hands every published read a fetch that opts into the Next data cache", async () => {
+    const Page = createCmssyPage(CONFIG, BLOCKS, { cache });
+    await Page({ params: params(["about"]) });
+
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), cached);
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      ...cached,
+    });
+    expect(resolveForms).toHaveBeenCalledWith(
+      expect.anything(),
+      PAGE.blocks,
+      expect.anything(),
+      "en",
+      "en",
+      cached,
+    );
+    expect(resolveWorkspaceId).toHaveBeenCalledWith(cached);
+
+    const globalFetch = vi.fn(async () => new Response("{}"));
+    vi.stubGlobal("fetch", globalFetch);
+    const passed = fetchPage.mock.calls[0]?.[2].fetch as (
+      url: string,
+      init: Record<string, unknown>,
+    ) => Promise<unknown>;
+    await passed("https://api.cmssy.io/graphql", {
+      method: "POST",
+      headers: {},
+      body: "{}",
+    });
+    expect(globalFetch).toHaveBeenCalledWith(
+      "https://api.cmssy.io/graphql",
+      expect.objectContaining({
+        next: { revalidate: 3600, tags: ["cmssy-content", "site"] },
+      }),
+    );
+  });
+
+  it("uses one fetch for the whole page, so the reads share a cache entry per query", async () => {
+    const Page = createCmssyPage(CONFIG, BLOCKS, { cache });
+    await Page({ params: params(["about"]) });
+
+    const fromPage = fetchPage.mock.calls[0]?.[2].fetch;
+    expect(resolveSiteLocales.mock.calls[0]?.[1].fetch).toBe(fromPage);
+    expect(resolveForms.mock.calls[0]?.[5].fetch).toBe(fromPage);
+    expect(resolveWorkspaceId.mock.calls[0]?.[0].fetch).toBe(fromPage);
+  });
+
+  it("keeps a draft-mode read out of the data cache - a preview must show the draft as it is now", async () => {
+    draftEnabled = true;
+    const Page = createCmssyPage(CONFIG, BLOCKS, { cache });
+    await Page({ params: params([]) });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry: "interactive",
+    });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: "interactive" });
+  });
+
+  it("keeps the editor's read out of the data cache", async () => {
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor, cache });
+    await Page({
+      params: params([]),
+      searchParams: searchParams({
+        cmssyEdit: "1",
+        cmssySecret: CONFIG.draftSecret,
+      }),
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
+      previewSecret: CONFIG.draftSecret,
+      retry: "interactive",
+    });
+  });
+
+  it("keeps a dev preview read out of the data cache", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const Page = createCmssyPage(
+      { ...CONFIG, devToken: "cs_devtoken" },
+      BLOCKS,
+      { cache },
+    );
+    await Page({ params: params(["about"]) });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      devPreview: true,
+      devToken: "cs_devtoken",
+      workspaceId: "ws_123",
+      retry: "interactive",
+    });
+    expect(resolveWorkspaceId).toHaveBeenCalledWith({ retry: "interactive" });
+  });
+
+  it("passes no fetch at all when the page opts out of the cache", async () => {
+    const Page = createCmssyPage(CONFIG, BLOCKS, { retry: false });
+    await Page({ params: params(["about"]) });
+
+    expect(fetchPage).toHaveBeenCalledWith(expect.anything(), ["about"], {
+      previewSecret: undefined,
+      retry: false,
+    });
+    expect(resolveSiteLocales).toHaveBeenCalledWith(expect.anything(), {
+      retry: false,
+    });
+  });
+});

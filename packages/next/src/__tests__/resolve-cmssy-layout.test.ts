@@ -72,3 +72,83 @@ describe("resolveCmssyLayout (@cmssy/next/server)", () => {
     expect(result).toBe(resolution);
   });
 });
+
+describe("resolveCmssyLayout data cache (CMS-952)", () => {
+  const cache = { revalidate: 600 };
+
+  it("turns cache into a data-cache fetch for a published read", async () => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+    const globalFetch = vi.fn(async () => new Response("{}"));
+    vi.stubGlobal("fetch", globalFetch);
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      cache,
+    });
+
+    const passed = resolveWithReact.mock.calls[0]?.[1];
+    expect(passed).not.toHaveProperty("cache");
+    expect(passed.fetch).toEqual(expect.any(Function));
+    await passed.fetch("https://api.cmssy.io/graphql", {
+      method: "POST",
+      headers: {},
+      body: "{}",
+    });
+    expect(globalFetch).toHaveBeenCalledWith(
+      "https://api.cmssy.io/graphql",
+      expect.objectContaining({
+        next: { revalidate: 600, tags: ["cmssy-content"] },
+      }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    ["edit mode", { editMode: true }],
+    ["a draft preview", { editMode: false, preview: true }],
+  ])("withholds the cached fetch in %s", async (_label, live) => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      path: [],
+      cache,
+      ...live,
+    } as Parameters<typeof resolveCmssyLayout>[1]);
+
+    expect(resolveWithReact.mock.calls[0]?.[1]).not.toHaveProperty("fetch");
+  });
+
+  it("lets an explicit fetch win over the cache", async () => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+    const own = vi.fn();
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      cache,
+      fetch: own,
+    });
+
+    expect(resolveWithReact.mock.calls[0]?.[1].fetch).toBe(own);
+  });
+
+  it("passes no fetch when there is no cache to opt into", async () => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(resolveWithReact.mock.calls[0]?.[1]).not.toHaveProperty("fetch");
+  });
+});
