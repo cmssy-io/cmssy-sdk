@@ -127,7 +127,7 @@ describe("isBlockPainted", () => {
     expect(isBlockPainted(block)).toBe(true);
   });
 
-  it("does not count copy the viewport hides with display:none", () => {
+  it("does not count copy that the viewport hides with display:none", () => {
     const block = mount(
       `<div data-block-id="b1" data-block-type="header">
          <a href="/">cmssy</a>
