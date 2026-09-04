@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.1.1
+
+**The editor's "mounted but painting nothing" notice fired on phones for any
+header that hides its desktop navigation.** `@cmssy/react` judged a block by
+the share of its text that paints, and counted copy under `display:none` as
+unpainted - so a header with seven `md:flex` links and a hamburger crossed the
+line the moment the canvas got narrow (CMS-1747). The notice blamed the
+animation provider; nothing was wrong with it, the edit route or the data
+cache.
+
+Copy and media that the current viewport does not lay out are no longer
+candidates. The detector judges what is laid out by its effective opacity, as
+before, and a block whose copy is entirely hidden on this viewport is left
+alone. `visibility:hidden` still reads as unpainted, since that is what an
+unrun `autoAlpha` tween leaves behind.
+
+**Do I have to do anything?** No. Bump `@cmssy/react` (or the adapter that
+carries it) and the notice stops appearing.
+
 ## 16.1.0
 
 **Nothing to do.** Three additions to `@cmssy/next`, all opt-in (CMS-952).
