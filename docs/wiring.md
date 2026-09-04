@@ -224,6 +224,7 @@ export function EditableLayout(props: Omit<CmssyLazyLayoutProps, "load">) {
 
 ```tsx
 // app/[[...path]]/page.tsx
+import { draftMode } from "next/headers";
 import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
 import { publishedPaths } from "@/services/pages";
 
@@ -239,6 +240,7 @@ export function generateStaticParams() {
 
 export default async function Page(props) {
   const { path } = await props.params;
+  const { isEnabled: preview } = await draftMode();
   const slot = (region) => (
     <CmssyLayoutSlot
       config={cmssy}
@@ -246,6 +248,7 @@ export default async function Page(props) {
       region={region}
       path={path ?? []} // the language prefix in it IS the language
       editMode={false} // true only on the /cmssy-edit route
+      preview={preview} // a draftMode() visitor gets the draft header too
       editable={EditableLayout}
       cache={cache}
     />
@@ -280,9 +283,13 @@ Making it optional is what leaves an editor that can select the header and not
 fill it, so the type says no.
 
 `editMode` is required for the same reason. It is a parameter rather than a
-lookup because every way of asking the request - `headers()`, `draftMode()` - is
-a dynamic API, and one read makes the whole route uncacheable. The route segment
-already knows: the public route passes `false`, `/cmssy-edit` passes `true`.
+lookup because asking the request through `headers()` is a dynamic API, and one
+read makes the whole route uncacheable. The route segment already knows: the
+public route passes `false`, `/cmssy-edit` passes `true`. `preview` is the one
+request-dependent input, and `draftMode().isEnabled` is the read that keeps a
+route static - `createCmssyPage` makes the same read - so the public route
+passes it through: a draft-mode visitor sees the draft header with the draft
+page, and neither read touches the data cache.
 
 ### Why `generateStaticParams` is not optional
 

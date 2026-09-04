@@ -116,8 +116,8 @@ re-exported from `@cmssy/next` (and `@cmssy/core`).
 `createDraftRoute`, `createCmssyRevalidateRoute`, `CmssyLayoutSlot`,
 `resolveCmssyLayout`, `isCmssyEditMode`. `@cmssy/next/middleware`:
 `createCmssyProxy`, `cmssyEditRewrite`, `applyCmssyCsp`, `isCmssyEditRequest`.
-Root: `defineCmssyConfig`, `localizeHref`, `nextRetryMode`, `cmssyCachedFetch`
-and the types. The full list, with signatures, is in
+Root: `defineCmssyConfig`, `localizeHref`, `nextRetryMode`, `cmssyCachedFetch`,
+`CMSSY_CONTENT_TAG` and the types. The full list, with signatures, is in
 [docs/reference/sdk-api.md](../../docs/reference/sdk-api.md).
 
 ## License

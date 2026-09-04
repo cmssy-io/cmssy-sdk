@@ -1,3 +1,4 @@
+import { draftMode } from "next/headers";
 import { createCmssyPage, CmssyLayoutSlot } from "@cmssy/next/server";
 import type { CmssyRegion } from "@cmssy/next";
 import { cmssy, type layout } from "@/cmssy.config";
@@ -27,6 +28,7 @@ const CmssyPage = createCmssyPage(cmssy, blocks, {
 
 export default async function Page(props: PageProps) {
   const { path } = await props.params;
+  const { isEnabled: preview } = await draftMode();
   const slot = (region: CmssyRegion<typeof layout>) => (
     <CmssyLayoutSlot
       config={cmssy}
@@ -34,6 +36,7 @@ export default async function Page(props: PageProps) {
       region={region}
       path={path ?? []}
       editMode={false}
+      preview={preview}
       editable={EditableLayout}
       cache={cache}
     />
