@@ -6,19 +6,30 @@ const MEDIA = "img,svg,video,canvas,picture,iframe";
 
 const UNPAINTED_TEXT = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT"]);
 
-export function effectiveOpacity(node: Element | null): number {
-  let value = 1;
+interface Paint {
+  laidOut: boolean;
+  opacity: number;
+}
+
+const NOT_LAID_OUT: Paint = { laidOut: false, opacity: 0 };
+
+function paint(node: Element | null): Paint {
+  let opacity = 1;
   let current: Element | null = node;
   while (current) {
     const style = getComputedStyle(current);
-    if (style.display === "none" || style.visibility === "hidden") return 0;
+    if (style.display === "none") return NOT_LAID_OUT;
+    if (style.visibility === "hidden") opacity = 0;
     const own = Number.parseFloat(style.opacity);
-    if (Number.isFinite(own)) value *= own;
-    if (value <= TRANSPARENT) return 0;
+    if (Number.isFinite(own)) opacity *= own;
     if (current === document.documentElement) break;
     current = current.parentElement;
   }
-  return value;
+  return { laidOut: true, opacity: opacity <= TRANSPARENT ? 0 : opacity };
+}
+
+export function effectiveOpacity(node: Element | null): number {
+  return paint(node).opacity;
 }
 
 function holdsText(el: Element): boolean {
@@ -47,13 +58,17 @@ function collectMedia(block: Element): Element[] {
   return media;
 }
 
+function laidOut(elements: Element[]): Paint[] {
+  return elements.map(paint).filter((state) => state.laidOut);
+}
+
 export function isBlockPainted(block: Element): boolean {
-  const copy = collectCopy(block);
+  const copy = laidOut(collectCopy(block));
   if (copy.length > 0) {
-    const visible = copy.filter((el) => effectiveOpacity(el) > TRANSPARENT);
+    const visible = copy.filter((state) => state.opacity > TRANSPARENT);
     return visible.length >= copy.length * VISIBLE_TEXT_FRACTION;
   }
-  const media = collectMedia(block);
+  const media = laidOut(collectMedia(block));
   if (media.length === 0) return true;
-  return media.some((el) => effectiveOpacity(el) > TRANSPARENT);
+  return media.some((state) => state.opacity > TRANSPARENT);
 }

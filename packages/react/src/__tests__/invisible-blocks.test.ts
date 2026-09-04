@@ -127,6 +127,70 @@ describe("isBlockPainted", () => {
     expect(isBlockPainted(block)).toBe(true);
   });
 
+  it("does not count copy that the viewport hides with display:none", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="header">
+         <a href="/">cmssy</a>
+         <nav style="display:none">
+           <a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/blog">Blog</a>
+           <a href="/changelog">Changelog</a><a href="/about">About</a>
+           <a href="/contact">Contact</a><a href="/login">Log in</a>
+         </nav>
+         <button>Menu</button>
+       </div>`,
+    );
+    expect(
+      isBlockPainted(block),
+      "a responsive header hides its desktop links on a phone; copy that is not laid out is not an animation that never ran",
+    ).toBe(true);
+  });
+
+  it("ignores an unrun animation inside a drawer that is display:none", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="header">
+         <a href="/">cmssy</a>
+         <div style="display:none">
+           <div style="opacity:0"><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/blog">Blog</a></div>
+         </div>
+       </div>`,
+    );
+    expect(
+      isBlockPainted(block),
+      "opacity:0 under a display:none ancestor is not painted anyway; counting it flags every closed mobile menu",
+    ).toBe(true);
+  });
+
+  it("leaves a block alone when this viewport lays out none of its copy", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="sidebar">
+         <aside style="display:none"><h2>Related</h2><p>Links</p></aside>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(true);
+  });
+
+  it("judges media the viewport hides the same way as copy", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="gallery">
+         <img alt="" src="desktop.png" style="display:none" />
+       </div>`,
+    );
+    expect(
+      isBlockPainted(block),
+      "an image the viewport does not lay out is not a candidate; with nothing laid out there is nothing to paint",
+    ).toBe(true);
+  });
+
+  it("still calls media invisible when the laid-out one is transparent", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="gallery">
+         <img alt="" src="desktop.png" style="display:none" />
+         <div style="opacity:0"><img alt="" src="mobile.png" /></div>
+       </div>`,
+    );
+    expect(isBlockPainted(block)).toBe(false);
+  });
+
   it("multiplies opacity down the ancestor chain", () => {
     mount(
       `<div data-block-id="b1" data-block-type="hero" style="opacity:0.02">
