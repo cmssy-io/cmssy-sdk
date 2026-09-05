@@ -4,6 +4,12 @@ import { fields } from "../fields";
 
 const declaredByHand: BlockPropsSchema = {
   specs: { type: "table", label: "Specs", maxColumns: 3 },
+  hero: {
+    type: "media",
+    label: "Hero",
+    aspectRatio: "16:9",
+    aspectRatios: ["16:9", { w: 5, h: 4 }],
+  },
 };
 
 describe("fields.table", () => {
@@ -26,5 +32,42 @@ describe("fields.table", () => {
       fields.table({ label: "Specs" }),
       "An absent key is what the backend reads as 'this field declares nothing', which is what falls back to the global advisory. A key present as undefined would be a different manifest.",
     ).toStrictEqual({ type: "table", label: "Specs" });
+  });
+});
+
+describe("fields.media", () => {
+  it("carries the ratio the block renders at and the ratios an editor may crop to", () => {
+    expect(
+      fields.media({
+        label: "Hero",
+        aspectRatio: "16:9",
+        aspectRatios: ["16:9", { w: 5, h: 4 }],
+      }),
+      "The cmssy backend reads aspectRatio off the pushed manifest to shape a reference that carries no crop of its own, and the editor reads aspectRatios for the crop picker. Both only get there because build() spreads opts through.",
+    ).toStrictEqual({
+      type: "media",
+      label: "Hero",
+      aspectRatio: "16:9",
+      aspectRatios: ["16:9", { w: 5, h: 4 }],
+    });
+  });
+
+  it("matches a field written straight into a BlockPropsSchema", () => {
+    expect(
+      declaredByHand.hero,
+      "The version pin for @cmssy/types 0.43.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no aspectRatio / aspectRatios. The builder call above cannot pin it, for the reason given on the table pin.",
+    ).toStrictEqual({
+      type: "media",
+      label: "Hero",
+      aspectRatio: "16:9",
+      aspectRatios: ["16:9", { w: 5, h: 4 }],
+    });
+  });
+
+  it("declares no ratio when the block states none", () => {
+    expect(
+      fields.media({ label: "Hero" }),
+      "An absent aspectRatio is what the delivery resolver reads as 'keep the asset's own shape'. A key present as undefined would be a different manifest.",
+    ).toStrictEqual({ type: "media", label: "Hero" });
   });
 });

@@ -80,7 +80,7 @@ from the schema:
 | `fields.number`       | Number                    | `number`                  | `defaultValue`                                                   |
 | `fields.boolean`      | Toggle                    | `boolean`                 | `defaultValue`                                                   |
 | `fields.date`         | Date picker               | `string`                  | `defaultValue`                                                   |
-| `fields.media`        | Media picker (image/file) | `string`, `string[]`      | `multiple`, `acceptedTypes`, `maxSize`                           |
+| `fields.media`        | Media picker (image/file) | `string`, `string[]`      | `multiple`, `acceptedTypes`, `maxSize`, `aspectRatio`, `aspectRatios` |
 | `fields.link`         | Internal/external link    | `string`                  | -                                                                |
 | `fields.url`          | URL                       | `string`                  | `required`                                                       |
 | `fields.select`       | Single choice             | union of its `options`    | `options`, `defaultValue`                                        |
