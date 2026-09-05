@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.2.0
+
+**Nothing to do.** `fields.media()` takes `aspectRatio` and `aspectRatios`
+(CMS-1701).
+
+- `aspectRatio` is the ratio the block renders at: a preset such as `"16:9"`,
+  any `"W:H"` string or `{ w, h }`, integer sides up to 9999. cmssy reads it
+  off the pushed manifest and, when a reference carries no crop of its own,
+  resolves the image to `fit: cover` at that ratio - width from the asset,
+  height derived - so the block gets the shape it declared before an editor
+  touches the crop.
+- `aspectRatios` is the list an editor may choose from in the crop tool. Its
+  first entry is the delivery default when `aspectRatio` is absent.
+
+Both ride on `@cmssy/types` 0.43.0, which every package now pins. A block that
+declares neither behaves exactly as before, and a manifest that carries the
+option is accepted by every cmssy release; the resolver side lands with the
+same ticket.
+
 ## 16.1.1
 
 **The editor's "mounted but painting nothing" notice fired on phones for any
