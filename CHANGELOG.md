@@ -6,6 +6,24 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.2.1
+
+**Every render on Astro, Remix and the React server paths paid one extra
+metered request.** `@cmssy/core` built a fresh client for each relation and
+form resolution, and each client resolved the workspace id on its own - a
+site-config round trip per render on top of the reads that actually fetch
+content (CMS-1618). The Next adapter hid it behind its own site-config read
+and passed the id down; everything else did not.
+
+The workspace id is now cached once per `apiUrl`, `org` and `workspaceSlug`
+inside `@cmssy/core`, shared by every client built from that config. The
+site-config read `resolveSiteLocales` already makes primes it, so a render that
+reads locales never asks again. A failed resolution is not remembered - the
+next caller retries.
+
+**Do I have to do anything?** No. Bump the adapter you use and the extra
+request disappears from your usage gauge.
+
 ## 16.2.0
 
 **Nothing to do.** `fields.media()` takes `aspectRatio` and `aspectRatios`
