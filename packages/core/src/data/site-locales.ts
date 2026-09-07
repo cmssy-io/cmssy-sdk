@@ -5,6 +5,7 @@ import {
 } from "../content/content-client";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { SITE_CONFIG_QUERY, type CmssySiteConfig } from "./queries";
+import { primeWorkspaceId } from "./settings-client";
 
 export type { CmssySiteLocales };
 
@@ -50,7 +51,10 @@ async function loadSiteLocales(
       { ...options, public: true, retry: options?.retry ?? "build" },
       "site config",
     );
-    value = localesFromSiteConfig(data.public?.siteConfig ?? null);
+    const siteConfig = data.public?.siteConfig ?? null;
+    if (siteConfig?.workspaceId)
+      primeWorkspaceId(config, siteConfig.workspaceId);
+    value = localesFromSiteConfig(siteConfig);
   } catch {
     value = null;
   }
