@@ -4,10 +4,12 @@ import {
 } from "../content/content-client";
 import { documentText, type CmssyTypedDocument } from "./document";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
-import { resolveWorkspaceId as resolveWorkspaceIdFromConfig } from "./settings-client";
+import { cachedWorkspaceId } from "./settings-client";
 
-export interface QueryScopedOptions
-  extends Omit<GraphqlRequestOptions, "public"> {
+export interface QueryScopedOptions extends Omit<
+  GraphqlRequestOptions,
+  "public"
+> {
   workspaceId?: string;
 }
 
@@ -41,24 +43,10 @@ export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
     ...input,
     apiUrl: resolveApiUrl(input.apiUrl),
   };
-  let cachedWorkspaceId: string | undefined;
-  let inFlight: Promise<string> | undefined;
-
   function resolveWorkspaceId(
     options?: GraphqlRequestOptions,
   ): Promise<string> {
-    if (cachedWorkspaceId) return Promise.resolve(cachedWorkspaceId);
-    if (!inFlight) {
-      inFlight = resolveWorkspaceIdFromConfig(config, options)
-        .then((id) => {
-          cachedWorkspaceId = id;
-          return id;
-        })
-        .finally(() => {
-          inFlight = undefined;
-        });
-    }
-    return inFlight;
+    return cachedWorkspaceId(config, options);
   }
 
   function query<T>(
@@ -110,7 +98,11 @@ export function createCmssyClient(input: CmssyClientConfig): CmssyClient {
       variables: Record<string, unknown> = {},
       options?: GraphqlRequestOptions,
     ) =>
-      query(documentText(document), variables, options)) as CmssyClient["query"],
+      query(
+        documentText(document),
+        variables,
+        options,
+      )) as CmssyClient["query"],
     queryScoped: ((
       document: unknown,
       variables: Record<string, unknown> = {},

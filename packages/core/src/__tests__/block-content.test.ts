@@ -41,7 +41,11 @@ function routerFetch(handlers: {
     };
     calls.push(body);
     let data: unknown;
-    if (body.query.includes("recordsByIds")) {
+    if (body.query.includes("PublicSiteConfig")) {
+      data = {
+        public: { siteConfig: { id: "sc", workspaceId: "w-relations" } },
+      };
+    } else if (body.query.includes("recordsByIds")) {
       data = {
         public: {
           model: { recordsByIds: handlers.byIds?.(body.variables) ?? [] },
@@ -241,6 +245,34 @@ describe("resolveRelationContent", () => {
     normalizeBlockContent(cleared, schema, resolved);
     expect(cleared.items).toEqual([]);
     expect(cleared).not.toHaveProperty("author");
+  });
+
+  it("resolves the workspace once across renders, not once per fresh client (CMS-1618)", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("a1", { name: "Ada" })],
+    });
+    const schemas = { hero: { author: fields.relation({ model: "author" }) } };
+    const render = () =>
+      resolveRelationContent(
+        { ...config, workspaceSlug: "ws-per-render" },
+        [{ type: "hero", content: { author: "a1" } }],
+        schemas,
+        "en",
+        { fetch },
+      );
+
+    await render();
+    await render();
+
+    const siteConfigCalls = calls.filter((c) =>
+      c.query.includes("PublicSiteConfig"),
+    );
+    const recordCalls = calls.filter((c) => c.query.includes("recordsByIds"));
+    expect(recordCalls).toHaveLength(2);
+    expect(
+      siteConfigCalls,
+      "Each render builds its own client; without a shared cache every render pays a metered site-config POST before the records POST.",
+    ).toHaveLength(1);
   });
 
   it("does not touch the network when no block declares a relation", async () => {

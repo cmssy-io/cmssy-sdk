@@ -1,8 +1,9 @@
 import { parse } from "graphql";
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import type { QueryScopedOptions } from "../data/client";
 import { createCmssyClient } from "../data/client";
+import { clearWorkspaceIdCache } from "../data/settings-client";
 import type { CmssyTypedDocument } from "../data/document";
 import {
   FORM_QUERY,
@@ -46,6 +47,8 @@ function capturingFetch(payload: unknown): {
   };
   return { fetch, calls };
 }
+
+beforeEach(() => clearWorkspaceIdCache());
 
 describe("createCmssyClient().query (raw)", () => {
   it("runs a document and returns data, without scoping", async () => {
@@ -207,6 +210,91 @@ describe("createCmssyClient().queryScoped", () => {
     await client.queryScoped(FORM_QUERY, { formId: "f1" }, { fetch });
     await client.queryScoped(FORM_QUERY, { formId: "f2" }, { fetch });
     expect(siteConfigCalls).toBe(1);
+  });
+});
+
+describe("clients built from the same config share the workspace id (CMS-1618)", () => {
+  function countingFetch() {
+    let siteConfigCalls = 0;
+    const fetch: FetchLike = async (_url, init) => {
+      const body = JSON.parse(init.body);
+      const isSiteConfig = body.query.includes("PublicSiteConfig");
+      if (isSiteConfig) siteConfigCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () =>
+          isSiteConfig
+            ? {
+                data: {
+                  public: { siteConfig: { id: "sc", workspaceId: "w7" } },
+                },
+              }
+            : { data: { public: { form: { get: null } } } },
+      };
+    };
+    return { fetch, siteConfigCalls: () => siteConfigCalls };
+  }
+
+  it("pays the site-config round trip once, however many clients a render builds", async () => {
+    const { fetch, siteConfigCalls } = countingFetch();
+
+    await createCmssyClient(config).queryScoped(
+      FORM_QUERY,
+      { formId: "f1" },
+      { fetch },
+    );
+    await createCmssyClient(config).queryScoped(
+      FORM_QUERY,
+      { formId: "f2" },
+      { fetch },
+    );
+
+    expect(
+      siteConfigCalls(),
+      "resolveRelationContent and resolveForms build a fresh client per call; a per-client cache starts cold every render and public delivery is metered.",
+    ).toBe(1);
+  });
+
+  it("keeps workspaces apart in the shared cache", async () => {
+    const { fetch, siteConfigCalls } = countingFetch();
+
+    await createCmssyClient(config).resolveWorkspaceId({ fetch });
+    await createCmssyClient({
+      ...config,
+      workspaceSlug: "other",
+    }).resolveWorkspaceId({ fetch });
+    await createCmssyClient({ ...config, org: "rival" }).resolveWorkspaceId({
+      fetch,
+    });
+
+    expect(siteConfigCalls()).toBe(3);
+  });
+
+  it("does not remember a failed resolution", async () => {
+    let attempts = 0;
+    const fetch: FetchLike = async () => {
+      attempts += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            public: {
+              siteConfig:
+                attempts === 1 ? null : { id: "sc", workspaceId: "w9" },
+            },
+          },
+        }),
+      };
+    };
+
+    await expect(
+      createCmssyClient(config).resolveWorkspaceId({ fetch }),
+    ).rejects.toThrow();
+    await expect(
+      createCmssyClient(config).resolveWorkspaceId({ fetch }),
+    ).resolves.toBe("w9");
   });
 });
 

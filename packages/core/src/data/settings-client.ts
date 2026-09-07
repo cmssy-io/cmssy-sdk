@@ -34,18 +34,34 @@ export async function resolveWorkspaceId(
   return siteConfig.workspaceId;
 }
 
+const MAX_ENTRIES = 64;
 const workspaceIdCache = new Map<string, Promise<string>>();
 
-export function cachedWorkspaceId(config: CmssyClientConfig): Promise<string> {
-  const key = `${resolveApiUrl(config.apiUrl)}::${config.workspaceSlug}`;
+function cacheKey(config: CmssyClientConfig): string {
+  return `${resolveApiUrl(config.apiUrl)}::${config.org}::${config.workspaceSlug}`;
+}
+
+export function cachedWorkspaceId(
+  config: CmssyClientConfig,
+  options: GraphqlRequestOptions = {},
+): Promise<string> {
+  const key = cacheKey(config);
   const existing = workspaceIdCache.get(key);
   if (existing) return existing;
-  const fresh = resolveWorkspaceId(config).catch((err: unknown) => {
+  const fresh = resolveWorkspaceId(config, options).catch((err: unknown) => {
     workspaceIdCache.delete(key);
     throw err;
   });
+  if (workspaceIdCache.size >= MAX_ENTRIES) workspaceIdCache.clear();
   workspaceIdCache.set(key, fresh);
   return fresh;
+}
+
+export function primeWorkspaceId(
+  config: CmssyClientConfig,
+  workspaceId: string,
+): void {
+  workspaceIdCache.set(cacheKey(config), Promise.resolve(workspaceId));
 }
 
 export function clearWorkspaceIdCache(): void {

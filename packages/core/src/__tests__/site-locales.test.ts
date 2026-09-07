@@ -6,6 +6,8 @@ import {
   splitLocaleFromPath,
   type CmssySiteLocales,
 } from "../data/site-locales";
+import { createCmssyClient } from "../data/client";
+import { FORM_QUERY } from "../data/queries";
 
 describe("localesFromSiteConfig", () => {
   it("maps the workspace languages", () => {
@@ -87,7 +89,11 @@ describe("resolveSiteLocales", () => {
       }),
     }));
     const res = await resolveSiteLocales(
-      { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws-a" },
+      {
+        apiUrl: "https://api.test/graphql",
+        org: "acme",
+        workspaceSlug: "ws-a",
+      },
       { fetch: fetchMock as never },
     );
     expect(res).toEqual({ defaultLocale: "pl", locales: ["pl", "en"] });
@@ -98,7 +104,11 @@ describe("resolveSiteLocales", () => {
       throw new Error("boom");
     });
     const res = await resolveSiteLocales(
-      { apiUrl: "https://api.test/graphql", org: "acme", workspaceSlug: "ws-b" },
+      {
+        apiUrl: "https://api.test/graphql",
+        org: "acme",
+        workspaceSlug: "ws-b",
+      },
       { fetch: fetchMock as never },
     );
     expect(res).toEqual({ defaultLocale: "en", locales: ["en"] });
@@ -121,21 +131,17 @@ describe("resolveCmssyLocale", () => {
   });
 
   it("reads the language off the first path segment", async () => {
-    const locale = await resolveCmssyLocale(
-      config("ws-c"),
-      ["no", "blog"],
-      { fetch: serving("en", ["en", "no"]) as never },
-    );
+    const locale = await resolveCmssyLocale(config("ws-c"), ["no", "blog"], {
+      fetch: serving("en", ["en", "no"]) as never,
+    });
 
     expect(locale).toBe("no");
   });
 
   it("answers the default for an unprefixed path", async () => {
-    const locale = await resolveCmssyLocale(
-      config("ws-d"),
-      ["about"],
-      { fetch: serving("en", ["en", "no"]) as never },
-    );
+    const locale = await resolveCmssyLocale(config("ws-d"), ["about"], {
+      fetch: serving("en", ["en", "no"]) as never,
+    });
 
     expect(locale).toBe("en");
   });
@@ -175,12 +181,57 @@ describe("resolveCmssyLocale", () => {
   });
 
   it("does not treat the default language's own prefix as a language", async () => {
-    const locale = await resolveCmssyLocale(
-      config("ws-f"),
-      ["en", "about"],
-      { fetch: serving("en", ["en", "no"]) as never },
-    );
+    const locale = await resolveCmssyLocale(config("ws-f"), ["en", "about"], {
+      fetch: serving("en", ["en", "no"]) as never,
+    });
 
     expect(locale).toBe("en");
+  });
+});
+
+describe("the site-config read a render already pays for (CMS-1618)", () => {
+  it("primes the workspace id, so the first scoped query needs no second round trip", async () => {
+    const config = {
+      apiUrl: "https://api.test/graphql",
+      org: "acme",
+      workspaceSlug: "ws-primed",
+    };
+    let siteConfigCalls = 0;
+    const fetch = vi.fn(async (_url: string, init: { body: string }) => {
+      const body = JSON.parse(init.body) as { query: string };
+      const isSiteConfig = body.query.includes("PublicSiteConfig");
+      if (isSiteConfig) siteConfigCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () =>
+          isSiteConfig
+            ? {
+                data: {
+                  public: {
+                    siteConfig: {
+                      id: "sc",
+                      workspaceId: "w-primed",
+                      defaultLanguage: "en",
+                      enabledLanguages: ["en"],
+                    },
+                  },
+                },
+              }
+            : { data: { public: { form: { get: null } } } },
+      };
+    });
+
+    await resolveSiteLocales(config, { fetch });
+    await createCmssyClient(config).queryScoped(
+      FORM_QUERY,
+      { formId: "f1" },
+      { fetch },
+    );
+
+    expect(
+      siteConfigCalls,
+      "Astro and Remix already fetch the site config for the locales; the workspace id in that answer is what queryScoped would otherwise fetch again.",
+    ).toBe(1);
   });
 });
