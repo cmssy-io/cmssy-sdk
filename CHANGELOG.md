@@ -6,6 +6,34 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.3.0
+
+**The first ten minutes on a fresh app no longer end in a dead end** (CMS-1769,
+part of the onboarding epic CMS-1764).
+
+- `cmssy init` on a `create-next-app` scaffold used to refuse to write the
+  cmssy root layouts because `app/layout.tsx` outranked them, and left
+  `app/page.tsx` shadowing `/`. It now moves both to `.cmssy-backup/` and
+  carries the old layout's global CSS imports and `metadata` export into BOTH
+  cmssy root layouts. Fonts and providers are printed as yours to port.
+- `cmssy link` pushes the block manifest right after writing `.env.local` when
+  the app has a `cmssy/blocks.ts`, so the editor palette is populated before
+  the first deploy. A `--preview-url` on localhost no longer aborts the whole
+  link: the shared preview URL is left alone and the note points at the
+  editor's dev-mode switch.
+- The edit diagnostics page tells a localhost dev server to toggle dev mode in
+  the editor instead of pasting `http://localhost:3000` into the shared
+  preview URL that every editor in the workspace uses.
+- `@cmssy/next` in development renders "Nothing published yet at /path" with
+  a link to the editor where the site used to 404 with no clue; production
+  still returns a 404.
+- Every delivery request now carries `user-agent: @cmssy/core/<version>`, so
+  the dashboard's setup card can tick "connect" the moment your app makes its
+  first real request. Browsers ignore the header; server renders send it.
+
+**Do I have to do anything?** No. Bump all `@cmssy/*` packages together.
+Apps that already worked around the old `init` notes keep working.
+
 ## 16.2.1
 
 **Every render on Astro, Remix and the React server paths paid one extra
