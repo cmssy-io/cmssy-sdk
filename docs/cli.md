@@ -41,11 +41,16 @@ cmssy init --dir ../my-site --force
    `.eslintrc`, a CommonJS config, no default export) is printed with the lines
    to paste. An app with no eslint at all gets the note, not a linter it did
    not ask for.
-5. Prints what needs your attention: a conflicting `app/page.tsx` next to the
-   catch-all or an `app/layout.tsx` that outranks the cmssy root layouts (Next),
-   the `npx astro add react node` step (Astro), or an `app/routes.ts` or
-   `app/root.tsx` it refused to overwrite (React Router).
-6. Says what each file it wrote is for - one line under the file name - and ends
+5. On Next, moves the scaffold's `app/page.tsx` and `app/layout.tsx` to
+   `.cmssy-backup/` (they would shadow the catch-all and outrank the two cmssy
+   root layouts), then carries the old layout's global CSS imports (paths
+   rewritten) and its `metadata` export into BOTH cmssy root layouts. Fonts,
+   providers and anything else the old layout did are printed as yours to
+   port - to both layouts, or the editor preview renders without them.
+6. Prints what else needs your attention: the `npx astro add react node` step
+   (Astro), or an `app/routes.ts` or `app/root.tsx` it refused to overwrite
+   (React Router).
+7. Says what each file it wrote is for - one line under the file name - and ends
    with a **What not to break** list: the few things whose absence breaks the
    editor or the cache without failing a build. Since 11.7.0 the scaffolded files
    carry no comments of their own; that explanation is printed once, here, and
@@ -132,15 +137,20 @@ cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.examp
    that).
 4. Sets the workspace preview URL - the origin the editor frames your app at
    for EVERYONE in the workspace - only when `--preview-url` names your
-   deployed site. A localhost value is rejected: for local development, toggle
-   dev mode in the cmssy editor and enter your local host there - that target
-   is per user and touches nothing shared. Without the flag the value is left
-   unchanged.
+   deployed site. A localhost value is not stored and does not abort the link:
+   the note tells you to toggle dev mode in the cmssy editor and enter your
+   local host there - that target is per user and touches nothing shared.
+   Without the flag the value is left unchanged.
 5. Writes `CMSSY_ORG_SLUG`, `CMSSY_WORKSPACE_SLUG` and `CMSSY_DRAFT_SECRET`
    into `.env.local`, merging with what is already there - existing lines,
    comments and unrelated variables are preserved.
-6. Runs the preflight checks and prints one line per check.
-7. Prints the editor deep link and, when the workspace has a preview URL, a ready-to-open draft preview link.
+6. Pushes the block manifest when the app has a `cmssy/blocks.ts` (the same
+   files and rules as `cmssy sync-manifest`), so the editor palette knows
+   your blocks before the first deploy. No blocks module: nothing happens. A
+   module that does not load is reported as a `?` line with the reason and the
+   link goes on.
+7. Runs the preflight checks and prints one line per check.
+8. Prints the editor deep link and, when the workspace has a preview URL, a ready-to-open draft preview link.
 
 Every failure prints a concrete fix instruction, never a stacktrace.
 
@@ -161,6 +171,7 @@ $ cmssy link --token cs_... --workspace acme/shop
 ✓ fetched the draft secret
 ? preview URL left unchanged - pass --preview-url <deployed origin> to set it; for localhost use the editor dev-mode switch
 ✓ wrote CMSSY_ORG_SLUG, CMSSY_WORKSPACE_SLUG and CMSSY_DRAFT_SECRET to .env.local
+✓ pushed the block manifest from cmssy/blocks.ts (2 blocks) - the editor palette knows your blocks before the first deploy
 ✓ workspace acme/shop is reachable
 ✓ the draft secret is valid
 

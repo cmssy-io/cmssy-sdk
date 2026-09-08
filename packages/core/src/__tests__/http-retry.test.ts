@@ -6,6 +6,7 @@ import {
   postGraphql,
 } from "../data/http";
 import { graphqlRequest } from "../data/graphql-request";
+import { CMSSY_CORE_VERSION } from "../version";
 import type { FetchLikeResponse } from "../content/content-client";
 
 const URL_ = "https://api.cmssy.io/graphql";
@@ -27,6 +28,29 @@ function res(
 }
 
 const OK_BODY = { data: { ping: true } };
+
+describe("postGraphql headers", () => {
+  it("identifies the SDK with a user-agent the platform can recognise", async () => {
+    const doFetch = vi.fn().mockResolvedValue(res(200, OK_BODY));
+    await postGraphql(URL_, "q", {}, { fetch: doFetch, label: "test" });
+    const init = doFetch.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(init.headers["user-agent"]).toBe(`@cmssy/core/${CMSSY_CORE_VERSION}`);
+    expect(init.headers["user-agent"]).toMatch(/^@cmssy\//);
+    expect(init.headers["content-type"]).toBe("application/json");
+  });
+
+  it("lets a caller header win over the defaults", async () => {
+    const doFetch = vi.fn().mockResolvedValue(res(200, OK_BODY));
+    await postGraphql(
+      URL_,
+      "q",
+      {},
+      { fetch: doFetch, label: "test", headers: { "user-agent": "mine/1" } },
+    );
+    const init = doFetch.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(init.headers["user-agent"]).toBe("mine/1");
+  });
+});
 
 describe("postGraphql retry", () => {
   beforeEach(() => {

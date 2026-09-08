@@ -256,6 +256,21 @@ function parseOrigin(value: string): string | null {
   }
 }
 
+const LOCAL_HOSTNAMES = ["localhost", "127.0.0.1"];
+
+function previewUrlFix(devOrigin: string): string {
+  let hostname: string | null = null;
+  try {
+    hostname = new URL(devOrigin).hostname;
+  } catch {
+    hostname = null;
+  }
+  if (hostname && LOCAL_HOSTNAMES.includes(hostname)) {
+    return `toggle dev mode in the editor and enter ${devOrigin} there - ${SETTINGS_PATH} holds the shared preview URL of the DEPLOYED site, not your machine`;
+  }
+  return `paste ${devOrigin} into the preview URL field in ${SETTINGS_PATH}`;
+}
+
 export function checkPreviewUrl(
   previewUrl: string | null | undefined,
   devOrigin: string,
@@ -265,7 +280,7 @@ export function checkPreviewUrl(
     return {
       status: "fail",
       message: "no preview URL is set for this workspace",
-      fix: `paste ${devOrigin} into the preview URL field in ${SETTINGS_PATH}`,
+      fix: previewUrlFix(devOrigin),
     };
   }
   const previewOrigin = parseOrigin(trimmed);
@@ -273,7 +288,7 @@ export function checkPreviewUrl(
     return {
       status: "fail",
       message: `the workspace preview URL "${trimmed}" is not a valid URL`,
-      fix: `paste ${devOrigin} into the preview URL field in ${SETTINGS_PATH}`,
+      fix: previewUrlFix(devOrigin),
     };
   }
   const localOrigin = parseOrigin(devOrigin);
@@ -286,7 +301,7 @@ export function checkPreviewUrl(
   return {
     status: "fail",
     message: `the workspace preview URL is ${previewOrigin} but your dev server runs at ${devOrigin}`,
-    fix: `paste ${devOrigin} into the preview URL field in ${SETTINGS_PATH}`,
+    fix: previewUrlFix(devOrigin),
   };
 }
 

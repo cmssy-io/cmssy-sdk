@@ -197,14 +197,33 @@ describe("checkPreviewUrl", () => {
     expect(result.status).toBe("ok");
   });
 
-  it("fails with a paste instruction when the origins differ", () => {
+  it("points a localhost dev server at the editor dev-mode switch, not the shared preview URL", () => {
     const result = checkPreviewUrl(
       "https://staging.example.com",
       "http://localhost:3000",
     );
     expect(result.status).toBe("fail");
     expect(result.message).toContain("https://staging.example.com");
-    expect(result.fix).toContain("paste http://localhost:3000");
+    expect(result.fix).toContain("toggle dev mode in the editor");
+    expect(result.fix).toContain("enter http://localhost:3000 there");
+    expect(result.fix).not.toContain("paste");
+    expect(result.fix).toContain("Settings → Headless");
+  });
+
+  it("treats 127.0.0.1 as a local machine too", () => {
+    const result = checkPreviewUrl(undefined, "http://127.0.0.1:4321");
+    expect(result.fix).toContain("toggle dev mode in the editor");
+    expect(result.fix).toContain("http://127.0.0.1:4321");
+  });
+
+  it("fails with a paste instruction when a deployed origin differs", () => {
+    const result = checkPreviewUrl(
+      "https://staging.example.com",
+      "https://preview.example.com",
+    );
+    expect(result.status).toBe("fail");
+    expect(result.fix).toContain("paste https://preview.example.com");
+    expect(result.fix).not.toContain("dev mode");
     expect(result.fix).toContain("Settings → Headless");
   });
 
@@ -212,6 +231,7 @@ describe("checkPreviewUrl", () => {
     const result = checkPreviewUrl(undefined, "http://localhost:3000");
     expect(result.status).toBe("fail");
     expect(result.fix).toContain("http://localhost:3000");
+    expect(result.fix).toContain("toggle dev mode");
   });
 
   it("fails on an unparseable preview URL", () => {

@@ -58,6 +58,12 @@ export interface SyncManifestDeps {
   load?: SiteModuleLoader;
 }
 
+export function hasBlocksModule(cwd: string): boolean {
+  return BLOCKS_CANDIDATES.some((candidate) =>
+    existsSync(join(cwd, candidate)),
+  );
+}
+
 function findModule(
   cwd: string,
   requested: string | undefined,

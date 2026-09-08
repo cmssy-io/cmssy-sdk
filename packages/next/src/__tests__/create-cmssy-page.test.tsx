@@ -548,6 +548,46 @@ describe("createCmssyPage", () => {
     );
   });
 
+  it("renders a nothing-published screen with an editor link in development instead of a 404", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(null);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = (await Page({ params: params(["missing", "deep"]) })) as {
+      type: unknown;
+      props: unknown;
+    };
+    expect(element.type).toBe("main");
+    const markup = JSON.stringify(element.props);
+    expect(markup).toContain("Nothing published yet at ");
+    expect(markup).toContain("/missing/deep");
+    expect(markup).toContain(
+      "https://www.cmssy.io/dashboard/organizations/acme/workspaces/pilot/editor",
+    );
+  });
+
+  it("shows the root path as / on the nothing-published screen", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(null);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = (await Page({ params: params([]) })) as { props: unknown };
+    expect(JSON.stringify(element.props)).toContain('"/"');
+  });
+
+  it("still 404s a missing page for an active editor in development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    fetchPage.mockResolvedValue(null);
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    await expect(
+      Page({
+        params: params(["missing"]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+
   it("threads the resolved locale", async () => {
     fetchPage.mockResolvedValue(PAGE);
     const Page = createCmssyPage(
