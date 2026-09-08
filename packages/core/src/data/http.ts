@@ -1,4 +1,5 @@
 import type { FetchLike, FetchLikeResponse } from "../content/content-client";
+import { CMSSY_USER_AGENT } from "../version";
 
 export class CmssyRequestError extends Error {
   readonly status: number;
@@ -203,7 +204,11 @@ export async function postGraphql<T>(
     url,
     {
       method: "POST",
-      headers: { "content-type": "application/json", ...options.headers },
+      headers: {
+        "content-type": "application/json",
+        "user-agent": CMSSY_USER_AGENT,
+        ...options.headers,
+      },
       body: JSON.stringify({ query, variables }),
       signal: options.signal,
     },

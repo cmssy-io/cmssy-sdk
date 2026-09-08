@@ -183,6 +183,9 @@ function buildCmssyPageRenderer(
     });
 
     if (!page) {
+      if (isDevelopment() && !editMode) {
+        return renderNothingPublishedPage(config, pagePath);
+      }
       notFound();
     }
 
@@ -296,6 +299,39 @@ async function renderEditDiagnosticsPage(
     <div
       dangerouslySetInnerHTML={{ __html: renderEditDiagnostics(diagnostics) }}
     />
+  );
+}
+
+async function renderNothingPublishedPage(
+  config: CmssyConfig,
+  path: string[] | undefined,
+) {
+  const { buildEditorUrl } = await import("@cmssy/core/preflight");
+  const editorUrl = buildEditorUrl(config);
+  const shown = `/${(path ?? []).join("/")}`;
+  return (
+    <main
+      style={{
+        fontFamily: "system-ui, sans-serif",
+        maxWidth: "40rem",
+        margin: "4rem auto",
+        padding: "0 1.5rem",
+        lineHeight: 1.5,
+      }}
+    >
+      <h1 style={{ fontSize: "1.5rem", margin: "0 0 0.5rem" }}>
+        Nothing published yet at {shown}
+      </h1>
+      <p style={{ margin: "0 0 1rem" }}>
+        Your app is wired to workspace <code>{config.org}/{config.workspaceSlug}</code>
+        , but no published page answers this path. Build one in the editor and
+        publish it - this screen only shows in development; production returns
+        a 404.
+      </p>
+      <p style={{ margin: 0 }}>
+        <a href={editorUrl}>Open the cmssy editor</a>
+      </p>
+    </main>
   );
 }
 

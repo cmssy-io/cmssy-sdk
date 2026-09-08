@@ -13,6 +13,7 @@ import {
   CliError,
   fetchDraftSecret,
   fetchMyWorkspaces,
+  saveBlockManifest,
   setPreviewUrl,
   type AdminRequestOptions,
   type CliWorkspace,
@@ -25,6 +26,8 @@ import {
   formatEditorLink,
   formatResult,
 } from "./format";
+import type { SiteModuleLoader } from "./site-modules";
+import { collectManifest, hasBlocksModule } from "./sync-manifest";
 
 export interface LinkOptions {
   token?: string;
@@ -39,6 +42,7 @@ export interface LinkDeps {
   fetch: typeof globalThis.fetch;
   isTty: boolean;
   ask: (question: string) => Promise<string>;
+  load?: SiteModuleLoader;
 }
 
 function resolveToken(options: LinkOptions, deps: LinkDeps): string {
@@ -193,8 +197,17 @@ async function selectWorkspace(
   return selected;
 }
 
-function resolvePreviewUrl(options: LinkOptions): string | null {
-  if (!options.previewUrl) return null;
+type PreviewUrlChoice =
+  | { kind: "none" }
+  | { kind: "deployed"; origin: string }
+  | { kind: "local"; origin: string };
+
+function isLocalHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function resolvePreviewUrl(options: LinkOptions): PreviewUrlChoice {
+  if (!options.previewUrl) return { kind: "none" };
   let origin: string;
   try {
     origin = new URL(options.previewUrl).origin;
@@ -204,14 +217,36 @@ function resolvePreviewUrl(options: LinkOptions): string | null {
       "pass --preview-url with your DEPLOYED site origin, e.g. --preview-url https://example.com",
     );
   }
-  const { hostname } = new URL(origin);
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    throw new CliError(
-      "the workspace preview URL is the DEPLOYED site every editor in the workspace previews - not your localhost",
-      "for local development, toggle dev mode in the cmssy editor and enter your local host there (per user, nothing shared)",
-    );
+  return isLocalHost(new URL(origin).hostname)
+    ? { kind: "local", origin }
+    : { kind: "deployed", origin };
+}
+
+async function pushBlockManifest(
+  workspace: CliWorkspace,
+  admin: AdminRequestOptions,
+  deps: LinkDeps,
+): Promise<PreflightResult | null> {
+  if (!hasBlocksModule(deps.cwd)) return null;
+  try {
+    const { manifest, blocksPath } = await collectManifest({}, deps);
+    await saveBlockManifest(manifest, { ...admin, workspaceId: workspace.id });
+    const count = manifest.blocks.length;
+    return {
+      status: "ok",
+      message: `pushed the block manifest from ${blocksPath} (${count} block${count === 1 ? "" : "s"}) - the editor palette knows your blocks before the first deploy`,
+    };
+  } catch (error) {
+    if (error instanceof CliError) {
+      const fix =
+        error.fix ?? "run cmssy sync-manifest once the blocks module loads";
+      return {
+        status: "unknown",
+        message: `block manifest not pushed: ${error.message} - ${fix}`,
+      };
+    }
+    throw error;
   }
-  return origin;
 }
 
 function writeEnvLocal(cwd: string, updates: Record<string, string>): void {
@@ -257,12 +292,22 @@ export async function runLink(
     log(formatResult({ status: "ok", message: "fetched the draft secret" }));
 
     const previewUrl = resolvePreviewUrl(options);
-    if (previewUrl) {
-      await setPreviewUrl(previewUrl, { ...admin, workspaceId: workspace.id });
+    if (previewUrl.kind === "deployed") {
+      await setPreviewUrl(previewUrl.origin, {
+        ...admin,
+        workspaceId: workspace.id,
+      });
       log(
         formatResult({
           status: "ok",
-          message: `set the workspace preview URL to ${previewUrl}`,
+          message: `set the workspace preview URL to ${previewUrl.origin}`,
+        }),
+      );
+    } else if (previewUrl.kind === "local") {
+      log(
+        formatResult({
+          status: "unknown",
+          message: `${previewUrl.origin} is your machine, not the DEPLOYED site every editor in the workspace previews - the shared preview URL was left unchanged; open the editor, toggle dev mode and enter ${previewUrl.origin} there (per user, nothing shared), and pass --preview-url <deployed origin> once the site is live`,
         }),
       );
     } else {
@@ -280,6 +325,9 @@ export async function runLink(
       CMSSY_WORKSPACE_SLUG: workspace.slug,
       CMSSY_DRAFT_SECRET: draftSecret,
     });
+    env.CMSSY_ORG_SLUG = orgSlug;
+    env.CMSSY_WORKSPACE_SLUG = workspace.slug;
+    env.CMSSY_DRAFT_SECRET = draftSecret;
     log(
       formatResult({
         status: "ok",
@@ -287,6 +335,9 @@ export async function runLink(
           "wrote CMSSY_ORG_SLUG, CMSSY_WORKSPACE_SLUG and CMSSY_DRAFT_SECRET to .env.local",
       }),
     );
+
+    const manifestResult = await pushBlockManifest(workspace, admin, deps);
+    if (manifestResult) log(formatResult(manifestResult));
 
     const preflight: PreflightConfig = {
       apiUrl: env.CMSSY_API_URL,

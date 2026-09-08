@@ -25,6 +25,12 @@ import {
   type FrameworkDef,
   type PackageManifest,
 } from "./framework";
+import {
+  describeRelocation,
+  patchCmssyLayout,
+  relocateNextRootFiles,
+  type RelocatedNextRoot,
+} from "./next-root";
 
 const ASSETS_DIR = fileURLToPath(new URL("../assets/init", import.meta.url));
 const CLI_PACKAGE_JSON = fileURLToPath(
@@ -62,12 +68,6 @@ function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
       purpose,
     })),
   ];
-  if (
-    framework.name === "next" &&
-    existingFile(root, `${srcPrefix}app/layout`)
-  ) {
-    return files.filter((file) => !file.target.endsWith("/layout.tsx"));
-  }
   return files;
 }
 
@@ -137,12 +137,6 @@ function detectInstallCommand(root: string): string {
   return "npm install";
 }
 
-function existingFile(root: string, base: string): string | undefined {
-  return ["tsx", "ts", "jsx", "js"]
-    .map((extension) => `${base}.${extension}`)
-    .find((candidate) => existsSync(join(root, candidate)));
-}
-
 function frameworkNotes(
   framework: FrameworkDef,
   root: string,
@@ -151,23 +145,8 @@ function frameworkNotes(
   const notes: PreflightResult[] = [];
   if (framework.name === "next") {
     const prefix = nextSrcPrefix(root);
-    const home = existingFile(root, `${prefix}app/page`);
-    if (home) {
-      notes.push({
-        status: "unknown",
-        message: `${home} conflicts with the cmssy catch-all route - delete it and the cmssy page serves /`,
-      });
-    }
-    const rootLayout = existingFile(root, `${prefix}app/layout`);
-    if (rootLayout) {
-      notes.push({
-        status: "fail",
-        message: `${rootLayout} outranks the cmssy root layouts, so they were NOT written and <html lang> stays whatever that file says`,
-        fix: `delete ${rootLayout} and rerun, then move its global CSS import and metadata into BOTH ${prefix}app/[[...path]]/layout.tsx and ${prefix}app/cmssy-edit/[[...path]]/layout.tsx - they are separate roots, and an editor preview with no CSS is the usual way to find out you only did one. Routes outside the cmssy catch-alls need a root layout of their own once it is gone: move them under a route group, e.g. ${prefix}app/(site)/layout.tsx, or the build fails with "doesn't have a root layout".`,
-      });
-    }
     for (const layout of ["app/[[...path]]", "app/cmssy-edit/[[...path]]"]) {
-      if (!rootLayout && skipped.includes(`${prefix}${layout}/layout.tsx`)) {
+      if (skipped.includes(`${prefix}${layout}/layout.tsx`)) {
         notes.push({
           status: "unknown",
           message: `${prefix}${layout}/layout.tsx already existed - set <html lang={await resolveCmssyLocale(cmssy, path)}> there yourself (import from @cmssy/core), or the site declares one language while rendering another`,
@@ -225,6 +204,14 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       }),
     );
 
+    const relocated: RelocatedNextRoot =
+      framework.name === "next"
+        ? relocateNextRootFiles(root, nextSrcPrefix(root))
+        : { moved: [], layout: null };
+    for (const line of describeRelocation(relocated, nextSrcPrefix(root))) {
+      log(formatResult({ status: "ok", message: line }));
+    }
+
     const written: string[] = [];
     const skipped: string[] = [];
     for (const file of frameworkFiles(framework, root)) {
@@ -244,6 +231,14 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
       written.push(file.target);
       log(formatResult({ status: "ok", message: `wrote ${file.target}` }));
       log(`    ${file.purpose}`);
+      if (relocated.layout && file.target.endsWith("/layout.tsx")) {
+        patchCmssyLayout(
+          root,
+          file.target,
+          relocated.layout,
+          `${nextSrcPrefix(root)}app`,
+        );
+      }
     }
 
     const eslint = wireEslintConfig(

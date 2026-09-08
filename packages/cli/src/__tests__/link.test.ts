@@ -62,6 +62,17 @@ function adminFetch(overrides: Partial<Record<string, unknown>> = {}): {
         },
       );
     }
+    if (body.query.includes("CliSaveBlockManifest")) {
+      return Response.json(
+        overrides.saveManifest ?? {
+          data: {
+            blockManifest: {
+              save: { hash: "abc", updatedAt: "2026-09-08T00:00:00.000Z" },
+            },
+          },
+        },
+      );
+    }
     if (body.query.includes("PreflightSiteConfig")) {
       return Response.json(
         overrides.siteConfig ?? {
@@ -198,9 +209,9 @@ describe("runLink", () => {
     });
   });
 
-  it("rejects a localhost preview URL and points at the editor dev mode", async () => {
+  it("keeps linking on a localhost preview URL, leaves the shared URL alone and points at the editor dev mode", async () => {
     const { fetch, calls } = adminFetch();
-    const { deps, lines } = makeDeps(fetch);
+    const { deps, lines, cwd } = makeDeps(fetch);
     const code = await runLink(
       {
         token: "cs_test",
@@ -209,13 +220,125 @@ describe("runLink", () => {
       },
       deps,
     );
-    expect(code).toBe(1);
+    expect(code).toBe(0);
     expect(calls.some((call) => call.query.includes("CliSetPreviewUrl"))).toBe(
       false,
     );
+    expect(readFileSync(join(cwd, ".env.local"), "utf8")).toContain(
+      "CMSSY_WORKSPACE_SLUG=shop",
+    );
     const output = lines.join("\n");
     expect(output).toContain("DEPLOYED site");
-    expect(output).toContain("dev mode");
+    expect(output).toContain("left unchanged");
+    expect(output).toContain("enter http://localhost:3000 there");
+  });
+
+  it("treats 127.0.0.1 as localhost too", async () => {
+    const { fetch, calls } = adminFetch();
+    const { deps } = makeDeps(fetch);
+    const code = await runLink(
+      { token: "cs_test", workspace: "shop", previewUrl: "http://127.0.0.1:4321" },
+      deps,
+    );
+    expect(code).toBe(0);
+    expect(calls.some((call) => call.query.includes("CliSetPreviewUrl"))).toBe(
+      false,
+    );
+  });
+
+  it("pushes the block manifest to the linked workspace when the app has a blocks module", async () => {
+    const { fetch, calls } = adminFetch();
+    const { deps, lines, cwd } = makeDeps(fetch, {
+      load: async (_cwd, entry) => {
+        if (entry === "cmssy/blocks.ts") {
+          return {
+            blocks: [
+              { type: "hero", props: { title: { type: "text" } } },
+              { type: "cta", props: {} },
+            ],
+          };
+        }
+        if (entry === "cmssy.config.ts") {
+          return { cmssy: { org: "acme", workspaceSlug: "shop" } };
+        }
+        throw new Error(`unexpected module ${entry}`);
+      },
+    });
+    mkdirSync(join(cwd, "cmssy"));
+    writeFileSync(join(cwd, "cmssy/blocks.ts"), "export const blocks = [];\n");
+    writeFileSync(join(cwd, "cmssy.config.ts"), "export const cmssy = {};\n");
+
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    const save = calls.find((call) =>
+      call.query.includes("CliSaveBlockManifest"),
+    );
+    expect(save?.headers["x-workspace-id"]).toBe("w1");
+    expect(save?.headers.authorization).toBe("Bearer cs_test");
+    expect(
+      (save?.variables.blocks as Array<{ type: string }>).map((b) => b.type),
+    ).toEqual(["cta", "hero"]);
+    const envIndex = calls.indexOf(
+      calls.find((call) => call.query.includes("CliDraftSecret"))!,
+    );
+    expect(calls.indexOf(save!)).toBeGreaterThan(envIndex);
+    expect(lines.join("\n")).toContain(
+      "pushed the block manifest from cmssy/blocks.ts (2 blocks)",
+    );
+  });
+
+  it("skips the manifest push silently when the app has no blocks module", async () => {
+    const { fetch, calls } = adminFetch();
+    const { deps, lines } = makeDeps(fetch, {
+      load: async () => {
+        throw new Error("must not load anything");
+      },
+    });
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    expect(
+      calls.some((call) => call.query.includes("CliSaveBlockManifest")),
+    ).toBe(false);
+    expect(lines.join("\n")).not.toContain("block manifest");
+  });
+
+  it("reports a manifest that cannot be collected without failing the link", async () => {
+    const { fetch, calls } = adminFetch();
+    const { deps, lines, cwd } = makeDeps(fetch, {
+      load: async () => ({ blocks: [] }),
+    });
+    mkdirSync(join(cwd, "cmssy"));
+    writeFileSync(join(cwd, "cmssy/blocks.ts"), "export const blocks = [];\n");
+    writeFileSync(join(cwd, "cmssy.config.ts"), "export const cmssy = {};\n");
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+    expect(code).toBe(0);
+    expect(
+      calls.some((call) => call.query.includes("CliSaveBlockManifest")),
+    ).toBe(false);
+    const output = lines.join("\n");
+    expect(output).toContain("block manifest not pushed");
+    expect(output).toContain("empty `blocks` array");
+    expect(output).toContain("cmssy add block");
+  });
+
+  it("exposes the linked slugs to the loaded config before pushing the manifest", async () => {
+    const { fetch } = adminFetch();
+    const seen: Record<string, string | undefined> = {};
+    const { deps, cwd } = makeDeps(fetch, {
+      load: async (_cwd, entry) => {
+        if (entry === "cmssy.config.ts") {
+          seen.org = deps.env.CMSSY_ORG_SLUG;
+          seen.workspace = deps.env.CMSSY_WORKSPACE_SLUG;
+          seen.secret = deps.env.CMSSY_DRAFT_SECRET;
+        }
+        return { blocks: [{ type: "hero", props: {} }] };
+      },
+    });
+    mkdirSync(join(cwd, "cmssy"));
+    writeFileSync(join(cwd, "cmssy/blocks.ts"), "");
+    writeFileSync(join(cwd, "cmssy.config.ts"), "");
+    expect(await runLink({ token: "cs_test", workspace: "shop" }, deps)).toBe(0);
+    expect(seen).toEqual({ org: "acme", workspace: "shop", secret: "s3cret" });
   });
 
   it("leaves the preview URL unchanged when there is no flag and no terminal", async () => {
