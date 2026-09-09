@@ -54,16 +54,16 @@ schema declares.
 
 Full shape:
 
-| Key               | Required | Purpose                                                                       |
-| ----------------- | -------- | ----------------------------------------------------------------------------- |
-| `type`            | yes      | Unique block-type id. Stored on each instance.                                |
-| `component`       | yes      | The React component that renders the block.                                   |
-| `props`           | yes      | The editor schema - a map of field name → field control.                      |
-| `label`           | no       | Display name in the editor.                                                   |
-| `category`        | no       | Groups the block in the editor's picker.                                      |
-| `icon`            | no       | Icon id for the picker.                                                       |
+| Key             | Required | Purpose                                                                       |
+| --------------- | -------- | ----------------------------------------------------------------------------- |
+| `type`          | yes      | Unique block-type id. Stored on each instance.                                |
+| `component`     | yes      | The React component that renders the block.                                   |
+| `props`         | yes      | The editor schema - a map of field name → field control.                      |
+| `label`         | no       | Display name in the editor.                                                   |
+| `category`      | no       | Groups the block in the editor's picker.                                      |
+| `icon`          | no       | Icon id for the picker.                                                       |
 | `layoutRegions` | no       | Restrict where the block may be placed.                                       |
-| `loader`          | no       | Server-side data fetch (SSR only). See [Server loaders](./server-loaders.md). |
+| `loader`        | no       | Server-side data fetch (SSR only). See [Server loaders](./server-loaders.md). |
 
 ## The `fields` registry
 
@@ -71,29 +71,29 @@ Full shape:
 carries the type of the value it holds, which is what lets `content` be derived
 from the schema:
 
-| Control               | Editor input              | `content` type            | Notable options                                                  |
-| --------------------- | ------------------------- | ------------------------- | ---------------------------------------------------------------- |
-| `fields.text`         | One-line text             | `string`                  | `defaultValue`, `placeholder`, `required`                        |
-| `fields.textarea`     | Multi-line text           | `string`                  | `defaultValue`, `placeholder`                                    |
-| `fields.richText`     | Rich text (HTML)          | `string`                  | `required`                                                       |
-| `fields.markdown`     | Markdown                  | `string`                  | `required`                                                       |
-| `fields.number`       | Number                    | `number`                  | `defaultValue`                                                   |
-| `fields.boolean`      | Toggle                    | `boolean`                 | `defaultValue`                                                   |
-| `fields.date`         | Date picker               | `string`                  | `defaultValue`                                                   |
-| `fields.media`        | Media picker (image/file) | `string`, `string[]`      | `multiple`, `acceptedTypes`, `maxSize`, `aspectRatio`, `aspectRatios` |
-| `fields.link`         | Internal/external link    | `string`                  | -                                                                |
-| `fields.url`          | URL                       | `string`                  | `required`                                                       |
-| `fields.select`       | Single choice             | union of its `options`    | `options`, `defaultValue`                                        |
-| `fields.radio`        | Single choice (radios)    | union of its `options`    | `options`                                                        |
-| `fields.multiselect`  | Multiple choice           | array of its `options`    | `options`                                                        |
-| `fields.color`        | Color picker              | `string`                  | `defaultValue`                                                   |
-| `fields.table`        | Table (columns and rows)  | `TableValue`              | `maxColumns`                                                     |
-| `fields.repeater`     | Repeatable group          | array of its `itemSchema` | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible` |
-| `fields.pageSelector` | Page picker               | `PageRef[]`               | `pageType`, `multiple`                                           |
-| `fields.json`         | JSON                      | `JsonValue`               | -                                                                |
+| Control               | Editor input              | `content` type                                 | Notable options                                                                            |
+| --------------------- | ------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `fields.text`         | One-line text             | `string`                                       | `defaultValue`, `placeholder`, `required`                                                  |
+| `fields.textarea`     | Multi-line text           | `string`                                       | `defaultValue`, `placeholder`                                                              |
+| `fields.richText`     | Rich text (HTML)          | `string`                                       | `required`                                                                                 |
+| `fields.markdown`     | Markdown                  | `string`                                       | `required`                                                                                 |
+| `fields.number`       | Number                    | `number`                                       | `defaultValue`                                                                             |
+| `fields.boolean`      | Toggle                    | `boolean`                                      | `defaultValue`                                                                             |
+| `fields.date`         | Date picker               | `string`                                       | `defaultValue`                                                                             |
+| `fields.media`        | Media picker (image/file) | `string`, `string[]`                           | `multiple`, `acceptedTypes`, `maxSize`, `aspectRatio`, `aspectRatios`, `localized`         |
+| `fields.link`         | Internal/external link    | `string`                                       | -                                                                                          |
+| `fields.url`          | URL                       | `string`                                       | `required`                                                                                 |
+| `fields.select`       | Single choice             | union of its `options`                         | `options`, `defaultValue`                                                                  |
+| `fields.radio`        | Single choice (radios)    | union of its `options`                         | `options`                                                                                  |
+| `fields.multiselect`  | Multiple choice           | array of its `options`                         | `options`                                                                                  |
+| `fields.color`        | Color picker              | `string`                                       | `defaultValue`                                                                             |
+| `fields.table`        | Table (columns and rows)  | `TableValue`                                   | `maxColumns`                                                                               |
+| `fields.repeater`     | Repeatable group          | array of its `itemSchema`                      | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible`                           |
+| `fields.pageSelector` | Page picker               | `PageRef[]`                                    | `pageType`, `multiple`                                                                     |
+| `fields.json`         | JSON                      | `JsonValue`                                    | -                                                                                          |
 | `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit` - see [Models for data](./models-for-data.md) |
 
-Every control accepts `label`, `helperText`, and `required`.
+Every control accepts `label`, `helperText`, `required` and `localized`.
 
 `required: true` makes the key required in `content`. Everything else is
 optional - the editor lets an author leave a field empty, and the type says so.
@@ -101,6 +101,23 @@ optional - the editor lets an author leave a field empty, and the type says so.
 `maxColumns` on `fields.table` says how many columns the block can render. cmssy
 warns on a save that goes past it, so a block that lays out three columns says
 so rather than leaving an author to find out from the rendered page.
+
+`localized: false` says the field carries no language - a logo, an icon, an
+external URL, a brand colour picked as content rather than style. cmssy stores
+that value once instead of once per locale, and the editor draws it once, in
+the content tab, with a padlock. **Your component is unchanged**: the value is
+folded into every locale before delivery, so it still arrives as
+`content.logo` and never announces that it is shared.
+
+```ts
+logo: fields.media({ label: "Logo", localized: false }),
+```
+
+Independent of `tab`: a `style` or `advanced` field is already one value per
+block, so the flag is ignored there. Adding or removing it on a field that
+already has content is safe - the manifest push that changes it collapses the
+per-language copies into one, or fans the single value back out into every
+language.
 
 ```ts
 export const cardProps = {

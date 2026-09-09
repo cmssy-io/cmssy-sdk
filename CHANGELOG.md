@@ -6,6 +6,33 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.4.0
+
+**A field can declare itself the same in every language** (CMS-1789; the
+platform side is CMS-1784).
+
+Nothing to do unless you want it. A block field that carries no language -
+a logo, an icon, an external URL, a brand colour picked as content rather
+than style - can now say so:
+
+```ts
+logo: fields.media({ label: "Logo", localized: false }),
+```
+
+cmssy then stores that value once instead of once per locale, and folds it
+into every locale before delivery, so **your component is unchanged**: it
+still reads `content.logo` and never learns the field is shared. The editor
+draws it in the content tab with a padlock, once.
+
+The flag is independent of `tab`. A `style` or `advanced` field is already
+one value per block, so it is ignored there.
+
+Flipping the flag on a field that already has content is handled by the
+platform: values are collapsed into one on the way in and fanned back out
+into every locale if you flip it back, on the manifest push that changes it.
+
+`@cmssy/types` moves 0.43.0 → 0.49.0, which is what carries the flag.
+
 ## 16.3.0
 
 **The first ten minutes on a fresh app no longer end in a dead end** (CMS-1769,
@@ -124,10 +151,10 @@ You have to act only if you read it. Two shapes to look for:
 
 ```ts
 // gone - the field is no longer selected, and no longer on the type
-if (form.settings?.enableCaptcha) renderCaptcha()
+if (form.settings?.enableCaptcha) renderCaptcha();
 
 // gone - CmssyFormSettings no longer declares it (@cmssy/types 0.41.0)
-const enabled: boolean | null = settings.enableCaptcha
+const enabled: boolean | null = settings.enableCaptcha;
 ```
 
 There is no replacement flag to switch to, because there was never an
