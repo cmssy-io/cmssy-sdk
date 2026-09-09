@@ -10,6 +10,7 @@ const declaredByHand: BlockPropsSchema = {
     aspectRatio: "16:9",
     aspectRatios: ["16:9", { w: 5, h: 4 }],
   },
+  logo: { type: "media", label: "Logo", localized: false },
 };
 
 describe("fields.table", () => {
@@ -69,5 +70,26 @@ describe("fields.media", () => {
       fields.media({ label: "Hero" }),
       "An absent aspectRatio is what the delivery resolver reads as 'keep the asset's own shape'. A key present as undefined would be a different manifest.",
     ).toStrictEqual({ type: "media", label: "Hero" });
+  });
+
+  it("carries a declaration that the field is the same in every language", () => {
+    expect(
+      fields.media({ label: "Logo", localized: false }),
+      "cmssy stores a localized: false field once, in the block's shared bucket, and folds it into every locale at delivery (CMS-1784). Without the key on the pushed manifest the value goes back to being written once per language.",
+    ).toStrictEqual({ type: "media", label: "Logo", localized: false });
+  });
+
+  it("matches a shared field written straight into a BlockPropsSchema", () => {
+    expect(
+      declaredByHand.logo,
+      "The version pin for @cmssy/types 0.49.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no localized. The builder call above cannot pin it, for the reason given on the table pin.",
+    ).toStrictEqual({ type: "media", label: "Logo", localized: false });
+  });
+
+  it("declares nothing about localization when the block states none", () => {
+    expect(
+      fields.media({ label: "Hero" }),
+      "cmssy reads localized !== false as per language, so a key present as undefined and an absent key agree - but only an absent key says the block never made the choice.",
+    ).not.toHaveProperty("localized");
   });
 });
