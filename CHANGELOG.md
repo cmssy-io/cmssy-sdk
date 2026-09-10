@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.7.1
+
+**Fixes a relation field losing its value on the block data route** (CMS-1800).
+
+Nothing to do beyond taking the patch. 16.7.0's route worked for every block
+whose loader reads plain fields, and silently ignored a `fields.relation` the
+loader filters on - a product grid pinned to a category returned the whole
+catalogue.
+
+`resolveRelationContent` assumed it only ever sees raw stored ids, which is true
+on the SSR path. Anything else - including content that has already been through
+it once - fell to a `delete`, so the loader saw no category at all. It now keeps
+a value that already carries an `id`, and re-reads the record for it. The editor
+also sends the route the same raw content SSR gets, rather than the resolved
+view, so the two paths take the same input.
+
+Caught by running the route against the live demo catalogue: a bare id filtered
+to 8 bearings, the resolved object returned 8 pneumatics.
+
 ## 16.7.0
 
 **The editor can resolve a block's loader while you edit it** (CMS-1800).
