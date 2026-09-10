@@ -145,16 +145,16 @@ folder is a working example, `codegen` included.
 
 ### Blocks & fields
 
-| Export                         | Signature                    | Notes                                                             |
-| ------------------------------ | ---------------------------- | ----------------------------------------------------------------- |
-| `fields`                       | object of field builders     | See the list below.                                               |
-| `FieldDefinition` `TypedField` | types                        | What a builder returns.                                           |
-| `InferBlockContent`            | type                         | Schema → the `content` object a component receives.               |
-| `evaluateFieldConditionGroup`  | `(group, values) => boolean` | Conditional-field (`showWhen`) evaluation, for a custom renderer. |
-| `buildBlockManifest`           | `(blocks, { category?, regions? }) => BlockManifest` | The manifest `cmssy sync-manifest` pushes: blocks folded with their meta, sorted by type, plus the bridge-shaped regions. |
-| `blocksToSchemas` `blocksToMeta` `layoutRegionsToBridge` `propsToSchema` | functions | The serializers the `cmssy:ready` handshake sends with; `@cmssy/react`'s registry re-exports them. |
-| `registryToManifestBlocks`     | `(schemas, blockMeta) => BlockManifestBlock[]` | The fold from handshake shape to stored manifest shape. |
-| `BlockManifest` `BlockManifestBlock` `BlockManifestSource` | types | What `buildBlockManifest` takes and returns. |
+| Export                                                                   | Signature                                            | Notes                                                                                                                     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `fields`                                                                 | object of field builders                             | See the list below.                                                                                                       |
+| `FieldDefinition` `TypedField`                                           | types                                                | What a builder returns.                                                                                                   |
+| `InferBlockContent`                                                      | type                                                 | Schema → the `content` object a component receives.                                                                       |
+| `evaluateFieldConditionGroup`                                            | `(group, values) => boolean`                         | Conditional-field (`showWhen`) evaluation, for a custom renderer.                                                         |
+| `buildBlockManifest`                                                     | `(blocks, { category?, regions? }) => BlockManifest` | The manifest `cmssy sync-manifest` pushes: blocks folded with their meta, sorted by type, plus the bridge-shaped regions. |
+| `blocksToSchemas` `blocksToMeta` `layoutRegionsToBridge` `propsToSchema` | functions                                            | The serializers the `cmssy:ready` handshake sends with; `@cmssy/react`'s registry re-exports them.                        |
+| `registryToManifestBlocks`                                               | `(schemas, blockMeta) => BlockManifestBlock[]`       | The fold from handshake shape to stored manifest shape.                                                                   |
+| `BlockManifest` `BlockManifestBlock` `BlockManifestSource`               | types                                                | What `buildBlockManifest` takes and returns.                                                                              |
 
 `fields.` builders: `text`, `textarea`, `richText`, `markdown`, `number`, `date`,
 `datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,
@@ -247,7 +247,7 @@ rich-text renderer or sanitizer - see the [rich-text recipe](../building-blocks/
 | Export              | Purpose                                                           |
 | ------------------- | ----------------------------------------------------------------- |
 | `CmssyServerPage`   | Renders a page's blocks server-side, running each block's loader. |
-| `CmssyServerLayout` | The same for layout-region blocks (header/footer).              |
+| `CmssyServerLayout` | The same for layout-region blocks (header/footer).                |
 | `CmssyBlock`        | Renders a single block instance.                                  |
 | `UnknownBlock`      | Placeholder for a block type the registry does not know.          |
 | `buildBlockContext` | Builds the `CmssyBlockContext` passed to blocks.                  |
@@ -331,17 +331,17 @@ the middleware preset.
 
 ### `@cmssy/next/server`
 
-| Export                                    | Signature                                                                                                                                                                                                                                                                     | Use in                        |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                 | `app/[[...path]]/page.tsx`    |
-| `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                 | `app/cmssy-edit/[[...path]]/` |
-| `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                                                                                                                                                                                                                  | `app/api/draft/route.ts`      |
-| `createCmssyRevalidateRoute`              | `({ secret, tags?, toleranceSeconds? }) => (request) => Promise<Response>` - verifies a cmssy webhook delivery and expires `cmssy-content` (plus `tags`); 500 without a secret, 401 on a bad signature                                                                          | `app/api/revalidate/route.ts` |
-| `createCmssyBlockDataRoute`               | `(config, blocks, options?) => (request) => Promise<Response>` - runs the loaders of the blocks in the request against the content the editor is showing; 403 unless the request is a verified editor request                                                                    | `app/api/cmssy/block-data/route.ts` |
-| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `preview` fetches the draft for a `draftMode()` visitor but still renders server-side; `region` is typed to `config.layout`; optional `children({ groups, settings, page, element })` render prop | any route                     |
-| `resolveCmssyLayout`                      | `(config, options) => Promise<CmssyLayoutResolution>` - the slot as a function: `{ groups, settings, page, element, ... }`, Next retry default applied                                                                                                                        | any route                     |
-| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                                                                                                                                                                                           | any adapter                   |
-| `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic                                                                                                                                                                                                   | `/cmssy-edit` only            |
+| Export                                    | Signature                                                                                                                                                                                                                                                                                       | Use in                              |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `createCmssyPage`                         | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                                   | `app/[[...path]]/page.tsx`          |
+| `createCmssyEditPage`                     | `(config, blocks, options?) => PageComponent`                                                                                                                                                                                                                                                   | `app/cmssy-edit/[[...path]]/`       |
+| `createDraftRoute`                        | `(config) => (request) => Promise<Response>`                                                                                                                                                                                                                                                    | `app/api/draft/route.ts`            |
+| `createCmssyRevalidateRoute`              | `({ secret, tags?, toleranceSeconds? }) => (request) => Promise<Response>` - verifies a cmssy webhook delivery and expires `cmssy-content` (plus `tags`); 500 without a secret, 401 on a bad signature                                                                                          | `app/api/revalidate/route.ts`       |
+| `createCmssyBlockDataRoute`               | `(config, blocks, options?) => (request) => Promise<Response>` - runs the loaders of the blocks in the request against the content the editor is showing; 403 unless the request carries the `x-cmssy-edit-token` that `createCmssyPage` minted for that page, 500 without `config.draftSecret` | `app/api/cmssy/block-data/route.ts` |
+| `CmssyLayoutSlot`                         | `(props) => Promise<JSX>` - `editMode` required, plus `path` or `locale`; `preview` fetches the draft for a `draftMode()` visitor but still renders server-side; `region` is typed to `config.layout`; optional `children({ groups, settings, page, element })` render prop                     | any route                           |
+| `resolveCmssyLayout`                      | `(config, options) => Promise<CmssyLayoutResolution>` - the slot as a function: `{ groups, settings, page, element, ... }`, Next retry default applied                                                                                                                                          | any route                           |
+| `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                                                                                                                                                                                                             | any adapter                         |
+| `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic                                                                                                                                                                                                                     | `/cmssy-edit` only                  |
 
 ```ts
 interface CreateCmssyPageOptions {
@@ -455,7 +455,10 @@ opts the SDK's own reads into the Next data cache:
 export const revalidate = 3600;
 const cache = { revalidate };
 
-const CmssyPage = createCmssyPage(cmssy, blocks, { editor: CmssyEditor, cache });
+const CmssyPage = createCmssyPage(cmssy, blocks, {
+  editor: CmssyEditor,
+  cache,
+});
 // and on every slot: <CmssyLayoutSlot ... cache={cache} />
 ```
 

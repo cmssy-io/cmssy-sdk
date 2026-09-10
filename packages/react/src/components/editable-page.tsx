@@ -164,6 +164,7 @@ function EditableBlocks({
   const liveData = useBlockLoaderData({
     enabled: loaderBlocks.length > 0,
     ...(edit.blockDataUrl ? { url: edit.blockDataUrl } : {}),
+    ...(edit.blockDataToken ? { token: edit.blockDataToken } : {}),
     blocks: loaderBlocks,
     locale,
     defaultLocale,

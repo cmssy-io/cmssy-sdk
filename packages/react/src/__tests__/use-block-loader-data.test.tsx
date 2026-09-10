@@ -15,10 +15,12 @@ function Probe({
   blocks,
   seen,
   url,
+  token,
 }: {
   blocks: Array<{ id: string; type: string; content: Record<string, unknown> }>;
   seen: (data: Record<string, unknown>) => void;
   url?: string;
+  token?: string;
 }) {
   const data = useBlockLoaderData({
     enabled: blocks.length > 0,
@@ -26,6 +28,7 @@ function Probe({
     locale: "en",
     defaultLocale: "en",
     ...(url ? { url } : {}),
+    ...(token ? { token } : {}),
   });
   seen(data);
   return null;
@@ -147,6 +150,23 @@ describe("useBlockLoaderData", () => {
       vi.advanceTimersByTime(DEBOUNCE_MS * 3);
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("carries the edit token the page was rendered with", async () => {
+    render(<Probe blocks={grid} seen={vi.fn()} token="1700.abc" />);
+    await act(async () => {
+      vi.advanceTimersByTime(DEBOUNCE_MS);
+    });
+
+    const headers = (
+      fetchMock.mock.calls[0]?.[1] as {
+        headers: Record<string, string>;
+      }
+    ).headers;
+    expect(
+      headers["x-cmssy-edit-token"],
+      "without it the route cannot tell this request from anyone else's",
+    ).toBe("1700.abc");
   });
 
   it("posts to the url the app configured", async () => {
