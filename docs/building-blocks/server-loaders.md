@@ -81,9 +81,12 @@ import { blocks } from "@/cmssy/blocks";
 export const POST = createCmssyBlockDataRoute(cmssy, blocks);
 ```
 
-The route answers **only a verified editor request** - the same signal
-`createCmssyPage` uses to decide it is being framed. Anything else gets a 403,
-so mounting it does not expose your loaders to the internet.
+The route answers **only a request carrying an edit token**. `createCmssyPage`
+mints one from your `draftSecret` on a page it has already verified as framed,
+binds it to that page's slug, and gives it to the editor; the client sends it
+back on every block data request. Anything else - including a hand-set
+`x-cmssy-edit` header - gets a 403. It needs `config.draftSecret`, and answers
+500 without it rather than running your loaders unverified.
 
 With it mounted, changing a category or a limit in the inspector re-runs the
 loader and the block updates in place. Without it, the SDK logs one warning and
