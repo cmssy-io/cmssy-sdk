@@ -6,6 +6,40 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.5.0
+
+**A typo in a field option no longer compiles** (CMS-1797).
+
+Nothing to do unless your build starts failing - in which case it just found
+a bug that had been silently live. Until now this typechecked:
+
+```ts
+logo: fields.media({ label: "Logo", localised: false }),
+```
+
+The key rode along into the pushed manifest, cmssy ignored it, and the field
+stayed per-language with nothing to say so. Every `fields.*` builder took
+`<const O extends FieldOptions>`, and TypeScript does not excess-property-check
+an object literal it infers into a bare type parameter: `O` widened to include
+the misspelt key and still satisfied the constraint. A wrong _value_ was caught;
+a wrong _key_ was not.
+
+The exactness now lives in the constraint, so an unknown key fails at the call
+site and points at the line:
+
+```
+error TS2322: Type 'false' is not assignable to type
+'not an option this field accepts'.
+```
+
+This covers every builder, `fields.relation` included, which additionally
+accepts `model`, `mode`, `multiple`, `sort` and `limit`. Correctly spelled
+schemas infer exactly as before - the literal inference the builders exist for
+(a select's own values, a repeater's row shape, `required` narrowing content) is
+untouched.
+
+If a build breaks, read the key it names: it was never doing anything.
+
 ## 16.4.0
 
 **A field can declare itself the same in every language** (CMS-1789; the
