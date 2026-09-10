@@ -285,6 +285,9 @@ export async function resolveRelationContent(
       });
     } else {
       for (const id of storedIds(ref.content[ref.key])) pickedIds.add(id);
+      const value = ref.content[ref.key];
+      if (isRecord(value) && typeof value.id === "string")
+        pickedIds.add(value.id);
     }
   }
 
@@ -326,6 +329,8 @@ export async function resolveRelationContent(
       const record = recordsById.get(value);
       if (record) ref.content[ref.key] = record;
       else delete ref.content[ref.key];
+    } else if (isRecord(value) && typeof value.id === "string") {
+      ref.content[ref.key] = recordsById.get(value.id) ?? value;
     } else {
       delete ref.content[ref.key];
     }

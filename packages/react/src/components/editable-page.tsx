@@ -157,10 +157,9 @@ function EditableBlocks({
             locale,
             defaultLocale,
             patches[block.id],
-            resolvedContent?.[block.id],
           ),
         })),
-    [renderBlocks, loaderMap, locale, defaultLocale, patches, resolvedContent],
+    [renderBlocks, loaderMap, locale, defaultLocale, patches],
   );
   const liveData = useBlockLoaderData({
     enabled: loaderBlocks.length > 0,

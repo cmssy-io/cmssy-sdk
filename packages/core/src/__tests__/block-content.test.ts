@@ -136,6 +136,41 @@ describe("resolveRelationContent", () => {
     expect(byIdsCall?.variables.ids).toEqual(["a", "gone", "b"]);
   });
 
+  it("keeps a relation that arrives already resolved instead of deleting it", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("a1", { name: "Ann" })],
+    });
+    const content: Record<string, unknown> = { author: { id: "a1" } };
+    await resolveRelationContent(
+      config,
+      [{ type: "featured", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(
+      content.author,
+      "the block data route hands back content that has already been through here once",
+    ).toEqual(record("a1", { name: "Ann" }));
+    const byIdsCall = calls.find((c) => c.query === RECORDS_BY_IDS_QUERY);
+    expect(byIdsCall?.variables.ids).toEqual(["a1"]);
+  });
+
+  it("leaves a resolved relation alone when its record can no longer be read", async () => {
+    const { fetch } = routerFetch({ byIds: () => [] });
+    const content: Record<string, unknown> = { author: { id: "a1" } };
+    await resolveRelationContent(
+      config,
+      [{ type: "featured", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(content.author).toEqual({ id: "a1" });
+  });
+
   it("resolves a single picked id to one record, removing it when dangling", async () => {
     const { fetch } = routerFetch({
       byIds: () => [record("a1", { name: "Ann" })],
