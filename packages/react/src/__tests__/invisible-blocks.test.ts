@@ -200,3 +200,20 @@ describe("isBlockPainted", () => {
     expect(effectiveOpacity(document.getElementById("t"))).toBe(0);
   });
 });
+
+describe("a block that rendered nothing", () => {
+  it("is invisible, not painted - an empty wrapper used to vouch for itself", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="product-grid"></div>`,
+    );
+    expect(isBlockPainted(block)).toBe(false);
+  });
+
+  it("stays painted when it is empty on purpose but occupies space", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="spacer"></div>`,
+    );
+    block.getBoundingClientRect = () => ({ width: 800, height: 48 }) as DOMRect;
+    expect(isBlockPainted(block)).toBe(true);
+  });
+});

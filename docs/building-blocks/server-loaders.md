@@ -34,9 +34,10 @@ defineBlock({
 
 Rules:
 
-- The loader runs in `CmssyServerPage` during SSR. **It does not run in the
-  editor** - there the component receives `data: undefined`. Always render a
-  sensible fallback when `data` is absent.
+- The loader runs in `CmssyServerPage` during SSR, and in the editor whenever
+  the app mounts the block data route below. Mount it: without it a loader block
+  is frozen in the editor - it keeps whatever the page was rendered with, and a
+  block the editor has just added has nothing at all.
 - The return value crosses the server→client boundary, so it must be
   **RSC-serializable**: plain objects, arrays, and primitives. No functions or
   class instances.
@@ -53,8 +54,52 @@ function MyBlock({
   content: Record<string, unknown>;
   data?: { html?: string };
 }) {
-  if (!data?.html) return <pre>{String(content.code ?? "")}</pre>; // editor fallback
+  if (!data?.html) return <pre>{String(content.code ?? "")}</pre>;
   return <div dangerouslySetInnerHTML={{ __html: data.html }} />;
+}
+```
+
+Returning `null` when the data is empty is a legitimate answer for the public
+site - an empty product grid should not leave a heading over nothing. Know what
+it costs in the editor: a block that renders nothing occupies no space, so there
+is nothing to click. The editor names it in the invisible-blocks notice rather
+than leaving you to guess, but a block you can see is easier to fix than a block
+you are told about.
+
+## Resolving loaders as the editor types
+
+The editor patches a block's **content** over the bridge; it cannot run your
+loader, which is server code holding your API credentials. Mount one route and
+the editor gets a way to ask the server for it:
+
+```ts
+// app/api/cmssy/block-data/route.ts
+import { createCmssyBlockDataRoute } from "@cmssy/next/server";
+import { cmssy } from "@/cmssy.config";
+import { blocks } from "@/cmssy/blocks";
+
+export const POST = createCmssyBlockDataRoute(cmssy, blocks);
+```
+
+The route answers **only a verified editor request** - the same signal
+`createCmssyPage` uses to decide it is being framed. Anything else gets a 403,
+so mounting it does not expose your loaders to the internet.
+
+With it mounted, changing a category or a limit in the inspector re-runs the
+loader and the block updates in place. Without it, the SDK logs one warning and
+leaves the block with the data the page was rendered with.
+
+The default path is `/api/cmssy/block-data`. If you mount it elsewhere, tell the
+bridge: `edit={{ ...edit, blockDataUrl: "/your/path" }}`.
+
+Outside Next, wire your framework's route to the same handler:
+
+```ts
+import { handleBlockDataRequest } from "@cmssy/react";
+
+export async function action({ request }) {
+  if (!isYourEditorRequest(request)) return new Response(null, { status: 403 });
+  return handleBlockDataRequest(await request.json(), { blocks, config: cmssy });
 }
 ```
 
@@ -144,7 +189,8 @@ user-driven actions (typing a search, scrolling for more) hit the network.
 ## Checklist
 
 - [ ] Loader returns RSC-serializable data (plain objects/arrays/primitives).
-- [ ] Component renders a fallback when `data` is `undefined` (editor).
+- [ ] `createCmssyBlockDataRoute` is mounted, so the editor can resolve loaders.
+- [ ] Component renders a fallback when `data` is `undefined`.
 - [ ] Server-only deps are behind dynamic `import()`.
 - [ ] Shared server helpers guard on `typeof window !== "undefined"`.
 - [ ] Delivery calls use `queryScoped` / `graphqlRequest` (workspace auto-scoped).

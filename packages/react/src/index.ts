@@ -119,3 +119,16 @@ export type {
   ParentReadyMessage,
   EditorToAppMessage,
 } from "@cmssy/core";
+
+export {
+  handleBlockDataRequest,
+  parseBlockDataRequest,
+  resolveBlockDataRequest,
+} from "./components/block-data-request";
+export type {
+  CmssyBlockDataRequest,
+  CmssyBlockDataRequestBlock,
+  CmssyBlockDataRequestPage,
+  CmssyBlockDataResult,
+  ResolveBlockDataRequestOptions,
+} from "./components/block-data-request";

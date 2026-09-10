@@ -5,6 +5,7 @@ import {
   blocksToMeta,
   blocksToSchemas,
   buildBlockMap,
+  buildLoaderMap,
   type BlockDefinition,
 } from "../registry";
 import {
@@ -12,8 +13,10 @@ import {
   type EditBridgeConfig,
 } from "../bridge/use-edit-bridge";
 import { useDragAgent } from "../bridge/use-drag-agent";
+import { useBlockLoaderData } from "../bridge/use-block-loader-data";
 import { buildBlockContext } from "@cmssy/core/internal";
 import { CmssyBlock } from "./cmssy-block";
+import { foldBlockContent } from "./fold-block-content";
 
 export interface CmssyEditablePageProps {
   page: CmssyPageData | null;
@@ -141,6 +144,42 @@ function EditableBlocks({
     return merged;
   }, [page.blocks, inserted, order, removed]);
 
+  const loaderMap = useMemo(() => buildLoaderMap(blocks), [blocks]);
+  const loaderBlocks = useMemo(
+    () =>
+      renderBlocks
+        .filter((block) => Object.hasOwn(loaderMap, block.type))
+        .map((block) => ({
+          id: block.id,
+          type: block.type,
+          content: foldBlockContent(
+            block,
+            locale,
+            defaultLocale,
+            patches[block.id],
+            resolvedContent?.[block.id],
+          ),
+        })),
+    [renderBlocks, loaderMap, locale, defaultLocale, patches, resolvedContent],
+  );
+  const liveData = useBlockLoaderData({
+    enabled: loaderBlocks.length > 0,
+    ...(edit.blockDataUrl ? { url: edit.blockDataUrl } : {}),
+    blocks: loaderBlocks,
+    locale,
+    defaultLocale,
+    ...(enabledLocales?.length ? { enabledLocales } : {}),
+    ...(page.slug
+      ? {
+          page: {
+            id: page.id,
+            slug: page.slug,
+            pageType: page.pageType ?? null,
+          },
+        }
+      : {}),
+  });
+
   return (
     <>
       {renderBlocks.map((block) => (
@@ -157,7 +196,11 @@ function EditableBlocks({
           blockMap={blockMap}
           editable
           context={context}
-          data={data?.[block.id]}
+          data={
+            Object.hasOwn(liveData, block.id)
+              ? liveData[block.id]
+              : data?.[block.id]
+          }
         />
       ))}
       {dropY !== null && (

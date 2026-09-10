@@ -6,6 +6,54 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.7.0
+
+**The editor can resolve a block's loader while you edit it** (CMS-1800).
+
+Mount one route. Without it nothing breaks - a loader block keeps behaving
+exactly as it did in 16.6.0 - but with it the editor stops lying to you.
+
+```ts
+// app/api/cmssy/block-data/route.ts
+import { createCmssyBlockDataRoute } from "@cmssy/next/server";
+import { cmssy } from "@/cmssy.config";
+import { blocks } from "@/cmssy/blocks";
+
+export const POST = createCmssyBlockDataRoute(cmssy, blocks);
+```
+
+What it fixes. A block with a `loader` was resolved once, server-side, over the
+blocks the server had fetched. The editor patches **content** over the bridge and
+cannot run server code, so:
+
+- a block you had just added had no `data` at all - a product grid keyed off
+  `data.items` rendered nothing, and there was no way to tell that from a
+  category that happens to be empty;
+- changing the field the loader reads - a category, a limit, a sort - changed
+  nothing until you saved the page and the frame reloaded.
+
+The route answers **only a verified editor request**, the same signal
+`createCmssyPage` uses to decide it is being framed; anything else gets a 403. It
+never runs for a public visitor. Requests are debounced, so a burst of keystrokes
+costs one loader run, and a page may carry at most 50 blocks per request.
+
+Mount it somewhere else and tell the bridge where:
+`edit={{ ...edit, blockDataUrl: "/your/path" }}`.
+
+Outside Next, wire your own route to `handleBlockDataRequest` from
+`@cmssy/react` - it takes the parsed body and your blocks and returns the
+`Response`. Do your own edit-request check first; the handler does not
+authenticate.
+
+**A block that renders nothing is reported as invisible.**
+
+Nothing to do. The editor already had an invisible-blocks notice, and the
+detector already walked each block for painted copy and media - but a block whose
+component returned `null` has neither, and the final `return true` was reading
+that as "decorative, therefore fine". An empty wrapper vouched for itself. It is
+now judged on whether it occupies any space, so the block you cannot see is the
+block the editor names.
+
 ## 16.6.0
 
 **A field's options are scoped to the field** (CMS-1797).

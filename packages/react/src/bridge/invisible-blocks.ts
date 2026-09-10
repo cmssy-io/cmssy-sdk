@@ -62,7 +62,15 @@ function laidOut(elements: Element[]): Paint[] {
   return elements.map(paint).filter((state) => state.laidOut);
 }
 
+function hasArea(block: Element): boolean {
+  const rect = block.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
 export function isBlockPainted(block: Element): boolean {
+  if (block.childElementCount === 0 && !holdsText(block) && !hasArea(block)) {
+    return false;
+  }
   const copy = laidOut(collectCopy(block));
   if (copy.length > 0) {
     const visible = copy.filter((state) => state.opacity > TRANSPARENT);

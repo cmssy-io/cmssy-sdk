@@ -21,24 +21,14 @@ export interface ResolveBlocksOptions {
   workspaceId?: string;
 }
 
-export async function resolveBlocks(
-  blocks: RawBlock[],
+export async function resolveFoldedBlocks(
+  blocks: Array<Pick<RawBlock, "id" | "type">>,
+  contents: Array<Record<string, unknown>>,
   loaderMap: LoaderMap,
   locale: string,
-  defaultLocale: string,
   context: CmssyBlockContext,
-  enabledLocales?: string[],
   options?: ResolveBlocksOptions,
 ): Promise<ResolvedBlock[]> {
-  const contents = blocks.map((block) =>
-    getBlockContentForLanguage(
-      block.content,
-      locale,
-      defaultLocale,
-      enabledLocales?.length ? enabledLocales : undefined,
-    ),
-  );
-
   const schemas = options?.schemas;
   if (schemas) {
     if (options?.config) {
@@ -77,5 +67,32 @@ export async function resolveBlocks(
       }
       return { content, data, error };
     }),
+  );
+}
+
+export async function resolveBlocks(
+  blocks: RawBlock[],
+  loaderMap: LoaderMap,
+  locale: string,
+  defaultLocale: string,
+  context: CmssyBlockContext,
+  enabledLocales?: string[],
+  options?: ResolveBlocksOptions,
+): Promise<ResolvedBlock[]> {
+  const contents = blocks.map((block) =>
+    getBlockContentForLanguage(
+      block.content,
+      locale,
+      defaultLocale,
+      enabledLocales?.length ? enabledLocales : undefined,
+    ),
+  );
+  return resolveFoldedBlocks(
+    blocks,
+    contents,
+    loaderMap,
+    locale,
+    context,
+    options,
   );
 }

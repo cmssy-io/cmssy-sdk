@@ -67,7 +67,9 @@ export default function Prose({ data }: { data?: { html?: string } }) {
 }
 ```
 
-The loader does not run in the editor, so guard on `data` being absent. Add
+Guard on `data` being absent: the editor resolves loaders only once
+[the block data route](./server-loaders.md#resolving-loaders-as-the-editor-types)
+is mounted, and the first render of a freshly added block still has none. Add
 `sanitize-html` (and `@types/sanitize-html`) to your project.
 
 ## List child pages (a blog index)
