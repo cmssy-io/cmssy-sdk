@@ -32,3 +32,6 @@ export type {
   CmssyLayoutResolution,
   CmssyLayoutEditableProps,
 } from "@cmssy/react";
+
+export { createCmssyBlockDataRoute } from "./create-block-data-route";
+export type { CmssyBlockDataRouteConfig } from "./create-block-data-route";

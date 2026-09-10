@@ -79,6 +79,24 @@ describe("useInvisibleBlocks", () => {
     expect(report).toHaveBeenCalledWith([{ blockId: "b1", blockType: "hero" }]);
   });
 
+  it("reports a block that rendered nothing at all", () => {
+    const host = document.createElement("div");
+    host.setAttribute("data-block-id", "b1");
+    host.setAttribute("data-block-type", "product-grid");
+    document.body.appendChild(host);
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(host));
+    act(() => vi.advanceTimersByTime(DWELL_MS));
+
+    expect(
+      report,
+      "a block whose component returned null is the case the editor most needs to name",
+    ).toHaveBeenCalledWith([{ blockId: "b1", blockType: "product-grid" }]);
+  });
+
   it("says nothing about a block that never came into view", () => {
     blockMarkup("opacity:0");
     const report = vi.fn();

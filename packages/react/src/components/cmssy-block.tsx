@@ -1,16 +1,13 @@
 import { createElement, type ReactNode } from "react";
 import type { FieldDefinition } from "@cmssy/types";
 import type { BlockMap } from "../registry";
-import {
-  asBucket,
-  getBlockContentForLanguage,
-  normalizeBlockContent,
-} from "@cmssy/core/internal";
+import { asBucket, normalizeBlockContent } from "@cmssy/core/internal";
 import type { RawBlock } from "@cmssy/core";
 import type { CmssyBlockContext } from "@cmssy/core";
 import { BlockErrorBoundary } from "@cmssy/react/block-error-boundary";
 import { readBlockError, unregisteredBlockError } from "./block-error";
 import { BlockErrorCard } from "./block-error-card";
+import { foldBlockContent } from "./fold-block-content";
 import { UnknownBlock } from "./unknown-block";
 
 export interface CmssyBlockProps {
@@ -87,10 +84,13 @@ export function CmssyBlock({
     );
   }
 
-  const base = resolvedContent
-    ? { ...resolvedContent }
-    : getBlockContentForLanguage(block.content, locale, defaultLocale);
-  const content = patchedContent ? { ...base, ...patchedContent } : base;
+  const content = foldBlockContent(
+    block,
+    locale,
+    defaultLocale,
+    patchedContent,
+    resolvedContent,
+  );
   if (schema) normalizeBlockContent(content, schema, resolvedContent);
   const style = patchedStyle
     ? { ...asBucket(block.style), ...patchedStyle }

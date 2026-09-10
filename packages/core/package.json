@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/core",
-  "version": "16.6.0",
+  "version": "16.7.0",
   "description": "Framework-agnostic cmssy gateway: GraphQL client, block/field system, editor protocol. No React, no Next.",
   "keywords": [
     "cmssy",

@@ -33,6 +33,8 @@ export const SERVER_SYMBOLS = new Set([
   "CmssyDraftRouteConfig",
   "createCmssyRevalidateRoute",
   "CmssyRevalidateRouteConfig",
+  "createCmssyBlockDataRoute",
+  "CmssyBlockDataRouteConfig",
   "getCmssyUser",
   "getCmssyAccessToken",
   "getCmssyLocale",

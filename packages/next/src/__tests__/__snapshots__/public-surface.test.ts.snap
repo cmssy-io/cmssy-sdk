@@ -19,6 +19,7 @@ exports[`@cmssy/next public surface > exports exactly these names from /server 1
   "CmssyLayoutSlot",
   "NEXT_BUILD_PHASE",
   "cmssyCachedFetch",
+  "createCmssyBlockDataRoute",
   "createCmssyEditPage",
   "createCmssyPage",
   "createCmssyRevalidateRoute",
