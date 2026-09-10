@@ -95,40 +95,36 @@ leaves the block with the data the page was rendered with.
 The default path is `/api/cmssy/block-data`. If you mount it elsewhere, tell the
 bridge: `edit={{ ...edit, blockDataUrl: "/your/path" }}`.
 
-### Astro and Remix
+### Astro and React Router
 
-Two halves, both exported. Mint on the page you have already verified, and hand
-the token to the bridge:
-
-```ts
-import { mintCmssyEditToken } from "@cmssy/core";
-
-const blockDataToken = await mintCmssyEditToken(cmssy.draftSecret, {
-  page: page.slug,
-});
-// <CmssyEditablePage edit={{ editorOrigin, blockDataToken }} ... />
-```
-
-Verify it in your own route, then hand the body to the shared handler:
+The same route, one helper each:
 
 ```ts
-import { CMSSY_EDIT_TOKEN_HEADER, verifyCmssyEditToken } from "@cmssy/core";
-import { handleBlockDataRequest } from "@cmssy/react";
-
-export async function action({ request }) {
-  const body = await request.json();
-  const ok = await verifyCmssyEditToken(
-    request.headers.get(CMSSY_EDIT_TOKEN_HEADER),
-    cmssy.draftSecret,
-    { page: body?.page?.slug ?? "" },
-  );
-  if (!ok) return new Response(null, { status: 403 });
-  return handleBlockDataRequest(body, { blocks, config: cmssy });
-}
+// astro: src/pages/api/cmssy/block-data.ts
+import { createCmssyBlockDataEndpoint } from "@cmssy/astro";
+export const prerender = false;
+export const POST = createCmssyBlockDataEndpoint(cmssy, blocks);
 ```
 
-`handleBlockDataRequest` deliberately does not authenticate - it runs your
-loaders, so the check belongs where you can see it.
+```ts
+// react router: app/routes/api.cmssy.block-data.ts
+import { createCmssyBlockDataAction } from "@cmssy/remix";
+export const action = createCmssyBlockDataAction(cmssy, blocks);
+```
+
+`loadCmssyPage` (astro) and `createCmssyLoader` (react router) return
+`blockDataToken` on a verified editor request. Hand it to the bridge alongside
+the origin:
+
+```tsx
+<CmssyEditablePage edit={{ editorOrigin, blockDataToken }} ... />
+```
+
+For a route you write yourself, `mintCmssyEditToken`, `verifyCmssyEditToken` and
+`CMSSY_EDIT_TOKEN_HEADER` are exported from `@cmssy/core`, and
+`handleBlockDataRequest` from `@cmssy/react` runs the loaders once you have
+decided the caller is the editor. It deliberately does not authenticate - it
+runs your loaders, so the check belongs where you can see it.
 
 ## Keep server-only code out of the client bundle
 

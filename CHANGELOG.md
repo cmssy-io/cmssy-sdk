@@ -6,6 +6,46 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.9.0
+
+**Astro and React Router get the block data route** (CMS-1803). 16.7.0 shipped
+it for Next only, on the reading that the other adapters had no edit signal a
+POST could carry. 16.8.0 removed that premise - the signal is a token minted by
+the verified page, and nothing about it is framework-specific.
+
+```ts
+// src/pages/api/cmssy/block-data.ts  (astro)
+export const POST = createCmssyBlockDataEndpoint(cmssy, blocks);
+
+// app/routes/api.cmssy.block-data.ts  (react router)
+export const action = createCmssyBlockDataAction(cmssy, blocks);
+```
+
+`loadCmssyPage` and `createCmssyLoader` now return `blockDataToken` on a
+verified editor request; pass it to the bridge as
+`edit={{ editorOrigin, blockDataToken }}` and a block with a `loader` re-runs
+while you configure it, instead of staying frozen until the page is saved.
+
+The verification itself - the `draftSecret` guard, the token check bound to the
+page slug - moved into `@cmssy/react` as `createBlockDataHandler`, and all three
+adapters wrap that one function. Nothing to change if you are on Next:
+`createCmssyBlockDataRoute` keeps its name and behaviour.
+
+**An unknown field option now names the mistake** (CMS-1805). Writing an option
+a field does not have used to fail with the mechanism rather than the error:
+
+```
+Type 'false' is not assignable to type 'never'.
+```
+
+It now says which field and which key:
+
+```
+Type 'false' is not assignable to type '"fields.number has no option: test"'.
+```
+
+Same code refused, same code accepted - only the message changed.
+
 ## 16.8.0
 
 **Security: the block data route in 16.7.0/16.7.1 does not authenticate. Upgrade,

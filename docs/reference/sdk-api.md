@@ -343,6 +343,12 @@ the middleware preset.
 | `resolveCmssyLayoutSlot` (`@cmssy/react`) | `(config, options) => Promise<CmssyLayoutSlotResolution>` - the framework-free half                                                                                                                                                                                                             | any adapter                         |
 | `isCmssyEditMode`                         | `() => Promise<boolean>` - reads `headers()`, so it makes the route dynamic                                                                                                                                                                                                                     | `/cmssy-edit` only                  |
 
+`createCmssyBlockDataEndpoint` (`@cmssy/astro`) and `createCmssyBlockDataAction`
+(`@cmssy/remix`) are the same route for the other adapters, over the same
+`createBlockDataHandler` from `@cmssy/react`. All three take the token that
+`loadCmssyPage` / `createCmssyLoader` / `createCmssyPage` mint as
+`blockDataToken`.
+
 ```ts
 interface CreateCmssyPageOptions {
   editor?: ComponentType<CmssyEditorProps>;
