@@ -44,7 +44,7 @@ vi.mock("@cmssy/core/internal", async (importActual) => {
   };
 });
 
-import { defineCmssyLayout } from "@cmssy/core";
+import { defineCmssyLayout, verifyCmssyEditToken } from "@cmssy/core";
 import { createCmssyPage, createCmssyEditPage } from "../create-cmssy-page";
 
 const CONFIG = {
@@ -178,6 +178,7 @@ describe("createCmssyPage", () => {
     expect(element.props.page).toBe(PAGE);
     expect(element.props.edit).toStrictEqual({
       editorOrigin: "https://app.cmssy.io",
+      blockDataToken: expect.any(String),
     });
     expect(fetchPage).toHaveBeenCalledWith(expect.anything(), [], {
       previewSecret: CONFIG.draftSecret,
@@ -205,7 +206,33 @@ describe("createCmssyPage", () => {
     expect(element.props.edit).toStrictEqual({
       editorOrigin: "https://app.cmssy.io",
       layoutRegions: [{ id: "header" }, { id: "sidebar_left", label: "Aside" }],
+      blockDataToken: expect.any(String),
     });
+  });
+
+  it("mints an edit token the block data route will accept for this page", async () => {
+    fetchPage.mockResolvedValue({ ...PAGE, slug: "/shop" });
+    const Page = createCmssyEditPage(CONFIG, BLOCKS, { editor: Editor });
+    const element = unwrap(
+      await Page({
+        params: params([]),
+        searchParams: searchParams({
+          cmssyEdit: "1",
+          cmssySecret: CONFIG.draftSecret,
+        }),
+      }),
+    );
+
+    const { blockDataToken: token } = element.props.edit as {
+      blockDataToken: string;
+    };
+    await expect(
+      verifyCmssyEditToken(token, CONFIG.draftSecret, { page: "/shop" }),
+    ).resolves.toBe(true);
+    await expect(
+      verifyCmssyEditToken(token, CONFIG.draftSecret, { page: "/pricing" }),
+      "a token good for every page is a token worth stealing",
+    ).resolves.toBe(false);
   });
 
   it("throws for a verified editor request when no editor is provided", async () => {
@@ -721,6 +748,7 @@ describe("createCmssyPage", () => {
     );
     expect(element.props.edit).toEqual({
       editorOrigin: ["https://app.cmssy.io", "https://staging.cmssy.io"],
+      blockDataToken: expect.any(String),
     });
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();

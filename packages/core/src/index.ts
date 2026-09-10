@@ -131,6 +131,15 @@ export {
 export { applyCmssyCsp } from "./csp";
 export type { CmssyCspOptions } from "./csp";
 
+export {
+  CMSSY_EDIT_TOKEN_HEADER,
+  mintCmssyEditToken,
+  verifyCmssyEditToken,
+} from "./edit-token";
+export type {
+  MintCmssyEditTokenOptions,
+  VerifyCmssyEditTokenOptions,
+} from "./edit-token";
 export { verifyCmssyWebhook, CmssyWebhookError } from "./verify-webhook";
 export type {
   CmssyWebhookEvent,

@@ -23,6 +23,7 @@ export interface EditBridgeConfig {
   blockMeta?: Record<string, BlockMeta>;
   layoutRegions?: readonly LayoutRegion[] | undefined;
   blockDataUrl?: string;
+  blockDataToken?: string;
 }
 
 export type PatchMap = Partial<Record<string, Record<string, unknown>>>;

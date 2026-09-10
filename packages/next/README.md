@@ -113,7 +113,8 @@ re-exported from `@cmssy/next` (and `@cmssy/core`).
 ## Exports
 
 `@cmssy/next/server`: `createCmssyPage`, `createCmssyEditPage`,
-`createDraftRoute`, `createCmssyRevalidateRoute`, `CmssyLayoutSlot`,
+`createDraftRoute`, `createCmssyRevalidateRoute`, `createCmssyBlockDataRoute`,
+`CmssyLayoutSlot`,
 `resolveCmssyLayout`, `isCmssyEditMode`. `@cmssy/next/middleware`:
 `createCmssyProxy`, `cmssyEditRewrite`, `applyCmssyCsp`, `isCmssyEditRequest`.
 Root: `defineCmssyConfig`, `localizeHref`, `nextRetryMode`, `cmssyCachedFetch`,

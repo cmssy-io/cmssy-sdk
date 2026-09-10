@@ -6,6 +6,52 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.8.0
+
+**Security: the block data route in 16.7.0/16.7.1 does not authenticate. Upgrade,
+or unmount it** (CMS-1804).
+
+`createCmssyBlockDataRoute` gated on `isCmssyEditMode()`, which reads the
+`x-cmssy-edit` request header. That header is trustworthy only on routes the
+proxy covers - `createCmssyProxy` strips any inbound value and re-sets it after
+verifying the request - and the matcher every example ships excludes `/api/*`:
+
+```
+matcher: ["/((?!_next/|api/|.*\\..*).*)"]
+```
+
+So on an API route the header was whatever the caller sent:
+
+```
+POST /api/cmssy/block-data                       -> 403
+POST /api/cmssy/block-data -H 'x-cmssy-edit: 1'  -> 200 and your catalogue
+```
+
+Anyone could run your block loaders with their own content. The context is built
+with `isPreview: true`, so a loader that branches on preview to read drafts
+served them, and loader arguments arrived unvalidated. **If you mounted the route
+on 16.7.0 or 16.7.1, take this release or delete the route file.** Nothing else
+in the SDK is affected: every other caller of `isCmssyEditMode()` is a page
+route, which the proxy does cover.
+
+**What replaces it.** The signal is now minted by the page that was verified
+rather than read from the environment. `createCmssyPage` mints a short-lived
+HMAC over your `draftSecret`, bound to that page's slug, and passes it to the
+editor through `edit.blockDataToken`; the client sends it as
+`x-cmssy-edit-token`; the route verifies signature and expiry. Nobody without
+the secret can produce one, and a leaked token is good for one page until it
+expires (12h by default).
+
+Nothing to change in your app beyond the upgrade - `createCmssyPage` mints and
+the SDK carries it. The route now answers 500 rather than running if
+`config.draftSecret` is unset, because without it there is nothing to verify.
+
+This also unblocks astro and remix (CMS-1803). `mintCmssyEditToken` and
+`verifyCmssyEditToken` are exported from `@cmssy/core`, so any adapter can mint
+on its verified edit page and verify in its own route - the Next-only limitation
+in 16.7.0 was a consequence of picking an ambient signal, not a property of
+those adapters.
+
 ## 16.7.1
 
 **Fixes a relation field losing its value on the block data route** (CMS-1800).

@@ -11,6 +11,7 @@ import {
   type CmssyFormDefinition,
   type CmssyPageData,
 } from "@cmssy/react";
+import { mintCmssyEditToken } from "@cmssy/core";
 import type { EditBridgeConfig } from "@cmssy/react/client";
 import { CmssyLocaleProvider } from "@cmssy/react/internal";
 import {
@@ -242,6 +243,14 @@ function buildCmssyPageRenderer(
               ...(config.layout
                 ? { layoutRegions: config.layout.regions }
                 : {}),
+              ...(config.draftSecret
+                ? {
+                    blockDataToken: await mintCmssyEditToken(
+                      config.draftSecret,
+                      { page: page.slug ?? "" },
+                    ),
+                  }
+                : {}),
             }}
             forms={forms}
             data={editorData.data}
@@ -323,10 +332,13 @@ async function renderNothingPublishedPage(
         Nothing published yet at {shown}
       </h1>
       <p style={{ margin: "0 0 1rem" }}>
-        Your app is wired to workspace <code>{config.org}/{config.workspaceSlug}</code>
+        Your app is wired to workspace{" "}
+        <code>
+          {config.org}/{config.workspaceSlug}
+        </code>
         , but no published page answers this path. Build one in the editor and
-        publish it - this screen only shows in development; production returns
-        a 404.
+        publish it - this screen only shows in development; production returns a
+        404.
       </p>
       <p style={{ margin: 0 }}>
         <a href={editorUrl}>Open the cmssy editor</a>

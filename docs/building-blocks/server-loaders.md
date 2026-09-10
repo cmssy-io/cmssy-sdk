@@ -94,28 +94,38 @@ bridge: `edit={{ ...edit, blockDataUrl: "/your/path" }}`.
 
 ### Astro and Remix
 
-`handleBlockDataRequest` from `@cmssy/react` is the framework-agnostic half - it
-takes the parsed body and your blocks and returns the `Response`:
+Two halves, both exported. Mint on the page you have already verified, and hand
+the token to the bridge:
 
 ```ts
+import { mintCmssyEditToken } from "@cmssy/core";
+
+const blockDataToken = await mintCmssyEditToken(cmssy.draftSecret, {
+  page: page.slug,
+});
+// <CmssyEditablePage edit={{ editorOrigin, blockDataToken }} ... />
+```
+
+Verify it in your own route, then hand the body to the shared handler:
+
+```ts
+import { CMSSY_EDIT_TOKEN_HEADER, verifyCmssyEditToken } from "@cmssy/core";
 import { handleBlockDataRequest } from "@cmssy/react";
 
 export async function action({ request }) {
-  if (!isYourEditorRequest(request)) return new Response(null, { status: 403 });
-  return handleBlockDataRequest(await request.json(), {
-    blocks,
-    config: cmssy,
-  });
+  const body = await request.json();
+  const ok = await verifyCmssyEditToken(
+    request.headers.get(CMSSY_EDIT_TOKEN_HEADER),
+    cmssy.draftSecret,
+    { page: body?.page?.slug ?? "" },
+  );
+  if (!ok) return new Response(null, { status: 403 });
+  return handleBlockDataRequest(body, { blocks, config: cmssy });
 }
 ```
 
-It does not authenticate - that is the `isYourEditorRequest` line, and on these
-two adapters you have to write it yourself. The Next adapter can check
-`isCmssyEditMode()` because its proxy turns a verified edit request into a
-request header that survives to every route. Astro and Remix carry the edit
-signal in the page URL and re-verify it per request, so a POST from the framed
-page arrives with nothing to check. Until that is closed, only the Next route
-ships ready to mount.
+`handleBlockDataRequest` deliberately does not authenticate - it runs your
+loaders, so the check belongs where you can see it.
 
 ## Keep server-only code out of the client bundle
 

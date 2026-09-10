@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CMSSY_EDIT_TOKEN_HEADER } from "@cmssy/core";
 import type {
   CmssyBlockDataRequestBlock,
   CmssyBlockDataRequestPage,
@@ -11,6 +12,7 @@ const DEBOUNCE_MS = 300;
 export interface UseBlockLoaderDataOptions {
   enabled: boolean;
   url?: string;
+  token?: string;
   blocks: CmssyBlockDataRequestBlock[];
   locale: string;
   defaultLocale: string;
@@ -21,6 +23,7 @@ export interface UseBlockLoaderDataOptions {
 export function useBlockLoaderData({
   enabled,
   url = CMSSY_BLOCK_DATA_PATH,
+  token,
   blocks,
   locale,
   defaultLocale,
@@ -51,7 +54,10 @@ export function useBlockLoaderData({
         try {
           const response = await fetch(url, {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: {
+              "content-type": "application/json",
+              ...(token ? { [CMSSY_EDIT_TOKEN_HEADER]: token } : {}),
+            },
             body: request,
             signal: controller.signal,
           });
@@ -82,7 +88,7 @@ export function useBlockLoaderData({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [request, url, blocks.length]);
+  }, [request, url, token, blocks.length]);
 
   return data;
 }

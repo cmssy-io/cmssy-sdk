@@ -4,6 +4,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
 [
   "CMSSY_EDIT_HEADER",
   "CMSSY_EDIT_QUERY_PARAM",
+  "CMSSY_EDIT_TOKEN_HEADER",
   "CMSSY_LOCALE_HEADER",
   "CMSSY_RATE_LIMIT_WINDOW_MS",
   "CMSSY_RETRY_MODES",
@@ -31,6 +32,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "mediaAlt",
   "mediaUrl",
   "mediaUrls",
+  "mintCmssyEditToken",
   "normalizeOrigin",
   "parseEditorMessage",
   "postToEditor",
@@ -38,6 +40,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "registryToManifestBlocks",
   "resolveCmssyLocale",
   "resolveEditorOrigin",
+  "verifyCmssyEditToken",
   "verifyCmssyWebhook",
 ]
 `;
