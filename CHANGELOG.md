@@ -40,10 +40,14 @@ costs one loader run, and a page may carry at most 50 blocks per request.
 Mount it somewhere else and tell the bridge where:
 `edit={{ ...edit, blockDataUrl: "/your/path" }}`.
 
-Outside Next, wire your own route to `handleBlockDataRequest` from
-`@cmssy/react` - it takes the parsed body and your blocks and returns the
-`Response`. Do your own edit-request check first; the handler does not
-authenticate.
+Outside Next, `handleBlockDataRequest` from `@cmssy/react` is the
+framework-agnostic half - it takes the parsed body and your blocks and returns
+the `Response`. It does not authenticate, and on astro and remix you cannot yet
+write that check: the Next adapter's proxy turns a verified edit request into a
+request header that survives to every route, while those two carry the edit
+signal in the page URL and re-verify it per request, so a POST from the framed
+page arrives with nothing to check (CMS-1803). Only the Next route ships ready
+to mount.
 
 **A block that renders nothing is reported as invisible.**
 
@@ -62,7 +66,7 @@ Nothing to do. Every existing block compiles unchanged - 1824 `fields.*` calls
 across the cmssy repos were checked, and none of them passes an option its
 field does not read.
 
-16.5.0 stopped a key that no field has. This stops a key that *this* field does
+16.5.0 stopped a key that no field has. This stops a key that _this_ field does
 not have. Every builder took the same flat `FieldOptions`, which spans every
 field type, so a text field accepted a media field's crop and a repeater's
 bounds:

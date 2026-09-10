@@ -92,16 +92,30 @@ leaves the block with the data the page was rendered with.
 The default path is `/api/cmssy/block-data`. If you mount it elsewhere, tell the
 bridge: `edit={{ ...edit, blockDataUrl: "/your/path" }}`.
 
-Outside Next, wire your framework's route to the same handler:
+### Astro and Remix
+
+`handleBlockDataRequest` from `@cmssy/react` is the framework-agnostic half - it
+takes the parsed body and your blocks and returns the `Response`:
 
 ```ts
 import { handleBlockDataRequest } from "@cmssy/react";
 
 export async function action({ request }) {
   if (!isYourEditorRequest(request)) return new Response(null, { status: 403 });
-  return handleBlockDataRequest(await request.json(), { blocks, config: cmssy });
+  return handleBlockDataRequest(await request.json(), {
+    blocks,
+    config: cmssy,
+  });
 }
 ```
+
+It does not authenticate - that is the `isYourEditorRequest` line, and on these
+two adapters you have to write it yourself. The Next adapter can check
+`isCmssyEditMode()` because its proxy turns a verified edit request into a
+request header that survives to every route. Astro and Remix carry the edit
+signal in the page URL and re-verify it per request, so a POST from the framed
+page arrives with nothing to check. Until that is closed, only the Next route
+ships ready to mount.
 
 ## Keep server-only code out of the client bundle
 
