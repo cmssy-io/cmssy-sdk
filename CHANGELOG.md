@@ -6,6 +6,34 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.6.0
+
+**A field's options are scoped to the field** (CMS-1797).
+
+Nothing to do. Every existing block compiles unchanged - 1824 `fields.*` calls
+across the cmssy repos were checked, and none of them passes an option its
+field does not read.
+
+16.5.0 stopped a key that no field has. This stops a key that *this* field does
+not have. Every builder took the same flat `FieldOptions`, which spans every
+field type, so a text field accepted a media field's crop and a repeater's
+bounds:
+
+```ts
+// compiled clean before, and pushed two keys nothing reads
+heading: fields.text({ label: "Heading", aspectRatio: "16:9", minItems: 3 }),
+```
+
+Each builder now takes only the options its own field reads - `options` on
+select/radio/multiselect, the crop and upload constraints on media, bounds and
+`itemSchema` on repeater, `maxColumns` on table, `pageType` on pageSelector -
+and a key outside that set is a compile error rather than a manifest key the
+editor drops on the floor. `fields.table` gets its own builder; it had been
+sharing the plain one.
+
+If one of your fields does stop compiling, the key was never doing anything:
+delete it, or move it to the field that reads it.
+
 ## 16.5.0
 
 **A typo in a field option no longer compiles** (CMS-1797).

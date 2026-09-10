@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import type { BlockPropsSchema } from "@cmssy/types";
+import { describe, it, expect, expectTypeOf } from "vitest";
+import type { BlockPropsSchema, InferBlockContent } from "@cmssy/types";
 import { fields } from "../fields";
 
 const declaredByHand: BlockPropsSchema = {
@@ -24,7 +24,7 @@ describe("fields.table", () => {
   it("matches a field written straight into a BlockPropsSchema", () => {
     expect(
       declaredByHand.specs,
-      "This is the version pin, and the annotation above is the part that does the work: a fresh literal in declared position is excess-property-checked, so it stops compiling against a @cmssy/types whose FieldDefinition has no maxColumns. The builder call pins the key too, but not its absence: OnlyKnown<> rejects a key FieldOptions does not have, and FieldOptions is derived from FieldDefinition (CMS-1797).",
+      "This is the version pin, and the annotation above is the part that does the work: a fresh literal in declared position is excess-property-checked, so it stops compiling against a @cmssy/types whose FieldDefinition has no maxColumns. The builder call now pins it too - fields.table is constrained by TableFieldOptions, whose keys the Only<> guard maps to never once they leave the shape - but the hand-written literal is the one that cannot be argued with.",
     ).toStrictEqual({ type: "table", label: "Specs", maxColumns: 3 });
   });
 
@@ -56,7 +56,7 @@ describe("fields.media", () => {
   it("matches a field written straight into a BlockPropsSchema", () => {
     expect(
       declaredByHand.hero,
-      "The version pin for @cmssy/types 0.43.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no aspectRatio / aspectRatios. The builder call above cannot pin it, for the reason given on the table pin.",
+      "The version pin for @cmssy/types 0.43.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no aspectRatio / aspectRatios. The builder call above pins it as well now, for the reason given on the table pin.",
     ).toStrictEqual({
       type: "media",
       label: "Hero",
@@ -82,7 +82,7 @@ describe("fields.media", () => {
   it("matches a shared field written straight into a BlockPropsSchema", () => {
     expect(
       declaredByHand.logo,
-      "The version pin for @cmssy/types 0.49.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no localized. The builder call above pins it too, for the reason given on the table pin.",
+      "The version pin for @cmssy/types 0.49.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no localized. The builder call above pins it as well now, for the reason given on the table pin.",
     ).toStrictEqual({ type: "media", label: "Logo", localized: false });
   });
 
@@ -94,68 +94,82 @@ describe("fields.media", () => {
   });
 });
 
-describe("an option the field does not accept", () => {
-  it("fails to compile rather than riding along into the manifest", () => {
-    const typo = fields.link({
-      label: "URL",
-      // @ts-expect-error localised is not localized, and a key the builder swallows is an option that silently never takes effect (CMS-1797)
-      localised: false,
+describe("a field's options are scoped to the field", () => {
+  it("refuses a media constraint on a text field", () => {
+    const field = fields.text({
+      label: "Heading",
+      // @ts-expect-error aspectRatio is a media option
+      aspectRatio: "16:9",
     });
-
-    expect(
-      typo,
-      "the directive above is the assertion: typecheck fails if this key ever stops being rejected. This call only proves the value still reaches build() unchanged.",
-    ).toStrictEqual({ type: "link", label: "URL", localised: false });
+    expect(field.type).toBe("text");
   });
 
-  it("rejects it on every builder shape, not just the plain controls", () => {
-    fields.select({
-      label: "Size",
-      options: ["s", "m"],
-      // @ts-expect-error choice() takes the same options as control()
-      requried: true,
+  it("refuses a repeater's bounds on a text field", () => {
+    const field = fields.text({
+      label: "Heading",
+      // @ts-expect-error minItems bounds a repeater, not a string
+      minItems: 3,
     });
+    expect(field.type).toBe("text");
+  });
 
-    fields.repeater({
+  it("refuses a choice's options on a colour field", () => {
+    const field = fields.color({
+      label: "Accent",
+      // @ts-expect-error only select/radio/multiselect read options
+      options: ["red", "blue"],
+    });
+    expect(field.type).toBe("color");
+  });
+
+  it("refuses a key no field has", () => {
+    const field = fields.text({
+      label: "Heading",
+      // @ts-expect-error a key no field has at all
+      requred: true,
+    });
+    expect(field.type).toBe("text");
+  });
+
+  it("refuses a repeater's own option spelled wrong", () => {
+    const field = fields.repeater({
       label: "Links",
       itemSchema: { href: fields.link({ label: "Href" }) },
-      // @ts-expect-error a repeater is no more forgiving than a text field
+      // @ts-expect-error maxItms is maxItems
       maxItms: 3,
     });
-
-    fields.media({
-      label: "Logo",
-      // @ts-expect-error a builder with a default argument still checks the one it is given
-      aspectRatioo: "16:9",
-    });
-
-    fields.relation({
-      label: "Posts",
-      model: "post",
-      // @ts-expect-error relation accepts model and mode on top of the field options, and nothing else
-      moode: "all",
-    });
-
-    expect(
-      fields.repeater({ label: "Links", maxItems: 3 }),
-      "the four directives above are the assertions; this one keeps a correctly spelled key honest",
-    ).toStrictEqual({ type: "repeater", label: "Links", maxItems: 3 });
+    expect(field.type).toBe("repeater");
   });
 
-  it("still narrows what a correctly spelled schema infers", () => {
-    const row = fields.repeater({
-      label: "Links",
-      itemSchema: {
-        label: fields.text({ label: "Label", required: true }),
-        href: fields.link({ label: "Href", localized: false }),
-      },
+  it("refuses one on a builder that can be called with no options at all", () => {
+    const field = fields.media({
+      label: "Logo",
+      // @ts-expect-error a default argument is not a reason to stop checking the one that was given
+      aspectRatioo: "16:9",
     });
+    expect(field.type).toBe("media");
+  });
 
-    const content: (typeof row)["__value"] = [{ label: "Start" }];
+  it("refuses one on relation, which accepts more than the field options", () => {
+    const field = fields.relation({
+      label: "Posts",
+      model: "post",
+      // @ts-expect-error relation adds model, mode, multiple, sort and limit - nothing else
+      moode: "all",
+    });
+    expect(field.type).toBe("relation");
+  });
 
-    expect(
-      content,
-      "the constraint wraps the inferred type parameter, so a wrong key must not cost the literal inference the builders exist for",
-    ).toStrictEqual([{ label: "Start" }]);
+  it("still infers what the field declares about itself", () => {
+    const schema = {
+      heading: fields.text({ label: "Heading", required: true }),
+      align: fields.select({ label: "Align", options: ["left", "right"] }),
+    };
+    type Content = InferBlockContent<typeof schema>;
+
+    expectTypeOf<Content>().toEqualTypeOf<{
+      heading: string;
+      align?: "left" | "right";
+    }>();
   });
 });
