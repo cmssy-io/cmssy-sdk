@@ -1,6 +1,7 @@
 import {
   CMSSY_EDIT_HEADER,
   isVerifiedEditUrl,
+  mintCmssyEditToken,
   type CmssyBlockPage,
   type CmssyConfig,
   type CmssyLayoutGroup,
@@ -32,6 +33,7 @@ export interface CmssyPageResult {
   defaultLocale: string;
   enabledLocales: string[];
   isEdit: boolean;
+  blockDataToken?: string;
   editorData?: Record<string, CmssyLayoutEditorData>;
   editorOrigin?: string | string[];
   layoutRegions?: readonly LayoutRegion[];
@@ -118,6 +120,13 @@ export async function loadCmssyPage(
     defaultLocale: slot.defaultLocale,
     enabledLocales: slot.enabledLocales,
     isEdit,
+    ...(isEdit && config.draftSecret
+      ? {
+          blockDataToken: await mintCmssyEditToken(config.draftSecret, {
+            page: slot.page.slug,
+          }),
+        }
+      : {}),
     editorData,
     editorOrigin: slot.editorOrigin,
     ...(config.layout ? { layoutRegions: config.layout.regions } : {}),

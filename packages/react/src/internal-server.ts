@@ -22,3 +22,6 @@ export type {
   CmssyBlockDataResult,
   ResolveBlockDataRequestOptions,
 } from "./components/block-data-request";
+
+export { createBlockDataHandler } from "./components/verified-block-data-handler";
+export type { CmssyBlockDataHandlerOptions } from "./components/verified-block-data-handler";

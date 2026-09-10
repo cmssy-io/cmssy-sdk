@@ -2,8 +2,10 @@
 
 exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
 [
+  "CMSSY_EDIT_TOKEN_HEADER",
   "CMSSY_LOCALE_HEADER",
   "CmssyWebhookError",
+  "createCmssyBlockDataAction",
   "createCmssyClient",
   "createCmssyHeaders",
   "createCmssyLoader",
@@ -11,8 +13,10 @@ exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
   "defineCmssyLayout",
   "isVerifiedEditUrl",
   "localizeHref",
+  "mintCmssyEditToken",
   "resolveCmssyLayout",
   "useCmssyLocale",
+  "verifyCmssyEditToken",
   "verifyCmssyWebhook",
 ]
 `;
