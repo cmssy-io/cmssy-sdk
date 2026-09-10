@@ -28,6 +28,15 @@ export type {
  */
 type Declared<O> = O extends { required: true } ? true : false;
 
+type NotAnOption = "not an option this field accepts";
+
+type OnlyKnown<O, Accepted> = Record<
+  Exclude<keyof O, keyof Accepted>,
+  NotAnOption
+>;
+
+type Exact<O> = FieldOptions & OnlyKnown<O, FieldOptions>;
+
 type OptionValue<O> = O extends {
   options: readonly (infer Option extends string)[];
 }
@@ -73,12 +82,12 @@ function build(type: FieldType, opts: FieldOptions): FieldDefinition {
 }
 
 function control<T extends FieldType>(type: T) {
-  return <const O extends FieldOptions>(opts: O = {} as O) =>
+  return <const O extends Exact<O>>(opts: O = {} as O) =>
     build(type, opts) as TypedField<FieldTypeValueMap[T], Declared<O>>;
 }
 
 function choice<T extends "select" | "radio">(type: T) {
-  return <const O extends FieldOptions>(opts: O) =>
+  return <const O extends Exact<O>>(opts: O) =>
     build(type, opts) as TypedField<OptionValue<O>, Declared<O>>;
 }
 
@@ -102,22 +111,26 @@ export const fields = {
   select: choice("select"),
   radio: choice("radio"),
 
-  multiselect: <const O extends FieldOptions>(opts: O) =>
+  multiselect: <const O extends Exact<O>>(opts: O) =>
     build("multiselect", opts) as TypedField<OptionValue<O>[], Declared<O>>,
 
-  media: <const O extends FieldOptions>(opts: O = {} as O) =>
+  media: <const O extends Exact<O>>(opts: O = {} as O) =>
     build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
 
-  pageSelector: <const O extends FieldOptions>(opts: O = {} as O) =>
+  pageSelector: <const O extends Exact<O>>(opts: O = {} as O) =>
     build("pageSelector", opts) as TypedField<
       PageSelectorValue<O>,
       Declared<O>
     >,
 
-  repeater: <const O extends FieldOptions>(opts: O) =>
+  repeater: <const O extends Exact<O>>(opts: O) =>
     build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,
 
-  relation: <const O extends RelationFieldOptions>(opts: O) => {
+  relation: <
+    const O extends RelationFieldOptions & OnlyKnown<O, RelationFieldOptions>,
+  >(
+    opts: O,
+  ) => {
     const { model, mode, ...rest } = opts;
     return build("relation", {
       ...rest,
