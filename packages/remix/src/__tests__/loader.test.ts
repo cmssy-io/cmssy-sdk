@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_CMSSY_EDITOR_ORIGINS,
   defineCmssyLayout,
+  verifyCmssyEditToken,
   type CmssyConfig,
 } from "@cmssy/core";
 
@@ -108,6 +109,35 @@ describe("createCmssyLoader", () => {
     });
 
     expect(data.isEdit).toBe(true);
+  });
+
+  it("mints a block data token the route will accept for this page and no other", async () => {
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request(
+        "https://shop.test/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
+      ),
+    });
+
+    expect(
+      await verifyCmssyEditToken(data.blockDataToken, CONFIG.draftSecret, {
+        page: data.pageContext.slug,
+      }),
+    ).toBe(true);
+    expect(
+      await verifyCmssyEditToken(data.blockDataToken, CONFIG.draftSecret, {
+        page: "/somewhere-else",
+      }),
+    ).toBe(false);
+  });
+
+  it("mints nothing for a request that is not an editor request", async () => {
+    stubApi();
+    const data = await createCmssyLoader(CONFIG)({
+      request: new Request("https://shop.test/about"),
+    });
+
+    expect(data.blockDataToken).toBeUndefined();
   });
 
   it("does NOT enter edit mode for a bare cmssyEdit=1 (CMS-948)", async () => {

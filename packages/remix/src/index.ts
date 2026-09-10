@@ -1,4 +1,6 @@
 export { createCmssyLoader, createCmssyHeaders } from "./loader";
+export { createCmssyBlockDataAction } from "./block-data-action";
+export type { CmssyBlockDataActionConfig } from "./block-data-action";
 export type { CmssyRouteData, CreateCmssyLoaderOptions } from "./loader";
 export { useCmssyLocale } from "./use-cmssy-locale";
 
@@ -7,6 +9,9 @@ export {
   defineCmssyLayout,
   createCmssyClient,
   isVerifiedEditUrl,
+  CMSSY_EDIT_TOKEN_HEADER,
+  mintCmssyEditToken,
+  verifyCmssyEditToken,
   localizeHref,
   CMSSY_LOCALE_HEADER,
   verifyCmssyWebhook,

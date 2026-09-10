@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   CMSSY_EDIT_HEADER,
   defineCmssyLayout,
+  verifyCmssyEditToken,
   type CmssyConfig,
 } from "@cmssy/core";
 import { loadCmssyPage } from "../page";
@@ -79,6 +80,49 @@ describe("loadCmssyPage", () => {
       { blocks: [] },
     );
     expect(Object.keys(result.editorData ?? {})).toEqual(["header", "promo"]);
+  });
+
+  it("mints a block data token the endpoint will accept for this page and no other", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.region, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+
+    const result = await loadCmssyPage(
+      CONFIG,
+      new Request("https://site.test/about", {
+        headers: { [CMSSY_EDIT_HEADER]: "1" },
+      }),
+      new URL("https://site.test/about"),
+      { blocks: [] },
+    );
+
+    expect(
+      await verifyCmssyEditToken(result.blockDataToken, DRAFT_SECRET, {
+        page: result.pageContext.slug,
+      }),
+    ).toBe(true);
+    expect(
+      await verifyCmssyEditToken(result.blockDataToken, DRAFT_SECRET, {
+        page: "/somewhere-else",
+      }),
+    ).toBe(false);
+  });
+
+  it("mints nothing for a request that is not an editor request", async () => {
+    resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
+      Promise.resolve(slotFor(options.region, options.editMode)),
+    );
+    fetchPage.mockResolvedValue({ id: "p1" });
+
+    const result = await loadCmssyPage(
+      CONFIG,
+      new Request("https://site.test/about"),
+      new URL("https://site.test/about"),
+      { blocks: [] },
+    );
+
+    expect(result.blockDataToken).toBeUndefined();
   });
 
   it("hands the declared layout regions to the page, and nothing when undeclared", async () => {

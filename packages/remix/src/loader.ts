@@ -2,6 +2,7 @@ import {
   CMSSY_EDIT_QUERY_PARAM,
   CMSSY_SECRET_QUERY_PARAM,
   isVerifiedEditUrl,
+  mintCmssyEditToken,
   resolveEditorOrigin,
   type CmssyBlockPage,
   type CmssyConfig,
@@ -28,6 +29,7 @@ export interface CmssyRouteData {
   defaultLocale: string;
   enabledLocales: string[];
   isEdit: boolean;
+  blockDataToken?: string;
   editorOrigin: string | string[];
   diagnostics?: string;
   editorData?: Record<string, CmssyLayoutEditorData>;
@@ -140,6 +142,13 @@ export function createCmssyLoader(
       defaultLocale: slot.defaultLocale,
       enabledLocales: slot.enabledLocales,
       isEdit,
+      ...(isEdit && config.draftSecret
+        ? {
+            blockDataToken: await mintCmssyEditToken(config.draftSecret, {
+              page: slot.page.slug,
+            }),
+          }
+        : {}),
       editorOrigin: resolveEditorOrigin(config.editorOrigin),
       editorData,
       ...(config.layout ? { layoutRegions: config.layout.regions } : {}),
