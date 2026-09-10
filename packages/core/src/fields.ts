@@ -28,14 +28,55 @@ export type {
  */
 type Declared<O> = O extends { required: true } ? true : false;
 
-type NotAnOption = "not an option this field accepts";
-
-type OnlyKnown<O, Accepted> = Record<
-  Exclude<keyof O, keyof Accepted>,
-  NotAnOption
+type BaseFieldOptions = Pick<
+  FieldOptions,
+  | "label"
+  | "defaultValue"
+  | "helperText"
+  | "required"
+  | "placeholder"
+  | "tab"
+  | "localized"
 >;
 
-type Exact<O> = FieldOptions & OnlyKnown<O, FieldOptions>;
+type ChoiceFieldOptions = BaseFieldOptions & Pick<FieldOptions, "options">;
+
+type MediaFieldOptions = BaseFieldOptions &
+  Pick<
+    FieldOptions,
+    | "multiple"
+    | "acceptedTypes"
+    | "accept"
+    | "maxSize"
+    | "aspectRatio"
+    | "aspectRatios"
+  >;
+
+type PageSelectorFieldOptions = BaseFieldOptions &
+  Pick<FieldOptions, "multiple" | "pageType">;
+
+type RepeaterFieldOptions = BaseFieldOptions &
+  Pick<
+    FieldOptions,
+    | "itemSchema"
+    | "minItems"
+    | "maxItems"
+    | "itemLabel"
+    | "addButtonLabel"
+    | "collapsible"
+  >;
+
+type TableFieldOptions = BaseFieldOptions & Pick<FieldOptions, "maxColumns">;
+
+interface RelationFieldOptions extends BaseFieldOptions {
+  model: string;
+  mode?: RelationMode;
+  multiple?: boolean;
+  sort?: string;
+  limit?: number;
+}
+
+type Only<O, Shape> = Shape & Record<Exclude<keyof O, keyof Shape>, never>;
 
 type OptionValue<O> = O extends {
   options: readonly (infer Option extends string)[];
@@ -66,28 +107,17 @@ type PageSelectorValue<O> = O extends { multiple: false }
   ? PageRef | undefined
   : PageRef[];
 
-interface RelationFieldOptions extends Omit<
-  FieldOptions,
-  "options" | "itemSchema"
-> {
-  model: string;
-  mode?: RelationMode;
-  multiple?: boolean;
-  sort?: string;
-  limit?: number;
-}
-
 function build(type: FieldType, opts: FieldOptions): FieldDefinition {
   return { type, label: opts.label ?? "", ...opts } as FieldDefinition;
 }
 
 function control<T extends FieldType>(type: T) {
-  return <const O extends Exact<O>>(opts: O = {} as O) =>
+  return <const O extends Only<O, BaseFieldOptions>>(opts: O = {} as O) =>
     build(type, opts) as TypedField<FieldTypeValueMap[T], Declared<O>>;
 }
 
 function choice<T extends "select" | "radio">(type: T) {
-  return <const O extends Exact<O>>(opts: O) =>
+  return <const O extends Only<O, ChoiceFieldOptions>>(opts: O) =>
     build(type, opts) as TypedField<OptionValue<O>, Declared<O>>;
 }
 
@@ -104,33 +134,33 @@ export const fields = {
   link: control("link"),
   url: control("url"),
   email: control("email"),
-  table: control("table"),
   json: control("json"),
   form: control("form"),
+
+  table: <const O extends Only<O, TableFieldOptions>>(opts: O = {} as O) =>
+    build("table", opts) as TypedField<FieldTypeValueMap["table"], Declared<O>>,
 
   select: choice("select"),
   radio: choice("radio"),
 
-  multiselect: <const O extends Exact<O>>(opts: O) =>
+  multiselect: <const O extends Only<O, ChoiceFieldOptions>>(opts: O) =>
     build("multiselect", opts) as TypedField<OptionValue<O>[], Declared<O>>,
 
-  media: <const O extends Exact<O>>(opts: O = {} as O) =>
+  media: <const O extends Only<O, MediaFieldOptions>>(opts: O = {} as O) =>
     build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
 
-  pageSelector: <const O extends Exact<O>>(opts: O = {} as O) =>
+  pageSelector: <const O extends Only<O, PageSelectorFieldOptions>>(
+    opts: O = {} as O,
+  ) =>
     build("pageSelector", opts) as TypedField<
       PageSelectorValue<O>,
       Declared<O>
     >,
 
-  repeater: <const O extends Exact<O>>(opts: O) =>
+  repeater: <const O extends Only<O, RepeaterFieldOptions>>(opts: O) =>
     build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,
 
-  relation: <
-    const O extends RelationFieldOptions & OnlyKnown<O, RelationFieldOptions>,
-  >(
-    opts: O,
-  ) => {
+  relation: <const O extends Only<O, RelationFieldOptions>>(opts: O) => {
     const { model, mode, ...rest } = opts;
     return build("relation", {
       ...rest,

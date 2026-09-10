@@ -93,7 +93,12 @@ from the schema:
 | `fields.json`         | JSON                      | `JsonValue`                                    | -                                                                                          |
 | `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit` - see [Models for data](./models-for-data.md) |
 
-Every control accepts `label`, `helperText`, `required` and `localized`.
+Every control accepts `label`, `helperText`, `required`, `defaultValue`,
+`placeholder`, `tab` and `localized`. The **Notable options** column is the rest
+of what each control takes, and it is now the whole list: a control rejects an
+option belonging to some other field, so `fields.text({ aspectRatio: "16:9" })`
+is a compile error rather than a manifest key the editor drops. A typo in an
+option name is caught the same way.
 
 `required: true` makes the key required in `content`. Everything else is
 optional - the editor lets an author leave a field empty, and the type says so.
