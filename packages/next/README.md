@@ -121,6 +121,21 @@ Root: `defineCmssyConfig`, `localizeHref`, `nextRetryMode`, `cmssyCachedFetch`,
 `CMSSY_CONTENT_TAG` and the types. The full list, with signatures, is in
 [docs/reference/sdk-api.md](../../docs/reference/sdk-api.md).
 
+## Versioning: this package, not the API
+
+**Pinning this package does not pin the API it talks to.** The package version
+covers this client - its exports and their behaviour, normal semver. The cmssy
+delivery API is a hosted service whose GraphQL schema can change on any deploy,
+without a release here.
+
+There is no dated API version to pin; the delivery endpoint has no version
+segment. What protects you today is that a breaking schema change cannot merge
+silently - it is caught by a gate that validates the SDK's own operations, and
+shipping one anyway takes a recorded approval - and that fields we intend to
+remove are marked `@deprecated` first. There is no guaranteed deprecation window
+and no minimum notice period. Details in
+[`@cmssy/core`](https://www.npmjs.com/package/@cmssy/core).
+
 ## License
 
 MIT
