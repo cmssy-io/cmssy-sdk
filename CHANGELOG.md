@@ -6,6 +6,22 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.9.1
+
+**Nothing to do.** Documentation only - no code changed in any package.
+
+`@cmssy/core` had no README on npm at all, so the page for the package most
+consumers install was empty. It has one now, and it answers the question the
+empty page could not: **pinning the package does not pin the API.**
+
+The package version covers this client. The cmssy delivery API is a hosted
+service whose GraphQL schema can change on any deploy, without a release here,
+and there is no dated API version to pin - the delivery endpoint has no version
+segment. What protects you is named on the page, and so is what does not exist
+yet: no guaranteed deprecation window, no minimum notice period.
+
+The short form of that section is also on `@cmssy/next` and `@cmssy/react`.
+
 ## 16.9.0
 
 **Astro and React Router get the block data route** (CMS-1803). 16.7.0 shipped
