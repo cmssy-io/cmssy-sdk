@@ -148,7 +148,8 @@ cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.examp
    files and rules as `cmssy sync-manifest`), so the editor palette knows
    your blocks before the first deploy. No blocks module: nothing happens. A
    module that does not load is reported as a `?` line with the reason and the
-   link goes on. A workspace that already has a manifest keeps it: a local
+   link goes on. A workspace that already has a manifest keeps it, including
+   one created between the check and the push: a local
    checkout may register only some of the deployed blocks, and replacing the
    manifest from it breaks media on the live site. Run `cmssy sync-manifest`
    from the deployed code to replace it.
@@ -364,7 +365,8 @@ the editor canvas. A deploy that adds a region or a setting is invisible in
 
 ```bash
 npx @cmssy/cli sync-manifest
-cmssy sync-manifest --dry-run          # print the manifest, push nothing
+cmssy sync-manifest --dry-run          # show what the push would change, push nothing
+cmssy sync-manifest --allow-lossy      # accept moves that drop stored values
 cmssy sync-manifest --blocks lib/registry.ts --config lib/site.ts
 ```
 
@@ -396,10 +398,20 @@ environment:
 3. Resolves the workspace from `--org` / `--workspace`, else the config's
    `org` and `workspaceSlug`, else `CMSSY_ORG_SLUG` / `CMSSY_WORKSPACE_SLUG`,
    and confirms the token's user is a member of it.
-4. Calls `blockManifest.save` with the token. The token's user needs the
-   `PAGES_EDIT` permission in that workspace. The backend hashes the manifest
-   and skips the write when it is unchanged, so running the command on every
-   deploy is free.
+4. Asks the backend what the manifest would change (`blockManifest.impact`) and
+   prints it: removed types with the pages that still use them, removed
+   fields, reshaped types and regions, added types, and the stored values the
+   relocation would move. A manifest the workspace already holds is reported
+   as unchanged and not sent.
+5. Stops with exit code 1 when a move would drop a stored value (a
+   translation or a differing copy), unless `--allow-lossy` is given. Removed
+   types and fields only warn.
+6. Calls `blockManifest.save` with the token, guarded by the hash it compared
+   against: if the workspace's manifest changed meanwhile, nothing is written
+   and the command says so. The token's user needs the `PAGES_EDIT`
+   permission in that workspace.
+
+See [Renaming or removing blocks safely](./building-blocks/renaming-and-removing-blocks.md).
 
 Every failure is one line with a fix under it, and a non-zero exit: no token,
 no workspace, a workspace the token cannot reach, a registry without an
@@ -425,6 +437,8 @@ and `cmssy types` read from without one.
 Flags: `--blocks <path>` and `--config <path>` name the modules, relative to
 the working directory or absolute; `--token <cs_...>` overrides
 `CMSSY_API_TOKEN`; `--org <slug>` and `--workspace <slug>` override the config
-and the env; `--dry-run` prints the manifest as JSON and sends nothing;
+and the env; `--dry-run` prints what the push would change and sends nothing (without a
+token it prints only the manifest summary); `--allow-lossy` lets a push drop
+stored values the relocation cannot keep;
 `--help` prints the usage. A flag given without a value is an error, never a
 silent fallback.
