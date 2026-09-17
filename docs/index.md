@@ -59,6 +59,7 @@ npx @cmssy/cli link   # connects it to your workspace
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.
   - [Models for data, blocks for view](./building-blocks/models-for-data.md) - workspace models + `fields.relation`, and why record collections never live in repeaters.
   - [Block recipes](./building-blocks/recipes.md) - rich text, listing child pages, forms, SEO.
+  - [Renaming or removing blocks safely](./building-blocks/renaming-and-removing-blocks.md) - what `sync-manifest` reports before a push, and the order that keeps a live site intact.
 - **Auth** - [Member auth](./auth/member-auth.md): the `siteMember` mutations and the rules that keep tokens out of the browser. App-owned since 10.0.
 - **Testing** - [`checkCmssyEditMode`](./testing.md): the editor is the one path a build cannot check.
 - **Troubleshooting** - [Symptom → cause](./troubleshooting.md): every row cost us more than half a day.

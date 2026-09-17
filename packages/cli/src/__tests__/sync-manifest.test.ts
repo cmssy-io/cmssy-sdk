@@ -46,6 +46,22 @@ const WORKSPACES = [
   { id: "ws-blog", slug: "blog", name: "Blog", organizationSlug: "acme" },
 ];
 
+const NO_IMPACT = {
+  hash: "abcdef1234567890",
+  activeHash: "0ld",
+  unchanged: false,
+  addedTypes: [],
+  removedTypes: [],
+  changedTypes: [],
+  removedFields: [],
+  removedRegions: [],
+  changedRegions: [],
+  moves: 0,
+  lossyMoves: 0,
+  documents: 0,
+  heldDocuments: 0,
+};
+
 interface Recorded {
   url: string;
   headers: Record<string, string>;
@@ -65,7 +81,7 @@ function makeDeps(
     modules?: Record<string, Record<string, unknown>>;
     files?: string[];
     respond?: (call: Recorded) => Response;
-    storedHash?: string | null;
+    impact?: Record<string, unknown>;
   } = {},
 ): { deps: SyncManifestDeps; lines: string[]; calls: Recorded[]; cwd: string } {
   const cwd = mkdtempSync(join(tmpdir(), "cmssy-sync-"));
@@ -100,12 +116,12 @@ function makeDeps(
       if (call.body.query.includes("CliWorkspacesMine")) {
         return jsonResponse({ data: { workspace: { mine: WORKSPACES } } });
       }
-      if (call.body.query.includes("CliBlockManifestHash")) {
-        const stored =
-          overrides.storedHash === undefined ? "0ld" : overrides.storedHash;
+      if (call.body.query.includes("CliBlockManifestImpact")) {
         return jsonResponse({
           data: {
-            blockManifest: { get: stored === null ? null : { hash: stored } },
+            blockManifest: {
+              impact: { ...NO_IMPACT, ...overrides.impact },
+            },
           },
         });
       }
@@ -142,17 +158,22 @@ describe("cmssy sync-manifest", () => {
     expect(code).toBe(0);
     expect(calls).toHaveLength(3);
     const [mine, current, save] = calls;
-    expect(current!.body.query).toContain("blockManifest");
+    expect(current!.body.query).toContain("impact(blocks: $blocks");
     expect(current!.headers["x-workspace-id"]).toBe("ws-shop");
+    expect(current!.body.variables).toStrictEqual({
+      blocks: save!.body.variables.blocks,
+      regions: save!.body.variables.regions,
+    });
     expect(mine!.url).toBe("https://api.cmssy.io/graphql");
     expect(mine!.headers.authorization).toBe("Bearer cs_test_token");
     expect(save!.headers.authorization).toBe("Bearer cs_test_token");
     expect(save!.headers["x-workspace-id"]).toBe("ws-shop");
     expect(save!.body.query).toContain("blockManifest");
     expect(save!.body.query).toContain(
-      "save(blocks: $blocks, regions: $regions)",
+      "save(blocks: $blocks, regions: $regions, expectedHash: $expectedHash",
     );
     expect(save!.body.variables).toStrictEqual({
+      expectedHash: "0ld",
       blocks: [
         {
           type: "header",
@@ -184,7 +205,10 @@ describe("cmssy sync-manifest", () => {
       ],
     });
     expect(lines[0]).toBe(
-      "cmssy: pushed 2 blocks and 2 regions to acme/shop (cmssy/blocks.ts, cmssy.config.ts)",
+      "cmssy: acme/shop - 2 blocks and 2 regions (cmssy/blocks.ts, cmssy.config.ts)",
+    );
+    expect(lines).toContain(
+      "cmssy: pushed 2 blocks and 2 regions to acme/shop",
     );
     expect(lines).toContain("  regions: header, sidebar_left (width)");
     expect(lines).toContain(
@@ -203,7 +227,10 @@ describe("cmssy sync-manifest", () => {
       regions: layout.regions,
     });
     const returned = vi.mocked(buildBlockManifest).mock.results[0]!.value;
-    expect(calls[2]!.body.variables).toStrictEqual(returned);
+    expect(calls[2]!.body.variables).toStrictEqual({
+      ...returned,
+      expectedHash: "0ld",
+    });
   });
 
   it("posts the same bytes on a second run - the push is idempotent", async () => {
@@ -218,21 +245,120 @@ describe("cmssy sync-manifest", () => {
     );
   });
 
-  it("prints the manifest and touches nothing on --dry-run, even without a token", async () => {
+  it("summarises the manifest and touches nothing on --dry-run without a token", async () => {
     const { deps, lines, calls } = makeDeps({ env: {} });
 
     const code = await runSyncManifest({ dryRun: true }, deps);
 
     expect(code).toBe(0);
     expect(calls).toHaveLength(0);
-    const printed = JSON.parse(lines.join("\n")) as {
-      blocks: unknown[];
-      regions: unknown[];
-    };
+    expect(lines).toStrictEqual([
+      "cmssy: dry run - 2 blocks and 2 regions (cmssy/blocks.ts, cmssy.config.ts)",
+      "  blocks: header, hero",
+      "  regions: header, sidebar_left (width)",
+      "  impact not checked - set CMSSY_API_TOKEN to compare with the workspace",
+    ]);
+  });
+
+  it("prints what the push would do to stored content on --dry-run, and pushes nothing", async () => {
+    const { deps, lines, calls } = makeDeps({
+      impact: {
+        addedTypes: ["quote"],
+        removedTypes: [
+          { type: "testimonials", pages: 14, publishedPages: 3 },
+          { type: "banner", pages: 0, publishedPages: 0 },
+        ],
+        changedTypes: ["hero", "cta"],
+        removedFields: [{ type: "hero", fields: ["subtitle", "cta.label"] }],
+        removedRegions: ["sidebar"],
+        changedRegions: ["header"],
+        moves: 5,
+        documents: 2,
+      },
+    });
+
+    const code = await runSyncManifest({ dryRun: true }, deps);
+
+    expect(code).toBe(0);
     expect(
-      printed.blocks.map((block) => (block as { type: string }).type),
-    ).toEqual(["header", "hero"]);
-    expect(printed.regions).toHaveLength(2);
+      calls.map((call) => call.body.query.match(/Cli\w+/)?.[0]),
+    ).toStrictEqual(["CliWorkspacesMine", "CliBlockManifestImpact"]);
+    expect(lines.slice(0, 9)).toStrictEqual([
+      "cmssy: dry run - pushing 2 blocks and 2 regions to acme/shop would change: (cmssy/blocks.ts, cmssy.config.ts)",
+      "  removes `testimonials`, used on 14 pages (3 published)",
+      "  removes `banner`, not used on any page",
+      "  removes fields from `hero`: subtitle, cta.label",
+      "  reshapes `cta` - stored values may no longer match its fields",
+      "  adds `quote`",
+      "  removes region `sidebar`",
+      "  reshapes the settings of region `header`",
+      "  moves 5 stored values in 2 documents",
+    ]);
+    expect(lines.at(-1)).toBe("cmssy: dry run - nothing pushed");
+  });
+
+  it("refuses a push that would drop stored values unless --allow-lossy is given", async () => {
+    const lossy = { moves: 3, lossyMoves: 2, documents: 2, heldDocuments: 1 };
+    const refused = makeDeps({ impact: lossy });
+
+    expect(await runSyncManifest({}, refused.deps)).toBe(1);
+    expect(
+      refused.calls.some((call) =>
+        call.body.query.includes("CliSaveBlockManifest"),
+      ),
+    ).toBe(false);
+    expect(refused.lines).toContain(
+      "  2 moves would drop stored values (a translation or a differing copy) in 1 document",
+    );
+    expect(refused.lines.at(-1)).toContain("--allow-lossy");
+
+    const dryRun = makeDeps({ impact: lossy });
+    expect(await runSyncManifest({ dryRun: true }, dryRun.deps)).toBe(1);
+
+    const accepted = makeDeps({ impact: lossy });
+    expect(await runSyncManifest({ allowLossy: true }, accepted.deps)).toBe(0);
+    const save = accepted.calls.find((call) =>
+      call.body.query.includes("CliSaveBlockManifest"),
+    );
+    expect(save?.body.variables.allowLossy).toBe(true);
+  });
+
+  it("does not exit non-zero for removed types alone", async () => {
+    const { deps } = makeDeps({
+      impact: {
+        removedTypes: [{ type: "testimonials", pages: 14, publishedPages: 3 }],
+      },
+    });
+
+    expect(await runSyncManifest({}, deps)).toBe(0);
+  });
+
+  it("reports a manifest that changed between the comparison and the push", async () => {
+    const { deps, lines } = makeDeps({
+      respond: (call) => {
+        if (call.body.query.includes("CliWorkspacesMine")) {
+          return jsonResponse({ data: { workspace: { mine: WORKSPACES } } });
+        }
+        if (call.body.query.includes("CliBlockManifestImpact")) {
+          return jsonResponse({
+            data: { blockManifest: { impact: NO_IMPACT } },
+          });
+        }
+        return jsonResponse({
+          errors: [
+            {
+              message: "The block manifest changed since it was read",
+              extensions: { code: "CONFLICT" },
+            },
+          ],
+        });
+      },
+    });
+
+    expect(await runSyncManifest({}, deps)).toBe(1);
+    expect(lines).toContain(
+      "cmssy: the block manifest of acme/shop changed while this ran - nothing pushed",
+    );
   });
 
   it("sends regions: null when the config declares no layout, so the stored regions are kept - as the editor does", async () => {
@@ -247,9 +373,7 @@ describe("cmssy sync-manifest", () => {
 
     expect(code).toBe(0);
     expect(calls[2]!.body.variables).toHaveProperty("regions", null);
-    expect(lines[0]).toBe(
-      "cmssy: pushed 1 block to acme/shop (cmssy/blocks.ts, cmssy.config.ts)",
-    );
+    expect(lines).toContain("cmssy: pushed 1 block to acme/shop");
     expect(lines).toContain(
       "  regions: none declared - the stored regions are kept",
     );
@@ -297,8 +421,8 @@ describe("cmssy sync-manifest", () => {
     ).toEqual(["aside", "Banner"]);
   });
 
-  it("says the manifest is unchanged when the workspace already holds this hash", async () => {
-    const { deps, lines } = makeDeps({ storedHash: "abcdef1234567890" });
+  it("says the manifest is unchanged and pushes nothing when the workspace already holds it", async () => {
+    const { deps, lines, calls } = makeDeps({ impact: { unchanged: true } });
 
     const code = await runSyncManifest({}, deps);
 
@@ -306,17 +430,25 @@ describe("cmssy sync-manifest", () => {
     expect(lines[0]).toBe(
       "cmssy: acme/shop already has this manifest - 2 blocks and 2 regions unchanged (cmssy/blocks.ts, cmssy.config.ts)",
     );
-    expect(lines).toContain(
-      "  manifest abcdef123456 - last updated 2026-08-30T10:00:00.000Z",
-    );
+    expect(lines).toContain("  manifest abcdef123456");
+    expect(
+      calls.some((call) => call.body.query.includes("CliSaveBlockManifest")),
+    ).toBe(false);
   });
 
-  it("reports a push when no manifest was stored before", async () => {
-    const { deps, lines } = makeDeps({ storedHash: null });
+  it("creates the first manifest only if nobody else did meanwhile", async () => {
+    const { deps, lines, calls } = makeDeps({ impact: { activeHash: null } });
 
     await runSyncManifest({}, deps);
 
-    expect(lines[0]).toMatch(/^cmssy: pushed 2 blocks and 2 regions/);
+    const save = calls.find((call) =>
+      call.body.query.includes("CliSaveBlockManifest"),
+    );
+    expect(save?.body.variables.onlyIfAbsent).toBe(true);
+    expect(save?.body.variables).not.toHaveProperty("expectedHash");
+    expect(lines).toContain(
+      "cmssy: pushed 2 blocks and 2 regions to acme/shop",
+    );
   });
 
   it("prints the usage and touches nothing on --help", async () => {

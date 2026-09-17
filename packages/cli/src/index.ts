@@ -97,6 +97,7 @@ async function main(): Promise<void> {
         org: flagValue(args, "--org"),
         workspace: flagValue(args, "--workspace"),
         dryRun: hasFlag(args, "--dry-run"),
+        allowLossy: hasFlag(args, "--allow-lossy"),
       },
       {
         cwd: process.cwd(),

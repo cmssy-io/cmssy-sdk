@@ -30,6 +30,9 @@ import {
 import type { SiteModuleLoader } from "./site-modules";
 import { collectManifest, hasBlocksModule } from "./sync-manifest";
 
+const MANIFEST_KEPT =
+  "block manifest left unchanged - the workspace already has one, and link never replaces it from a local checkout; run cmssy sync-manifest from the code your site is deployed from to replace it";
+
 export interface LinkOptions {
   token?: string;
   workspace?: string;
@@ -234,18 +237,20 @@ async function pushBlockManifest(
     if ((await fetchBlockManifestHash(scoped)) !== null) {
       return {
         status: "unknown",
-        message:
-          "block manifest left unchanged - the workspace already has one, and link never replaces it from a local checkout; run cmssy sync-manifest from the code your site is deployed from to replace it",
+        message: MANIFEST_KEPT,
       };
     }
     const { manifest, blocksPath } = await collectManifest({}, deps);
-    await saveBlockManifest(manifest, scoped);
+    await saveBlockManifest(manifest, scoped, { onlyIfAbsent: true });
     const count = manifest.blocks.length;
     return {
       status: "ok",
       message: `pushed the block manifest from ${blocksPath} (${count} block${count === 1 ? "" : "s"}) - the editor palette knows your blocks before the first deploy`,
     };
   } catch (error) {
+    if (error instanceof CliError && error.code === "CONFLICT") {
+      return { status: "unknown", message: MANIFEST_KEPT };
+    }
     if (error instanceof CliError) {
       const fix =
         error.fix ?? "run cmssy sync-manifest once the blocks module loads";

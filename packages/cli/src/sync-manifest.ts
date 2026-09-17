@@ -10,9 +10,10 @@ import {
 
 import {
   CliError,
-  fetchBlockManifestHash,
+  fetchBlockManifestImpact,
   fetchMyWorkspaces,
   saveBlockManifest,
+  type BlockManifestImpact,
   type CliWorkspace,
 } from "./admin-client";
 import { loadEnvFiles } from "./env-load";
@@ -37,7 +38,8 @@ const CONFIG_CANDIDATES = [
 
 export const SYNC_MANIFEST_USAGE = [
   "  cmssy sync-manifest [--blocks <path>] [--config <path>] [--token <cs_...>]",
-  "                      [--org <slug>] [--workspace <slug>] [--dry-run] [--help]",
+  "                      [--org <slug>] [--workspace <slug>] [--dry-run]",
+  "                      [--allow-lossy] [--help]",
 ];
 
 export interface SyncManifestOptions {
@@ -48,6 +50,7 @@ export interface SyncManifestOptions {
   org?: string;
   workspace?: string;
   dryRun?: boolean;
+  allowLossy?: boolean;
 }
 
 export interface SyncManifestDeps {
@@ -232,6 +235,57 @@ function describe(manifest: BlockManifest): string[] {
   return lines;
 }
 
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+export function describeImpact(impact: BlockManifestImpact): string[] {
+  const lines: string[] = [];
+  for (const removed of impact.removedTypes) {
+    lines.push(
+      removed.pages === 0
+        ? `  removes \`${removed.type}\`, not used on any page`
+        : `  removes \`${removed.type}\`, used on ${plural(removed.pages, "page")} (${removed.publishedPages} published)`,
+    );
+  }
+  for (const removed of impact.removedFields) {
+    lines.push(
+      `  removes fields from \`${removed.type}\`: ${removed.fields.join(", ")}`,
+    );
+  }
+  const withRemovedFields = new Set(
+    impact.removedFields.map((removed) => removed.type),
+  );
+  for (const type of impact.changedTypes) {
+    if (withRemovedFields.has(type)) continue;
+    lines.push(
+      `  reshapes \`${type}\` - stored values may no longer match its fields`,
+    );
+  }
+  if (impact.addedTypes.length > 0) {
+    lines.push(
+      `  adds ${impact.addedTypes.map((type) => `\`${type}\``).join(", ")}`,
+    );
+  }
+  for (const region of impact.removedRegions) {
+    lines.push(`  removes region \`${region}\``);
+  }
+  for (const region of impact.changedRegions) {
+    lines.push(`  reshapes the settings of region \`${region}\``);
+  }
+  if (impact.moves > 0) {
+    lines.push(
+      `  moves ${plural(impact.moves, "stored value")} in ${plural(impact.documents, "document")}`,
+    );
+  }
+  if (impact.lossyMoves > 0) {
+    lines.push(
+      `  ${plural(impact.lossyMoves, "move")} would drop stored values (a translation or a differing copy) in ${plural(impact.heldDocuments, "document")}`,
+    );
+  }
+  return lines;
+}
+
 export async function collectManifest(
   options: SyncManifestOptions,
   deps: SyncManifestDeps,
@@ -293,12 +347,27 @@ export async function runSyncManifest(
     const collected = await collectManifest(options, deps);
     const { manifest } = collected;
 
-    if (options.dryRun) {
-      deps.log(JSON.stringify(manifest, null, 2));
+    const count = `${plural(manifest.blocks.length, "block")}${
+      manifest.regions
+        ? ` and ${plural(manifest.regions.length, "region")}`
+        : ""
+    }`;
+    const sources = `(${collected.blocksPath}, ${collected.configPath})`;
+
+    const token =
+      options.dryRun &&
+      !options.token?.trim() &&
+      !deps.env.CMSSY_API_TOKEN?.trim()
+        ? null
+        : resolveToken(options, deps.env);
+    if (token === null) {
+      deps.log(`cmssy: dry run - ${count} ${sources}`);
+      for (const line of describe(manifest)) deps.log(line);
+      deps.log(
+        "  impact not checked - set CMSSY_API_TOKEN to compare with the workspace",
+      );
       return 0;
     }
-
-    const token = resolveToken(options, deps.env);
     const org = resolveSlug(
       options.org,
       collected.org,
@@ -324,29 +393,57 @@ export async function runSyncManifest(
       slug,
     );
     const scoped = { ...request, workspaceId: workspace.id };
-    const before = await fetchBlockManifestHash(scoped);
-    const saved = await saveBlockManifest(manifest, scoped);
-    const unchanged = before === saved.hash;
+    const impact = await fetchBlockManifestImpact(manifest, scoped);
 
-    const count = `${manifest.blocks.length} block${
-      manifest.blocks.length === 1 ? "" : "s"
-    }${
-      manifest.regions
-        ? ` and ${manifest.regions.length} region${
-            manifest.regions.length === 1 ? "" : "s"
-          }`
-        : ""
-    }`;
+    if (impact.unchanged) {
+      deps.log(
+        `cmssy: ${org}/${slug} already has this manifest - ${count} unchanged ${sources}`,
+      );
+      for (const line of describe(manifest)) deps.log(line);
+      deps.log(`  manifest ${impact.hash.slice(0, 12)}`);
+      return 0;
+    }
+
+    const effects = describeImpact(impact);
     deps.log(
-      unchanged
-        ? `cmssy: ${org}/${slug} already has this manifest - ${count} unchanged (${collected.blocksPath}, ${collected.configPath})`
-        : `cmssy: pushed ${count} to ${org}/${slug} (${collected.blocksPath}, ${collected.configPath})`,
+      options.dryRun
+        ? `cmssy: dry run - pushing ${count} to ${org}/${slug} would ${effects.length > 0 ? "change:" : "change nothing stored"} ${sources}`
+        : `cmssy: ${org}/${slug} - ${count} ${sources}`,
     );
+    for (const line of effects) deps.log(line);
     for (const line of describe(manifest)) deps.log(line);
+
+    if (impact.lossyMoves > 0 && !options.allowLossy) {
+      deps.log(
+        `cmssy: not pushed - rerun with --allow-lossy to accept dropping those values`,
+      );
+      return 1;
+    }
+    if (options.dryRun) {
+      deps.log("cmssy: dry run - nothing pushed");
+      return 0;
+    }
+
+    let saved;
+    try {
+      saved = await saveBlockManifest(manifest, scoped, {
+        ...(impact.activeHash === null
+          ? { onlyIfAbsent: true }
+          : { expectedHash: impact.activeHash }),
+        ...(options.allowLossy ? { allowLossy: true } : {}),
+      });
+    } catch (error) {
+      if (error instanceof CliError && error.code === "CONFLICT") {
+        throw new CliError(
+          `the block manifest of ${org}/${slug} changed while this ran - nothing pushed`,
+          "run cmssy sync-manifest again to compare with the new manifest",
+        );
+      }
+      throw error;
+    }
+    deps.log(`cmssy: pushed ${count} to ${org}/${slug}`);
     deps.log(
-      unchanged
-        ? `  manifest ${saved.hash.slice(0, 12)} - last updated ${saved.updatedAt}`
-        : `  manifest ${saved.hash.slice(0, 12)} - updated ${saved.updatedAt}`,
+      `  manifest ${saved.hash.slice(0, 12)} - updated ${saved.updatedAt}`,
     );
     return 0;
   } catch (error) {

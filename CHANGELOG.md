@@ -6,6 +6,26 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.10.0
+
+**Nothing to do** unless a pipeline runs `cmssy sync-manifest --dry-run` and
+parses its output: it now prints what the push would change, not the manifest
+as JSON.
+
+`cmssy sync-manifest` compares your build's manifest with the workspace's
+before it pushes, and says what the push does to stored content. It lists
+removed block types with the pages that still use them, removed fields,
+reshaped types and region settings, added types, and the stored values the
+relocation would move. A move that would drop a stored value (a translation
+or a differing copy) stops the push with exit code 1. `--allow-lossy` accepts
+it. Removed types and fields only warn. The push is guarded by the hash it
+compared against, so a manifest that changed meanwhile is never overwritten.
+`cmssy link` creates a manifest only when the workspace has none, even if one
+appears between its check and its push.
+
+Needs the cmssy admin API with `blockManifest.impact` (CMS-1879). New page:
+[Renaming or removing blocks safely](docs/building-blocks/renaming-and-removing-blocks.md).
+
 ## 16.9.1
 
 **Nothing to do.** Documentation only - no code changed in any package.

@@ -30,11 +30,13 @@ export const NEEDS_PAGES_EDIT_HINT: DeniedHint = {
 
 export class CliError extends Error {
   readonly fix?: string;
+  readonly code?: string;
 
-  constructor(message: string, fix?: string) {
+  constructor(message: string, fix?: string, code?: string) {
     super(message);
     this.name = "CliError";
     this.fix = fix;
+    this.code = code;
   }
 }
 
@@ -103,6 +105,8 @@ export async function adminGraphql<T>(
       `the cmssy API rejected the request - ${errors
         .map((error) => error.message ?? "GraphQL error")
         .join("; ")}`,
+      undefined,
+      errors.find((error) => error.extensions?.code)?.extensions?.code,
     );
   }
   if (!response.ok || envelope?.data == null) {
@@ -139,9 +143,9 @@ export const UPDATE_PREVIEW_URL_MUTATION = `mutation CliSetPreviewUrl($input: Up
   }
 }`;
 
-export const SAVE_BLOCK_MANIFEST_MUTATION = `mutation CliSaveBlockManifest($blocks: JSON!, $regions: JSON) {
+export const SAVE_BLOCK_MANIFEST_MUTATION = `mutation CliSaveBlockManifest($blocks: JSON!, $regions: JSON, $expectedHash: String, $onlyIfAbsent: Boolean, $allowLossy: Boolean) {
   blockManifest {
-    save(blocks: $blocks, regions: $regions) {
+    save(blocks: $blocks, regions: $regions, expectedHash: $expectedHash, onlyIfAbsent: $onlyIfAbsent, allowLossy: $allowLossy) {
       hash
       updatedAt
     }
@@ -215,15 +219,75 @@ export interface SavedBlockManifest {
   updatedAt: string;
 }
 
+export interface SaveBlockManifestGuard {
+  expectedHash?: string;
+  onlyIfAbsent?: boolean;
+  allowLossy?: boolean;
+}
+
 export async function saveBlockManifest(
   manifest: { blocks: unknown[]; regions: unknown[] | null },
   options: AdminRequestOptions,
+  guard: SaveBlockManifestGuard = {},
 ): Promise<SavedBlockManifest> {
   const data = await adminGraphql<{
     blockManifest: { save: SavedBlockManifest };
-  }>(SAVE_BLOCK_MANIFEST_MUTATION, manifest, {
+  }>(
+    SAVE_BLOCK_MANIFEST_MUTATION,
+    { ...manifest, ...guard },
+    {
+      ...options,
+      denied: NEEDS_MANIFEST_WRITE_HINT,
+    },
+  );
+  return data.blockManifest.save;
+}
+
+export const BLOCK_MANIFEST_IMPACT_QUERY = `query CliBlockManifestImpact($blocks: JSON!, $regions: JSON) {
+  blockManifest {
+    impact(blocks: $blocks, regions: $regions) {
+      hash
+      activeHash
+      unchanged
+      addedTypes
+      removedTypes { type pages publishedPages }
+      changedTypes
+      removedFields { type fields }
+      removedRegions
+      changedRegions
+      moves
+      lossyMoves
+      documents
+      heldDocuments
+    }
+  }
+}`;
+
+export interface BlockManifestImpact {
+  hash: string;
+  activeHash: string | null;
+  unchanged: boolean;
+  addedTypes: string[];
+  removedTypes: { type: string; pages: number; publishedPages: number }[];
+  changedTypes: string[];
+  removedFields: { type: string; fields: string[] }[];
+  removedRegions: string[];
+  changedRegions: string[];
+  moves: number;
+  lossyMoves: number;
+  documents: number;
+  heldDocuments: number;
+}
+
+export async function fetchBlockManifestImpact(
+  manifest: { blocks: unknown[]; regions: unknown[] | null },
+  options: AdminRequestOptions,
+): Promise<BlockManifestImpact> {
+  const data = await adminGraphql<{
+    blockManifest: { impact: BlockManifestImpact };
+  }>(BLOCK_MANIFEST_IMPACT_QUERY, manifest, {
     ...options,
     denied: NEEDS_MANIFEST_WRITE_HINT,
   });
-  return data.blockManifest.save;
+  return data.blockManifest.impact;
 }

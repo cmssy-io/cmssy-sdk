@@ -290,6 +290,10 @@ describe("runLink", () => {
     expect(
       (save?.variables.blocks as Array<{ type: string }>).map((b) => b.type),
     ).toEqual(["cta", "hero"]);
+    expect(
+      save?.variables.onlyIfAbsent,
+      "a manifest created between the probe and the save must not be replaced",
+    ).toBe(true);
     const envIndex = calls.indexOf(
       calls.find((call) => call.query.includes("CliDraftSecret"))!,
     );
@@ -321,6 +325,32 @@ describe("runLink", () => {
     ).toBe(false);
     expect(lines.join("\n")).toContain("block manifest left unchanged");
     expect(lines.join("\n")).toContain("cmssy sync-manifest");
+  });
+
+  it("leaves a manifest another writer created after the probe alone", async () => {
+    const { fetch } = adminFetch({
+      saveManifest: {
+        errors: [
+          {
+            message: "The block manifest changed since it was read",
+            extensions: { code: "CONFLICT" },
+          },
+        ],
+      },
+    });
+    const { deps, lines, cwd } = makeDeps(fetch, {
+      load: async () => ({ blocks: [{ type: "hero", props: {} }] }),
+    });
+    mkdirSync(join(cwd, "cmssy"));
+    writeFileSync(join(cwd, "cmssy/blocks.ts"), "");
+    writeFileSync(join(cwd, "cmssy.config.ts"), "");
+
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+
+    expect(code).toBe(0);
+    const output = lines.join("\n");
+    expect(output).toContain("block manifest left unchanged");
+    expect(output).not.toContain("block manifest not pushed");
   });
 
   it("skips the manifest push silently when the app has no blocks module", async () => {
