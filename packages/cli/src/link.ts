@@ -13,6 +13,7 @@ import {
   CliError,
   fetchDraftSecret,
   fetchMyWorkspaces,
+  fetchBlockManifestHash,
   saveBlockManifest,
   setPreviewUrl,
   type AdminRequestOptions,
@@ -228,9 +229,17 @@ async function pushBlockManifest(
   deps: LinkDeps,
 ): Promise<PreflightResult | null> {
   if (!hasBlocksModule(deps.cwd)) return null;
+  const scoped = { ...admin, workspaceId: workspace.id };
   try {
+    if ((await fetchBlockManifestHash(scoped)) !== null) {
+      return {
+        status: "unknown",
+        message:
+          "block manifest left unchanged - the workspace already has one, and link never replaces it from a local checkout; run cmssy sync-manifest from the code your site is deployed from to replace it",
+      };
+    }
     const { manifest, blocksPath } = await collectManifest({}, deps);
-    await saveBlockManifest(manifest, { ...admin, workspaceId: workspace.id });
+    await saveBlockManifest(manifest, scoped);
     const count = manifest.blocks.length;
     return {
       status: "ok",
