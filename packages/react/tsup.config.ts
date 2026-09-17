@@ -4,6 +4,8 @@ import { defineConfig } from "tsup";
 const CLIENT_OUTPUTS = [
   "dist/client.js",
   "dist/client.cjs",
+  "dist/spa.js",
+  "dist/spa.cjs",
   "dist/internal.js",
   "dist/internal.cjs",
   "dist/block-error-boundary.js",
@@ -14,6 +16,7 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/client.ts",
+    "src/spa.tsx",
     "src/internal.ts",
     "src/internal-server.ts",
     "src/block-error-boundary.ts",

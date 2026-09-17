@@ -1,7 +1,5 @@
 import {
-  CmssyBlock,
-  buildBlockContext,
-  buildBlockMap,
+  CmssyBlocks,
   resolveEditorBlockData,
   resolveEditorLayoutBlockData,
   type EditorBlockData,
@@ -131,25 +129,19 @@ export default function CmssyPage({ loaderData }: Route.ComponentProps) {
       </>
     );
 
-  const blockMap = buildBlockMap(blocks);
-  const context = buildBlockContext(locale, defaultLocale, enabledLocales);
-
   return (
     <>
       {slot("header")}
       <main>
-        {(page.blocks ?? []).map((block) => (
-          <CmssyBlock
-            key={block.id}
-            block={block}
-            blockMap={blockMap}
-            locale={locale}
-            defaultLocale={defaultLocale}
-            context={context}
-            resolvedContent={blockContent[block.id]}
-            data={blockData[block.id]}
-          />
-        ))}
+        <CmssyBlocks
+          page={page}
+          blocks={blocks}
+          locale={locale}
+          defaultLocale={defaultLocale}
+          enabledLocales={enabledLocales}
+          blockData={blockData}
+          blockContent={blockContent}
+        />
       </main>
       {slot("footer")}
     </>

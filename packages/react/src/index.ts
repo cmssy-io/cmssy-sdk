@@ -96,6 +96,16 @@ export type {
 } from "./components/resolve-layout";
 export { CmssyServerLayout } from "./components/cmssy-server-layout";
 export type { CmssyServerLayoutProps } from "./components/cmssy-server-layout";
+export { CmssyBlocks } from "./components/cmssy-blocks";
+export type { CmssyBlocksProps } from "./components/cmssy-blocks";
+export { CmssyLayoutRegion } from "./components/cmssy-layout-region";
+export type { CmssyLayoutRegionProps } from "./components/cmssy-layout-region";
+export { loadCmssyRoute } from "./components/load-cmssy-route";
+export type {
+  CmssyRouteConfig,
+  CmssyRouteData,
+  LoadCmssyRouteOptions,
+} from "./components/load-cmssy-route";
 export { CmssyBlock } from "./components/cmssy-block";
 export type { CmssyBlockProps } from "./components/cmssy-block";
 export { UnknownBlock } from "./components/unknown-block";

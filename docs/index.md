@@ -54,6 +54,7 @@ npx @cmssy/cli link   # connects it to your workspace
   - [Next.js wiring](./wiring.md) - the complete, correct way to mount cmssy. Copy it whole.
   - [Astro](./astro.md) - the adapter that proves the core is framework-free.
   - [React Router 7 / Remix](./remix.md) - and why it needs no `/cmssy-edit` route.
+  - [React + Vite](./vite.md) - SPA and Vite SSR, with no adapter package.
 - **Building Blocks**
   - [Authoring a block](./building-blocks/authoring-blocks.md) - `defineBlock`, `fields`, the component contract.
   - [Server loaders](./building-blocks/server-loaders.md) - fetch data during SSR for SEO and no loading flash.

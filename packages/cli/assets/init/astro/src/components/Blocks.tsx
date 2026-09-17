@@ -1,4 +1,4 @@
-import { CmssyBlock, buildBlockMap, buildBlockContext } from "@cmssy/react";
+import { CmssyBlocks } from "@cmssy/react";
 import type { CmssyPageData } from "@cmssy/core";
 import { blocks } from "../cmssy/blocks";
 
@@ -17,23 +17,15 @@ export function Blocks({
   blockData: Record<string, unknown>;
   blockContent: Record<string, Record<string, unknown>>;
 }) {
-  const blockMap = buildBlockMap(blocks);
-  const context = buildBlockContext(locale, defaultLocale, enabledLocales);
-
   return (
-    <>
-      {(page.blocks ?? []).map((block) => (
-        <CmssyBlock
-          key={block.id}
-          block={block}
-          blockMap={blockMap}
-          locale={locale}
-          defaultLocale={defaultLocale}
-          context={context}
-          resolvedContent={blockContent[block.id]}
-          data={blockData[block.id]}
-        />
-      ))}
-    </>
+    <CmssyBlocks
+      page={page}
+      blocks={blocks}
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+      blockData={blockData}
+      blockContent={blockContent}
+    />
   );
 }
