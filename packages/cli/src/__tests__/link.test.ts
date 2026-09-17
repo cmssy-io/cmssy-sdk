@@ -62,6 +62,18 @@ function adminFetch(overrides: Partial<Record<string, unknown>> = {}): {
         },
       );
     }
+    if (body.query.includes("CliBlockManifestHash")) {
+      return Response.json({
+        data: {
+          blockManifest: {
+            get:
+              overrides.storedManifestHash === undefined
+                ? null
+                : { hash: overrides.storedManifestHash },
+          },
+        },
+      });
+    }
     if (body.query.includes("CliSaveBlockManifest")) {
       return Response.json(
         overrides.saveManifest ?? {
@@ -285,6 +297,30 @@ describe("runLink", () => {
     expect(lines.join("\n")).toContain(
       "pushed the block manifest from cmssy/blocks.ts (2 blocks)",
     );
+  });
+
+  it("leaves a manifest the workspace already has alone", async () => {
+    const { fetch, calls } = adminFetch({ storedManifestHash: "live" });
+    const { deps, lines, cwd } = makeDeps(fetch, {
+      load: async () => ({ blocks: [{ type: "hero", props: {} }] }),
+    });
+    mkdirSync(join(cwd, "cmssy"));
+    writeFileSync(join(cwd, "cmssy/blocks.ts"), "");
+    writeFileSync(join(cwd, "cmssy.config.ts"), "");
+
+    const code = await runLink({ token: "cs_test", workspace: "shop" }, deps);
+
+    expect(code).toBe(0);
+    const probe = calls.find((call) =>
+      call.query.includes("CliBlockManifestHash"),
+    );
+    expect(probe?.headers["x-workspace-id"]).toBe("w1");
+    expect(
+      calls.some((call) => call.query.includes("CliSaveBlockManifest")),
+      "a local checkout may register a subset of the deployed blocks; replacing the manifest from it breaks media on the live site",
+    ).toBe(false);
+    expect(lines.join("\n")).toContain("block manifest left unchanged");
+    expect(lines.join("\n")).toContain("cmssy sync-manifest");
   });
 
   it("skips the manifest push silently when the app has no blocks module", async () => {

@@ -148,7 +148,10 @@ cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.examp
    files and rules as `cmssy sync-manifest`), so the editor palette knows
    your blocks before the first deploy. No blocks module: nothing happens. A
    module that does not load is reported as a `?` line with the reason and the
-   link goes on.
+   link goes on. A workspace that already has a manifest keeps it: a local
+   checkout may register only some of the deployed blocks, and replacing the
+   manifest from it breaks media on the live site. Run `cmssy sync-manifest`
+   from the deployed code to replace it.
 7. Runs the preflight checks and prints one line per check.
 8. Prints the editor deep link and, when the workspace has a preview URL, a ready-to-open draft preview link.
 
