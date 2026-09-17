@@ -9,7 +9,14 @@ const CONFIG = {
   layout: {
     regions: [{ id: "header" }, { id: "footer" }],
   },
-} as Parameters<typeof loadCmssyRoute>[0];
+};
+
+const PUBLIC_CONFIG = {
+  apiUrl: "https://api.cmssy.io/graphql",
+  org: "acme",
+  workspaceSlug: "shop",
+  layout: { regions: [{ id: "header" }] },
+};
 
 const GROUPS = [
   {
@@ -125,6 +132,45 @@ describe("loadCmssyRoute (CMS-1874)", () => {
     expect(
       resolveEditorLayoutBlockData.mock.calls.map(([args]) => args.region),
     ).toStrictEqual(["footer"]);
+  });
+
+  it("renders in the workspace's language when the caller names none", async () => {
+    setup();
+
+    const route = await loadCmssyRoute(CONFIG, { blocks: [] });
+
+    expect(route.locale).toBe("en");
+    expect(route.path).toStrictEqual([]);
+  });
+
+  it("previews the page with the configured secret, not only the layout", async () => {
+    setup();
+
+    await loadCmssyRoute(CONFIG, { blocks: [], path: [], isPreview: true });
+
+    expect(fetchPage.mock.calls[0]?.[2]).toMatchObject({
+      previewSecret: "draft-secret-1234",
+    });
+    expect(fetchLayouts.mock.calls[0]?.[2]).toMatchObject({
+      previewSecret: "draft-secret-1234",
+    });
+  });
+
+  it("forwards a caller who asked for no retries at all", async () => {
+    setup();
+
+    await loadCmssyRoute(CONFIG, { blocks: [], path: [], retry: false });
+
+    expect(fetchPage.mock.calls[0]?.[2]).toMatchObject({ retry: false });
+  });
+
+  it("takes a config with no draft secret, which is all a browser may hold", async () => {
+    setup();
+
+    const route = await loadCmssyRoute(PUBLIC_CONFIG, { blocks: [] });
+
+    expect(route.page).toBe(PAGE);
+    expect(fetchPage.mock.calls[0]?.[2]).not.toHaveProperty("previewSecret");
   });
 
   it("keeps a missing page from failing the route", async () => {

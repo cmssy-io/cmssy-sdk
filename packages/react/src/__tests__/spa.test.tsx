@@ -28,7 +28,7 @@ const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
   org: "acme",
   workspaceSlug: "shop",
-} as Parameters<typeof CmssyRoute>[0]["config"];
+};
 
 function route(overrides: Record<string, unknown> = {}) {
   return {
@@ -149,6 +149,45 @@ describe("CmssyRoute (CMS-1874)", () => {
 
     await waitFor(() => expect(screen.getByText("Second")).toBeDefined());
     expect(screen.queryByText("First")).toBeNull();
+  });
+
+  it("loads again when the language changes on the same path", async () => {
+    loadCmssyRoute.mockResolvedValue(route());
+    const { rerender } = renderRoute({ path: "/", locale: "en" });
+    await waitFor(() => expect(loadCmssyRoute).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <CmssyRoute config={CONFIG} blocks={blocks} path="/" locale="no">
+        {({ Blocks }) => <Blocks />}
+      </CmssyRoute>,
+    );
+
+    await waitFor(() => expect(loadCmssyRoute).toHaveBeenCalledTimes(2));
+    expect(loadCmssyRoute.mock.calls[1]?.[1]?.locale).toBe("no");
+  });
+
+  it("stops showing a failure once it starts loading again", async () => {
+    loadCmssyRoute.mockRejectedValue(new Error("offline"));
+    const { rerender } = renderRoute({ path: "/first" });
+    await waitFor(() =>
+      expect(screen.getByText(/failed: offline/)).toBeDefined(),
+    );
+
+    loadCmssyRoute.mockReturnValue(new Promise(() => {}));
+    rerender(
+      <CmssyRoute
+        config={CONFIG}
+        blocks={blocks}
+        path="/second"
+        fallback={<p>loading</p>}
+        renderError={(error) => <p>failed: {error.message}</p>}
+      >
+        {({ Blocks }) => <Blocks />}
+      </CmssyRoute>,
+    );
+
+    await waitFor(() => expect(screen.getByText("loading")).toBeDefined());
+    expect(screen.queryByText(/failed: offline/)).toBeNull();
   });
 
   it("renders the not-found slot when the workspace has no such page", async () => {

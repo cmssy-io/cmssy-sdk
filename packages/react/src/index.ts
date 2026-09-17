@@ -102,6 +102,7 @@ export { CmssyLayoutRegion } from "./components/cmssy-layout-region";
 export type { CmssyLayoutRegionProps } from "./components/cmssy-layout-region";
 export { loadCmssyRoute } from "./components/load-cmssy-route";
 export type {
+  CmssyRouteConfig,
   CmssyRouteData,
   LoadCmssyRouteOptions,
 } from "./components/load-cmssy-route";

@@ -16,6 +16,10 @@ import {
 } from "./resolve-block-data";
 import { resolveCmssyLayoutSlot } from "./resolve-layout-slot";
 
+export type CmssyRouteConfig = Omit<CmssyConfig, "draftSecret"> & {
+  draftSecret?: string;
+};
+
 export interface LoadCmssyRouteOptions {
   blocks: BlockDefinition[];
   path?: string[];
@@ -44,7 +48,7 @@ export interface CmssyRouteData {
 }
 
 export async function loadCmssyRoute(
-  config: CmssyConfig,
+  config: CmssyRouteConfig,
   options: LoadCmssyRouteOptions,
 ): Promise<CmssyRouteData> {
   const {
@@ -61,7 +65,7 @@ export async function loadCmssyRoute(
   const regions = options.regions ?? layoutRegionIds(config.layout);
   const firstRegion = regions[0] ?? "header";
 
-  const slot = await resolveCmssyLayoutSlot(config, {
+  const slot = await resolveCmssyLayoutSlot(config as CmssyConfig, {
     region: firstRegion,
     blocks,
     editMode: false,
@@ -70,12 +74,14 @@ export async function loadCmssyRoute(
     appContext,
     retry,
     ...(fetchImpl ? { fetch: fetchImpl } : {}),
-    ...(path ? { path, locale } : { locale: locale ?? "" }),
-  } as Parameters<typeof resolveCmssyLayoutSlot>[1]);
+    path: path ?? [],
+    ...(locale === undefined ? {} : { locale }),
+  });
 
-  const page = await fetchPage(config, slot.path, {
-    ...(previewSecret ? { previewSecret } : {}),
-    ...(retry ? { retry } : {}),
+  const secret = previewSecret ?? (isPreview ? config.draftSecret : undefined);
+  const page = await fetchPage(config as CmssyConfig, slot.path, {
+    ...(secret ? { previewSecret: secret } : {}),
+    ...(retry === undefined ? {} : { retry }),
     ...(fetchImpl ? { fetch: fetchImpl } : {}),
   });
 
@@ -86,7 +92,7 @@ export async function loadCmssyRoute(
     enabledLocales: slot.enabledLocales,
     forms,
     isPreview,
-    config,
+    config: config as CmssyConfig,
     appContext,
   };
 

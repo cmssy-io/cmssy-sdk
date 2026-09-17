@@ -8,9 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CmssyConfig } from "@cmssy/core";
 import {
   loadCmssyRoute,
+  type CmssyRouteConfig,
   type CmssyRouteData,
   type LoadCmssyRouteOptions,
 } from "./components/load-cmssy-route";
@@ -39,7 +39,7 @@ function toSegments(path: string | string[] | undefined): string[] {
 }
 
 export function useCmssyRoute(
-  config: CmssyConfig,
+  config: CmssyRouteConfig,
   options: UseCmssyRouteOptions,
 ): CmssyRouteState {
   const segments = useMemo(() => toSegments(options.path), [options.path]);
@@ -55,7 +55,7 @@ export function useCmssyRoute(
 
   useEffect(() => {
     const request = ++latest.current;
-    setState((current) => ({ ...current, loading: true }));
+    setState((current) => ({ ...current, error: null, loading: true }));
     loadCmssyRoute(config, { ...optionsRef.current, path: segments })
       .then((data) => {
         if (request !== latest.current) return;
@@ -69,7 +69,15 @@ export function useCmssyRoute(
           loading: false,
         });
       });
-  }, [config, segments.join("/"), attempt]);
+  }, [
+    config,
+    segments.join("/"),
+    options.locale,
+    options.previewSecret,
+    options.isPreview,
+    options.regions?.join(","),
+    attempt,
+  ]);
 
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
   return { ...state, reload };
@@ -82,7 +90,7 @@ export interface CmssyRouteRenderProps {
 }
 
 export interface CmssyRouteProps extends UseCmssyRouteOptions {
-  config: CmssyConfig;
+  config: CmssyRouteConfig;
   children: (props: CmssyRouteRenderProps) => ReactNode;
   fallback?: ReactNode;
   notFound?: ReactNode;
