@@ -49,7 +49,9 @@ jobs:
 
       - name: Every SDK operation is one the refreshed SDL accepts
         if: steps.drift.outputs.changed == 'true'
-        run: pnpm --filter @cmssy/core test -- sdl-operations
+        run: |
+          pnpm --filter @cmssy/core test -- sdl-operations
+          pnpm --filter @cmssy/cli test -- sdl-operations
 
       - name: Everything CI would have checked on the sync PR
         if: steps.drift.outputs.changed == 'true'
