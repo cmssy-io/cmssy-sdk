@@ -27,10 +27,12 @@ function renderersOf(marker: string): string[] {
   return sources.filter((file) => readFileSync(file, "utf8").includes(marker));
 }
 
-function expectBothHalves(renderers: string[]) {
+function expectBothHalves(renderers: string[], component: string) {
   for (const file of renderers) {
     const elements =
-      readFileSync(file, "utf8").match(/<CmssyBlock\b[\s\S]*?\/>/g) ?? [];
+      readFileSync(file, "utf8").match(
+        new RegExp(`<${component}\\b[\\s\\S]*?/>`, "g"),
+      ) ?? [];
 
     it(`${relative(file)} renders at least one block`, () => {
       expect(elements.length).toBeGreaterThan(0);
@@ -38,11 +40,11 @@ function expectBothHalves(renderers: string[]) {
 
     for (const [index, element] of elements.entries()) {
       it(`${relative(file)} block ${index} receives its loader result`, () => {
-        expect(element).toMatch(/\bdata=\{/);
+        expect(element).toMatch(/\bblockData=\{/);
       });
 
       it(`${relative(file)} block ${index} receives its resolved content`, () => {
-        expect(element).toMatch(/\bresolvedContent=\{/);
+        expect(element).toMatch(/\bblockContent=\{/);
       });
     }
   }
@@ -58,8 +60,8 @@ function expectResolvedFirst(renderers: string[], resolver: string) {
   }
 }
 
-const pageBlockRenderers = renderersOf("page.blocks");
-const layoutBlockRenderers = renderersOf("group.blocks");
+const pageBlockRenderers = renderersOf("<CmssyBlocks");
+const layoutBlockRenderers = renderersOf("<CmssyLayoutRegion");
 
 describe("scaffolded page blocks receive both halves of the resolution", () => {
   it("finds the render sites", () => {
@@ -69,7 +71,7 @@ describe("scaffolded page blocks receive both halves of the resolution", () => {
     ]);
   });
 
-  expectBothHalves(pageBlockRenderers);
+  expectBothHalves(pageBlockRenderers, "CmssyBlocks");
 });
 
 describe("every scaffold that renders page blocks resolves them first", () => {
@@ -84,7 +86,7 @@ describe("scaffolded layout blocks receive both halves of the resolution", () =>
     ]);
   });
 
-  expectBothHalves(layoutBlockRenderers);
+  expectBothHalves(layoutBlockRenderers, "CmssyLayoutRegion");
 });
 
 describe("scaffolded layout slots receive the routed page (CMS-1708)", () => {
@@ -104,7 +106,7 @@ describe("scaffolded layout slots receive the routed page (CMS-1708)", () => {
   for (const file of layoutBlockRenderers) {
     it(`${relative(file)} builds the block context from the page it was given`, () => {
       const source = readFileSync(file, "utf8");
-      expect(source).toMatch(/buildBlockContext\([\s\S]*?\{ page \}/);
+      expect(source).toMatch(/<CmssyLayoutRegion[\s\S]*?page=\{page\}/);
       expect(source).toMatch(/<CmssyLazyLayout[\s\S]*?page=\{page\}/);
     });
   }

@@ -1,7 +1,5 @@
 import {
-  CmssyBlock,
-  buildBlockContext,
-  buildBlockMap,
+  CmssyLayoutRegion,
   type CmssyBlockPage,
   type CmssyLayoutGroup,
 } from "@cmssy/react";
@@ -50,36 +48,17 @@ export function LayoutSlot({
     );
   }
 
-  const group = groups.find((candidate) => candidate.region === region);
-  if (!group) return null;
-
-  const blockMap = buildBlockMap(blocks);
-  const context = buildBlockContext(
-    locale,
-    defaultLocale,
-    enabledLocales,
-    false,
-    undefined,
-    { page },
-  );
-
   return (
-    <>
-      {[...group.blocks]
-        .filter((block) => block.isActive !== false)
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((block) => (
-          <CmssyBlock
-            key={block.id}
-            block={block}
-            blockMap={blockMap}
-            locale={locale}
-            defaultLocale={defaultLocale}
-            context={context}
-            resolvedContent={resolvedContent?.[block.id]}
-            data={data?.[block.id]}
-          />
-        ))}
-    </>
+    <CmssyLayoutRegion
+      groups={groups}
+      region={region}
+      blocks={blocks}
+      page={page}
+      locale={locale}
+      defaultLocale={defaultLocale}
+      enabledLocales={enabledLocales}
+      blockData={data}
+      blockContent={resolvedContent}
+    />
   );
 }

@@ -10,7 +10,9 @@ nowhere.
 
 **Nothing to do** unless a pipeline runs `cmssy sync-manifest --dry-run` and
 parses its output: it now prints what the push would change, not the manifest
-as JSON.
+as JSON. Everything else here is additive.
+
+### `cmssy sync-manifest` says what a push does to stored content
 
 `cmssy sync-manifest` compares your build's manifest with the workspace's
 before it pushes, and says what the push does to stored content. It lists
@@ -25,6 +27,31 @@ appears between its check and its push.
 
 Needs the cmssy admin API with `blockManifest.impact` (CMS-1879). New page:
 [Renaming or removing blocks safely](docs/building-blocks/renaming-and-removing-blocks.md).
+
+### React + Vite renders cmssy content
+
+A plain React + Vite app - an SPA from `npm create vite`, or Vite SSR - had no
+supported path. Whole-page rendering was `CmssyServerPage` / `CmssyServerLayout`,
+which are async Server Components: a client-only app cannot render them, and
+classic SSR cannot either. Meanwhile the Remix and Astro scaffolds each carried
+their own copy of the same synchronous block loop, which is the shape that was
+missing from the package.
+
+- `loadCmssyRoute(config, options)` - one await that returns the page, the
+  layout groups, the language and the resolved content and loader data of every
+  block, for every configured region. Framework-free: it runs in a browser, in
+  `entry-server`, or in a test.
+- `CmssyBlocks` and `CmssyLayoutRegion` - synchronous components that render
+  that data. The scaffolds now use them instead of their own copies.
+- `@cmssy/react/spa` - `useCmssyRoute` and `CmssyRoute` for a client-only app.
+  Both keep the newest answer: a load already in flight when the path changed
+  cannot overwrite the new one.
+
+Checked against a live workspace: the SPA renders a published page in the
+browser with no proxy, the same route data server-rendered and hydrated produces
+no hydration warning, and the delivery API answers a cross-origin preflight with
+`Access-Control-Allow-Origin: *`. See [docs/vite.md](docs/vite.md), which also
+names what an SPA gives up - SEO, sitemap, and draft preview.
 
 ## 16.9.1
 

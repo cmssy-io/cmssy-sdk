@@ -72,6 +72,16 @@
         "types": "./dist/block-error-boundary.d.cts",
         "default": "./dist/block-error-boundary.cjs"
       }
+    },
+    "./spa": {
+      "import": {
+        "types": "./dist/spa.d.ts",
+        "default": "./dist/spa.js"
+      },
+      "require": {
+        "types": "./dist/spa.d.cts",
+        "default": "./dist/spa.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
