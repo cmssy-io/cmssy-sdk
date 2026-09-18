@@ -16,17 +16,19 @@ nowhere.
 which made the SPA recipe in [docs/vite.md](docs/vite.md) fail at its first
 step, with an error that blamed the import. `defineCmssyRouteConfig`, exported
 from `@cmssy/react` and `@cmssy/react/spa`, takes the two public fields, refuses
-a draft secret once it is running in a browser, and keeps one on the server so
-Vite SSR can still preview drafts. The browser error from `defineCmssyConfig`
-now names it when the secret is the only thing missing. The doc shows the config
-file, and warns that `apiUrl` wants the base endpoint, not the delivery URL the
-dashboard prints.
+a draft secret or a devToken once it is running in a browser, and keeps both on
+the server so Vite SSR can still preview drafts. `defineCmssyConfig` now refuses
+a browser before it looks at the config at all, and its error names the helper
+to use instead. The doc shows the config file, and warns that `apiUrl` wants the
+base endpoint, not the delivery URL the dashboard prints.
 
 ### `cmssy sync-manifest` prints the endpoint it talked to
 
 The output named the workspace but not the API, so a `.env.local` pointing at
 another environment looked like a workspace whose content had vanished. Every
-run now prints `endpoint <url>`.
+run that talks to the API now opens with `cmssy: <org>/<workspace> at <url>`,
+printed before the first request - so a run that fails on the first call still
+says where it went.
 
 ## 16.10.0
 

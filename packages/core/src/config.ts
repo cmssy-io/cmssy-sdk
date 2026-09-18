@@ -87,6 +87,20 @@ const REQUIRED_CONFIG_ENV = [
 export function defineCmssyConfig<L extends CmssyLayout = CmssyLayout>(
   config: CmssyEnvConfig<L>,
 ): CmssyConfig<L> {
+  if (typeof window !== "undefined") {
+    throw new Error(
+      "cmssy: defineCmssyConfig ran in the browser. It carries a draft secret, " +
+        "which opens every unpublished draft in the workspace, so it belongs to " +
+        "a server build alone.\n\n" +
+        "A client-side app - a Vite SPA, or anything else that builds its " +
+        "config in the browser - uses defineCmssyRouteConfig from @cmssy/react " +
+        "instead: org and workspaceSlug, nothing secret. Drafts are previewed " +
+        "from a server build.\n\n" +
+        "If this module was meant to stay on the server, the import is the bug: " +
+        "client-side code imported a VALUE from it. Import types only, or move " +
+        "the value into a module that does not touch the config.",
+    );
+  }
   const resolved: CmssyEnvConfig<L> = { ...config };
   const missing: string[] = [];
   for (const [key, env] of REQUIRED_CONFIG_ENV) {
@@ -99,29 +113,6 @@ export function defineCmssyConfig<L extends CmssyLayout = CmssyLayout>(
     }
   }
   if (missing.length > 0) {
-    if (typeof window !== "undefined") {
-      const secretOnly =
-        missing.length === 1 && missing[0]?.startsWith("CMSSY_DRAFT_SECRET");
-      throw new Error(
-        secretOnly
-          ? "cmssy: defineCmssyConfig needs a draft secret, and a browser bundle " +
-              "must never carry one.\n\n" +
-              "A client-side app - a Vite SPA, or anything else that builds its " +
-              "config in the browser - uses defineCmssyRouteConfig from " +
-              "@cmssy/react instead: org and workspaceSlug, no secret. Drafts are " +
-              "previewed from a server build.\n\n" +
-              "If this module was meant to stay on the server, the import is the " +
-              "bug: client-side code imported a VALUE from it. Import types only, " +
-              "or move the value into a module that does not touch the config."
-          : "cmssy: the config was evaluated in the browser, so it cannot see the " +
-              "server's environment variables.\n\n" +
-              "This is an import problem, not a config problem: client-side code " +
-              "imported a VALUE from a module that reads the cmssy config - " +
-              "directly, or through a helper sitting next to one.\n\n" +
-              "Fix it by importing types only (they are erased at build time), or by " +
-              "moving the value into a module that does not touch the config.",
-      );
-    }
     throw new Error(
       `cmssy: missing required configuration:\n  - ${missing.join(
         "\n  - ",

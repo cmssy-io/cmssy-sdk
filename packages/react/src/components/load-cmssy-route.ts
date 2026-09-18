@@ -40,13 +40,21 @@ export function defineCmssyRouteConfig<L extends CmssyLayout = CmssyLayout>(
         "read them from import.meta.env if they differ per environment.",
     );
   }
-  if (config.draftSecret !== undefined && typeof window !== "undefined") {
-    throw new Error(
-      "cmssy: a draft secret reached the browser. Anyone loading the page can " +
-        "read it, and it opens every unpublished draft in the workspace. " +
-        "Preview drafts from a server build (@cmssy/next, @cmssy/astro or Vite " +
-        "SSR), and leave draftSecret out of a client-side config.",
-    );
+  if (typeof window !== "undefined") {
+    const carried = [
+      ...(config.draftSecret === undefined ? [] : ["draftSecret"]),
+      ...(config.devToken === undefined ? [] : ["devToken"]),
+    ];
+    if (carried.length > 0) {
+      throw new Error(
+        `cmssy: ${carried.join(" and ")} reached the browser. Anyone loading ` +
+          "the page can read a value in the bundle: a draft secret opens every " +
+          "unpublished draft in the workspace, and a devToken is an API " +
+          "credential that writes to it. Keep both on a server build " +
+          "(@cmssy/next, @cmssy/astro or Vite SSR) and leave them out of a " +
+          "client-side config.",
+      );
+    }
   }
   return { ...config, org, workspaceSlug };
 }

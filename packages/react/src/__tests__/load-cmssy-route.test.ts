@@ -227,7 +227,32 @@ describe("defineCmssyRouteConfig", () => {
         workspaceSlug: "shop",
         draftSecret: "draft-secret-1234",
       }),
-    ).toThrow(/draft secret reached the browser/);
+    ).toThrow(/draftSecret reached the browser/);
+  });
+
+  it("refuses a devToken in a browser too - it writes to the workspace", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyRouteConfig({
+        org: "acme",
+        workspaceSlug: "shop",
+        devToken: "cs_dev_token",
+      }),
+    ).toThrow(/devToken reached the browser/);
+  });
+
+  it("names both when a browser config carries both", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyRouteConfig({
+        org: "acme",
+        workspaceSlug: "shop",
+        draftSecret: "draft-secret-1234",
+        devToken: "cs_dev_token",
+      }),
+    ).toThrow(/draftSecret and devToken reached the browser/);
   });
 
   it("keeps a draft secret on the server, where Vite SSR previews drafts", () => {

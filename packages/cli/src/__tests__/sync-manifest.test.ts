@@ -204,7 +204,7 @@ describe("cmssy sync-manifest", () => {
         },
       ],
     });
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: acme/shop - 2 blocks and 2 regions (cmssy/blocks.ts, cmssy.config.ts)",
     );
     expect(lines).toContain(
@@ -283,7 +283,7 @@ describe("cmssy sync-manifest", () => {
     expect(
       calls.map((call) => call.body.query.match(/Cli\w+/)?.[0]),
     ).toStrictEqual(["CliWorkspacesMine", "CliBlockManifestImpact"]);
-    expect(lines.slice(0, 9)).toStrictEqual([
+    expect(lines.slice(1, 10)).toStrictEqual([
       "cmssy: dry run - pushing 2 blocks and 2 regions to acme/shop would change: (cmssy/blocks.ts, cmssy.config.ts)",
       "  removes `testimonials`, used on 14 pages (3 published)",
       "  removes `banner`, not used on any page",
@@ -427,7 +427,7 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(0);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: acme/shop already has this manifest - 2 blocks and 2 regions unchanged (cmssy/blocks.ts, cmssy.config.ts)",
     );
     expect(lines).toContain("  manifest abcdef123456");
@@ -470,8 +470,8 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe("cmssy: the cmssy API returned no data (HTTP 200)");
-    expect(lines[1]).toContain("CMSSY_API_URL");
+    expect(lines[1]).toBe("cmssy: the cmssy API returned no data (HTTP 200)");
+    expect(lines[2]).toContain("CMSSY_API_URL");
   });
 
   it("reads the workspace from the flags before the config, and from the config before the env", async () => {
@@ -561,10 +561,10 @@ describe("cmssy sync-manifest", () => {
 
     expect(code).toBe(1);
     expect(calls).toHaveLength(1);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: the token's user is not a member of acme/missing",
     );
-    expect(lines[1]).toContain("acme/shop, acme/blog");
+    expect(lines[2]).toContain("acme/shop, acme/blog");
   });
 
   it("does not match a workspace slug under another organization", async () => {
@@ -578,7 +578,7 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: the token's user is not a member of globex/shop",
     );
   });
@@ -602,8 +602,8 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe("cmssy: the cmssy API rejected the token");
-    expect(lines[1]).toContain("Settings → API Tokens");
+    expect(lines[1]).toBe("cmssy: the cmssy API rejected the token");
+    expect(lines[2]).toContain("Settings → API Tokens");
   });
 
   it("reports a missing pages:edit permission as exactly that", async () => {
@@ -624,10 +624,10 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: the token's user cannot write this workspace's block manifest",
     );
-    expect(lines[1]).toContain("PAGES_EDIT");
+    expect(lines[2]).toContain("PAGES_EDIT");
   });
 
   it("surfaces the backend's validation message when the manifest is refused", async () => {
@@ -649,7 +649,7 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: the cmssy API rejected the request - Invalid layout regions at regions[1].label: too long",
     );
   });
@@ -664,7 +664,7 @@ describe("cmssy sync-manifest", () => {
     const code = await runSyncManifest({}, deps);
 
     expect(code).toBe(1);
-    expect(lines[0]).toBe(
+    expect(lines[1]).toBe(
       "cmssy: cannot reach the cmssy API at https://api.cmssy.io/graphql",
     );
   });
@@ -693,7 +693,7 @@ describe("cmssy sync-manifest", () => {
       },
     });
     expect(await runSyncManifest({}, astro.deps)).toBe(0);
-    expect(astro.lines[0]).toContain(
+    expect(astro.lines[1]).toContain(
       "(src/cmssy/blocks.ts, src/cmssy.config.ts)",
     );
 
@@ -705,7 +705,7 @@ describe("cmssy sync-manifest", () => {
       },
     });
     expect(await runSyncManifest({}, remix.deps)).toBe(0);
-    expect(remix.lines[0]).toContain("(app/cmssy/blocks.ts, cmssy.config.ts)");
+    expect(remix.lines[1]).toContain("(app/cmssy/blocks.ts, cmssy.config.ts)");
 
     const custom = makeDeps({
       files: ["lib/registry.ts", "lib/site.ts"],
@@ -720,7 +720,7 @@ describe("cmssy sync-manifest", () => {
         custom.deps,
       ),
     ).toBe(0);
-    expect(custom.lines[0]).toContain("(lib/registry.ts, lib/site.ts)");
+    expect(custom.lines[1]).toContain("(lib/registry.ts, lib/site.ts)");
 
     const absolute = makeDeps({
       files: ["lib/registry.ts", "lib/site.ts"],
@@ -742,7 +742,7 @@ describe("cmssy sync-manifest", () => {
         absolute.deps,
       ),
     ).toBe(0);
-    expect(absolute.lines[0]).toContain(
+    expect(absolute.lines[1]).toContain(
       `(${join(absolute.cwd, "lib/registry.ts")}, `,
     );
   });
@@ -848,7 +848,7 @@ describe("the endpoint it talked to", () => {
 
     await runSyncManifest({}, deps);
 
-    expect(lines).toContain("  endpoint https://api.cmssy.io/graphql");
+    expect(lines).toContain("cmssy: acme/shop at https://api.cmssy.io/graphql");
   });
 
   it("names the override, so a run against another environment is visible", async () => {
@@ -861,7 +861,9 @@ describe("the endpoint it talked to", () => {
 
     await runSyncManifest({ dryRun: true }, deps);
 
-    expect(lines).toContain("  endpoint https://api.cmssy.dev/graphql");
+    expect(lines).toContain(
+      "cmssy: acme/shop at https://api.cmssy.dev/graphql",
+    );
   });
 
   it("names it on an unchanged manifest too", async () => {
@@ -875,6 +877,23 @@ describe("the endpoint it talked to", () => {
 
     await runSyncManifest({}, deps);
 
-    expect(lines).toContain("  endpoint https://api.cmssy.dev/graphql");
+    expect(lines).toContain(
+      "cmssy: acme/shop at https://api.cmssy.dev/graphql",
+    );
+  });
+
+  it("names it before the first request, so a failing run still says where it went", async () => {
+    const { deps, lines } = makeDeps({
+      env: {
+        CMSSY_API_TOKEN: "cs_test_token",
+        CMSSY_API_URL: "https://api.cmssy.dev/graphql",
+      },
+      respond: () => jsonResponse({ errors: [{ message: "Not authorized" }] }),
+    });
+
+    const code = await runSyncManifest({}, deps);
+
+    expect(code).toBe(1);
+    expect(lines[0]).toBe("cmssy: acme/shop at https://api.cmssy.dev/graphql");
   });
 });
