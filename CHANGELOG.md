@@ -6,9 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## Unreleased
+## 16.11.0
 
-**Nothing to do.** Both entries make an existing path easier to get right.
+**Nothing to do** unless a client-side module imports a value from a
+`defineCmssyConfig` file. That call now throws in the browser whatever the
+config holds - it used to throw only when the config was incomplete, so a
+complete one built a draft secret into the bundle in silence. If the throw is
+new for you, the import is the bug: import types only, or move the value into a
+module a browser build does not touch. A client-side app builds its config with
+`defineCmssyRouteConfig` instead.
 
 ### A Vite SPA has a config helper of its own
 
