@@ -17,6 +17,26 @@ synchronous pair instead.
 
 ## SPA
 
+The config comes first, and it is **not** the one a server app writes.
+`defineCmssyConfig` requires a draft secret, which a browser bundle must never
+carry, so it refuses to run in the browser. A client-side app uses
+`defineCmssyRouteConfig` - the two public fields, nothing secret:
+
+```ts
+// src/cmssy.config.ts
+import { defineCmssyRouteConfig } from "@cmssy/react/spa";
+
+export const cmssy = defineCmssyRouteConfig({
+  org: import.meta.env.VITE_CMSSY_ORG,
+  workspaceSlug: import.meta.env.VITE_CMSSY_WORKSPACE,
+});
+```
+
+`apiUrl` is optional and defaults to cmssy cloud. When you do set it, give it the
+**base** endpoint (`https://api.cmssy.io/graphql`), not the delivery URL the
+dashboard prints: the SDK appends `/public/<org>/<workspace>/graphql` itself, so
+pasting the full delivery URL doubles that path and every request 404s.
+
 ```tsx
 // src/App.tsx
 import { CmssyRoute } from "@cmssy/react/spa";
@@ -67,7 +87,10 @@ exclusive, and a cart session belongs in the `x-cart-session` header.
 ## Vite SSR
 
 The same loader runs in `entry-server`, and the same components render the
-result. The data travels to the client so hydration matches:
+result. Here the config is built on the server, so it may hold `draftSecret`:
+`defineCmssyConfig` reading `process.env` does, and `defineCmssyRouteConfig`
+accepts one too - it only refuses a secret once it finds itself running in a
+browser. The data travels to the client so hydration matches:
 
 ```tsx
 // src/entry-server.tsx
@@ -120,13 +143,16 @@ unchanged - untested, and no adapter is planned either way.
 
 ## What was checked
 
-A Vite 8 React app, `@cmssy/react` from source, against a live workspace:
+A Vite 8 React app against a live workspace, both from source and - for the
+recipe above - from the published packages in a project made by
+`npm create vite`:
 
 - the SPA above renders a published page in the browser, with no proxy;
 - the same route data rendered by `renderToString` and hydrated by
   `hydrateRoot` produces no hydration warning;
 - `POST /public/<org>/<workspace>/graphql` answers a cross-origin preflight with
-  `Access-Control-Allow-Origin: *`.
+  `Access-Control-Allow-Origin: *`;
+- `tsc -b && vite build` passes on that project, config included.
 
 One trap, and it is not cmssy's: linking the package locally can give the app a
 second copy of React, which fails with `Cannot read properties of null (reading

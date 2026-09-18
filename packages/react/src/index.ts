@@ -100,7 +100,10 @@ export { CmssyBlocks } from "./components/cmssy-blocks";
 export type { CmssyBlocksProps } from "./components/cmssy-blocks";
 export { CmssyLayoutRegion } from "./components/cmssy-layout-region";
 export type { CmssyLayoutRegionProps } from "./components/cmssy-layout-region";
-export { loadCmssyRoute } from "./components/load-cmssy-route";
+export {
+  loadCmssyRoute,
+  defineCmssyRouteConfig,
+} from "./components/load-cmssy-route";
 export type {
   CmssyRouteConfig,
   CmssyRouteData,

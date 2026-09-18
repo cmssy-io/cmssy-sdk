@@ -146,3 +146,9 @@ export function CmssyRoute({
 
   return <>{children({ data, Blocks, Region })}</>;
 }
+
+export {
+  defineCmssyRouteConfig,
+  type CmssyRouteConfig,
+  type CmssyRouteData,
+} from "./components/load-cmssy-route";

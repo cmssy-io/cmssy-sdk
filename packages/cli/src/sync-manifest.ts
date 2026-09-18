@@ -10,6 +10,7 @@ import {
 
 import {
   CliError,
+  DEFAULT_ADMIN_API_URL,
   fetchBlockManifestImpact,
   fetchMyWorkspaces,
   saveBlockManifest,
@@ -387,6 +388,9 @@ export async function runSyncManifest(
       apiUrl: deps.env.CMSSY_API_URL,
       fetch: deps.fetch,
     };
+    deps.log(
+      `cmssy: ${org}/${slug} at ${request.apiUrl?.trim() || DEFAULT_ADMIN_API_URL}`,
+    );
     const workspace = matchWorkspace(
       await fetchMyWorkspaces(request),
       org,

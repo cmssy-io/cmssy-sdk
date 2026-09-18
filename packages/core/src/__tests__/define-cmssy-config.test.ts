@@ -95,7 +95,31 @@ describe("config evaluated in the browser", () => {
     vi.unstubAllGlobals();
   });
 
-  it("says it is an import problem, not a config problem", () => {
+  it("refuses before it reads the config, so a complete one leaks nothing", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyConfig({
+        org: "acme-org",
+        workspaceSlug: "acme",
+        draftSecret: "shhh",
+      }),
+    ).toThrow(/defineCmssyConfig ran in the browser/);
+  });
+
+  it("names the client-side helper to use instead", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyConfig({
+        org: "acme-org",
+        workspaceSlug: "acme",
+        draftSecret: "shhh",
+      }),
+    ).toThrow(/defineCmssyRouteConfig/);
+  });
+
+  it("points at the import when the config is empty too", () => {
     vi.stubGlobal("window", {});
 
     expect(() =>
@@ -104,6 +128,6 @@ describe("config evaluated in the browser", () => {
         workspaceSlug: undefined,
         draftSecret: undefined,
       }),
-    ).toThrow(/import problem, not a config problem/);
+    ).toThrow(/the import is the bug/);
   });
 });

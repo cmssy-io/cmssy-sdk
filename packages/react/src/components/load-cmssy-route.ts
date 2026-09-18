@@ -2,6 +2,7 @@ import type {
   CmssyBlockPage,
   CmssyConfig,
   CmssyFormDefinition,
+  CmssyLayout,
   CmssyLayoutGroup,
   CmssyPageData,
   FetchLike,
@@ -16,9 +17,47 @@ import {
 } from "./resolve-block-data";
 import { resolveCmssyLayoutSlot } from "./resolve-layout-slot";
 
-export type CmssyRouteConfig = Omit<CmssyConfig, "draftSecret"> & {
+export type CmssyRouteConfig<L extends CmssyLayout = CmssyLayout> = Omit<
+  CmssyConfig<L>,
+  "draftSecret"
+> & {
   draftSecret?: string;
 };
+
+export function defineCmssyRouteConfig<L extends CmssyLayout = CmssyLayout>(
+  config: CmssyRouteConfig<L>,
+): CmssyRouteConfig<L> {
+  const org = config.org?.trim() ?? "";
+  const workspaceSlug = config.workspaceSlug?.trim() ?? "";
+  const missing = [
+    ...(org ? [] : ["org"]),
+    ...(workspaceSlug ? [] : ["workspaceSlug"]),
+  ];
+  if (missing.length > 0) {
+    throw new Error(
+      `cmssy: defineCmssyRouteConfig is missing ${missing.join(" and ")}. ` +
+        "Both name a public workspace, so a browser build can carry them - " +
+        "read them from import.meta.env if they differ per environment.",
+    );
+  }
+  if (typeof window !== "undefined") {
+    const carried = [
+      ...(config.draftSecret === undefined ? [] : ["draftSecret"]),
+      ...(config.devToken === undefined ? [] : ["devToken"]),
+    ];
+    if (carried.length > 0) {
+      throw new Error(
+        `cmssy: ${carried.join(" and ")} reached the browser. Anyone loading ` +
+          "the page can read a value in the bundle: a draft secret opens every " +
+          "unpublished draft in the workspace, and a devToken is an API " +
+          "credential that writes to it. Keep both on a server build " +
+          "(@cmssy/next, @cmssy/astro or Vite SSR) and leave them out of a " +
+          "client-side config.",
+      );
+    }
+  }
+  return { ...config, org, workspaceSlug };
+}
 
 export interface LoadCmssyRouteOptions {
   blocks: BlockDefinition[];
