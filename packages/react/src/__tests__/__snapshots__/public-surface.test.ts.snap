@@ -16,6 +16,7 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "createCmssyClient",
   "defineBlock",
   "defineCmssyLayout",
+  "defineCmssyRouteConfig",
   "fields",
   "graphqlRequest",
   "handleBlockDataRequest",

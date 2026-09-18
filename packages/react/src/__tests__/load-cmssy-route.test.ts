@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadCmssyRoute } from "../components/load-cmssy-route";
+import {
+  defineCmssyRouteConfig,
+  loadCmssyRoute,
+} from "../components/load-cmssy-route";
 
 const CONFIG = {
   apiUrl: "https://api.cmssy.io/graphql",
@@ -184,5 +187,56 @@ describe("loadCmssyRoute (CMS-1874)", () => {
     expect(route.layoutData.header?.data).toStrictEqual({
       "header-block": "header",
     });
+  });
+});
+
+describe("defineCmssyRouteConfig", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("trims the two public fields and keeps the rest", () => {
+    const config = defineCmssyRouteConfig({
+      org: "  acme  ",
+      workspaceSlug: " shop ",
+      apiUrl: "https://api.cmssy.io/graphql",
+      layout: { regions: [{ id: "header" }] },
+    });
+
+    expect(config.org).toBe("acme");
+    expect(config.workspaceSlug).toBe("shop");
+    expect(config.apiUrl).toBe("https://api.cmssy.io/graphql");
+    expect(config.layout?.regions[0]?.id).toBe("header");
+  });
+
+  it("names every public field it is missing", () => {
+    expect(() =>
+      defineCmssyRouteConfig({ org: "  ", workspaceSlug: "" }),
+    ).toThrow(/org and workspaceSlug/);
+    expect(() =>
+      defineCmssyRouteConfig({ org: "acme", workspaceSlug: " " }),
+    ).toThrow(/missing workspaceSlug/);
+  });
+
+  it("refuses a draft secret once it is running in a browser", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyRouteConfig({
+        org: "acme",
+        workspaceSlug: "shop",
+        draftSecret: "draft-secret-1234",
+      }),
+    ).toThrow(/draft secret reached the browser/);
+  });
+
+  it("keeps a draft secret on the server, where Vite SSR previews drafts", () => {
+    expect(
+      defineCmssyRouteConfig({
+        org: "acme",
+        workspaceSlug: "shop",
+        draftSecret: "draft-secret-1234",
+      }).draftSecret,
+    ).toBe("draft-secret-1234");
   });
 });

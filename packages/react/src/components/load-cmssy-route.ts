@@ -2,6 +2,7 @@ import type {
   CmssyBlockPage,
   CmssyConfig,
   CmssyFormDefinition,
+  CmssyLayout,
   CmssyLayoutGroup,
   CmssyPageData,
   FetchLike,
@@ -16,9 +17,39 @@ import {
 } from "./resolve-block-data";
 import { resolveCmssyLayoutSlot } from "./resolve-layout-slot";
 
-export type CmssyRouteConfig = Omit<CmssyConfig, "draftSecret"> & {
+export type CmssyRouteConfig<L extends CmssyLayout = CmssyLayout> = Omit<
+  CmssyConfig<L>,
+  "draftSecret"
+> & {
   draftSecret?: string;
 };
+
+export function defineCmssyRouteConfig<L extends CmssyLayout = CmssyLayout>(
+  config: CmssyRouteConfig<L>,
+): CmssyRouteConfig<L> {
+  const org = config.org?.trim() ?? "";
+  const workspaceSlug = config.workspaceSlug?.trim() ?? "";
+  const missing = [
+    ...(org ? [] : ["org"]),
+    ...(workspaceSlug ? [] : ["workspaceSlug"]),
+  ];
+  if (missing.length > 0) {
+    throw new Error(
+      `cmssy: defineCmssyRouteConfig is missing ${missing.join(" and ")}. ` +
+        "Both name a public workspace, so a browser build can carry them - " +
+        "read them from import.meta.env if they differ per environment.",
+    );
+  }
+  if (config.draftSecret !== undefined && typeof window !== "undefined") {
+    throw new Error(
+      "cmssy: a draft secret reached the browser. Anyone loading the page can " +
+        "read it, and it opens every unpublished draft in the workspace. " +
+        "Preview drafts from a server build (@cmssy/next, @cmssy/astro or Vite " +
+        "SSR), and leave draftSecret out of a client-side config.",
+    );
+  }
+  return { ...config, org, workspaceSlug };
+}
 
 export interface LoadCmssyRouteOptions {
   blocks: BlockDefinition[];

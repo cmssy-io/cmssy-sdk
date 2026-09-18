@@ -841,3 +841,40 @@ describe("cmssy sync-manifest", () => {
     ]);
   });
 });
+
+describe("the endpoint it talked to", () => {
+  it("names the cloud default when nothing overrides it", async () => {
+    const { deps, lines } = makeDeps();
+
+    await runSyncManifest({}, deps);
+
+    expect(lines).toContain("  endpoint https://api.cmssy.io/graphql");
+  });
+
+  it("names the override, so a run against another environment is visible", async () => {
+    const { deps, lines } = makeDeps({
+      env: {
+        CMSSY_API_TOKEN: "cs_test_token",
+        CMSSY_API_URL: "https://api.cmssy.dev/graphql",
+      },
+    });
+
+    await runSyncManifest({ dryRun: true }, deps);
+
+    expect(lines).toContain("  endpoint https://api.cmssy.dev/graphql");
+  });
+
+  it("names it on an unchanged manifest too", async () => {
+    const { deps, lines } = makeDeps({
+      env: {
+        CMSSY_API_TOKEN: "cs_test_token",
+        CMSSY_API_URL: "https://api.cmssy.dev/graphql",
+      },
+      impact: { unchanged: true },
+    });
+
+    await runSyncManifest({}, deps);
+
+    expect(lines).toContain("  endpoint https://api.cmssy.dev/graphql");
+  });
+});

@@ -107,3 +107,33 @@ describe("config evaluated in the browser", () => {
     ).toThrow(/import problem, not a config problem/);
   });
 });
+
+describe("a browser config that is missing only the draft secret", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("names the client-side helper instead of blaming the import", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyConfig({
+        org: "acme-org",
+        workspaceSlug: "acme",
+        draftSecret: undefined,
+      }),
+    ).toThrow(/defineCmssyRouteConfig/);
+  });
+
+  it("still blames the import when the public fields are missing too", () => {
+    vi.stubGlobal("window", {});
+
+    expect(() =>
+      defineCmssyConfig({
+        org: undefined,
+        workspaceSlug: "acme",
+        draftSecret: undefined,
+      }),
+    ).toThrow(/import problem, not a config problem/);
+  });
+});

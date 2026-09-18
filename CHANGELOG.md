@@ -6,6 +6,28 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## Unreleased
+
+**Nothing to do.** Both entries make an existing path easier to get right.
+
+### A Vite SPA has a config helper of its own
+
+`defineCmssyConfig` requires a draft secret, so it throws in a browser bundle -
+which made the SPA recipe in [docs/vite.md](docs/vite.md) fail at its first
+step, with an error that blamed the import. `defineCmssyRouteConfig`, exported
+from `@cmssy/react` and `@cmssy/react/spa`, takes the two public fields, refuses
+a draft secret once it is running in a browser, and keeps one on the server so
+Vite SSR can still preview drafts. The browser error from `defineCmssyConfig`
+now names it when the secret is the only thing missing. The doc shows the config
+file, and warns that `apiUrl` wants the base endpoint, not the delivery URL the
+dashboard prints.
+
+### `cmssy sync-manifest` prints the endpoint it talked to
+
+The output named the workspace but not the API, so a `.env.local` pointing at
+another environment looked like a workspace whose content had vanished. Every
+run now prints `endpoint <url>`.
+
 ## 16.10.0
 
 **Nothing to do** unless a pipeline runs `cmssy sync-manifest --dry-run` and

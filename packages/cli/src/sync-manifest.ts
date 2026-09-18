@@ -10,6 +10,7 @@ import {
 
 import {
   CliError,
+  DEFAULT_ADMIN_API_URL,
   fetchBlockManifestImpact,
   fetchMyWorkspaces,
   saveBlockManifest,
@@ -393,6 +394,7 @@ export async function runSyncManifest(
       slug,
     );
     const scoped = { ...request, workspaceId: workspace.id };
+    const endpoint = `  endpoint ${request.apiUrl?.trim() || DEFAULT_ADMIN_API_URL}`;
     const impact = await fetchBlockManifestImpact(manifest, scoped);
 
     if (impact.unchanged) {
@@ -400,6 +402,7 @@ export async function runSyncManifest(
         `cmssy: ${org}/${slug} already has this manifest - ${count} unchanged ${sources}`,
       );
       for (const line of describe(manifest)) deps.log(line);
+      deps.log(endpoint);
       deps.log(`  manifest ${impact.hash.slice(0, 12)}`);
       return 0;
     }
@@ -412,6 +415,7 @@ export async function runSyncManifest(
     );
     for (const line of effects) deps.log(line);
     for (const line of describe(manifest)) deps.log(line);
+    deps.log(endpoint);
 
     if (impact.lossyMoves > 0 && !options.allowLossy) {
       deps.log(
