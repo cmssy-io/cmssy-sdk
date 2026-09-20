@@ -6,6 +6,13 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 16.11.1
+
+**Nothing to do.** `cmssy add block` now says the editor picks the new type up
+on the next hot reload. It used to tell you to restart the dev server, which
+was never needed - the manifest is read from the running site on every editor
+handshake.
+
 ## 16.11.0
 
 **Nothing to do** unless a client-side module imports a value from a
