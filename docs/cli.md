@@ -107,8 +107,9 @@ cmssy add block faq-list --dir ../my-site
    spelled out - never a silent partial write.
 
 The generated block starts with a required `heading` text field and an optional
-`text` textarea - edit the props and markup, restart the dev server, and the
-editor picks the new type up from the manifest handshake.
+`text` textarea - edit the props and markup and save; the editor picks the new
+type up on the next hot reload, no dev-server restart needed (reload the editor
+if the palette does not update).
 
 Flags: `--dir <path>` targets an app outside the working directory.
 
