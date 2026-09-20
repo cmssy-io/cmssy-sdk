@@ -279,7 +279,7 @@ export function runAddBlock(
     log("Next steps:");
     log(`  1. edit ${layout.componentPath} - define the fields and markup`);
     log(
-      `  2. restart your dev server - the editor picks up "${names.type}" from the next handshake`,
+      `  2. save - the editor picks up "${names.type}" on the next hot reload; if the palette does not update, reload the editor`,
     );
     return 0;
   } catch (error) {

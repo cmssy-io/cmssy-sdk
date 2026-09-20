@@ -90,6 +90,10 @@ describe("runAddBlock", () => {
     const output = lines.join("\n");
     expect(output).toContain("registered pricingTableBlock in cmssy/blocks.ts");
     expect(output).toContain("Next steps:");
+    expect(output).toContain(
+      'picks up "pricing-table" on the next hot reload',
+    );
+    expect(output).not.toContain("restart");
   });
 
   it("places a next block under src/ when the app uses a src directory", () => {
