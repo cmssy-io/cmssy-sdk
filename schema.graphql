@@ -3891,6 +3891,7 @@ input UpdatePageSettingsInput {
   expectedVersion: Int
   id: String!
   name: String
+  order: Int
   pageType: String
   parentId: String
   seoDescription: JSON
