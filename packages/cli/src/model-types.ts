@@ -151,6 +151,15 @@ const PREAMBLE = `import type {
 
 export type { CmssyLocalized, CmssyMedia, CmssyFile, CmssyRecordOf };`;
 
+export function preambleImports(): string[] {
+  const clause = /import type \{([^}]*)\} from "@cmssy\/core";/.exec(PREAMBLE);
+  if (!clause?.[1]) return [];
+  return clause[1]
+    .split(",")
+    .map((entry) => entry.trim().split(/\s+as\s+/)[0]?.trim() ?? "")
+    .filter((name) => name.length > 0);
+}
+
 export interface GenerateOptions {
   workspace: string;
   command?: string;

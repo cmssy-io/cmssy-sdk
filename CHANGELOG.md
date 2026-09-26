@@ -6,6 +6,23 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## Unreleased
+
+**Run `cmssy types` and commit the result.** The generated models file no longer
+carries its own copies of `CmssyLocalized`, `CmssyMedia`, `CmssyFile` and
+`CmssyRecordOf`; it imports them from `@cmssy/core` and re-exports them, so your
+imports do not change. The copies were behind: `CmssyMedia` was missing `altText`
+and `transform`, both of which the delivery API serves, and `CmssyLocalized`
+omitted `null`. Those two fields are now readable without a cast; the three
+members that gained `| null` may need a null check where you previously had
+none.
+
+Two consequences worth knowing. The file now needs an `@cmssy/core` at least as
+new as this release - `cmssy types` names the installed version and the missing
+shapes when it is older, instead of leaving `tsc` to blame `@cmssy/core`. And
+`cmssy types --check` used to report the preamble's own members as fields your
+workspace had deleted; it now compares only the model interfaces.
+
 ## 16.11.1
 
 **Nothing to do.** `cmssy add block` now says the editor picks the new type up

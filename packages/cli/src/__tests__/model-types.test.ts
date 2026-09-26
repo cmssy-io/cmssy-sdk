@@ -230,10 +230,18 @@ void _record;
       paths: { "@cmssy/core": ["packages/core/src/index.ts"] },
     });
 
+    const root = resolve(__dirname, "../../../..").replace(/\\/g, "/");
     const messages = ts
       .getPreEmitDiagnostics(program)
-      .filter((d) => d.file?.fileName === file.replace(/\\/g, "/"))
-      .map((d) => ts.flattenDiagnosticMessageText(d.messageText, " "));
+      .filter((d) => {
+        const name = d.file?.fileName;
+        if (name === undefined) return true;
+        return !name.includes("/node_modules/");
+      })
+      .map((d) => {
+        const where = d.file?.fileName.replace(root, "") ?? "(program)";
+        return `${where}: ${ts.flattenDiagnosticMessageText(d.messageText, " ")}`;
+      });
 
     expect(messages).toEqual([]);
   });

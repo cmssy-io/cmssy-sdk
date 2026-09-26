@@ -4,9 +4,11 @@ import { dirname, relative, resolve as resolvePath } from "node:path";
 import { DEFAULT_CMSSY_API_URL } from "@cmssy/core";
 
 import { CliError } from "./admin-client";
+import { cliVersion } from "./init";
 import { loadEnvFiles } from "./env-load";
 import {
   generateModelTypes,
+  preambleImports,
   type ModelDefinition,
 } from "./model-types";
 import {
@@ -117,13 +119,49 @@ async function request<T>(
   return body.data;
 }
 
+function coreShapeGap(cwd: string): { version: string; missing: string[] } | null {
+  const names = preambleImports();
+  if (names.length === 0) return null;
+
+  let manifest: { version?: string; types?: string };
+  let manifestPath: string;
+  try {
+    manifestPath = resolvePath(cwd, "node_modules/@cmssy/core/package.json");
+    manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as typeof manifest;
+  } catch {
+    return null;
+  }
+
+  let declarations: string;
+  try {
+    declarations = readFileSync(
+      resolvePath(dirname(manifestPath), manifest.types ?? "dist/index.d.ts"),
+      "utf8",
+    );
+  } catch {
+    return null;
+  }
+
+  const missing = names.filter(
+    (name) => !new RegExp(`\\b${name}\\b`).test(declarations),
+  );
+  return missing.length > 0
+    ? { version: manifest.version ?? "unknown", missing }
+    : null;
+}
+
 function describeDrift(previous: string, next: string): string[] {
   const declared = (source: string, pattern: RegExp) =>
     new Set([...source.matchAll(pattern)].map((match) => match[1] ?? ""));
 
-  const body = (source: string) => source.split("/** Every model in the")[0] ?? source;
   const models = /export interface (\w+)Data/g;
   const fields = /^\s{2}(\w+)\??:/gm;
+  const body = (source: string) => {
+    const head = source.search(/export interface \w+Data\b/);
+    if (head === -1) return "";
+    const scoped = source.slice(head);
+    return scoped.split("/** Every model in the")[0] ?? scoped;
+  };
 
   const lines: string[] = [];
   const report = (label: string, before: Set<string>, after: Set<string>) => {
@@ -326,6 +364,16 @@ export async function runTypes(
 
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, source);
+
+    const gap = coreShapeGap(deps.cwd);
+    if (gap) {
+      deps.log(
+        `cmssy: the installed @cmssy/core ${gap.version} does not export ${gap.missing.join(", ")}`,
+      );
+      deps.log(
+        `  ${shown} imports those shapes - upgrade @cmssy/core to ${cliVersion()} or newer`,
+      );
+    }
 
     const fieldCount = models.reduce(
       (total, model) => total + model.fields.length,
