@@ -1,3 +1,8 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { generateModelTypes, type ModelDefinition } from "../model-types";
@@ -91,10 +96,40 @@ describe("generateModelTypes", () => {
     const output = generate();
     expect(output).toContain("manual?: CmssyFile;");
     expect(output).toContain("attachments?: CmssyFile[];");
-    expect(output).toContain("export interface CmssyMedia {");
     expect(output).toContain("CmssyMedia | null");
-    expect(output).toContain("export type CmssyFile =");
     expect(output).not.toContain("manual?: CmssyMedia");
+  });
+
+  it("imports the shared shapes instead of declaring them", () => {
+    const output = generate();
+    expect(output).toContain('} from "@cmssy/core";');
+    for (const name of [
+      "CmssyLocalizedValue as CmssyLocalized",
+      "ResolvedMedia as CmssyMedia",
+      "FileFieldValue as CmssyFile",
+      "CmssyModelRecord as CmssyRecordOf",
+    ]) {
+      expect(output).toContain(name);
+    }
+  });
+
+  it("declares no shape the contract package owns", () => {
+    const output = generate();
+    for (const declaration of [
+      "export interface CmssyMedia {",
+      "export type CmssyFile =",
+      "export type CmssyLocalized =",
+      "export interface CmssyRecordOf<",
+    ]) {
+      expect(output).not.toContain(declaration);
+    }
+  });
+
+  it("re-exports the imported names so consumer code keeps compiling", () => {
+    const output = generate();
+    expect(output).toContain(
+      "export type { CmssyLocalized, CmssyMedia, CmssyFile, CmssyRecordOf };",
+    );
   });
 
   it("types a relation as the ids it stores, and says which model", () => {
@@ -152,5 +187,54 @@ describe("generateModelTypes", () => {
       { slug: "b", fields: [] },
     ]);
     expect(one).toBe(two);
+  });
+});
+
+describe("generated output compiles against the real @cmssy/core", () => {
+  it("resolves every imported name to a type the package actually exports", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cmssy-model-types-"));
+    const file = join(dir, "models.ts");
+    writeFileSync(
+      file,
+      `${generateModelTypes([product], { workspace: "acme" })}
+const _media: CmssyMedia = {
+  id: "m1",
+  url: null,
+  visibility: "public",
+  altText: "from the reference",
+  transform: { width: 800, fit: "cover", quality: 80 },
+};
+const _localized: CmssyLocalized = null;
+const _record: ProductRecord = {
+  id: "r1",
+  modelId: "m",
+  status: null,
+  createdAt: null,
+  updatedAt: null,
+  data: { title: "t", slug: "s", price: 1 },
+};
+void _media;
+void _localized;
+void _record;
+`,
+    );
+
+    const program = ts.createProgram([file], {
+      noEmit: true,
+      strict: true,
+      skipLibCheck: true,
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      baseUrl: resolve(__dirname, "../../../.."),
+      paths: { "@cmssy/core": ["packages/core/src/index.ts"] },
+    });
+
+    const messages = ts
+      .getPreEmitDiagnostics(program)
+      .filter((d) => d.file?.fileName === file.replace(/\\/g, "/"))
+      .map((d) => ts.flattenDiagnosticMessageText(d.messageText, " "));
+
+    expect(messages).toEqual([]);
   });
 });
