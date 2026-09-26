@@ -274,8 +274,9 @@ export interface CmssyModels {
 from the generated file keeps working. They are aliases of `CmssyLocalizedValue`,
 `ResolvedMedia`, `FileFieldValue` and `CmssyModelRecord` - the shapes the CMS
 itself is built on, not copies of them. The file therefore needs an `@cmssy/core`
-recent enough to export all four; `cmssy types` says so by name when the
-installed one is older.
+recent enough to export all four. `cmssy types` says so by name when the
+installed one is older - on every run, `--check` included, so CI sees it before
+the build blames `@cmssy/core`.
 
 What the mapping preserves, and what a hand-written type usually loses:
 

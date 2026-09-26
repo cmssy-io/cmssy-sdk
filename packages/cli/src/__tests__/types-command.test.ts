@@ -226,7 +226,7 @@ describe("runTypes", () => {
       const output = drifted.lines.join("\n");
       expect(output).toContain("out of date");
       expect(output).toContain("+ models: Review");
-      expect(output).toContain("+ fields: sku");
+      expect(output).toMatch(/^ {2}\+ fields: sku, body$/m);
       expect(output).toContain("run `cmssy types`");
       expect(readFileSync(join(cwd, "cmssy/models.ts"), "utf8")).toBe(before);
     });
@@ -241,6 +241,7 @@ describe("runTypes", () => {
         current.search(/\n\/\*\*\n \* [A-Z]/),
       );
       expect(preamble).toContain("@cmssy/core");
+      expect(preamble).not.toContain("export interface ProductData");
       writeFileSync(
         outPath,
         current.replace(preamble, OLD_PREAMBLE),
@@ -255,6 +256,7 @@ describe("runTypes", () => {
       expect(output).toContain("out of date");
       expect(output).not.toMatch(/^\s*[+-] fields:/m);
       expect(output).not.toMatch(/^\s*[+-] models:/m);
+      expect(output).toContain("the generated output differs");
     });
 
     it("fails when the file was never generated", async () => {
@@ -268,16 +270,28 @@ describe("runTypes", () => {
   });
 
   describe("the installed @cmssy/core", () => {
-    const installCore = (cwd: string, version: string, exported: string[]) => {
-      const dir = join(cwd, "node_modules/@cmssy/core/dist");
-      mkdirSync(dir, { recursive: true });
+    const ALL_SHAPES = [
+      "CmssyLocalizedValue",
+      "ResolvedMedia",
+      "FileFieldValue",
+      "CmssyModelRecord",
+    ];
+
+    const installCore = (
+      root: string,
+      version: string,
+      exported: string[],
+      options: { types?: string | null; declarations?: string } = {},
+    ) => {
+      const pkg = join(root, "node_modules/@cmssy/core");
+      mkdirSync(join(pkg, "dist"), { recursive: true });
+      const manifest: Record<string, string> = { name: "@cmssy/core", version };
+      if (options.types !== null) manifest.types = options.types ?? "./dist/index.d.ts";
+      writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest));
       writeFileSync(
-        join(cwd, "node_modules/@cmssy/core/package.json"),
-        JSON.stringify({ name: "@cmssy/core", version, types: "./dist/index.d.ts" }),
-      );
-      writeFileSync(
-        join(dir, "index.d.ts"),
-        `export { ${exported.join(", ")} } from '@cmssy/types';\n`,
+        join(pkg, "dist/index.d.ts"),
+        options.declarations ??
+          `export { ${exported.join(", ")} } from '@cmssy/types';\n`,
       );
     };
 
@@ -308,6 +322,144 @@ describe("runTypes", () => {
         "FileFieldValue",
         "CmssyModelRecord",
       ]);
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).not.toContain("does not export");
+    });
+
+    it("names it under --check too, which is the run CI makes", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.6.0", ["CmssyLocalizedValue", "CmssyModelRecord"]);
+
+      const code = await runTypes({ check: true }, deps);
+
+      expect(code).toBe(1);
+      const output = lines.join("\n");
+      expect(output).toContain("@cmssy/core 16.6.0 does not export");
+      expect(output).toContain("is missing");
+    });
+
+    it("names it when the generated file is already up to date", async () => {
+      const first = makeDeps();
+      await runTypes({}, first.deps);
+      installCore(first.cwd, "16.6.0", ["CmssyLocalizedValue", "CmssyModelRecord"]);
+
+      const again = makeDeps();
+      again.deps.cwd = first.cwd;
+      const code = await runTypes({}, again.deps);
+
+      expect(code).toBe(0);
+      const output = again.lines.join("\n");
+      expect(output).toContain("is up to date");
+      expect(output).toContain("@cmssy/core 16.6.0 does not export");
+    });
+
+    it("finds a core hoisted to a parent node_modules", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      const app = join(cwd, "apps/web");
+      mkdirSync(app, { recursive: true });
+      deps.cwd = app;
+      installCore(cwd, "16.6.0", ["CmssyLocalizedValue", "CmssyModelRecord"]);
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).toContain("@cmssy/core 16.6.0 does not export");
+    });
+
+    it("reads the declarations even when the manifest has no types entry", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.6.0", ["CmssyLocalizedValue", "CmssyModelRecord"], {
+        types: null,
+      });
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).toContain("@cmssy/core 16.6.0 does not export");
+    });
+
+    it("does not count a name the declarations only import or mention", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.6.0", [], {
+        declarations: [
+          "import { ResolvedMedia, CmssyModelRecord } from '@cmssy/types';",
+          "/** FileFieldValue is what a file field holds. */",
+          "// CmssyLocalizedValue is a locale map.",
+          "export declare function mediaUrl(value: ResolvedMedia): string;",
+          "",
+        ].join("\n"),
+      });
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      const output = lines.join("\n");
+      expect(output).toContain("@cmssy/core 16.6.0 does not export");
+      for (const name of ALL_SHAPES) expect(output).toContain(name);
+    });
+
+    it("reads the exported name, not the local one, through an alias", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.12.0", [], {
+        declarations: [
+          "export { a as CmssyLocalizedValue, b as ResolvedMedia } from './chunk.js';",
+          "export { c as FileFieldValue, d as CmssyModelRecord } from './chunk.js';",
+          "",
+        ].join("\n"),
+      });
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).not.toContain("does not export");
+    });
+
+    it("accepts shapes the declarations declare rather than re-export", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.12.0", [], {
+        declarations: [
+          "export declare type CmssyLocalizedValue = Record<string, string> | string | null;",
+          "export interface ResolvedMedia { id: string }",
+          "export declare type FileFieldValue = string;",
+          "export interface CmssyModelRecord { id: string }",
+          "",
+        ].join("\n"),
+      });
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      expect(lines.join("\n")).not.toContain("does not export");
+    });
+
+    it("does not accept an export that only appears inside a comment", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.12.0", [], {
+        declarations: [
+          "/**",
+          " * Removed in 17. It used to be:",
+          " * export { CmssyLocalizedValue, ResolvedMedia } from '@cmssy/types';",
+          " * export { FileFieldValue, CmssyModelRecord } from '@cmssy/types';",
+          " */",
+          "export declare function mediaUrl(value: unknown): string;",
+          "",
+        ].join("\n"),
+      });
+
+      const code = await runTypes({}, deps);
+
+      expect(code).toBe(0);
+      const output = lines.join("\n");
+      expect(output).toContain("@cmssy/core 16.12.0 does not export");
+      for (const name of ALL_SHAPES) expect(output).toContain(name);
+    });
+
+    it("stays quiet when the declarations file is unreadable", async () => {
+      const { deps, lines, cwd } = makeDeps();
+      installCore(cwd, "16.6.0", [], { types: "./dist/gone.d.ts" });
 
       const code = await runTypes({}, deps);
 
