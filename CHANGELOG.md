@@ -6,29 +6,47 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## Unreleased
+## 17.0.0
 
-**Run `cmssy types` and commit the result.** The generated models file no longer
-carries its own copies of `CmssyLocalized`, `CmssyMedia`, `CmssyFile` and
-`CmssyRecordOf`; it imports them from `@cmssy/core` and re-exports them, so your
-imports do not change. The copies were behind: `CmssyMedia` was missing `altText`
-and `transform`, both of which the delivery API serves, and `CmssyLocalized`
-omitted `null`. Those two fields are now readable without a cast.
+**Run `npx @cmssy/cli types` and commit the result**, then read
+[docs/migrations/v16-to-v17.md](docs/migrations/v16-to-v17.md). Nothing moved and
+nothing was renamed, so no import changes and no codemod.
+
+Two hand-written copies of the delivery schema are gone. The generated models
+file no longer declares `CmssyLocalized`, `CmssyMedia`, `CmssyFile` and
+`CmssyRecordOf` itself - it imports them from `@cmssy/core` and re-exports them,
+so your imports are unchanged. Three of the four copies were narrower than the
+real shape: `CmssyMedia` was missing `altText` and `transform`, both of which the
+delivery API serves, and `CmssyLocalized` omitted `null`. Those two fields are
+now readable without a cast.
 
 **Expect new null checks in two places.** `CmssyRecordOf` gained `| null` on
 `status`, `createdAt` and `updatedAt`. And `CmssyLocalized` is
 `Record<string, string> | string | null` rather than
-`string | Record<string, string>`, so **every localized field in every
-generated interface** gained `| null` too - that is the bulk of the work, not
-the three record members. Anything already passing these to a localizer that
-takes `unknown` keeps compiling unchanged.
+`string | Record<string, string>`, so **every localized field in every generated
+interface** gained `| null` too - that is the bulk of the work, not the three
+record members. Anything already passing these to a localizer that takes
+`unknown` keeps compiling unchanged.
 
-Two consequences worth knowing. The file now needs an `@cmssy/core` at least as
-new as this release - `cmssy types` names the installed version and the missing
-shapes when it is older, on every run including `--check`, instead of leaving
+The form shapes stopped contradicting the schema. Five fields the delivery API
+never returns as null were declared nullable and are not any more -
+`CmssyFormDefinition.slug` and `.settings`, `CmssyFormSettings.actionType` (now
+`"contact" | "custom"`) and `.requireLogin`, `CmssyFormSubmitResponse.message`.
+Delete the guards you wrote for them; if you construct a form definition in a
+fixture, supply a slug and a settings object. Six localized fields are
+`Record<string, string> | string` rather than `string | null` or `unknown`, and
+four that were `unknown` have shapes - `options`, `validation`, `defaultValue`
+and `fieldType`. If you were casting to read a select field's options, the cast
+can go.
+
+`@cmssy/types` also dropped 26 exports no repo imported and the SDK never
+re-exported. If you only import from the SDK, that does not reach you.
+
+Two CLI fixes worth knowing. `cmssy types` now names the installed `@cmssy/core`
+and the shapes it lacks, on every run including `--check`, instead of leaving
 `tsc` to blame `@cmssy/core`. And `cmssy types --check` used to report the
-preamble's own members as fields your workspace had deleted; it now compares
-only the model interfaces.
+preamble's own members as fields your workspace had deleted - eleven of them, on
+an unchanged workspace; it now compares only the model interfaces.
 
 ## 16.11.1
 
