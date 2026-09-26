@@ -48,28 +48,6 @@ and the shapes it lacks, on every run including `--check`, instead of leaving
 preamble's own members as fields your workspace had deleted - eleven of them, on
 an unchanged workspace; it now compares only the model interfaces.
 
-**Run `cmssy types` and commit the result.** The generated models file no longer
-carries its own copies of `CmssyLocalized`, `CmssyMedia`, `CmssyFile` and
-`CmssyRecordOf`; it imports them from `@cmssy/core` and re-exports them, so your
-imports do not change. The copies were behind: `CmssyMedia` was missing `altText`
-and `transform`, both of which the delivery API serves, and `CmssyLocalized`
-omitted `null`. Those two fields are now readable without a cast.
-
-**Expect new null checks in two places.** `CmssyRecordOf` gained `| null` on
-`status`, `createdAt` and `updatedAt`. And `CmssyLocalized` is
-`Record<string, string> | string | null` rather than
-`string | Record<string, string>`, so **every localized field in every
-generated interface** gained `| null` too - that is the bulk of the work, not
-the three record members. Anything already passing these to a localizer that
-takes `unknown` keeps compiling unchanged.
-
-Two consequences worth knowing. The file now needs an `@cmssy/core` at least as
-new as this release - `cmssy types` names the installed version and the missing
-shapes when it is older, on every run including `--check`, instead of leaving
-`tsc` to blame `@cmssy/core`. And `cmssy types --check` used to report the
-preamble's own members as fields your workspace had deleted; it now compares
-only the model interfaces.
-
 ## 16.11.1
 
 **Nothing to do.** `cmssy add block` now says the editor picks the new type up

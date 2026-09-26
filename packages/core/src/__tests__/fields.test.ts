@@ -82,7 +82,7 @@ describe("fields.media", () => {
   it("matches a shared field written straight into a BlockPropsSchema", () => {
     expect(
       declaredByHand.logo,
-      "The version pin for @cmssy/types 0.49.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no localized. The builder call above pins it as well now, for the reason given on the table pin.",
+      "The version pin for @cmssy/types 0.52.0: a fresh literal in declared position is excess-property-checked, so this file stops compiling against a FieldDefinition that has no localized. The builder call above pins it as well now, for the reason given on the table pin.",
     ).toStrictEqual({ type: "media", label: "Logo", localized: false });
   });
 
