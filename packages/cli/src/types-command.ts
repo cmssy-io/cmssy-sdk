@@ -4,9 +4,11 @@ import { dirname, relative, resolve as resolvePath } from "node:path";
 import { DEFAULT_CMSSY_API_URL } from "@cmssy/core";
 
 import { CliError } from "./admin-client";
+import { cliVersion } from "./init";
 import { loadEnvFiles } from "./env-load";
 import {
   generateModelTypes,
+  preambleImports,
   type ModelDefinition,
 } from "./model-types";
 import {
@@ -117,13 +119,93 @@ async function request<T>(
   return body.data;
 }
 
+function ancestors(from: string): string[] {
+  const chain: string[] = [];
+  let dir = resolvePath(from);
+  for (let steps = dir.split(/[\\/]/).length + 1; steps > 0; steps -= 1) {
+    chain.push(dir);
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return chain;
+}
+
+function exportedNames(declarations: string): Set<string> {
+  const source = declarations
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/^\s*\/\/.*$/gm, " ");
+  const found = new Set<string>();
+
+  for (const [, clause] of source.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/g)) {
+    for (const entry of (clause ?? "").split(",")) {
+      const parts = entry.trim().split(/\s+as\s+/);
+      const name = (parts[1] ?? parts[0] ?? "").trim();
+      if (name.length > 0) found.add(name);
+    }
+  }
+
+  const declared =
+    /export\s+(?:declare\s+)?(?:abstract\s+)?(?:type|interface|class|const|let|var|function|enum|namespace)\s+(\w+)/g;
+  for (const [, name] of source.matchAll(declared)) {
+    if (name !== undefined) found.add(name);
+  }
+
+  return found;
+}
+
+interface CoreManifest {
+  version?: string;
+  types?: string;
+}
+
+function coreShapeGap(cwd: string): { version: string; missing: string[] } | null {
+  const names = preambleImports();
+  if (names.length === 0) return null;
+
+  let manifest: CoreManifest | null = null;
+  let manifestPath = "";
+  for (const dir of ancestors(cwd)) {
+    const candidate = resolvePath(dir, "node_modules/@cmssy/core/package.json");
+    try {
+      manifest = JSON.parse(readFileSync(candidate, "utf8")) as CoreManifest;
+      manifestPath = candidate;
+      break;
+    } catch {
+      manifest = null;
+    }
+  }
+  if (!manifest) return null;
+
+  let declarations: string;
+  try {
+    declarations = readFileSync(
+      resolvePath(dirname(manifestPath), manifest.types ?? "dist/index.d.ts"),
+      "utf8",
+    );
+  } catch {
+    return null;
+  }
+
+  const exported = exportedNames(declarations);
+  const missing = names.filter((name) => !exported.has(name));
+  return missing.length > 0
+    ? { version: manifest.version ?? "unknown", missing }
+    : null;
+}
+
 function describeDrift(previous: string, next: string): string[] {
   const declared = (source: string, pattern: RegExp) =>
     new Set([...source.matchAll(pattern)].map((match) => match[1] ?? ""));
 
-  const body = (source: string) => source.split("/** Every model in the")[0] ?? source;
   const models = /export interface (\w+)Data/g;
   const fields = /^\s{2}(\w+)\??:/gm;
+  const body = (source: string) => {
+    const head = source.search(/export interface \w+Data\b/);
+    if (head === -1) return "";
+    const scoped = source.slice(head);
+    return scoped.split("/** Every model in the")[0] ?? scoped;
+  };
 
   const lines: string[] = [];
   const report = (label: string, before: Set<string>, after: Set<string>) => {
@@ -133,7 +215,7 @@ function describeDrift(previous: string, next: string): string[] {
     if (removed.length) lines.push(`- ${label}: ${removed.join(", ")}`);
   };
 
-  report("models", declared(previous, models), declared(next, models));
+  report("models", declared(body(previous), models), declared(body(next), models));
   report("fields", declared(body(previous), fields), declared(body(next), fields));
   return lines.length ? lines : ["the generated output differs"];
 }
@@ -299,6 +381,16 @@ export async function runTypes(
     const inside = relative(deps.cwd, outPath);
     const shown = inside && !inside.startsWith("..") ? inside : outPath;
     const source = generateModelTypes(models, { workspace });
+
+    const gap = coreShapeGap(deps.cwd);
+    if (gap) {
+      deps.log(
+        `cmssy: the installed @cmssy/core ${gap.version} does not export ${gap.missing.join(", ")}`,
+      );
+      deps.log(
+        `  ${shown} imports those shapes - upgrade @cmssy/core to ${cliVersion()} or newer`,
+      );
+    }
 
     let previous: string | null = null;
     try {

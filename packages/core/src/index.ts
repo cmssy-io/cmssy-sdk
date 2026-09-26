@@ -43,6 +43,7 @@ export type {
 export { fields } from "./fields";
 export { mediaAlt, mediaUrl, mediaUrls } from "./media";
 export type { MediaLike } from "./media";
+export type { ResolvedMedia, MediaTransform, FileFieldValue } from "@cmssy/types";
 export { defineCmssyLayout } from "./layout";
 export {
   blocksToMeta,

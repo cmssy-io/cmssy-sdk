@@ -71,7 +71,7 @@ function frameworkFiles(framework: FrameworkDef, root: string): InitFile[] {
   return files;
 }
 
-function cliVersion(): string {
+export function cliVersion(): string {
   const pkg = JSON.parse(readFileSync(CLI_PACKAGE_JSON, "utf8")) as {
     version: string;
   };

@@ -269,12 +269,22 @@ export interface CmssyModels {
 }
 ```
 
+`CmssyLocalized`, `CmssyMedia`, `CmssyFile` and `CmssyRecordOf` are imported from
+`@cmssy/core` at the top of the file and re-exported from it, so importing them
+from the generated file keeps working. They are aliases of `CmssyLocalizedValue`,
+`ResolvedMedia`, `FileFieldValue` and `CmssyModelRecord` - the shapes the CMS
+itself is built on, not copies of them. The file therefore needs an `@cmssy/core`
+recent enough to export all four. `cmssy types` says so by name when the
+installed one is older - on every run, `--check` included, so CI sees it before
+the build blames `@cmssy/core`.
+
 What the mapping preserves, and what a hand-written type usually loses:
 
 - **Required** fields are non-optional; everything else is `?`.
-- **Localized** fields are `CmssyLocalized` (`string | Record<string, string>`),
-  which is what the API actually returns once a workspace has two languages -
-  the single most common source of `[object Object]` on a page.
+- **Localized** fields are `CmssyLocalized`
+  (`Record<string, string> | string | null`), which is what the API actually
+  returns once a workspace has two languages - the single most common source of
+  `[object Object]` on a page.
 - **select / radio / multiselect** become the union of the configured options,
   so a typo in a filter is a compile error.
 - **relation** is typed as the record id(s) it stores, with the target model

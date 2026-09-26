@@ -142,35 +142,23 @@ function objectType(fields: ModelFieldDefinition[], depth: number): string {
   return ["{", ...body, `${INDENT.repeat(depth)}}`].join("\n");
 }
 
-const PREAMBLE = `/** A translatable field: one string, or one per enabled language. */
-export type CmssyLocalized = string | Record<string, string>;
+const PREAMBLE = `import type {
+  CmssyLocalizedValue as CmssyLocalized,
+  ResolvedMedia as CmssyMedia,
+  FileFieldValue as CmssyFile,
+  CmssyModelRecord as CmssyRecordOf,
+} from "@cmssy/core";
 
-/**
- * What a media field reads back. Mirrors \`ResolvedMedia\` in @cmssy/types.
- * A single media field is \`CmssyMedia | null\`: a reference whose asset was
- * deleted resolves to nothing. A gallery drops such entries instead.
- */
-export interface CmssyMedia {
-  id: string;
-  url: string | null;
-  visibility: "public" | "private";
-  alt?: string;
-  width?: number;
-  height?: number;
+export type { CmssyLocalized, CmssyMedia, CmssyFile, CmssyRecordOf };`;
+
+export function preambleImports(): string[] {
+  const clause = /import type \{([^}]*)\} from "@cmssy\/core";/.exec(PREAMBLE);
+  if (!clause?.[1]) return [];
+  return clause[1]
+    .split(",")
+    .map((entry) => entry.trim().split(/\s+as\s+/)[0]?.trim() ?? "")
+    .filter((name) => name.length > 0);
 }
-
-/** What a file field holds. Mirrors \`FileFieldValue\` in @cmssy/types. */
-export type CmssyFile = string;
-
-/** A record as \`public.model.records\` returns it, with \`data\` typed. */
-export interface CmssyRecordOf<Data> {
-  id: string;
-  modelId: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  data: Data;
-}`;
 
 export interface GenerateOptions {
   workspace: string;
