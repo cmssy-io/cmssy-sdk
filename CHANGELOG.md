@@ -6,6 +6,22 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 18.0.0
+
+**Delete any branch that reads `accessToken` or `customer` off a form-submit
+response**, then read
+[docs/migrations/v17-to-v18.md](docs/migrations/v17-to-v18.md). No codemod, no
+regeneration, nothing else changed.
+
+Both fields are gone from `CmssyFormSubmitResponse`, and the submit mutation stops
+selecting them. Neither has ever carried a value: every return site in the
+delivery API's form-submission service sets them to `null`, and the form action
+that was supposed to fill them - a form that signs a site member in on submit -
+does not exist. Your branch compiled and never ran.
+
+If you wanted the behaviour rather than the field, the site-member auth mutations
+return a real token; the form submission never did.
+
 ## 17.0.1
 
 **Nothing to do unless you ran `npx @cmssy/codemod v5`.** If you did, re-run it.
