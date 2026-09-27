@@ -4,6 +4,7 @@ import {
   defineCmssyLayout,
   verifyCmssyEditToken,
   type CmssyConfig,
+  type CmssyPageData,
 } from "@cmssy/core";
 import { loadCmssyPage } from "../page";
 
@@ -13,14 +14,22 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: DRAFT_SECRET,
-} as unknown as CmssyConfig;
+} satisfies CmssyConfig;
+
+const PAGE = {
+  id: "p1",
+  slug: "/about",
+  pageType: null,
+  blocks: [],
+} satisfies CmssyPageData;
 
 const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", () => ({ resolveCmssyLayoutSlot }));
 
 const fetchPage = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchPage };
 });
 
@@ -49,7 +58,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
     const result = await loadCmssyPage(
       CONFIG,
       new Request("https://site.test/about"),
@@ -66,7 +75,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
     const layout = defineCmssyLayout({
       regions: [{ id: "header" }, { id: "promo" }],
     });
@@ -86,7 +95,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const result = await loadCmssyPage(
       CONFIG,
@@ -113,7 +122,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const result = await loadCmssyPage(
       CONFIG,
@@ -129,7 +138,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
     const request = new Request("https://site.test/about");
     const url = new URL("https://site.test/about");
     const layout = defineCmssyLayout({ regions: [{ id: "header" }] });
@@ -145,7 +154,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const request = new Request("https://site.test/about", {
       headers: { [CMSSY_EDIT_HEADER]: "1" },
@@ -168,7 +177,7 @@ describe("loadCmssyPage", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const result = await loadCmssyPage(
       CONFIG,
@@ -203,7 +212,7 @@ describe("loadCmssyPage path handling", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const url = new URL("https://site.test/cmssy-editorial");
     await loadCmssyPage(CONFIG, new Request(url), url, { blocks: [] });
@@ -218,7 +227,7 @@ describe("loadCmssyPage path handling", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const url = new URL("https://site.test/cmssy-edit/no/blog");
     await loadCmssyPage(CONFIG, new Request(url), url, { blocks: [] });
@@ -235,7 +244,7 @@ describe("loadCmssyPage edit-mode detection", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const url = new URL(
       "https://site.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=draft-secret-1234",
@@ -256,7 +265,7 @@ describe("loadCmssyPage edit-mode detection", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
 
     const url = new URL(
       "https://site.test/cmssy-edit/about?cmssyEdit=1&cmssySecret=wrong",
@@ -275,7 +284,7 @@ describe("loadCmssyPage retry policy (CMS-1460)", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
     return new URL("https://site.test/about");
   }
 
@@ -338,7 +347,7 @@ describe("loadCmssyPage render mode (CMS-1463)", () => {
     resolveCmssyLayoutSlot.mockImplementation((_config, options) =>
       Promise.resolve(slotFor(options.region, options.editMode)),
     );
-    fetchPage.mockResolvedValue({ id: "p1" });
+    fetchPage.mockResolvedValue(PAGE);
     return new URL("https://site.test/about");
   }
 

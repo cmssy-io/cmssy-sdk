@@ -51,7 +51,7 @@ function capturingFetch(payload: unknown): {
 beforeEach(() => clearWorkspaceIdCache());
 
 describe("createCmssyClient().query (raw)", () => {
-  it("runs a document and returns data, without scoping", async () => {
+  it("types the raw result from the caller's own generic, not from a shape this package declares, and does not scope it", async () => {
     const { fetch, calls } = capturingFetch({
       data: { public: { form: { get: { id: "f1", name: "Contact" } } } },
     });

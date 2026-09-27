@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { CmssyConfig } from "@cmssy/core";
+import type { CmssyPageData } from "@cmssy/core";
+
 import { createCmssyLoader } from "../loader";
 
 const CONFIG = {
@@ -7,14 +10,22 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: "draft-secret-1234",
-} as never;
+} satisfies CmssyConfig;
+
+const PAGE = {
+  id: "p1",
+  slug: "/about",
+  pageType: null,
+  blocks: [],
+} satisfies CmssyPageData;
 
 const resolveCmssyLayoutSlot = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", () => ({ resolveCmssyLayoutSlot }));
 
 const fetchPage = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchPage };
 });
 
@@ -26,7 +37,7 @@ function arrange() {
     enabledLocales: ["en"],
     path: ["about"],
   });
-  fetchPage.mockResolvedValue({ id: "p1" });
+  fetchPage.mockResolvedValue(PAGE);
   return new Request("https://site.test/about");
 }
 

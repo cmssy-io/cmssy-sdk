@@ -11,7 +11,8 @@ const CONFIG = {
 
 const resolveWithReact = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/react", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/react")>();
   return { ...actual, resolveCmssyLayout: resolveWithReact };
 });
 

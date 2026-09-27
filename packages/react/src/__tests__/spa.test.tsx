@@ -2,12 +2,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { fields } from "@cmssy/core";
-import { CmssyRoute } from "../spa";
+import type { CmssyRouteData } from "../components/load-cmssy-route";
+import { CmssyRoute, type CmssyRouteProps } from "../spa";
 import { defineBlock, type BlockProps } from "../registry";
 
 const loadCmssyRoute = vi.hoisted(() => vi.fn());
 vi.mock("../components/load-cmssy-route", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("../components/load-cmssy-route")>();
   return { ...actual, loadCmssyRoute };
 });
 
@@ -30,41 +32,43 @@ const CONFIG = {
   workspaceSlug: "shop",
 };
 
-function route(overrides: Record<string, unknown> = {}) {
-  return {
-    page: {
-      id: "p1",
-      slug: "/",
-      blocks: [{ id: "b1", type: "hero", content: { en: { heading: "Hi" } } }],
+const ROUTE = {
+  page: {
+    id: "p1",
+    slug: "/",
+    pageType: null,
+    blocks: [{ id: "b1", type: "hero", content: { en: { heading: "Hi" } } }],
+  },
+  layouts: [
+    {
+      region: "header",
+      blocks: [
+        {
+          id: "h1",
+          type: "hero",
+          order: 0,
+          isActive: true,
+          content: { en: { heading: "Top" } },
+        },
+      ],
     },
-    layouts: [
-      {
-        region: "header",
-        blocks: [
-          {
-            id: "h1",
-            type: "hero",
-            order: 0,
-            isActive: true,
-            content: { en: { heading: "Top" } },
-          },
-        ],
-      },
-    ],
-    pageContext: { slug: "/", path: [] },
-    locale: "en",
-    defaultLocale: "en",
-    enabledLocales: ["en"],
-    path: [],
-    blockData: {},
-    blockContent: {},
-    layoutData: {},
-    regions: ["header"],
-    ...overrides,
-  };
+  ],
+  pageContext: { slug: "/", path: [] },
+  locale: "en",
+  defaultLocale: "en",
+  enabledLocales: ["en"],
+  path: [],
+  blockData: {},
+  blockContent: {},
+  layoutData: {},
+  regions: ["header"],
+} satisfies CmssyRouteData;
+
+function route(overrides: Partial<CmssyRouteData> = {}) {
+  return { ...ROUTE, ...overrides };
 }
 
-function renderRoute(props: Record<string, unknown> = {}) {
+function renderRoute(props: Partial<CmssyRouteProps> = {}) {
   return render(
     <CmssyRoute
       config={CONFIG}
