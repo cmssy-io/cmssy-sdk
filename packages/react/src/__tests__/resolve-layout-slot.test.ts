@@ -1,3 +1,4 @@
+import type { CmssyLayoutGroup } from "@cmssy/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveCmssyLayoutSlot } from "../components/resolve-layout-slot";
 
@@ -10,29 +11,45 @@ const CONFIG = {
 };
 
 const GROUPS = [
-  { region: "header", blocks: [{ id: "b1", type: "site-header" }] },
+  {
+    region: "header",
+    blocks: [
+      {
+        id: "b1",
+        type: "site-header",
+        content: { logo: "/logo.svg" },
+        style: { sticky: true },
+        advanced: { anchor: "top" },
+        order: 0,
+        isActive: true,
+      },
+    ],
+  },
   {
     region: "sidebar_left",
     blocks: [],
     settings: { width: 18, sticky: true },
   },
-];
+] satisfies CmssyLayoutGroup[];
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchLayouts };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal/locale", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal/locale")>();
   return { ...actual, resolveSiteLocales };
 });
 
 const resolveEditorLayoutBlockData = vi.hoisted(() => vi.fn());
 vi.mock("../components/resolve-block-data", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("../components/resolve-block-data")>();
   return { ...actual, resolveEditorLayoutBlockData };
 });
 

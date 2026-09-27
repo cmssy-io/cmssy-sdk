@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CmssyServerPage, defineBlock, type CmssyPageData } from "@cmssy/react";
+import {
+  CmssyServerPage,
+  defineBlock,
+  type CmssyFormDefinition,
+  type CmssyPageData,
+} from "@cmssy/react";
 import { CmssyLocaleProvider } from "@cmssy/react/internal";
 
 function unwrap(element: { type: unknown; props: { children: unknown } }) {
@@ -55,10 +60,57 @@ const CONFIG = {
   editorOrigin: "https://app.cmssy.io",
 };
 
-const PAGE: CmssyPageData = {
+const PAGE = {
   id: "page-1",
+  slug: "/about",
+  pageType: null,
   blocks: [{ id: "b1", type: "editorial-intro", content: {} }],
-};
+} satisfies CmssyPageData;
+
+const FORMS = {
+  contact: {
+    id: "f1",
+    name: "Contact form",
+    slug: "contact",
+    description: null,
+    fields: [
+      {
+        id: "fld1",
+        name: "reason",
+        fieldType: "select",
+        label: { en: "Reason" },
+        placeholder: { en: "Pick one" },
+        helpText: {},
+        defaultValue: null,
+        options: [
+          { value: "quote", label: { en: "Quote" }, disabled: false },
+          { value: "other", label: { en: "Other" }, disabled: true },
+        ],
+        validation: {
+          required: true,
+          minLength: null,
+          maxLength: null,
+          minValue: null,
+          maxValue: null,
+          pattern: null,
+          customMessage: null,
+        },
+        width: "full",
+        order: 0,
+        showWhen: null,
+        requiredWhen: null,
+      },
+    ],
+    settings: {
+      actionType: "contact",
+      submitButtonLabel: { en: "Send" },
+      successMessage: { en: "Thanks" },
+      errorMessage: { en: "Something went wrong" },
+      redirectUrl: null,
+      requireLogin: false,
+    },
+  },
+} satisfies Record<string, CmssyFormDefinition>;
 
 const BLOCKS = [
   defineBlock({
@@ -131,6 +183,14 @@ describe("createCmssyPage", () => {
       previewSecret: undefined,
       retry: "interactive",
     });
+  });
+
+  it("hands the resolved forms to the server page with every member intact", async () => {
+    resolveForms.mockResolvedValue(FORMS);
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage(CONFIG, BLOCKS);
+    const element = unwrap(await Page({ params: params(["about"]) }));
+    expect(element.props.forms).toEqual(FORMS);
   });
 
   it("renders the RSC server page with the passed blocks for published content", async () => {

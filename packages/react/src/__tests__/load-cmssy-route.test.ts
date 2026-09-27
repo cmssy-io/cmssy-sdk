@@ -41,20 +41,23 @@ const PAGE = {
 const fetchLayouts = vi.hoisted(() => vi.fn());
 const fetchPage = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchLayouts, fetchPage };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal/locale", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal/locale")>();
   return { ...actual, resolveSiteLocales };
 });
 
 const resolveEditorBlockData = vi.hoisted(() => vi.fn());
 const resolveEditorLayoutBlockData = vi.hoisted(() => vi.fn());
 vi.mock("../components/resolve-block-data", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("../components/resolve-block-data")>();
   return { ...actual, resolveEditorBlockData, resolveEditorLayoutBlockData };
 });
 

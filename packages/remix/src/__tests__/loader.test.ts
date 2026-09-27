@@ -20,7 +20,7 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: "draft-secret-1234",
-} as unknown as CmssyConfig;
+} satisfies CmssyConfig;
 
 function stubApi() {
   const calls: Array<Record<string, unknown>> = [];

@@ -62,13 +62,15 @@ vi.mock("next/headers", () => ({ headers: headersMock }));
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchLayouts };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal/locale", async (importActual) => {
-  const actual = await importActual<Record<string, unknown>>();
+  const actual =
+    await importActual<typeof import("@cmssy/core/internal/locale")>();
   return { ...actual, resolveSiteLocales };
 });
 

@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
+import type { CmssyConfig } from "@cmssy/core";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,7 +25,7 @@ const CONFIG = {
   org: "acme",
   workspaceSlug: "ws",
   draftSecret: "draft-secret-1234",
-} as never;
+} satisfies CmssyConfig;
 
 function stubSiteConfig(defaultLanguage = "en", enabled = ["en", "no"]) {
   vi.stubGlobal(
