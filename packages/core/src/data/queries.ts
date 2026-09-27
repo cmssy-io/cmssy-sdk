@@ -95,7 +95,7 @@ export const SUBMIT_FORM_MUTATION = `mutation SubmitForm($formId: ID!, $input: S
   public {
     form {
       submit(formId: $formId, input: $input) {
-        success message submissionId redirectUrl accessToken customer
+        success message submissionId redirectUrl
       }
     }
   }
