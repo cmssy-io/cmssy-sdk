@@ -1,38 +1,21 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, it } from "vitest";
 
 import {
-  CLIENT_SYMBOLS,
   CORE_SYMBOLS,
   MIDDLEWARE_SYMBOLS,
   RENAMES,
+  RETIRED_SYMBOLS,
   SERVER_SYMBOLS,
   transform,
 } from "../v5";
+import { entrySurface, exportsOf } from "./entry-surface";
 import NEXT4_EXPORTS from "./next4-exports.json";
 
-const NEXT_SRC = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../next/src",
-);
-
-function exportedSymbols(entry: string): string[] {
-  const code = readFileSync(resolve(NEXT_SRC, entry), "utf8");
-  const blocks = [...code.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/g)];
-  return blocks
-    .flatMap(([, body]) => (body ?? "").split(","))
-    .map(
-      (name) =>
-        name
-          .trim()
-          .replace(/^type\s+/, "")
-          .split(/\s+as\s+/)[0] ?? "",
-    )
-    .filter(Boolean);
-}
+const DESTINATIONS: Array<[string, Set<string>]> = [
+  ["@cmssy/next/server", SERVER_SYMBOLS],
+  ["@cmssy/next/middleware", MIDDLEWARE_SYMBOLS],
+  ["@cmssy/core", CORE_SYMBOLS],
+];
 
 describe("v5 codemod", () => {
   it("splits one import across the runtimes it actually spans", () => {
@@ -78,40 +61,146 @@ describe("v5 codemod", () => {
     expect(transform(source)).toEqual({ code: source, changed: false });
   });
 
+  it("does not read an inherited object key as a rename or a refusal", () => {
+    const source = 'import { toString, constructor } from "@cmssy/next";';
+
+    expect(transform(source)).toEqual({ code: source, changed: false });
+  });
+
   it("sends symbols that moved to @cmssy/core there, not to the root", () => {
     const { code } = transform(
-      'import { fetchOrderByToken, verifyCmssyWebhook } from "@cmssy/next";',
+      'import { verifyCmssyWebhook, evaluateFieldConditionGroup } from "@cmssy/next";',
     );
     expect(code).toBe(
-      'import { fetchOrderByToken, verifyCmssyWebhook } from "@cmssy/core";',
+      'import { verifyCmssyWebhook, evaluateFieldConditionGroup } from "@cmssy/core";',
     );
   });
 
-  it("gives every 4.x export a home in 5.0", () => {
-    const rootExports = new Set(exportedSymbols("index.ts"));
-    const homeless = (NEXT4_EXPORTS as string[]).filter(
-      (symbol) =>
-        !SERVER_SYMBOLS.has(symbol) &&
-        !MIDDLEWARE_SYMBOLS.has(symbol) &&
-        !CLIENT_SYMBOLS.has(symbol) &&
-        !CORE_SYMBOLS.has(symbol) &&
-        !(symbol in RENAMES) &&
-        !rootExports.has(symbol),
+  it("refuses to move a symbol the SDK no longer has, and says where it went", () => {
+    const source = 'import { fetchOrderByToken } from "@cmssy/next";';
+    const { code, notes } = transform(source);
+
+    expect(code).toBe(source);
+    expect(notes).toEqual([
+      "fetchOrderByToken is gone from the SDK - your Server Actions over the cart and order mutations",
+    ]);
+  });
+
+  it("moves the live half of a mixed import and leaves the retired half in place", () => {
+    const { code, notes } = transform(
+      'import { createCmssyPage, getCmssyUser } from "@cmssy/next";',
     );
+
+    expect(code).toContain(
+      'import { createCmssyPage } from "@cmssy/next/server";',
+    );
+    expect(code).toContain('import { getCmssyUser } from "@cmssy/next";');
+    expect(notes).toHaveLength(1);
+    expect(notes?.[0]).toContain("getCmssyUser is gone from the SDK");
+  });
+
+  it("does not rewrite CmssyLink to an entry point that does not exist", () => {
+    const { code, notes } = transform(
+      'import { CmssyLink } from "@cmssy/next";',
+    );
+
+    expect(code).not.toContain("@cmssy/next/client");
+    expect(entrySurface().has("@cmssy/next/client")).toBe(false);
+    expect(notes?.[0]).toContain("next/link plus localizeHref");
+  });
+
+  it.each(DESTINATIONS)(
+    "every symbol it routes to %s is exported there",
+    (entry, symbols) => {
+      const real = exportsOf(entry);
+      const absent = [...symbols].filter((symbol) => !real.has(symbol));
+
+      expect(absent).toEqual([]);
+    },
+  );
+
+  it("routes nothing it rewrites to a symbol that is retired", () => {
+    const routed = [...SERVER_SYMBOLS, ...MIDDLEWARE_SYMBOLS, ...CORE_SYMBOLS];
+    const both = routed.filter((symbol) =>
+      Object.hasOwn(RETIRED_SYMBOLS, symbol),
+    );
+
+    expect(both).toEqual([]);
+  });
+
+  it("names a replacement for every retired symbol", () => {
+    const silent = Object.entries(RETIRED_SYMBOLS)
+      .filter(([, replacement]) => replacement.trim().length === 0)
+      .map(([symbol]) => symbol);
+
+    expect(silent).toEqual([]);
+  });
+
+  it("keeps no retired symbol that an entry it targets exports again", () => {
+    const targeted = [
+      "@cmssy/next",
+      "@cmssy/next/server",
+      "@cmssy/next/middleware",
+      "@cmssy/core",
+    ];
+    const back = Object.keys(RETIRED_SYMBOLS).filter((symbol) =>
+      targeted.some((entry) => exportsOf(entry).has(symbol)),
+    );
+
+    expect(back).toEqual([]);
+  });
+
+  it("gives every 4.x export a home that resolves", () => {
+    const rootExports = exportsOf("@cmssy/next");
+    const homeless = (NEXT4_EXPORTS as string[]).filter((symbol) => {
+      const renamed = RENAMES[symbol] ?? symbol;
+      if (Object.hasOwn(RETIRED_SYMBOLS, renamed)) return false;
+      for (const [entry, symbols] of DESTINATIONS) {
+        if (symbols.has(renamed)) return !exportsOf(entry).has(renamed);
+      }
+      return !rootExports.has(renamed);
+    });
 
     expect(homeless).toEqual([]);
   });
 
+  it("rewrites the whole 4.x surface into imports that resolve, or names what it left", () => {
+    const { code, notes } = transform(
+      `import { ${(NEXT4_EXPORTS as string[]).join(", ")} } from "@cmssy/next";`,
+    );
+    const named = new Set(
+      (notes ?? []).map((note) => note.split(" ")[0] ?? ""),
+    );
+
+    const unresolved: string[] = [];
+    for (const line of code.matchAll(
+      /import\s+\{([^}]*)\}\s+from\s+"([^"]+)"/g,
+    )) {
+      const entry = line[2] ?? "";
+      for (const part of (line[1] ?? "").split(",")) {
+        const symbol = part.trim();
+        if (!symbol || named.has(symbol)) continue;
+        if (!exportsOf(entry).has(symbol))
+          unresolved.push(`${symbol} @ ${entry}`);
+      }
+    }
+
+    const retiredInV4 = new Set(
+      (NEXT4_EXPORTS as string[])
+        .map((symbol) => RENAMES[symbol] ?? symbol)
+        .filter((symbol) => Object.hasOwn(RETIRED_SYMBOLS, symbol)),
+    );
+
+    expect(unresolved).toEqual([]);
+    expect([...named].sort()).toEqual([...retiredInV4].sort());
+  });
+
   it("knows every symbol that lives ONLY on a runtime entry", () => {
-    const mapped = new Set([
-      ...SERVER_SYMBOLS,
-      ...MIDDLEWARE_SYMBOLS,
-      ...CLIENT_SYMBOLS,
-    ]);
-    const onRoot = new Set(exportedSymbols("index.ts"));
+    const mapped = new Set([...SERVER_SYMBOLS, ...MIDDLEWARE_SYMBOLS]);
+    const onRoot = exportsOf("@cmssy/next");
     const missing = [
-      ...exportedSymbols("server.ts"),
-      ...exportedSymbols("middleware.ts"),
+      ...exportsOf("@cmssy/next/server"),
+      ...exportsOf("@cmssy/next/middleware"),
     ].filter((symbol) => !mapped.has(symbol) && !onRoot.has(symbol));
 
     expect(missing).toEqual([]);

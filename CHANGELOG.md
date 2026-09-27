@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 17.0.1
+
+**Nothing to do unless you ran `npx @cmssy/codemod v5`.** If you did, re-run it.
+It was rewriting imports for 49 of the 85 symbols in its tables to places that do
+not export them: 21 to `@cmssy/next/server`, 6 to `@cmssy/next/middleware`, 17 to
+`@cmssy/core`, and 5 to `@cmssy/next/client`, an entry point that stopped existing
+in 10.0. A run left you with `TS2305: Module '"@cmssy/core"' has no exported
+member 'fetchOrderByToken'` and the like. It now leaves those imports where they
+are and prints what replaced each one, which is
+[v9-to-v10](docs/migrations/v9-to-v10.md) for most of them.
+
+The tables are now resolved against the packages' real exports, so the next
+removal turns a test red here instead of turning up in your repo.
+
 ## 17.0.0
 
 **Run `npx @cmssy/cli types` and commit the result**, then read
