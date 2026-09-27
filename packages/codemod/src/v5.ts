@@ -50,7 +50,8 @@ export const CORE_SYMBOLS = new Set([
   "VerifyCmssyWebhookOptions",
 ]);
 
-const OWN_SESSION = "your own session, plus the delivery API's member mutations";
+const OWN_SESSION =
+  "your own session, plus the delivery API's member mutations";
 const OWN_ACTIONS = "your Server Actions over the cart and order mutations";
 const CORE_INTERNAL =
   "no public replacement - @cmssy/core/internal has it, and internal changes without a major";
@@ -137,6 +138,7 @@ function parseSpecifiers(body: string): Specifier[] {
 }
 
 function applyRenames(specifier: Specifier): Specifier {
+  if (!Object.hasOwn(RENAMES, specifier.name)) return specifier;
   const replacement = RENAMES[specifier.name];
   if (!replacement) return specifier;
   return {
@@ -156,7 +158,7 @@ export function transform(source: string): TransformResult {
     const byEntry = new Map<string, string[]>();
     for (const specifier of specifiers) {
       if (
-        specifier.name in RETIRED_SYMBOLS &&
+        Object.hasOwn(RETIRED_SYMBOLS, specifier.name) &&
         !retired.includes(specifier.name)
       ) {
         retired.push(specifier.name);

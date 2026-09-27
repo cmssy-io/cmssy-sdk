@@ -43,7 +43,10 @@ function sourceFor(directory: string, dist: string): string | null {
   return existsSync(source) ? source : null;
 }
 
+let cached: Map<string, Set<string>> | null = null;
+
 export function entrySurface(): Map<string, Set<string>> {
+  if (cached) return cached;
   const surface = new Map<string, Set<string>>();
   for (const directory of readdirSync(PACKAGES)) {
     const manifest = join(PACKAGES, directory, "package.json");
@@ -64,6 +67,7 @@ export function entrySurface(): Map<string, Set<string>> {
       );
     }
   }
+  cached = surface;
   return surface;
 }
 

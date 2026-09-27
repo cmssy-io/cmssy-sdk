@@ -61,6 +61,12 @@ describe("v5 codemod", () => {
     expect(transform(source)).toEqual({ code: source, changed: false });
   });
 
+  it("does not read an inherited object key as a rename or a refusal", () => {
+    const source = 'import { toString, constructor } from "@cmssy/next";';
+
+    expect(transform(source)).toEqual({ code: source, changed: false });
+  });
+
   it("sends symbols that moved to @cmssy/core there, not to the root", () => {
     const { code } = transform(
       'import { verifyCmssyWebhook, evaluateFieldConditionGroup } from "@cmssy/next";',
@@ -94,7 +100,9 @@ describe("v5 codemod", () => {
   });
 
   it("does not rewrite CmssyLink to an entry point that does not exist", () => {
-    const { code, notes } = transform('import { CmssyLink } from "@cmssy/next";');
+    const { code, notes } = transform(
+      'import { CmssyLink } from "@cmssy/next";',
+    );
 
     expect(code).not.toContain("@cmssy/next/client");
     expect(entrySurface().has("@cmssy/next/client")).toBe(false);
@@ -113,7 +121,9 @@ describe("v5 codemod", () => {
 
   it("routes nothing it rewrites to a symbol that is retired", () => {
     const routed = [...SERVER_SYMBOLS, ...MIDDLEWARE_SYMBOLS, ...CORE_SYMBOLS];
-    const both = routed.filter((symbol) => symbol in RETIRED_SYMBOLS);
+    const both = routed.filter((symbol) =>
+      Object.hasOwn(RETIRED_SYMBOLS, symbol),
+    );
 
     expect(both).toEqual([]);
   });
@@ -144,7 +154,7 @@ describe("v5 codemod", () => {
     const rootExports = exportsOf("@cmssy/next");
     const homeless = (NEXT4_EXPORTS as string[]).filter((symbol) => {
       const renamed = RENAMES[symbol] ?? symbol;
-      if (renamed in RETIRED_SYMBOLS) return false;
+      if (Object.hasOwn(RETIRED_SYMBOLS, renamed)) return false;
       for (const [entry, symbols] of DESTINATIONS) {
         if (symbols.has(renamed)) return !exportsOf(entry).has(renamed);
       }
@@ -163,19 +173,22 @@ describe("v5 codemod", () => {
     );
 
     const unresolved: string[] = [];
-    for (const line of code.matchAll(/import\s+\{([^}]*)\}\s+from\s+"([^"]+)"/g)) {
+    for (const line of code.matchAll(
+      /import\s+\{([^}]*)\}\s+from\s+"([^"]+)"/g,
+    )) {
       const entry = line[2] ?? "";
       for (const part of (line[1] ?? "").split(",")) {
         const symbol = part.trim();
         if (!symbol || named.has(symbol)) continue;
-        if (!exportsOf(entry).has(symbol)) unresolved.push(`${symbol} @ ${entry}`);
+        if (!exportsOf(entry).has(symbol))
+          unresolved.push(`${symbol} @ ${entry}`);
       }
     }
 
     const retiredInV4 = new Set(
       (NEXT4_EXPORTS as string[])
         .map((symbol) => RENAMES[symbol] ?? symbol)
-        .filter((symbol) => symbol in RETIRED_SYMBOLS),
+        .filter((symbol) => Object.hasOwn(RETIRED_SYMBOLS, symbol)),
     );
 
     expect(unresolved).toEqual([]);
