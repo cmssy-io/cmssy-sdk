@@ -1476,7 +1476,7 @@ type FormSubmission {
   referrer: String
   status: FormSubmissionStatus!
   userAgent: String
-  webhookSent: Boolean!
+  webhookDelivery: FormWebhookDelivery
 }
 
 type FormSubmissionListResponse {
@@ -1497,6 +1497,20 @@ type FormSubmitResponse {
   redirectUrl: String
   submissionId: String
   success: Boolean!
+}
+
+type FormWebhookDelivery {
+  at: DateTime!
+  error: String
+  responseCode: Int
+  status: FormWebhookDeliveryStatus!
+}
+
+enum FormWebhookDeliveryStatus {
+  delivered
+  pending
+  refused
+  unknown
 }
 
 input FulfillOrderInput {
@@ -4384,6 +4398,16 @@ type WebhookDelivery {
   event: String!
   id: String!
   nextAttemptAt: DateTime
+
+  """
+  Id of the delivery this one replays. A replay of a replay points at the first delivery, never at another replay.
+  """
+  replayOf: String
+
+  """
+  First 8 KiB of the consumer's response body on the last failed attempt, which can echo their own tokens. Null unless the caller holds webhooks:manage, and null on a delivered attempt.
+  """
+  responseBody: String
   responseCode: Int
   status: String!
   subject: WebhookDeliverySubject
@@ -4434,6 +4458,11 @@ type WebhookEndpointSecret {
 type WebhookMutations {
   create(input: CreateWebhookEndpointInput!): WebhookEndpointSecret!
   delete(id: ID!): DeletionResult!
+
+  """
+  Sends the stored payload again as a new delivery with its own attempt ladder. The original row is left untouched.
+  """
+  redeliver(deliveryId: ID!): WebhookDelivery!
   rotateSecret(
     """
     Hours the previous secret keeps signing alongside the new one, capped at 24. Omit or 0 for an immediate cutover, which breaks delivery until the consumer redeploys.
