@@ -105,6 +105,22 @@ describe("mediaType is what makes a mixed gallery partitionable", () => {
     expect(mediaType(null)).toBeUndefined();
     expect(mediaType(undefined)).toBeUndefined();
   });
+
+  it.each(mediaTypeValues)("carries %s through unchanged", (kind) => {
+    expect(
+      mediaType({ ...RESOLVED, type: kind }),
+      `Only image and video appear in the fixtures above, so a swap confined to ${kind} survives every other assertion in this file - a consumer filtering a field on this kind would get an empty list with the suite green.`,
+    ).toBe(kind);
+  });
+
+  it("refuses a kind outside the vocabulary rather than passing it off as one", () => {
+    const fifth = { ...RESOLVED, type: "model3d" } as unknown as ResolvedMedia;
+
+    expect(
+      mediaType(fifth),
+      "The vocabulary is append-only and cmssy validates it only on create, so a site pinned to this version can receive a kind added after it shipped. Returning it would hand a four-member union a fifth value, and the exhaustive `switch` a four-member union invites would throw inside the gallery. undefined is the honest answer: unknown to THIS version.",
+    ).toBeUndefined();
+  });
 });
 
 describe("mediaDuration", () => {
@@ -116,10 +132,10 @@ describe("mediaDuration", () => {
     expect(mediaDuration(RESOLVED)).toBeUndefined();
   });
 
-  it("distinguishes a zero-length clip from an absent duration", () => {
+  it("passes a duration through verbatim instead of filtering it", () => {
     expect(
       mediaDuration({ ...CLIP, duration: 0 }),
-      "`?? undefined` or a falsy check here would erase a 0, and a caller rendering `duration ? badge : null` would then silently drop the badge for the shortest clips rather than showing 0:00.",
+      "0 is not reachable through cmssy - the backend validates duration as positive and omits the key when it is unknown - so this is not a 0:00 badge being defended. What it pins is that the accessor does no filtering of its own: `|| undefined` or `?? null` here would also rewrite the sub-second durations that ARE reachable, and `mediaDuration` would stop being a plain read.",
     ).toBe(0);
   });
 
@@ -153,17 +169,24 @@ describe("a consumer can split a multiple media field by kind (CMS-1970)", () =>
   });
 });
 
-type TheKindMustBeRequiredOrAnEntryCannotBePartitioned =
-  undefined extends ResolvedMedia["type"] ? false : true;
+type MutuallyAssignable<A, B> = [A] extends [B]
+  ? [B] extends [A]
+    ? true
+    : false
+  : false;
+
+type TheKindIsExactlyTheFourKinds = MutuallyAssignable<
+  ResolvedMedia["type"],
+  "image" | "video" | "document" | "audio"
+>;
 
 describe("the pinned @cmssy/types still declares what this package forwards", () => {
-  it("keeps the kind a required field, so no entry can be unpartitionable", () => {
-    const kindIsRequired: TheKindMustBeRequiredOrAnEntryCannotBePartitioned =
-      true;
+  it("pins the kind to exactly the four kinds, in both directions", () => {
+    const kindIsExact: TheKindIsExactlyTheFourKinds = true;
 
     expect(
-      kindIsRequired,
-      "The gate here is the type annotation, not this comparison: if the pinned package ever makes `type` optional or drops it, the alias resolves to `false`, `true` stops being assignable, and `tsc --noEmit` goes red. A consumer could then receive an entry with no kind and the partition above would need a guard nobody wrote.",
+      kindIsExact,
+      "The gate is the annotation, not this comparison - `tsc --noEmit` grades it, vitest cannot. Asking only whether `type` is required catches a pin that makes it optional and a pin that drops it, and stays green on the two drifts that matter just as much: widening to `string`, and relaxing to `MediaType | null` for an asset whose kind was never recorded. Either would leave the partition above dropping entries into neither bucket. Assignability in both directions is what refuses all four, and the union is spelled out as literals on purpose - writing `MediaType` here would move with the very change being watched for.",
     ).toBe(true);
   });
 
@@ -175,7 +198,7 @@ describe("the pinned @cmssy/types still declares what this package forwards", ()
 
     expect(
       pinned,
-      "Pick<> on a key the pinned package does not declare is a typecheck failure, so this file goes red the moment the dependency drops below the version that added these two fields. That is the gate CMS-1992 asked for: both fields live inside an opaque JSON scalar, so the SDL drift check structurally cannot see them.",
+      "`Pick<>` on a key the pinned package does not declare fails `tsc`. This is deliberately a second witness rather than the only one: the `CLIP` fixture at the top of the file already fails on a pin without `duration`, because `satisfies ResolvedMedia` rejects the unknown key. Both must stay - delete the fixture and this is the only thing left holding `duration`; delete this and the review trail for why the pin cannot slide back goes with it.",
     ).toEqual({ type: "video", duration: 1 });
   });
 });

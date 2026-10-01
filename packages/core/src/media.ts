@@ -1,3 +1,4 @@
+import { mediaTypeValues } from "@cmssy/types";
 import type { MediaType, ResolvedMedia } from "@cmssy/types";
 
 /**
@@ -28,7 +29,12 @@ export function mediaAlt(value: MediaLike): string | undefined {
 }
 
 export function mediaType(value: MediaLike): MediaType | undefined {
-  return typeof value === "string" ? undefined : value?.type;
+  if (typeof value === "string") return undefined;
+  const type: unknown = value?.type;
+  return typeof type === "string" &&
+    (mediaTypeValues as readonly string[]).includes(type)
+    ? (type as MediaType)
+    : undefined;
 }
 
 export function mediaDuration(value: MediaLike): number | undefined {

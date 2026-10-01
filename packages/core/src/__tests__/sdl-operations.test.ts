@@ -10,7 +10,10 @@ import {
   type DocumentNode,
   type OperationDefinitionNode,
 } from "graphql";
+import { brandingFieldNames } from "@cmssy/types";
 import { describe, expect, it } from "vitest";
+
+import { SITE_CONFIG_QUERY } from "../data/queries";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../..");
@@ -77,4 +80,27 @@ describe("SDK operations validate against the backend SDL", () => {
       expect(validate(schema, op.doc).map((e) => e.message)).toEqual([]);
     },
   );
+});
+
+describe("the branding selection and the branding type share one vocabulary", () => {
+  const selection = /branding \{([\s\S]*?)\}/.exec(SITE_CONFIG_QUERY)?.[1] ?? "";
+  const selected = selection
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .sort();
+
+  it("selects exactly the fields the published vocabulary names", () => {
+    expect(
+      selected,
+      "`CmssyBranding` is `Record<BrandingFieldName, string | null>`, derived from `brandingFieldNames` - so the type grows on its own the moment @cmssy/types publishes a new branding field, while a hand-written selection set does not. A consumer would then read a field the type promises, get `undefined` rather than the `null` the type allows, and a `!== null` guard would let it through into an attribute. Validation against the SDL cannot catch this: a field that is merely NOT selected is a perfectly valid query.",
+    ).toEqual([...brandingFieldNames].sort());
+  });
+
+  it("knows the vocabulary it compared against is not empty", () => {
+    expect(
+      brandingFieldNames.length,
+      "The check above compares two derived lists. If the vocabulary were ever empty both sides would be `[]` and it would pass having asserted nothing.",
+    ).toBeGreaterThanOrEqual(5);
+  });
 });
