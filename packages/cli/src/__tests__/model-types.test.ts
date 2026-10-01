@@ -201,6 +201,8 @@ const _media: CmssyMedia = {
   id: "m1",
   url: null,
   visibility: "public",
+  type: "video",
+  duration: 12.5,
   altText: "from the reference",
   transform: { width: 800, fit: "cover", quality: 80 },
 };

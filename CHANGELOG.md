@@ -6,6 +6,30 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.0.0
+
+**Add `type` to every `ResolvedMedia` you construct by hand**, then read
+[docs/migrations/v18-to-v19.md](docs/migrations/v18-to-v19.md). No codemod -
+nothing moved, nothing was renamed.
+
+`ResolvedMedia.type` is now required and `ResolvedMedia.duration` is new. Both
+have been on the delivery API since CMS-1970 and CMS-1969; the SDK pinned
+`@cmssy/types` below the version that declares them, so **no site could see
+either field** no matter how current its SDK was. Reading them does not break -
+a required field is a stronger promise than an optional one. Building one does:
+every test fixture, mock and seed value now needs a kind.
+
+New alongside it: the `mediaType` and `mediaDuration` helpers, the `MediaType`
+union and the `mediaTypeValues` vector, all exported from `@cmssy/core` and
+`@cmssy/react`.
+
+If you self-host, **upgrade cmssy before the SDK**. A cmssy older than
+2026-10-01 does not send `type`, and this release types it as always present.
+
+The case it unblocks is a mixed gallery. Before this, a resolved media value
+told you a URL and alt text and nothing that separated a photo from a clip, so
+galleries sniffed the file extension - which fails on a CDN URL that has none.
+
 ## 18.0.0
 
 **Delete any branch that reads `accessToken` or `customer` off a form-submit

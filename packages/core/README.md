@@ -38,7 +38,8 @@ cause.
 
 `defineCmssyConfig`, `createCmssyClient`, `graphqlRequest` for the transport;
 `fields` and `defineCmssyLayout` for block and layout definitions; `mediaUrl`,
-`mediaUrls`, `mediaAlt` for media; `localizeHref`, `resolveCmssyLocale`,
+`mediaUrls`, `mediaAlt`, `mediaType`, `mediaDuration` and the `MediaType`
+vocabulary for media; `localizeHref`, `resolveCmssyLocale`,
 `CMSSY_LOCALE_HEADER` for i18n; `applyCmssyCsp` and `verifyCmssyWebhook` for the
 edges. Full signatures in
 [docs/reference/sdk-api.md](https://github.com/cmssy-io/cmssy-sdk/blob/main/docs/reference/sdk-api.md).

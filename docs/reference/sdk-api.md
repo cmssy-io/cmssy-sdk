@@ -160,6 +160,31 @@ folder is a working example, `codegen` included.
 `datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,
 `pageSelector`, `select`, `radio`, `multiselect`, `media`, `repeater`, `relation`.
 
+### Media
+
+A `fields.media` value reads back as `ResolvedMedia` (or `ResolvedMedia[]` with
+`multiple: true`), not as a URL string. These accessors also take the bare string an
+API predating CMS-1149 still returns, so a site can upgrade its SDK and its cmssy
+independently - that is what `MediaLike` is.
+
+| Export                       | Signature                                | Notes                                                                                            |
+| ---------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `mediaUrl`                   | `(value: MediaLike) => string \| null`   | `null` for a private asset, an unset field, or an empty string - all of which would render broken. |
+| `mediaUrls`                  | `(value: readonly MediaLike[]) => string[]` | Drops entries with no url rather than leaving a hole.                                           |
+| `mediaAlt`                   | `(value: MediaLike) => string \| undefined` | `undefined` for a bare string, which carries no alt text.                                      |
+| `mediaType`                  | `(value: MediaLike) => MediaType \| undefined` | The asset's kind, for partitioning a mixed gallery without parsing urls.                     |
+| `mediaDuration`              | `(value: MediaLike) => number \| undefined` | Seconds, for a clip. Absent means unknown, never zero.                                         |
+| `MediaType` `mediaTypeValues` | const + type, and the array of its values | `image`, `video`, `document`, `audio`. Compare against these rather than string literals.       |
+| `ResolvedMedia` `MediaTransform` `FileFieldValue` `MediaLike` | types     | What a media field reads back, and the accessors' argument.                                      |
+
+`mediaType` returns `undefined` for anything outside the four kinds it knows. The
+vocabulary is append-only and cmssy validates it only when an asset is created, so a
+site pinned to this version can be served a kind added after it shipped; `undefined`
+means "unknown to this version" and keeps an exhaustive `switch` from throwing. It is
+also what you get from a cmssy deployed before the kind was delivered at all - so
+prefer `mediaType(value)` over reading `value.type`, which the type says is always
+there.
+
 ### Editor protocol, edit mode & CSP
 
 | Export                                                                  | Signature                                                         |

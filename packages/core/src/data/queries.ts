@@ -1,3 +1,4 @@
+import { brandingFieldNames } from "@cmssy/types";
 import type {
   CmssyBranding,
   CmssySiteConfig,
@@ -36,11 +37,7 @@ export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!
       notFoundPageId
       previewUrl
       branding {
-        brandName
-        logoUrl
-        logoDarkUrl
-        faviconUrl
-        ogImageUrl
+        ${brandingFieldNames.join("\n        ")}
       }
     }
   }
