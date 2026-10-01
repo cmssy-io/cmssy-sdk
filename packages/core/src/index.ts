@@ -41,8 +41,15 @@ export type {
 } from "./data/queries";
 
 export { fields } from "./fields";
-export { mediaAlt, mediaUrl, mediaUrls } from "./media";
+export {
+  mediaAlt,
+  mediaDuration,
+  mediaType,
+  mediaUrl,
+  mediaUrls,
+} from "./media";
 export type { MediaLike } from "./media";
+export { MediaType, mediaTypeValues } from "@cmssy/types";
 export type { ResolvedMedia, MediaTransform, FileFieldValue } from "@cmssy/types";
 export { defineCmssyLayout } from "./layout";
 export {

@@ -1,4 +1,4 @@
-import type { ResolvedMedia } from "@cmssy/types";
+import type { MediaType, ResolvedMedia } from "@cmssy/types";
 
 /**
  * A media value as it can reach a block during the CMS-1149 transition: the
@@ -25,4 +25,12 @@ export function mediaUrls(
 
 export function mediaAlt(value: MediaLike): string | undefined {
   return typeof value === "string" ? undefined : value?.alt;
+}
+
+export function mediaType(value: MediaLike): MediaType | undefined {
+  return typeof value === "string" ? undefined : value?.type;
+}
+
+export function mediaDuration(value: MediaLike): number | undefined {
+  return typeof value === "string" ? undefined : value?.duration;
 }
