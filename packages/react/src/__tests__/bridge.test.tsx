@@ -385,6 +385,66 @@ describe("edit bridge (blocks-driven)", () => {
     expect(headings).toEqual(["Fresh|Inserted", "Hello|World"]);
   });
 
+  it("announces a fresh ready when a page change throws away what the editor inserted", async () => {
+    const { container, rerender } = render(
+      <CmssyEditablePage
+        page={page}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={blocks}
+      />,
+    );
+    await act(async () => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: editorOrigin,
+          source: null,
+          data: {
+            type: "cmssy:insert",
+            blockId: "new-1",
+            blockType: "hero",
+            content: { heading: "Fresh", sub: "Inserted" },
+            index: 0,
+            protocolVersion: PROTOCOL_VERSION,
+          },
+        }),
+      );
+    });
+    expect(container.textContent).toContain("Fresh|Inserted");
+
+    mockParent.postMessage.mockClear();
+
+    await act(async () => {
+      rerender(
+        <CmssyEditablePage
+          page={{
+            ...page,
+            blocks: [
+              ...page.blocks,
+              {
+                id: "b2",
+                type: "hero",
+                content: { en: { heading: "Arrived", sub: "Late" } },
+              },
+            ],
+          }}
+          locale="en"
+          edit={{ editorOrigin }}
+          blocks={blocks}
+        />,
+      );
+    });
+
+    expect(
+      container.textContent,
+      "the reset keyed on the page's blocks drops live-edit state, inserted blocks included",
+    ).not.toContain("Fresh|Inserted");
+    expect(
+      readyMessage(),
+      "the editor reconciles off cmssy:ready, so a reset it is never told about leaves the block gone with nothing left to trigger a resend",
+    ).toBeTruthy();
+  });
+
   it("reorders rendered blocks on cmssy:reorder", async () => {
     const twoBlocks = {
       id: "p2",
