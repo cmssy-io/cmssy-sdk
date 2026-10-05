@@ -3,10 +3,10 @@ import {
   type CmssyLayoutResolution,
   type ResolveCmssyLayoutOptions as ReactResolveCmssyLayoutOptions,
 } from "@cmssy/react";
-import { cache as perRequest } from "react";
 import type { CmssyConfig, CmssyRegionOf } from "@cmssy/core";
 import { createCmssyLayoutStore } from "@cmssy/core/internal";
 import { nextRetryMode } from "../retry-mode";
+import { perRequest } from "../per-request";
 import { cmssyCachedFetch, type CmssyDataCacheOptions } from "../data-cache";
 
 export type ResolveCmssyLayoutOptions<
