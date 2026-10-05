@@ -6,6 +6,39 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.1.0
+
+**Nothing to do.** Upgrade and a Next site stops making three identical layout
+requests per render, and stops serving a 500 when the delivery API throttles one.
+
+A page that mounts header, sidebar and footer used to issue **three** identical
+`PublicPageLayouts` requests per render - the query returns every region and each
+slot kept one. They now share a single request per render. Nothing could absorb
+that before: these are POSTs, which Next treats as uncacheable, and
+`force-dynamic` disables the data cache outright. On a workspace near its
+delivery budget this was the difference between a preview that renders and one
+that does not.
+
+When the layouts query is throttled (429) or the API is briefly unavailable
+(503), `resolveCmssyLayout` now renders the region as empty instead of letting
+the error take the whole route down with it. In edit mode the region shows what
+happened and how long to wait, so an editor sees a reason rather than a blank
+canvas. A visitor sees nothing, which is how a failed block already behaves.
+Anything else - a 401, a 404, a network error - still throws.
+
+Calling `resolveCmssyLayoutSlot` yourself is **unchanged**: it still throws on a
+throttle unless you pass `onTransientLayoutFailure: "degrade"`. That default is
+deliberate. `@cmssy/astro`, `@cmssy/remix` and `loadCmssyRoute` build their own
+result and would have swallowed the refusal into an empty region with nothing
+said, which is the failure this release exists to remove.
+
+New: `isTransientRequestError` from `@cmssy/core`, and the `CmssyLayoutUnavailable`
+type from `@cmssy/react`.
+
+On a React that predates `cache()` - the peer range still allows 18.2 - the
+per-render sharing is skipped rather than failing at import, so behaviour there
+is exactly what it was.
+
 ## 19.0.0
 
 **Add `type` to every `ResolvedMedia` you construct by hand**, then read
