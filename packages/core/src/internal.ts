@@ -21,6 +21,12 @@ export { resolveSiteLocales, splitLocaleFromPath } from "./data/site-locales";
 export type { CmssySiteLocales } from "./data/site-locales";
 export { localizeHref } from "./data/localize-href";
 export {
+  createCmssyLayoutStore,
+  layoutStoreKey,
+  readThroughLayoutStore,
+} from "./data/layout-store";
+export type { CmssyLayoutStore } from "./data/layout-store";
+export {
   SITE_CONFIG_QUERY,
   MODEL_DEFINITIONS_QUERY,
   MODEL_RECORDS_QUERY,

@@ -1,5 +1,6 @@
 import type { CmssyLayoutGroup } from "@cmssy/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCmssyLayoutStore } from "@cmssy/core/internal";
 import { resolveCmssyLayoutSlot } from "../components/resolve-layout-slot";
 
 const CONFIG = {
@@ -341,5 +342,121 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
     });
 
     expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: "build" });
+  });
+
+  it("fetches the layout once for a render that mounts three regions", async () => {
+    setup();
+    const layoutStore = createCmssyLayoutStore();
+
+    const slots = await Promise.all(
+      ["header", "sidebar_left", "footer"].map((region) =>
+        resolveCmssyLayoutSlot(CONFIG, {
+          region,
+          blocks: [],
+          editMode: false,
+          path: [],
+          layoutStore,
+        }),
+      ),
+    );
+
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
+    expect(slots.map((slot) => slot.settings)).toEqual([
+      null,
+      { width: 18, sticky: true },
+      null,
+    ]);
+  });
+
+  it("fetches once per region when no store is passed, which is what every adapter but next still does", async () => {
+    setup();
+
+    for (const region of ["header", "sidebar_left", "footer"]) {
+      await resolveCmssyLayoutSlot(CONFIG, {
+        region,
+        blocks: [],
+        editMode: false,
+        path: [],
+      });
+    }
+
+    expect(fetchLayouts).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps the draft and the published layout apart in one store", async () => {
+    setup();
+    const layoutStore = createCmssyLayoutStore();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: true,
+      path: [],
+      layoutStore,
+    });
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      layoutStore,
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledTimes(2);
+    expect(fetchLayouts.mock.calls.map((call) => call[2].previewSecret)).toEqual(
+      [CONFIG.draftSecret, undefined],
+    );
+  });
+
+  it("keeps two pages apart in one store", async () => {
+    setup();
+    const layoutStore = createCmssyLayoutStore();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      layoutStore,
+    });
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: ["about"],
+      layoutStore,
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledTimes(2);
+    expect(fetchLayouts.mock.calls.map((call) => call[1])).toEqual([
+      "/",
+      "/about",
+    ]);
+  });
+
+  it("lets the three regions share one failure instead of asking three times", async () => {
+    setup();
+    const refused = new Error("cmssy: layouts fetch failed (429)");
+    fetchLayouts.mockRejectedValue(refused);
+    const layoutStore = createCmssyLayoutStore();
+
+    const outcomes = await Promise.allSettled(
+      ["header", "sidebar_left", "footer"].map((region) =>
+        resolveCmssyLayoutSlot(CONFIG, {
+          region,
+          blocks: [],
+          editMode: false,
+          path: [],
+          layoutStore,
+        }),
+      ),
+    );
+
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
+    expect(outcomes.map((outcome) => outcome.status)).toEqual([
+      "rejected",
+      "rejected",
+      "rejected",
+    ]);
   });
 });
