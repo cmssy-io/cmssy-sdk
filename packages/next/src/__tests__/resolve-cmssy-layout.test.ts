@@ -152,4 +152,32 @@ describe("resolveCmssyLayout data cache (CMS-952)", () => {
 
     expect(resolveWithReact.mock.calls[0]?.[1]).not.toHaveProperty("fetch");
   });
+
+  it("hands react a layout store, which is what makes three slots one fetch", async () => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(resolveWithReact.mock.calls[0]?.[1]?.layoutStore).toBeInstanceOf(Map);
+  });
+
+  it("leaves a store the caller already owns alone", async () => {
+    resolveWithReact.mockResolvedValue({ groups: [] });
+    const layoutStore = new Map();
+
+    await resolveCmssyLayout(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      layoutStore,
+    });
+
+    expect(resolveWithReact.mock.calls[0]?.[1]?.layoutStore).toBe(layoutStore);
+  });
 });

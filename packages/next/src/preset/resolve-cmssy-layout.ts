@@ -4,13 +4,17 @@ import {
   type ResolveCmssyLayoutOptions as ReactResolveCmssyLayoutOptions,
 } from "@cmssy/react";
 import type { CmssyConfig, CmssyRegionOf } from "@cmssy/core";
+import { createCmssyLayoutStore } from "@cmssy/core/internal";
 import { nextRetryMode } from "../retry-mode";
+import { perRequest } from "../per-request";
 import { cmssyCachedFetch, type CmssyDataCacheOptions } from "../data-cache";
 
 export type ResolveCmssyLayoutOptions<
   C extends CmssyConfig,
   P extends CmssyRegionOf<C>,
 > = ReactResolveCmssyLayoutOptions<C, P> & { cache?: CmssyDataCacheOptions };
+
+const requestLayoutStore = perRequest(createCmssyLayoutStore);
 
 export function resolveCmssyLayout<
   C extends CmssyConfig,
@@ -26,6 +30,7 @@ export function resolveCmssyLayout<
   return resolveWithReact(config, {
     ...rest,
     retry: rest.retry ?? nextRetryMode(),
+    layoutStore: rest.layoutStore ?? requestLayoutStore(),
     ...(fetchImpl ? { fetch: fetchImpl } : {}),
   } as ReactResolveCmssyLayoutOptions<C, P>);
 }

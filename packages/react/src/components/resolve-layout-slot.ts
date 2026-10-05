@@ -6,7 +6,12 @@ import type {
   FetchLike,
   RetryOption,
 } from "@cmssy/core";
-import { fetchLayouts } from "@cmssy/core/internal";
+import {
+  fetchLayouts,
+  layoutStoreKey,
+  readThroughLayoutStore,
+  type CmssyLayoutStore,
+} from "@cmssy/core/internal";
 import {
   resolveSiteLocales,
   splitLocaleFromPath,
@@ -25,6 +30,7 @@ interface ResolveCmssyLayoutSlotBase {
   appContext?: Record<string, unknown>;
   retry?: RetryOption;
   fetch?: FetchLike;
+  layoutStore?: CmssyLayoutStore;
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -66,6 +72,7 @@ export async function resolveCmssyLayoutSlot(
     locale: explicitLocale,
     retry,
     fetch: fetchImpl,
+    layoutStore,
   } = options;
 
   const requestOptions = {
@@ -82,10 +89,17 @@ export async function resolveCmssyLayoutSlot(
   const slugSegments = fromPath.path ?? [];
   const page = layoutSlotPage(explicitPage ?? "/" + slugSegments.join("/"));
 
-  const groups = await fetchLayouts(config, page.slug, {
-    previewSecret: editMode || preview ? config.draftSecret : undefined,
-    ...requestOptions,
-  });
+  const previewSecret =
+    editMode || preview ? config.draftSecret : undefined;
+  const groups = await readThroughLayoutStore(
+    layoutStore,
+    layoutStoreKey(config, page.slug, previewSecret),
+    () =>
+      fetchLayouts(config, page.slug, {
+        previewSecret,
+        ...requestOptions,
+      }),
+  );
 
   const base = {
     groups,
