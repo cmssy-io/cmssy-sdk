@@ -3,6 +3,7 @@ import {
   CmssyRequestError,
   CMSSY_RATE_LIMIT_WINDOW_MS,
   CMSSY_RETRY_MODES,
+  isTransientRequestError,
   postGraphql,
 } from "../data/http";
 import { graphqlRequest } from "../data/graphql-request";
@@ -629,5 +630,38 @@ describe("retry modes (CMS-1463)", () => {
     expect(CMSSY_RETRY_MODES.interactive.maxRetryAfterMs).toBe(1_000);
     expect(CMSSY_RETRY_MODES.interactive.maxTotalWaitMs).toBe(2_000);
     expect(CMSSY_RETRY_MODES.interactive.maxRetries).toBe(2);
+  });
+});
+
+describe("what a caller may degrade on (CMS-2049)", () => {
+  it("states the largest Retry-After each mode can honour", () => {
+    expect({
+      build: CMSSY_RETRY_MODES.build.maxRetryAfterMs,
+      interactive: CMSSY_RETRY_MODES.interactive.maxRetryAfterMs,
+    }).toEqual({ build: 60_000, interactive: 1_000 });
+    expect(CMSSY_RETRY_MODES.build.maxRetryAfterMs).toBe(
+      CMSSY_RATE_LIMIT_WINDOW_MS,
+    );
+  });
+
+  it("calls a failure transient exactly when the build policy would have retried it", () => {
+    for (const status of [429, 503]) {
+      expect(CMSSY_RETRY_MODES.build.retryStatuses).toContain(status);
+      expect(isTransientRequestError(new CmssyRequestError("x", status))).toBe(
+        true,
+      );
+    }
+    for (const status of [400, 401, 403, 404, 500, 502]) {
+      expect(CMSSY_RETRY_MODES.build.retryStatuses).not.toContain(status);
+      expect(isTransientRequestError(new CmssyRequestError("x", status))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("refuses anything that is not a cmssy request error", () => {
+    expect(isTransientRequestError(new TypeError("fetch failed"))).toBe(false);
+    expect(isTransientRequestError({ status: 429 })).toBe(false);
+    expect(isTransientRequestError(null)).toBe(false);
   });
 });

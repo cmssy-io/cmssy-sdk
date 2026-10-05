@@ -16,7 +16,7 @@ import {
   resolveSiteLocales,
   splitLocaleFromPath,
 } from "@cmssy/core/internal/locale";
-import { resolveEditorOrigin } from "@cmssy/core";
+import { isTransientRequestError, resolveEditorOrigin } from "@cmssy/core";
 import type { BlockDefinition } from "../registry";
 import { resolveEditorLayoutBlockData } from "./resolve-block-data";
 
@@ -31,6 +31,7 @@ interface ResolveCmssyLayoutSlotBase {
   retry?: RetryOption;
   fetch?: FetchLike;
   layoutStore?: CmssyLayoutStore;
+  onTransientLayoutFailure?: "throw" | "degrade";
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -39,8 +40,15 @@ export type CmssyLayoutSlotLocaleSource =
 export type ResolveCmssyLayoutSlotOptions = ResolveCmssyLayoutSlotBase &
   CmssyLayoutSlotLocaleSource;
 
+export interface CmssyLayoutUnavailable {
+  status: number;
+  retryAfterMs?: number;
+  message: string;
+}
+
 export interface CmssyLayoutSlotResolution {
   groups: CmssyLayoutGroup[];
+  unavailable?: CmssyLayoutUnavailable;
   settings: Record<string, unknown> | null;
   page: CmssyBlockPage;
   locale: string;
@@ -73,6 +81,7 @@ export async function resolveCmssyLayoutSlot(
     retry,
     fetch: fetchImpl,
     layoutStore,
+    onTransientLayoutFailure = "throw",
   } = options;
 
   const requestOptions = {
@@ -91,18 +100,37 @@ export async function resolveCmssyLayoutSlot(
 
   const previewSecret =
     editMode || preview ? config.draftSecret : undefined;
-  const groups = await readThroughLayoutStore(
-    layoutStore,
-    layoutStoreKey(config, page.slug, previewSecret),
-    () =>
-      fetchLayouts(config, page.slug, {
-        previewSecret,
-        ...requestOptions,
-      }),
-  );
+  let groups: CmssyLayoutGroup[] = [];
+  let unavailable: CmssyLayoutUnavailable | undefined;
+  try {
+    groups = await readThroughLayoutStore(
+      layoutStore,
+      layoutStoreKey(config, page.slug, previewSecret),
+      () =>
+        fetchLayouts(config, page.slug, {
+          previewSecret,
+          ...requestOptions,
+        }),
+    );
+  } catch (error) {
+    if (
+      onTransientLayoutFailure !== "degrade" ||
+      !isTransientRequestError(error)
+    ) {
+      throw error;
+    }
+    unavailable = {
+      status: error.status,
+      ...(error.retryAfterMs !== undefined
+        ? { retryAfterMs: error.retryAfterMs }
+        : {}),
+      message: error.message,
+    };
+  }
 
   const base = {
     groups,
+    ...(unavailable ? { unavailable } : {}),
     settings: groups.find((g) => g.region === region)?.settings ?? null,
     page,
     locale,

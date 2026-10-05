@@ -8,6 +8,7 @@ export {
   CmssyRequestError,
   CMSSY_RATE_LIMIT_WINDOW_MS,
   CMSSY_RETRY_MODES,
+  isTransientRequestError,
 } from "./data/http";
 export type { RetryPolicy, RetryOption, CmssyRetryMode } from "./data/http";
 export { createCmssyClient } from "./data/client";

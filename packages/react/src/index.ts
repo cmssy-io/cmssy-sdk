@@ -94,6 +94,7 @@ export type {
   ResolveCmssyLayoutSlotOptions,
   CmssyLayoutSlotResolution,
   CmssyLayoutSlotLocaleSource,
+  CmssyLayoutUnavailable,
 } from "./components/resolve-layout-slot";
 export { resolveCmssyLayout } from "./components/resolve-layout";
 export type {

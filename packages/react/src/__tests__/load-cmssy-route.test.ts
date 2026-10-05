@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CmssyRequestError } from "@cmssy/core";
 import {
   defineCmssyRouteConfig,
   loadCmssyRoute,
@@ -177,6 +178,17 @@ describe("loadCmssyRoute (CMS-1874)", () => {
 
     expect(route.page).toBe(PAGE);
     expect(fetchPage.mock.calls[0]?.[2]).not.toHaveProperty("previewSecret");
+  });
+
+  it("still fails loudly when the layout is throttled, rather than returning a region that is quietly empty (CMS-2049)", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError("cmssy: layouts fetch failed (429)", 429, 45_000),
+    );
+
+    await expect(
+      loadCmssyRoute(CONFIG, { blocks: [], path: ["pricing"] }),
+    ).rejects.toThrow("(429)");
   });
 
   it("keeps a missing page from failing the route", async () => {
