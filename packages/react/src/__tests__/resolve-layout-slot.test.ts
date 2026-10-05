@@ -475,6 +475,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       blocks: [],
       editMode: false,
       path: [],
+      onTransientLayoutFailure: "degrade",
     });
 
     expect(result.groups).toEqual([]);
@@ -497,6 +498,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       blocks: [],
       editMode: false,
       path: [],
+      onTransientLayoutFailure: "degrade",
     });
 
     expect(result.unavailable?.status).toBe(503);
@@ -515,6 +517,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
         blocks: [],
         editMode: false,
         path: [],
+        onTransientLayoutFailure: "degrade",
       }),
     ).rejects.toThrow("(401)");
   });
@@ -529,6 +532,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
         blocks: [],
         editMode: false,
         path: [],
+        onTransientLayoutFailure: "degrade",
       }),
     ).rejects.toThrow("fetch failed");
   });
@@ -544,5 +548,21 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
     });
 
     expect(result).not.toHaveProperty("unavailable");
+  });
+
+  it("throws a 429 at a caller that never asked to degrade, so no adapter silently empties a region", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError("cmssy: layouts fetch failed (429)", 429, 45_000),
+    );
+
+    await expect(
+      resolveCmssyLayoutSlot(CONFIG, {
+        region: "header",
+        blocks: [],
+        editMode: false,
+        path: [],
+      }),
+    ).rejects.toThrow("(429)");
   });
 });

@@ -67,10 +67,10 @@ export async function resolveCmssyLayout<
       "cmssy: resolveCmssyLayout needs an `editable` component in edit mode - the editor bridge lives on the client",
     );
   }
-  const resolved = await resolveCmssyLayoutSlot(
-    config,
-    slotOptions as ResolveCmssyLayoutSlotOptions,
-  );
+  const resolved = await resolveCmssyLayoutSlot(config, {
+    onTransientLayoutFailure: "degrade",
+    ...slotOptions,
+  } as ResolveCmssyLayoutSlotOptions);
   const { groups, settings, page, locale, defaultLocale, enabledLocales } =
     resolved;
   const shared = {

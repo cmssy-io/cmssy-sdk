@@ -31,6 +31,7 @@ interface ResolveCmssyLayoutSlotBase {
   retry?: RetryOption;
   fetch?: FetchLike;
   layoutStore?: CmssyLayoutStore;
+  onTransientLayoutFailure?: "throw" | "degrade";
 }
 
 export type CmssyLayoutSlotLocaleSource =
@@ -80,6 +81,7 @@ export async function resolveCmssyLayoutSlot(
     retry,
     fetch: fetchImpl,
     layoutStore,
+    onTransientLayoutFailure = "throw",
   } = options;
 
   const requestOptions = {
@@ -111,7 +113,12 @@ export async function resolveCmssyLayoutSlot(
         }),
     );
   } catch (error) {
-    if (!isTransientRequestError(error)) throw error;
+    if (
+      onTransientLayoutFailure !== "degrade" ||
+      !isTransientRequestError(error)
+    ) {
+      throw error;
+    }
     unavailable = {
       status: error.status,
       ...(error.retryAfterMs !== undefined
