@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
-import { defineCmssyConfig, defineCmssyLayout, fields } from "@cmssy/core";
+import { renderToStaticMarkup } from "react-dom/server";
+import {
+  CmssyRequestError,
+  defineCmssyConfig,
+  defineCmssyLayout,
+  fields,
+} from "@cmssy/core";
 import { CmssyServerLayout } from "../components/cmssy-server-layout";
 import {
   resolveCmssyLayout,
@@ -160,5 +166,67 @@ describe("resolveCmssyLayout", () => {
     expectTypeOf<
       CmssyLayoutResolution<typeof bare, string>["settings"]
     >().toEqualTypeOf<Record<string, unknown> | null>();
+  });
+
+  it("shows the editor why a region is missing when the layout was throttled", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError(
+        "cmssy: layouts fetch failed (429) - Rate limit exceeded",
+        429,
+        45_000,
+      ),
+    );
+
+    const layout = await resolveCmssyLayout(CONFIG, {
+      region: "sidebar",
+      blocks: [],
+      editMode: true,
+      editable: Editable,
+      path: ["docs"],
+    });
+
+    expect(layout.unavailable?.status).toBe(429);
+    const html = renderToStaticMarkup(layout.element);
+    expect(html).toContain('data-cmssy-layout-unavailable="sidebar"');
+    expect(html).toContain("Try again in 45s");
+    expect(html).toContain("Rate limit exceeded");
+  });
+
+  it("tells a visitor nothing and renders no region at all", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError(
+        "cmssy: layouts fetch failed (429) - Rate limit exceeded",
+        429,
+        45_000,
+      ),
+    );
+
+    const layout = await resolveCmssyLayout(CONFIG, {
+      region: "sidebar",
+      blocks: [],
+      editMode: false,
+      path: ["docs"],
+    });
+
+    expect(layout.unavailable?.status).toBe(429);
+    expect(layout.element.type).toBe(CmssyServerLayout);
+    expect(layout.element.props.groups).toEqual([]);
+  });
+
+  it("leaves the editable element untouched when the layout loaded", async () => {
+    setup();
+
+    const layout = await resolveCmssyLayout(CONFIG, {
+      region: "sidebar",
+      blocks: [],
+      editMode: true,
+      editable: Editable,
+      path: ["docs"],
+    });
+
+    expect(layout.element.type).toBe(Editable);
+    expect(layout).not.toHaveProperty("unavailable");
   });
 });

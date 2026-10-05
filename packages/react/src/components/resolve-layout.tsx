@@ -7,9 +7,11 @@ import type {
   CmssyRegionSettingsOf,
 } from "@cmssy/core";
 import { CmssyServerLayout } from "./cmssy-server-layout";
+import { LayoutUnavailableCard } from "./layout-unavailable-card";
 import {
   resolveCmssyLayoutSlot,
   type CmssyLayoutSlotLocaleSource,
+  type CmssyLayoutUnavailable,
   type ResolveCmssyLayoutSlotOptions,
 } from "./resolve-layout-slot";
 
@@ -43,6 +45,7 @@ export interface CmssyLayoutResolution<
   P extends CmssyRegionOf<C> = CmssyRegionOf<C>,
 > {
   groups: CmssyLayoutGroup[];
+  unavailable?: CmssyLayoutUnavailable;
   settings: CmssyRegionSettingsOf<C, P> | null;
   page: CmssyBlockPage;
   locale: string;
@@ -80,15 +83,29 @@ export async function resolveCmssyLayout<
     appContext: options.appContext,
   };
 
-  const element =
-    slotOptions.editMode && Editable ? (
+  let element: ReactElement<Record<string, unknown>>;
+  if (slotOptions.editMode && Editable) {
+    const editable = (
       <Editable
         {...shared}
         edit={{ editorOrigin: resolved.editorOrigin ?? "" }}
         data={resolved.data}
         resolvedContent={resolved.resolvedContent}
       />
+    );
+    element = resolved.unavailable ? (
+      <>
+        <LayoutUnavailableCard
+          region={options.region}
+          unavailable={resolved.unavailable}
+        />
+        {editable}
+      </>
     ) : (
+      editable
+    );
+  } else {
+    element = (
       <CmssyServerLayout
         {...shared}
         blocks={options.blocks}
@@ -96,9 +113,11 @@ export async function resolveCmssyLayout<
         preview={slotOptions.preview}
       />
     );
+  }
 
   return {
     groups,
+    ...(resolved.unavailable ? { unavailable: resolved.unavailable } : {}),
     settings: settings as CmssyRegionSettingsOf<C, P> | null,
     page,
     locale,

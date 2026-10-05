@@ -1,4 +1,4 @@
-import type { CmssyLayoutGroup } from "@cmssy/core";
+import { CmssyRequestError, type CmssyLayoutGroup } from "@cmssy/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCmssyLayoutStore } from "@cmssy/core/internal";
 import { resolveCmssyLayoutSlot } from "../components/resolve-layout-slot";
@@ -458,5 +458,91 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       "rejected",
       "rejected",
     ]);
+  });
+
+  it("reports a throttled layout instead of taking the page down", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError(
+        "cmssy: layouts fetch failed (429) - Rate limit exceeded",
+        429,
+        45_000,
+      ),
+    );
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.settings).toBeNull();
+    expect(result.unavailable).toEqual({
+      status: 429,
+      retryAfterMs: 45_000,
+      message: "cmssy: layouts fetch failed (429) - Rate limit exceeded",
+    });
+  });
+
+  it("reports an unavailable upstream the same way", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError("cmssy: layouts fetch failed (503)", 503),
+    );
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(result.unavailable?.status).toBe(503);
+    expect(result.unavailable).not.toHaveProperty("retryAfterMs");
+  });
+
+  it("still throws when the layout request was refused for a reason retrying cannot fix", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(
+      new CmssyRequestError("cmssy: layouts fetch failed (401)", 401),
+    );
+
+    await expect(
+      resolveCmssyLayoutSlot(CONFIG, {
+        region: "header",
+        blocks: [],
+        editMode: false,
+        path: [],
+      }),
+    ).rejects.toThrow("(401)");
+  });
+
+  it("still throws when the failure is not a cmssy request error at all", async () => {
+    setup();
+    fetchLayouts.mockRejectedValue(new TypeError("fetch failed"));
+
+    await expect(
+      resolveCmssyLayoutSlot(CONFIG, {
+        region: "header",
+        blocks: [],
+        editMode: false,
+        path: [],
+      }),
+    ).rejects.toThrow("fetch failed");
+  });
+
+  it("says nothing about availability when the layout loaded", async () => {
+    setup();
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+    });
+
+    expect(result).not.toHaveProperty("unavailable");
   });
 });

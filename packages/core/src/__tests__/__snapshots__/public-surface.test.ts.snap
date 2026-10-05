@@ -27,6 +27,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "fields",
   "graphqlRequest",
   "isProtocolCompatible",
+  "isTransientRequestError",
   "isVerifiedEditUrl",
   "layoutRegionsToBridge",
   "localizeHref",

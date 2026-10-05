@@ -65,6 +65,15 @@ Object.freeze(CMSSY_RETRY_MODES.build);
 Object.freeze(CMSSY_RETRY_MODES.interactive);
 Object.freeze(CMSSY_RETRY_MODES);
 
+export function isTransientRequestError(
+  error: unknown,
+): error is CmssyRequestError {
+  return (
+    error instanceof CmssyRequestError &&
+    CMSSY_RETRY_MODES.build.retryStatuses.includes(error.status)
+  );
+}
+
 export function resolveRetryPolicy(
   retry: RetryOption | undefined,
 ): ResolvedRetryPolicy | null {
