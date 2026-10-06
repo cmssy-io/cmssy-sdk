@@ -10,6 +10,7 @@ import {
   FORM_QUERY,
   MODEL_RECORDS_QUERY,
   SUBMIT_FORM_MUTATION,
+  type FormResult,
 } from "../data/queries";
 
 const config = {
@@ -441,9 +442,10 @@ describe("the document decides what a call may pass (graded by `pnpm typecheck`,
     const call = () =>
       // @ts-expect-error - pinning Result leaves Variables at its default, which
       // is how an unchecked variables object reached the delivery API before.
-      client.query<{ public: { form: { get: null } } }>(FORM_QUERY, {
-        formId: "f1",
-      });
+      // The pin matches FormResult on purpose: a mismatched one would raise a
+      // plain covariance error and this directive would absorb that instead,
+      // staying green while the default widened back.
+      client.query<FormResult>(FORM_QUERY, { formId: "f1" });
     expect(typeof call).toBe("function");
   });
 

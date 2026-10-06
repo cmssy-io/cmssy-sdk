@@ -31,6 +31,7 @@ interface DocumentedOperation {
 }
 
 const documented: DocumentedOperation[] = [];
+const unparseable: string[] = [];
 
 for (const file of [
   ...markdownFiles(resolve(repoRoot, "docs")),
@@ -47,7 +48,12 @@ for (const file of [
       let doc: DocumentNode;
       try {
         doc = parse(candidate);
-      } catch {
+      } catch (error) {
+        if (language === "graphql") {
+          unparseable.push(
+            `${relative(repoRoot, file)}: ${(error as Error).message.split("\n")[0]}`,
+          );
+        }
         continue;
       }
       const named = doc.definitions.find(
@@ -72,6 +78,13 @@ describe("operations in the docs validate against the backend SDL", () => {
       documented.length,
       "A reader copies these. If extraction broke, the per-operation assertion below would iterate an empty list and pass having validated nothing.",
     ).toBeGreaterThanOrEqual(6);
+  });
+
+  it("parses every block fenced as graphql", () => {
+    expect(
+      unparseable,
+      "A block fenced ```graphql is a whole document, so a syntax error in one is a broken example, not a sketch to skip. Skipping it would also hide it from the validation below while the count stayed put.",
+    ).toEqual([]);
   });
 
   it.each(documented.map((entry) => [entry.id, entry] as const))(

@@ -464,6 +464,25 @@ describe("every SDK operation declares the variables it sends", () => {
     ).toBeGreaterThanOrEqual(14);
   });
 
+  it("drops no typed operation on the way to being graded", () => {
+    expect(
+      [...typedDeclarations.keys()].filter(
+        (name) => !graded.some((entry) => entry.declaration.name === name),
+      ),
+      "A declaration whose text the glob never saw and whose initializer is not a plain template - an interpolated one, say - falls out of `graded` silently. The count floor above cannot see that: it equals today's number, so the fifteenth operation could vanish and still clear it.",
+    ).toEqual([]);
+  });
+
+  it.each(graded.map((entry) => [entry.id, entry] as const))(
+    "%s selects fields the schema has",
+    (_id, entry) => {
+      expect(
+        validate(schema, entry.doc).map((error) => error.message),
+        "The SDL validation above iterates operations the runtime glob found, which means exported ones. A module-private operation - both preflight documents are - would have its variables graded and its selection set never looked at.",
+      ).toEqual([]);
+    },
+  );
+
   it("grades a program that compiled", () => {
     expect(
       program
