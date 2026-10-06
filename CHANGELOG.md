@@ -6,6 +6,32 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.1.1
+
+**Nothing to do**, unless `cmssy types` has ever told you to check your slugs.
+In that case the slugs were probably fine and the message was wrong.
+
+The command talks to the **delivery** endpoint, which refuses a document before
+anything else runs and says why in the response body. The CLI threw that body
+away and printed a fixed line naming `CMSSY_ORG_SLUG` and `CMSSY_WORKSPACE_SLUG`
+instead. A reader with correct slugs was sent to an environment that was already
+correct:
+
+```
+$ cmssy types --out graphql/models.ts --check
+cmssy: the delivery API answered 400
+  check CMSSY_ORG_SLUG and CMSSY_WORKSPACE_SLUG - they form the delivery path
+```
+
+What the server had actually said was `Query is too expensive: 35253 exceeds the
+delivery budget of 20000 per request.` - a number, a cause, and nothing to do
+with slugs. The CLI now repeats the refusal when the body carries one, and keeps
+the slug hint only when the body says nothing a reader can use.
+
+A refusal body that is valid JSON but not an object - a bare `null` from a proxy
+or a CDN - used to throw a `TypeError` out of the error path, so a failed request
+ended in a stack trace rather than the fix line. It is handled.
+
 ## 19.1.0
 
 **Nothing to do.** Upgrade and a Next site stops making three identical layout
