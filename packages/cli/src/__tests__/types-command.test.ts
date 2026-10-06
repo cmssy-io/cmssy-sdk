@@ -72,6 +72,7 @@ function makeDeps(
     siteConfig?: unknown;
     definitions?: unknown;
     status?: number;
+    errorBody?: unknown;
   } = {},
 ): { deps: TypesDeps; lines: string[]; calls: Recorded[]; cwd: string } {
   const cwd = mkdtempSync(join(tmpdir(), "cmssy-types-"));
@@ -88,7 +89,12 @@ function makeDeps(
       const body = JSON.parse(String(init.body)) as Recorded["body"];
       calls.push({ url: String(url), body });
       if (overrides.status && overrides.status !== 200) {
-        return new Response("nope", { status: overrides.status });
+        return overrides.errorBody === undefined
+          ? new Response("nope", { status: overrides.status })
+          : new Response(JSON.stringify(overrides.errorBody), {
+              status: overrides.status,
+              headers: { "content-type": "application/json" },
+            });
       }
       if (body.query.includes("CliSiteConfig")) {
         return jsonResponse(
@@ -108,6 +114,56 @@ function makeDeps(
 }
 
 describe("runTypes", () => {
+  it("repeats what the delivery API refused with, instead of blaming the slugs", async () => {
+    const { deps, lines } = makeDeps({
+      status: 400,
+      errorBody: {
+        errors: [
+          {
+            message:
+              "Query is too expensive: 35253 exceeds the delivery budget of 20000 per request.",
+            extensions: { code: "BAD_USER_INPUT" },
+          },
+        ],
+      },
+    });
+
+    const code = await runTypes({}, deps);
+    const said = lines.join("\n");
+
+    expect(code).not.toBe(0);
+    expect(
+      said,
+      "the server refuses an over-budget query with its own number (CMS-2052); sending the reader to CMSSY_ORG_SLUG costs them an afternoon on an environment that is correct",
+    ).toContain("exceeds the delivery budget of 20000");
+    expect(said).not.toContain("CMSSY_ORG_SLUG");
+  });
+
+  it("still names the slugs when the refusal carries an empty errors list", async () => {
+    const { deps, lines } = makeDeps({ status: 400, errorBody: { errors: [] } });
+
+    const code = await runTypes({}, deps);
+
+    expect(code).not.toBe(0);
+    expect(
+      lines.join("\n"),
+      "an empty errors array is a body that parses and says nothing - joining it produces an empty fix line, which reads as the CLI having no idea rather than as a missing slug",
+    ).toContain("CMSSY_ORG_SLUG");
+  });
+
+  it("still names the slugs when the refusal says nothing a reader can use", async () => {
+    const { deps, lines } = makeDeps({ status: 404 });
+
+    const code = await runTypes({}, deps);
+    const said = lines.join("\n");
+
+    expect(code).not.toBe(0);
+    expect(
+      said,
+      "the control: a body that carries no GraphQL errors must keep the old hint, or the test above would pass on code that dropped the hint entirely",
+    ).toContain("CMSSY_ORG_SLUG");
+  });
+
   it("writes the generated types and reports what it found", async () => {
     const { deps, lines, cwd } = makeDeps();
     const code = await runTypes({}, deps);
