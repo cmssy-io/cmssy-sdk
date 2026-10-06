@@ -1,4 +1,5 @@
 import { brandingFieldNames } from "@cmssy/types";
+import { typedOperation } from "./document";
 import type {
   CmssyBranding,
   CmssySiteConfig,
@@ -25,7 +26,18 @@ export type {
   SubmitFormInput,
 };
 
-export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!) {
+export interface SiteConfigVariables {
+  workspaceSlug: string;
+}
+
+export interface SiteConfigResult {
+  public: { siteConfig: CmssySiteConfig | null };
+}
+
+export const SITE_CONFIG_QUERY = typedOperation<
+  SiteConfigResult,
+  SiteConfigVariables
+>(`query PublicSiteConfig($workspaceSlug: String!) {
   public {
     siteConfig(workspaceSlug: $workspaceSlug) {
       id
@@ -41,9 +53,20 @@ export const SITE_CONFIG_QUERY = `query PublicSiteConfig($workspaceSlug: String!
       }
     }
   }
-}`;
+}`);
 
-export const MODEL_DEFINITIONS_QUERY = `query PublicModelDefinitions($workspaceId: String!) {
+export interface ModelDefinitionsVariables {
+  workspaceId: string;
+}
+
+export interface ModelDefinitionsResult {
+  public: { model: { definitions: CmssyModelDefinition[] } };
+}
+
+export const MODEL_DEFINITIONS_QUERY = typedOperation<
+  ModelDefinitionsResult,
+  ModelDefinitionsVariables
+>(`query PublicModelDefinitions($workspaceId: String!) {
   public {
     model {
       definitions(workspaceId: $workspaceId) {
@@ -51,9 +74,27 @@ export const MODEL_DEFINITIONS_QUERY = `query PublicModelDefinitions($workspaceI
       }
     }
   }
-}`;
+}`);
 
-export const MODEL_RECORDS_QUERY = `query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!]) {
+export interface ModelRecordsVariables {
+  workspaceId: string;
+  modelSlug: string;
+  filter?: Record<string, unknown> | null;
+  sort?: string | null;
+  locale?: string | null;
+  limit?: number | null;
+  offset?: number | null;
+  populate?: string[] | null;
+}
+
+export interface ModelRecordsResult {
+  public: { model: { records: CmssyRecordList } };
+}
+
+export const MODEL_RECORDS_QUERY = typedOperation<
+  ModelRecordsResult,
+  ModelRecordsVariables
+>(`query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!]) {
   public {
     model {
       records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, populate: $populate) {
@@ -63,9 +104,18 @@ export const MODEL_RECORDS_QUERY = `query PublicModelRecords($workspaceId: Strin
       }
     }
   }
-}`;
+}`);
 
-export const FORM_QUERY = `query PublicForm($formId: ID!) {
+export interface FormVariables {
+  formId: string;
+}
+
+export interface FormResult {
+  public: { form: { get: CmssyFormDefinition | null } };
+}
+
+export const FORM_QUERY = typedOperation<FormResult, FormVariables>(
+  `query PublicForm($formId: ID!) {
   public {
     form {
       get(formId: $formId) {
@@ -86,9 +136,21 @@ export const FORM_QUERY = `query PublicForm($formId: ID!) {
       }
     }
   }
-}`;
+}`);
 
-export const SUBMIT_FORM_MUTATION = `mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
+export interface SubmitFormVariables {
+  formId: string;
+  input: SubmitFormInput;
+}
+
+export interface SubmitFormResult {
+  public: { form: { submit: CmssyFormSubmitResponse } };
+}
+
+export const SUBMIT_FORM_MUTATION = typedOperation<
+  SubmitFormResult,
+  SubmitFormVariables
+>(`mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
   public {
     form {
       submit(formId: $formId, input: $input) {
@@ -96,4 +158,4 @@ export const SUBMIT_FORM_MUTATION = `mutation SubmitForm($formId: ID!, $input: S
       }
     }
   }
-}`;
+}`);

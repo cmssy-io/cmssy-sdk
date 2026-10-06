@@ -8,6 +8,7 @@ export {
   defineCmssyConfig,
   defineCmssyLayout,
   createCmssyClient,
+  typedOperation,
   isVerifiedEditUrl,
   CMSSY_EDIT_TOKEN_HEADER,
   mintCmssyEditToken,
@@ -18,8 +19,15 @@ export {
   CmssyWebhookError,
 } from "@cmssy/core";
 export type {
+  CmssyClient,
   CmssyConfig,
   CmssyEnvConfig,
+  CmssyOperation,
+  CmssyOperationInput,
+  CmssyTypedDocument,
+  QueryScopedOptions,
+  ScopedVariables,
+  VariablesParameter,
   CmssyLayout,
   CmssyRegion,
   CmssyRegionOf,

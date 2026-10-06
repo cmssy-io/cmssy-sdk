@@ -3,12 +3,14 @@ import { beforeEach, describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import type { QueryScopedOptions } from "../data/client";
 import { createCmssyClient } from "../data/client";
+import { graphqlRequest } from "../data/graphql-request";
 import { clearWorkspaceIdCache } from "../data/settings-client";
 import type { CmssyTypedDocument } from "../data/document";
 import {
   FORM_QUERY,
   MODEL_RECORDS_QUERY,
   SUBMIT_FORM_MUTATION,
+  type FormResult,
 } from "../data/queries";
 
 const config = {
@@ -56,10 +58,8 @@ describe("createCmssyClient().query (raw)", () => {
       data: { public: { form: { get: { id: "f1", name: "Contact" } } } },
     });
     const client = createCmssyClient(config);
-    const data = await client.query<{
-      public: { form: { get: { name: string } } };
-    }>(FORM_QUERY, { formId: "f1" }, { fetch });
-    expect(data.public.form.get.name).toBe("Contact");
+    const data = await client.query(FORM_QUERY, { formId: "f1" }, { fetch });
+    expect(data.public.form.get?.name).toBe("Contact");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.headers["x-workspace-id"]).toBeUndefined();
     expect(calls[0]?.variables).toEqual({ formId: "f1" });
@@ -71,7 +71,7 @@ describe("createCmssyClient().query (raw)", () => {
     await expect(
       client.query(
         SUBMIT_FORM_MUTATION,
-        { formId: "f1", input: {} },
+        { formId: "f1", input: { data: {} } },
         { fetch },
       ),
     ).rejects.toThrow(/boom/);
@@ -392,6 +392,21 @@ describe("createCmssyClient().query (typed document)", () => {
     expect(data.ok).toBe(true);
     expect(calls[0]?.query).toBe("query Ok { ok }");
   });
+
+  it("prints a document handed straight to graphqlRequest, without the client", async () => {
+    const { fetch, calls } = capturingFetch({ data: { ok: true } });
+    const document = {
+      toString: () => "query Ok { ok }",
+    } as CmssyTypedDocument<{ ok: boolean }, Record<string, never>>;
+
+    const data = await graphqlRequest(config, document, {}, { fetch });
+
+    expect(
+      calls[0]?.query,
+      "graphqlRequest is a root export, and a caller reaching it directly used to have to print the document itself - an object went into the `query` field and came back a 400.",
+    ).toBe("query Ok { ok }");
+    expect(data.ok).toBe(true);
+  });
 });
 
 describe("QueryScopedOptions", () => {
@@ -401,5 +416,83 @@ describe("QueryScopedOptions", () => {
     // caller cannot ask queryScoped to leave the delivery route.
     options.public = false;
     expect(options.workspaceId).toBe("w1");
+  });
+});
+
+describe("the document decides what a call may pass (graded by `pnpm typecheck`, not by this runner)", () => {
+  const client = createCmssyClient(config);
+
+  it("refuses a typed operation with no variables at all", () => {
+    const call = () =>
+      // @ts-expect-error - FORM_QUERY declares $formId: ID!, so the variables
+      // argument is not optional and omitting it is a guaranteed 400.
+      client.query(FORM_QUERY);
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a scoped operation with no variables at all", () => {
+    const call = () =>
+      // @ts-expect-error - MODEL_RECORDS_QUERY declares $modelSlug: String!,
+      // which queryScoped does not inject the way it injects workspaceId.
+      client.queryScoped(MODEL_RECORDS_QUERY);
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a result type pinned over a typed operation", () => {
+    const call = () =>
+      // @ts-expect-error - pinning Result leaves Variables at its default, which
+      // is how an unchecked variables object reached the delivery API before.
+      // The pin matches FormResult on purpose: a mismatched one would raise a
+      // plain covariance error and this directive would absorb that instead,
+      // staying green while the default widened back.
+      client.query<FormResult>(FORM_QUERY, { formId: "f1" });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a variable the document does not declare", () => {
+    const call = () =>
+      client.queryScoped(FORM_QUERY, {
+        formId: "f1",
+        // @ts-expect-error - PublicForm takes $formId only; queryScoped offers
+        // workspaceId to the documents that declare it, not to every document.
+        workspaceId: "w1",
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a misspelled variable", () => {
+    const call = () =>
+      client.query(FORM_QUERY, {
+        // @ts-expect-error - formIdentifier is not $formId.
+        formIdentifier: "f1",
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a variable of the wrong type", () => {
+    const call = () =>
+      client.query(FORM_QUERY, {
+        // @ts-expect-error - $formId is an ID, which arrives as a string.
+        formId: 7,
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a field the operation does not select", () => {
+    const call = async () => {
+      const data = await client.query(FORM_QUERY, { formId: "f1" });
+      // @ts-expect-error - PublicForm selects no `title`, so the result type
+      // has none; a pinned Result type is what used to hide that.
+      return data.public.form.get?.title;
+    };
+    expect(typeof call).toBe("function");
+  });
+
+  it("still takes a plain string with whatever variables the caller likes", () => {
+    const call = () =>
+      client.query("query Anything($x: String) { anything(x: $x) }", {
+        x: "free-form",
+      });
+    expect(typeof call).toBe("function");
   });
 });

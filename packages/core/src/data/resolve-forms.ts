@@ -65,9 +65,11 @@ export async function resolveForms(
   const entries = await Promise.all(
     ids.map(async (id) => {
       try {
-        const data = await client.queryScoped<{
-          public: { form: { get: CmssyFormDefinition | null } };
-        }>(FORM_QUERY, { formId: id }, options);
+        const data = await client.queryScoped(
+          FORM_QUERY,
+          { formId: id },
+          options,
+        );
         return [id, data.public.form.get] as const;
       } catch (err) {
         if (typeof console !== "undefined") {

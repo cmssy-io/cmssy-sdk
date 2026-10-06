@@ -9,6 +9,7 @@ import type {
   CmssyPageMeta,
 } from "@cmssy/types";
 
+import { typedOperation } from "../data/document";
 import { postGraphql, type RetryOption } from "../data/http";
 
 export type {
@@ -66,7 +67,34 @@ export interface FetchPageOptions {
   retry?: RetryOption;
 }
 
-export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
+export interface PublicPageVariables {
+  workspaceSlug: string;
+  slug: string;
+  previewSecret?: string | null;
+}
+
+export interface PublicPageDevVariables extends PublicPageVariables {
+  devPreview?: boolean | null;
+}
+
+export interface PublicPageResult {
+  public?: {
+    page?: {
+      get?: {
+        id: string;
+        slug?: string | null;
+        pageType?: string | null;
+        blocks?: RawBlock[] | null;
+        publishedBlocks?: RawBlock[] | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_QUERY = typedOperation<
+  PublicPageResult,
+  PublicPageVariables
+>(`query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String) {
   public {
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret) {
@@ -78,9 +106,12 @@ export const PUBLIC_PAGE_QUERY = `query PublicPage($workspaceSlug: String!, $slu
       }
     }
   }
-}`;
+}`);
 
-export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
+export const PUBLIC_PAGE_DEV_QUERY = typedOperation<
+  PublicPageResult,
+  PublicPageDevVariables
+>(`query PublicPage($workspaceSlug: String!, $slug: String!, $previewSecret: String, $devPreview: Boolean) {
   public {
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug, previewSecret: $previewSecret, devPreview: $devPreview) {
@@ -92,9 +123,30 @@ export const PUBLIC_PAGE_DEV_QUERY = `query PublicPage($workspaceSlug: String!, 
       }
     }
   }
-}`;
+}`);
 
-export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
+export interface PublicPageByIdVariables {
+  workspaceSlug: string;
+  pageId: string;
+}
+
+export interface PublicPageByIdResult {
+  public?: {
+    page?: {
+      getById?: {
+        id: string;
+        slug?: string | null;
+        pageType?: string | null;
+        publishedBlocks?: RawBlock[] | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_BY_ID_QUERY = typedOperation<
+  PublicPageByIdResult,
+  PublicPageByIdVariables
+>(`query PublicPageById($workspaceSlug: String!, $pageId: ID!) {
   public {
     page {
       getById(workspaceSlug: $workspaceSlug, pageId: $pageId) {
@@ -105,9 +157,22 @@ export const PUBLIC_PAGE_BY_ID_QUERY = `query PublicPageById($workspaceSlug: Str
       }
     }
   }
-}`;
+}`);
 
-export const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
+export interface PublicPagesVariables {
+  workspaceSlug: string;
+}
+
+export interface PublicPagesResult {
+  public?: {
+    page?: { list?: CmssyPageSummary[] | null } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGES_QUERY = typedOperation<
+  PublicPagesResult,
+  PublicPagesVariables
+>(`query PublicPages($workspaceSlug: String!) {
   public {
     page {
       list(workspaceSlug: $workspaceSlug) {
@@ -118,9 +183,23 @@ export const PUBLIC_PAGES_QUERY = `query PublicPages($workspaceSlug: String!) {
       }
     }
   }
-}`;
+}`);
 
-export const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
+export interface PublicPageMetaVariables {
+  workspaceSlug: string;
+  slug: string;
+}
+
+export interface PublicPageMetaResult {
+  public?: {
+    page?: { get?: CmssyPageMeta | null } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_META_QUERY = typedOperation<
+  PublicPageMetaResult,
+  PublicPageMetaVariables
+>(`query PublicPageMeta($workspaceSlug: String!, $slug: String!) {
   public {
     page {
       get(workspaceSlug: $workspaceSlug, slug: $slug) {
@@ -132,9 +211,24 @@ export const PUBLIC_PAGE_META_QUERY = `query PublicPageMeta($workspaceSlug: Stri
       }
     }
   }
-}`;
+}`);
 
-export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
+export interface PublicPageLayoutsVariables {
+  workspaceSlug: string;
+  pageSlug: string;
+  previewSecret?: string | null;
+}
+
+export interface PublicPageLayoutsResult {
+  public?: {
+    page?: { layouts?: CmssyLayoutGroup[] | null } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_LAYOUTS_QUERY = typedOperation<
+  PublicPageLayoutsResult,
+  PublicPageLayoutsVariables
+>(`query PublicPageLayouts($workspaceSlug: String!, $pageSlug: String!, $previewSecret: String) {
   public {
     page {
       layouts(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug, previewSecret: $previewSecret) {
@@ -144,7 +238,7 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = `query PublicPageLayouts($workspaceSlug
       }
     }
   }
-}`;
+}`);
 
 export function normalizeSlug(path: string | string[] | undefined): string {
   if (Array.isArray(path)) {
@@ -173,37 +267,32 @@ export async function fetchPage(
     }
   }
 
-  type PageData = {
-    public?: {
-      page?: {
-        get?: {
-          id: string;
-          slug?: string | null;
-          pageType?: string | null;
-          blocks?: RawBlock[] | null;
-          publishedBlocks?: RawBlock[] | null;
-        } | null;
-      } | null;
-    } | null;
-  };
-
-  const data = await postGraphql<PageData>(
-    resolvePublicUrl(config),
-    devPreview ? PUBLIC_PAGE_DEV_QUERY : PUBLIC_PAGE_QUERY,
-    {
-      workspaceSlug: config.workspaceSlug,
-      slug,
-      previewSecret,
-      ...(devPreview ? { devPreview: true } : {}),
-    },
-    {
-      fetch: options.fetch,
-      signal: options.signal,
-      headers,
-      retry: options.retry ?? "build",
-      label: "page fetch",
-    },
-  );
+  const requestOptions = {
+    fetch: options.fetch,
+    signal: options.signal,
+    headers,
+    retry: options.retry ?? "build",
+    label: "page fetch",
+  } as const;
+  const url = resolvePublicUrl(config);
+  const data = devPreview
+    ? await postGraphql(
+        url,
+        PUBLIC_PAGE_DEV_QUERY,
+        {
+          workspaceSlug: config.workspaceSlug,
+          slug,
+          previewSecret,
+          devPreview: true,
+        },
+        requestOptions,
+      )
+    : await postGraphql(
+        url,
+        PUBLIC_PAGE_QUERY,
+        { workspaceSlug: config.workspaceSlug, slug, previewSecret },
+        requestOptions,
+      );
   const page = data?.public?.page?.get;
   if (!page) return null;
   const draft = previewSecret !== null || devPreview;
@@ -221,20 +310,7 @@ export async function fetchPageById(
   pageId: string,
   options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
 ): Promise<CmssyPageData | null> {
-  type PageByIdData = {
-    public?: {
-      page?: {
-        getById?: {
-          id: string;
-          slug?: string | null;
-          pageType?: string | null;
-          publishedBlocks?: RawBlock[] | null;
-        } | null;
-      } | null;
-    } | null;
-  };
-
-  const data = await postGraphql<PageByIdData>(
+  const data = await postGraphql(
     resolvePublicUrl(config),
     PUBLIC_PAGE_BY_ID_QUERY,
     { workspaceSlug: config.workspaceSlug, pageId },
@@ -259,13 +335,7 @@ export async function fetchPages(
   config: CmssyClientConfig,
   options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
 ): Promise<CmssyPageSummary[]> {
-  type PagesData = {
-    public?: {
-      page?: { list?: CmssyPageSummary[] | null } | null;
-    } | null;
-  };
-
-  const data = await postGraphql<PagesData>(
+  const data = await postGraphql(
     resolvePublicUrl(config),
     PUBLIC_PAGES_QUERY,
     { workspaceSlug: config.workspaceSlug },
@@ -286,13 +356,7 @@ export async function fetchPageMeta(
 ): Promise<CmssyPageMeta | null> {
   const slug = normalizeSlug(path);
 
-  type MetaData = {
-    public?: {
-      page?: { get?: CmssyPageMeta | null } | null;
-    } | null;
-  };
-
-  const data = await postGraphql<MetaData>(
+  const data = await postGraphql(
     resolvePublicUrl(config),
     PUBLIC_PAGE_META_QUERY,
     { workspaceSlug: config.workspaceSlug, slug },
@@ -315,13 +379,7 @@ export async function fetchLayouts(
   const trimmedSecret = options.previewSecret?.trim();
   const previewSecret = trimmedSecret ? trimmedSecret : null;
 
-  type LayoutsData = {
-    public?: {
-      page?: { layouts?: CmssyLayoutGroup[] | null } | null;
-    } | null;
-  };
-
-  const data = await postGraphql<LayoutsData>(
+  const data = await postGraphql(
     resolvePublicUrl(config),
     PUBLIC_PAGE_LAYOUTS_QUERY,
     { workspaceSlug: config.workspaceSlug, pageSlug, previewSecret },

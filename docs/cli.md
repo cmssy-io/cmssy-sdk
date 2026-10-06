@@ -354,14 +354,32 @@ command still exits non-zero in that case, because the models half failed.
 Use the models with the vendored document:
 
 ```ts
-const data = await client.queryScoped<{
-  public: { model: { records: CmssyRecordList<"product"> } };
-}>(PRODUCTS_QUERY, { modelSlug: "product", limit: 24 });
+import type { ProductRecord } from "./cmssy/models";
 
-for (const record of data.public.model.records.items) {
-  record.data.price; // number, not unknown
+const data = await client.queryScoped(PRODUCTS_QUERY, {
+  modelSlug: "product",
+  limit: 24,
+});
+
+const products = data.public.model.records.items as ProductRecord[];
+
+for (const product of products) {
+  product.data.price; // number, not unknown
 }
 ```
+
+**No generic on the call.** The vendored document carries the variables and the
+response shape, so both come from it; passing a type argument is a build error,
+because it pins the result and silently unpins the variables.
+
+**The narrowing is separate, and has to be.** A record's `data` is the `JSON`
+scalar on the wire - the schema has nothing to say about what is inside it, so
+no document, generated or not, can type it. Only the workspace's own model
+definitions can, which is what the models half of this command writes down.
+`ProductRecord` is that file's answer; the cast is where the two halves meet.
+Remove `price` from the model in the CMS, re-run the command, and
+`product.data.price` stops compiling - which is the point - while the query
+itself keeps validating, because the field it selects is `data`, not `price`.
 
 Commit the generated file and re-run the command after changing a model in the
 CMS - a field you removed there becomes a compile error here, which is the whole

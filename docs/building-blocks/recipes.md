@@ -76,35 +76,72 @@ is mounted, and the first render of a freshly added block still has none. Add
 
 There is no SDK helper for listing pages under a parent - you write the query and
 run it through `queryScoped`, which auto-injects `workspaceId`. The delivery API
-exposes `publicPagesByType` for this (see [Delivery API](../reference/delivery-api.md)).
+exposes `public.page.byType` for this (see [Delivery API](../reference/delivery-api.md)).
 
 ```ts
 // blocks/blog-index/posts-query.ts
-export const PUBLIC_PAGES_BY_TYPE = `query PublicPagesByType(
+import { typedOperation } from "@cmssy/react";
+
+export interface PostSummary {
+  id: string;
+  slug: string;
+  fullSlug: string;
+  publishedAt: string | null;
+  displayName: unknown;
+  seoTitle: unknown;
+  seoDescription: unknown;
+}
+
+export const PUBLIC_PAGES_BY_TYPE = typedOperation<
+  {
+    public: {
+      page: { byType: { items: PostSummary[]; hasMore: boolean; total: number } };
+    };
+  },
+  {
+    workspaceId: string;
+    pageType?: string | null;
+    parentSlug?: string | null;
+    limit?: number | null;
+    offset?: number | null;
+  }
+>(`query PublicPagesByType(
   $workspaceId: String!
+  $pageType: String
   $parentSlug: String
   $limit: Int
   $offset: Int
 ) {
-  publicPagesByType(
-    workspaceId: $workspaceId
-    parentSlug: $parentSlug
-    limit: $limit
-    offset: $offset
-  ) {
-    items {
-      id
-      slug
-      fullSlug
-      publishedAt
-      displayName
-      seoTitle
-      seoDescription
+  public {
+    page {
+      byType(
+        workspaceId: $workspaceId
+        pageType: $pageType
+        parentSlug: $parentSlug
+        limit: $limit
+        offset: $offset
+      ) {
+        items {
+          id
+          slug
+          fullSlug
+          publishedAt
+          displayName
+          seoTitle
+          seoDescription
+        }
+        hasMore
+        total
+      }
     }
-    hasMore
   }
-}`;
+}`);
 ```
+
+`typedOperation` marks the string with what it sends and what it returns; at
+runtime it is still the same string. The call below then checks the variables
+and infers the result with no generic to repeat - and `queryScoped` still
+injects `$workspaceId`, which is why the caller does not pass it.
 
 ```ts
 // blocks/blog-index/load-posts.ts - server-only helper, imported via dynamic import()
@@ -114,17 +151,15 @@ import { PUBLIC_PAGES_BY_TYPE } from "./posts-query";
 
 const client = createCmssyClient(cmssy);
 
-type PostsResult = { items: unknown[]; hasMore: boolean };
-
 export async function loadPosts(vars: { parentSlug: string; limit: number }) {
   if (typeof window !== "undefined") {
     throw new Error("loadPosts is server-only");
   }
-  const data = await client.queryScoped<{
-    publicPagesByType?: { items?: unknown[]; hasMore?: boolean } | null;
-  }>(PUBLIC_PAGES_BY_TYPE, { ...vars, offset: 0 });
-  const r = data?.publicPagesByType;
-  return r ? { items: r.items ?? [], hasMore: !!r.hasMore } : null;
+  const data = await client.queryScoped(PUBLIC_PAGES_BY_TYPE, {
+    ...vars,
+    offset: 0,
+  });
+  return data.public.page.byType;
 }
 ```
 
@@ -182,10 +217,17 @@ export const contactBlock = defineBlock({
 ```ts
 // blocks/contact/actions.ts
 "use server";
-import { createCmssyClient, type CmssyFormSubmitResponse } from "@cmssy/react";
+import {
+  createCmssyClient,
+  typedOperation,
+  type CmssyFormSubmitResponse,
+} from "@cmssy/react";
 import { cmssy } from "@/cmssy.config";
 
-const SUBMIT_FORM = `mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
+const SUBMIT_FORM = typedOperation<
+  { public: { form: { submit: CmssyFormSubmitResponse } } },
+  { formId: string; input: { data: Record<string, string> } }
+>(`mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) {
   public {
     form {
       submit(formId: $formId, input: $input) {
@@ -193,14 +235,15 @@ const SUBMIT_FORM = `mutation SubmitForm($formId: ID!, $input: SubmitFormInput!)
       }
     }
   }
-}`;
+}`);
 
 const client = createCmssyClient(cmssy);
 
 export async function submitForm(formId: string, data: Record<string, string>) {
-  const res = await client.queryScoped<{
-    public: { form: { submit: CmssyFormSubmitResponse } };
-  }>(SUBMIT_FORM, { formId, input: { data } });
+  const res = await client.queryScoped(SUBMIT_FORM, {
+    formId,
+    input: { data },
+  });
   return res.public.form.submit; // { success, message, submissionId, ... }
 }
 ```

@@ -15,6 +15,7 @@ exports[`@cmssy/remix public surface > exports exactly these names 1`] = `
   "localizeHref",
   "mintCmssyEditToken",
   "resolveCmssyLayout",
+  "typedOperation",
   "useCmssyLocale",
   "verifyCmssyEditToken",
   "verifyCmssyWebhook",

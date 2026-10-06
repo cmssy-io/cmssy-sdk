@@ -3,6 +3,11 @@ import {
   type CmssyClientConfig,
   type FetchLike,
 } from "./content/content-client";
+import {
+  documentText,
+  typedOperation,
+  type CmssyOperationInput,
+} from "./data/document";
 
 export type PreflightStatus = "ok" | "fail" | "unknown";
 
@@ -25,20 +30,48 @@ const CMSSY_ADMIN_ORIGIN = "https://www.cmssy.io";
 const ALLOWED_FRAME_HOSTS = ["cmssy.io", "www.cmssy.io"];
 const SETTINGS_PATH = "Settings → Headless";
 
-const PREFLIGHT_SITE_CONFIG_QUERY = `query PreflightSiteConfig($workspaceSlug: String!) {
+interface PreflightSiteConfigVariables {
+  workspaceSlug: string;
+}
+
+interface PreflightSiteConfigResult {
+  public?: {
+    siteConfig?: {
+      previewUrl?: string | null;
+      publicSiteUrl?: string | null;
+    } | null;
+  } | null;
+}
+
+const PREFLIGHT_SITE_CONFIG_QUERY = typedOperation<
+  PreflightSiteConfigResult,
+  PreflightSiteConfigVariables
+>(`query PreflightSiteConfig($workspaceSlug: String!) {
   public {
     siteConfig(workspaceSlug: $workspaceSlug) {
       previewUrl
       publicSiteUrl
     }
   }
-}`;
+}`);
 
-const DRAFT_SECRET_VALID_QUERY = `query PreflightDraftSecretValid($workspaceSlug: String!, $secret: String!) {
+interface DraftSecretValidVariables {
+  workspaceSlug: string;
+  secret: string;
+}
+
+interface DraftSecretValidResult {
+  public?: { draftSecretValid?: boolean } | null;
+}
+
+const DRAFT_SECRET_VALID_QUERY = typedOperation<
+  DraftSecretValidResult,
+  DraftSecretValidVariables
+>(`query PreflightDraftSecretValid($workspaceSlug: String!, $secret: String!) {
   public {
     draftSecretValid(workspaceSlug: $workspaceSlug, secret: $secret)
   }
-}`;
+}`);
 
 interface PreflightGraphqlError {
   message?: string;
@@ -51,11 +84,11 @@ type PostOutcome<T> =
   | { kind: "http"; status: number }
   | { kind: "network"; error: unknown };
 
-async function postPreflightQuery<T>(
+async function postPreflightQuery<Result, Variables>(
   config: PreflightConfig,
-  query: string,
-  variables: Record<string, unknown>,
-): Promise<PostOutcome<T>> {
+  query: CmssyOperationInput<Result, Variables>,
+  variables: Variables,
+): Promise<PostOutcome<Result>> {
   const doFetch =
     config.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
   if (typeof doFetch !== "function") {
@@ -70,15 +103,16 @@ async function postPreflightQuery<T>(
     response = await doFetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query, variables }),
+      body: JSON.stringify({ query: documentText(query), variables }),
     });
   } catch (error) {
     return { kind: "network", error };
   }
-  let envelope: { data?: T; errors?: PreflightGraphqlError[] } | null = null;
+  let envelope: { data?: Result; errors?: PreflightGraphqlError[] } | null =
+    null;
   try {
     envelope = (await response.json()) as {
-      data?: T;
+      data?: Result;
       errors?: PreflightGraphqlError[];
     };
   } catch {
@@ -91,7 +125,7 @@ async function postPreflightQuery<T>(
   if (!response.ok) {
     return { kind: "http", status: response.status };
   }
-  return { kind: "data", data: envelope?.data as T };
+  return { kind: "data", data: envelope?.data as Result };
 }
 
 function errorMessages(errors: PreflightGraphqlError[]): string {
@@ -125,13 +159,11 @@ export async function checkWorkspaceReachable(
   config: PreflightConfig,
 ): Promise<WorkspaceReachableResult> {
   const workspace = `${config.org}/${config.workspaceSlug}`;
-  const outcome = await postPreflightQuery<{
-    public?: {
-      siteConfig?: { previewUrl?: string | null } | null;
-    } | null;
-  }>(config, PREFLIGHT_SITE_CONFIG_QUERY, {
-    workspaceSlug: config.workspaceSlug,
-  });
+  const outcome = await postPreflightQuery(
+    config,
+    PREFLIGHT_SITE_CONFIG_QUERY,
+    { workspaceSlug: config.workspaceSlug },
+  );
 
   if (outcome.kind === "network") {
     return {
@@ -205,12 +237,11 @@ export async function checkDraftSecret(
       fix: `copy the draft secret from ${SETTINGS_PATH}`,
     };
   }
-  const outcome = await postPreflightQuery<{
-    public?: { draftSecretValid?: boolean } | null;
-  }>(config, DRAFT_SECRET_VALID_QUERY, {
-    workspaceSlug: config.workspaceSlug,
-    secret,
-  });
+  const outcome = await postPreflightQuery(
+    config,
+    DRAFT_SECRET_VALID_QUERY,
+    { workspaceSlug: config.workspaceSlug, secret },
+  );
 
   if (outcome.kind === "network") {
     return {

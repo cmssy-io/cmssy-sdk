@@ -9,9 +9,7 @@ export async function fetchSiteConfig(
   config: CmssyClientConfig,
   options: GraphqlRequestOptions = {},
 ): Promise<CmssySiteConfig | null> {
-  const data = await graphqlRequest<{
-    public?: { siteConfig?: CmssySiteConfig | null } | null;
-  }>(
+  const data = await graphqlRequest(
     config,
     SITE_CONFIG_QUERY,
     { workspaceSlug: config.workspaceSlug },

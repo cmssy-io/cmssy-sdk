@@ -1,7 +1,16 @@
-import { createCmssyClient } from "@cmssy/core";
+import { createCmssyClient, typedOperation } from "@cmssy/core";
 import { cmssy } from "@/cmssy.config";
 
-const PUBLISHED_PAGES = `query PublishedPages($workspaceSlug: String!) {
+type PublishedPages = {
+  public?: {
+    page?: { list?: { slug?: string | null; publishedAt?: string | null }[] | null } | null;
+  } | null;
+};
+
+const PUBLISHED_PAGES = typedOperation<
+  PublishedPages,
+  { workspaceSlug: string }
+>(`query PublishedPages($workspaceSlug: String!) {
   public {
     page {
       list(workspaceSlug: $workspaceSlug) {
@@ -10,13 +19,7 @@ const PUBLISHED_PAGES = `query PublishedPages($workspaceSlug: String!) {
       }
     }
   }
-}`;
-
-type PublishedPages = {
-  public?: {
-    page?: { list?: { slug?: string | null; publishedAt?: string | null }[] | null } | null;
-  } | null;
-};
+}`);
 
 const client = createCmssyClient({
   apiUrl: cmssy.apiUrl,
@@ -25,7 +28,7 @@ const client = createCmssyClient({
 });
 
 export async function publishedPaths(): Promise<{ path: string[] }[]> {
-  const data = await client.query<PublishedPages>(
+  const data = await client.query(
     PUBLISHED_PAGES,
     { workspaceSlug: cmssy.workspaceSlug },
     {

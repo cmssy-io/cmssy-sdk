@@ -45,6 +45,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "registryToManifestBlocks",
   "resolveCmssyLocale",
   "resolveEditorOrigin",
+  "typedOperation",
   "verifyCmssyEditToken",
   "verifyCmssyWebhook",
 ]
