@@ -83,6 +83,24 @@ function publicEndpoint(
   return `${base}/public/${org}/${workspace}/graphql`;
 }
 
+async function refusalReason(
+  response: Response,
+): Promise<string | undefined> {
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return undefined;
+  }
+  const errors =
+    body === null ? undefined : (body as GraphqlResponse<unknown>).errors;
+  if (!Array.isArray(errors)) return undefined;
+  const said = errors
+    .map((error) => error?.message)
+    .filter((message) => typeof message === "string" && message.length > 0);
+  return said.length > 0 ? said.join("; ") : undefined;
+}
+
 async function request<T>(
   deps: TypesDeps,
   endpoint: string,
@@ -105,7 +123,8 @@ async function request<T>(
   if (!response.ok) {
     throw new CliError(
       `the delivery API answered ${response.status}`,
-      "check CMSSY_ORG_SLUG and CMSSY_WORKSPACE_SLUG - they form the delivery path",
+      (await refusalReason(response)) ??
+        "check CMSSY_ORG_SLUG and CMSSY_WORKSPACE_SLUG - they form the delivery path",
     );
   }
   const body = (await response.json()) as GraphqlResponse<T>;
