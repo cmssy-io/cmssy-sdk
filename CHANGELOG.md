@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.3.0
+
+**Nothing to do** - but a block whose locale bucket does not carry every field
+now renders the default locale's value for the missing ones instead of nothing.
+
+`getBlockContentForLanguage` used to pick one bucket whole: the active locale's,
+else the default's, else the first stored. A bucket that carried `title` but not
+`lead` therefore rendered `lead` as `undefined`, even with the default locale's
+`lead` sitting next to it. It now merges the default bucket under the active one
+per field, so only a field the active bucket actually stores overrides the
+default - including a `null`, which stays a deliberate "cleared here".
+
+Content whose buckets all carry the same fields - everything the admin wrote
+until now - resolves to exactly the same object as before. This release is what
+makes the admin's upcoming sparse write (CMS-1894: a locale bucket holding only
+the fields someone translated) readable, and **the admin will start writing that
+shape, so a site on 19.2.0 or older will render those fields empty**. Upgrade
+before the editor saves in a non-default language.
+
 ## 19.2.0
 
 **Delete the type argument** from any `client.query<...>(...)` or

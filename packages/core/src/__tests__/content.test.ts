@@ -64,6 +64,46 @@ describe("getBlockContentForLanguage", () => {
     ).toEqual({ id: { x: 1 }, title: "Hi" });
   });
 
+  it("falls back per field when the active bucket is sparse", () => {
+    expect(
+      getBlockContentForLanguage(
+        { en: { title: "Hi", lead: "Lead" }, pl: { title: "Czesc" } },
+        "pl",
+        "en",
+      ),
+    ).toEqual({ title: "Czesc", lead: "Lead" });
+  });
+
+  it("serves the default bucket when the active one is empty", () => {
+    expect(
+      getBlockContentForLanguage(
+        { en: { title: "Hi", lead: "Lead" }, pl: {} },
+        "pl",
+        "en",
+      ),
+    ).toEqual({ title: "Hi", lead: "Lead" });
+  });
+
+  it("keeps a field the active bucket cleared", () => {
+    expect(
+      getBlockContentForLanguage(
+        { en: { title: "Hi", lead: "Lead" }, pl: { title: "Czesc", lead: null } },
+        "pl",
+        "en",
+      ),
+    ).toEqual({ title: "Czesc", lead: null });
+  });
+
+  it("falls back to the first bucket per field when neither the active nor the default locale is stored", () => {
+    expect(
+      getBlockContentForLanguage(
+        { fr: { title: "Bonjour", lead: "Intro" }, pl: { title: "Czesc" } },
+        "pl",
+        "en",
+      ),
+    ).toEqual({ title: "Czesc", lead: "Intro" });
+  });
+
   it("returns {} for a non-object value", () => {
     expect(getBlockContentForLanguage(null, "en")).toEqual({});
     expect(getBlockContentForLanguage("x", "en")).toEqual({});
