@@ -354,14 +354,19 @@ command still exits non-zero in that case, because the models half failed.
 Use the models with the vendored document:
 
 ```ts
-const data = await client.queryScoped<{
-  public: { model: { records: CmssyRecordList<"product"> } };
-}>(PRODUCTS_QUERY, { modelSlug: "product", limit: 24 });
+const data = await client.queryScoped(PRODUCTS_QUERY, {
+  modelSlug: "product",
+  limit: 24,
+});
 
 for (const record of data.public.model.records.items) {
   record.data.price; // number, not unknown
 }
 ```
+
+No generic: the vendored document carries both halves, so the result is inferred
+and the variables are checked against it. Passing a type argument here is a
+build error - it would pin the result and silently unpin the variables.
 
 Commit the generated file and re-run the command after changing a model in the
 CMS - a field you removed there becomes a compile error here, which is the whole

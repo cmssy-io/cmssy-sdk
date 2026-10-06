@@ -170,12 +170,19 @@ interface TypedOperationDeclaration {
   file: string;
   name: string;
   variables: ts.Type;
-  node: ts.Node;
 }
 
 const typedDeclarations = new Map<string, TypedOperationDeclaration>();
 const duplicateDeclarations: string[] = [];
 const callsWithTypeArguments: string[] = [];
+
+function isExpectedToFail(node: ts.Node): boolean {
+  const file = node.getSourceFile();
+  return (ts.getLeadingCommentRanges(file.text, node.getFullStart()) ?? []).some(
+    (range) =>
+      file.text.slice(range.pos, range.end).includes("@ts-expect-error"),
+  );
+}
 
 function positionOf(node: ts.Node): string {
   const file = node.getSourceFile();
@@ -193,13 +200,13 @@ for (const file of program.getSourceFiles()) {
       if (variables) {
         if (typedDeclarations.has(node.name.text)) {
           duplicateDeclarations.push(`${positionOf(node)}: ${node.name.text}`);
+        } else {
+          typedDeclarations.set(node.name.text, {
+            file: real,
+            name: node.name.text,
+            variables,
+          });
         }
-        typedDeclarations.set(node.name.text, {
-          file: real,
-          name: node.name.text,
-          variables,
-          node,
-        });
       }
     }
     if (
@@ -208,6 +215,7 @@ for (const file of program.getSourceFiles()) {
       node.typeArguments.length > 0
     ) {
       for (const argument of node.arguments ?? []) {
+        if (isExpectedToFail(node)) continue;
         const type = checker.getTypeAtLocation(argument);
         if (!type.isUnion() && type.getProperty("__apiType")) {
           callsWithTypeArguments.push(
@@ -408,6 +416,28 @@ describe("every SDK operation declares the variables it sends", () => {
       new Set(graded.map((entry) => entry.declaration.name)).size,
       "If discovery broke, every per-operation assertion below would iterate an empty list and pass having compared nothing. Counting distinct declarations, not entries - `internal.ts` re-exports five of these, and re-exports must not pad the count.",
     ).toBeGreaterThanOrEqual(14);
+  });
+
+  it("grades a program that compiled", () => {
+    expect(
+      program
+        .getSemanticDiagnostics()
+        .map((diagnostic) =>
+          ts.flattenDiagnosticMessageText(diagnostic.messageText, " "),
+        ),
+      "Every assertion here reads types out of this program. If an import did not resolve - an unbuilt `@cmssy/types`, a moved file - the checker hands back error types, nothing matches anything, and the grader reports no problems because it understood nothing.",
+    ).toEqual([]);
+  });
+
+  it("resolves a known operation's variables to real property names", () => {
+    const form = typedDeclarations.get("FORM_QUERY");
+    expect(
+      checker
+        .getPropertiesOfType(form!.variables)
+        .map((property) => property.name)
+        .sort(),
+      "A positive control: the grader compares two derived lists, and an error type has no properties, so a degraded program would make every comparison pass on two empty sets.",
+    ).toEqual(["formId"]);
   });
 
   it("matches each operation to one declaration", () => {

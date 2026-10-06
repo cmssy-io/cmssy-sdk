@@ -101,28 +101,37 @@ already generated.
 form the org-scoped delivery path `{apiBase}/public/{org}/{workspaceSlug}/graphql`,
 where `apiBase` is `apiUrl` with its trailing `/graphql` stripped (default
 `https://api.cmssy.io`). A workspace slug only needs to be unique within its
-organization. The client has exactly three members (`query` and `queryScoped` each with a typed and a string form):
+organization. The client has exactly three members:
 
 ```ts
 interface CmssyClient {
   readonly config: CmssyClientConfig;
-  // Typed document: variables checked, result inferred.
-  query<R, V>(
-    document: CmssyTypedDocument<R, V>,
-    variables: V,
-    options?,
-  ): Promise<R>;
-  queryScoped<R, V>(
-    document,
-    variables: Omit<V, "workspaceId">,
-    options?,
-  ): Promise<R>;
-  // Query string: your own generic, as before.
-  query<T>(document: string, variables?, options?): Promise<T>;
-  queryScoped<T>(document: string, variables?, options?): Promise<T>;
+  query<Result = unknown, Variables = Record<string, unknown>>(
+    document: CmssyOperationInput<Result, Variables>,
+    ...rest: VariablesParameter<Variables, GraphqlRequestOptions>
+  ): Promise<Result>;
+  queryScoped<Result = unknown, Variables = Record<string, unknown>>(
+    document: CmssyOperationInput<Result, Variables>,
+    ...rest: VariablesParameter<ScopedVariables<Variables>, QueryScopedOptions>
+  ): Promise<Result>;
   resolveWorkspaceId(options?): Promise<string>;
 }
 ```
+
+One signature, not two. Both type parameters are inferred from the document, so
+**do not pass an explicit type argument when the document carries its types** -
+`client.query<MyShape>(TypedDoc, vars)` pins `Result` and leaves `Variables` at
+its default, which is how an unchecked variables object used to reach the API.
+It no longer compiles. A plain query string infers neither, so your own generic
+still works there exactly as before.
+
+`VariablesParameter` makes the variables argument required when the document
+declares a variable you must supply, and optional when it does not -
+`client.query(FormDocument)` on a document with `$formId: ID!` is a build error,
+while a document whose only variable is `$workspaceId` needs no argument at all
+because `queryScoped` injects it. `ScopedVariables` lets you pass `workspaceId`
+yourself on the documents that declare it; on a document that does not, passing
+it is a build error rather than an undeclared variable on the wire.
 
 `GraphqlRequestOptions`:
 

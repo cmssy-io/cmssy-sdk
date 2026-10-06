@@ -13,21 +13,26 @@ export interface QueryScopedOptions extends Omit<
   workspaceId?: string;
 }
 
-export type ScopedVariables<Variables> = Omit<Variables, "workspaceId"> & {
-  workspaceId?: string | null;
-};
+export type ScopedVariables<Variables> = "workspaceId" extends keyof Variables
+  ? Omit<Variables, "workspaceId"> & { workspaceId?: string | null }
+  : Variables;
+
+export type VariablesParameter<Variables, Options> = Record<
+  string,
+  never
+> extends Variables
+  ? [variables?: Variables, options?: Options]
+  : [variables: Variables, options?: Options];
 
 export interface CmssyClient {
   readonly config: CmssyClientConfig;
   query<Result = unknown, Variables = Record<string, unknown>>(
     document: CmssyOperationInput<Result, Variables>,
-    variables?: Variables,
-    options?: GraphqlRequestOptions,
+    ...rest: VariablesParameter<Variables, GraphqlRequestOptions>
   ): Promise<Result>;
   queryScoped<Result = unknown, Variables = Record<string, unknown>>(
     document: CmssyOperationInput<Result, Variables>,
-    variables?: ScopedVariables<Variables>,
-    options?: QueryScopedOptions,
+    ...rest: VariablesParameter<ScopedVariables<Variables>, QueryScopedOptions>
   ): Promise<Result>;
   resolveWorkspaceId(options?: GraphqlRequestOptions): Promise<string>;
 }

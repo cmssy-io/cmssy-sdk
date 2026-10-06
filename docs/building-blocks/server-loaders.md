@@ -158,13 +158,27 @@ export async function loadPosts(vars: { parentSlug: string; limit: number }) {
   if (typeof window !== "undefined") {
     throw new Error("loadPosts must only run on the server");
   }
-  const data = await client.queryScoped<{
-    publicPagesByType?: { items?: unknown[]; hasMore?: boolean };
-  }>(PUBLIC_PAGES_QUERY, vars);
-  const r = data?.publicPagesByType;
-  return r ? { items: r.items ?? [], hasMore: !!r.hasMore } : null;
+  const data = await client.queryScoped(PUBLIC_PAGES_QUERY, vars);
+  return data.publicPagesByType;
 }
 ```
+
+`PUBLIC_PAGES_QUERY` is your document, so give it the types it sends and
+returns - `typedOperation<Result, Variables>` from `@cmssy/react` marks a query
+string with them and leaves it a string at runtime:
+
+```ts
+import { typedOperation } from "@cmssy/react";
+
+export const PUBLIC_PAGES_QUERY = typedOperation<
+  { publicPagesByType: { items: unknown[]; hasMore: boolean } },
+  { parentSlug: string; limit: number }
+>(`query PublicPagesByType($parentSlug: String!, $limit: Int) { ... }`);
+```
+
+Without it the call still works - a plain string infers nothing, so you supply
+your own generic as before - but a renamed variable is then a 400 at runtime
+instead of a build error.
 
 ```ts
 // block.ts - the loader stays tiny; the helper is only imported on the server

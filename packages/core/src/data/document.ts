@@ -6,7 +6,7 @@ export type CmssyOperation<Result, Variables> = string &
   CmssyTypedDocument<Result, Variables>;
 
 export type CmssyOperationInput<Result, Variables> =
-  | string
+  | (string & { __apiType?: never })
   | CmssyTypedDocument<Result, Variables>;
 
 export function typedOperation<Result, Variables>(

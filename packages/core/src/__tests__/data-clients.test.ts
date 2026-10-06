@@ -401,3 +401,80 @@ describe("QueryScopedOptions", () => {
     expect(options.workspaceId).toBe("w1");
   });
 });
+
+describe("the document decides what a call may pass (graded by `pnpm typecheck`, not by this runner)", () => {
+  const client = createCmssyClient(config);
+
+  it("refuses a typed operation with no variables at all", () => {
+    const call = () =>
+      // @ts-expect-error - FORM_QUERY declares $formId: ID!, so the variables
+      // argument is not optional and omitting it is a guaranteed 400.
+      client.query(FORM_QUERY);
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a scoped operation with no variables at all", () => {
+    const call = () =>
+      // @ts-expect-error - MODEL_RECORDS_QUERY declares $modelSlug: String!,
+      // which queryScoped does not inject the way it injects workspaceId.
+      client.queryScoped(MODEL_RECORDS_QUERY);
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a result type pinned over a typed operation", () => {
+    const call = () =>
+      // @ts-expect-error - pinning Result leaves Variables at its default, which
+      // is how an unchecked variables object reached the delivery API before.
+      client.query<{ public: { form: { get: null } } }>(FORM_QUERY, {
+        formId: "f1",
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a variable the document does not declare", () => {
+    const call = () =>
+      client.queryScoped(FORM_QUERY, {
+        formId: "f1",
+        // @ts-expect-error - PublicForm takes $formId only; queryScoped offers
+        // workspaceId to the documents that declare it, not to every document.
+        workspaceId: "w1",
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a misspelled variable", () => {
+    const call = () =>
+      client.query(FORM_QUERY, {
+        // @ts-expect-error - formIdentifier is not $formId.
+        formIdentifier: "f1",
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a variable of the wrong type", () => {
+    const call = () =>
+      client.query(FORM_QUERY, {
+        // @ts-expect-error - $formId is an ID, which arrives as a string.
+        formId: 7,
+      });
+    expect(typeof call).toBe("function");
+  });
+
+  it("refuses a field the operation does not select", () => {
+    const call = async () => {
+      const data = await client.query(FORM_QUERY, { formId: "f1" });
+      // @ts-expect-error - PublicForm selects no `title`, so the result type
+      // has none; a pinned Result type is what used to hide that.
+      return data.public.form.get?.title;
+    };
+    expect(typeof call).toBe("function");
+  });
+
+  it("still takes a plain string with whatever variables the caller likes", () => {
+    const call = () =>
+      client.query("query Anything($x: String) { anything(x: $x) }", {
+        x: "free-form",
+      });
+    expect(typeof call).toBe("function");
+  });
+});

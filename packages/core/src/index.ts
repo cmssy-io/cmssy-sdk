@@ -12,8 +12,18 @@ export {
 } from "./data/http";
 export type { RetryPolicy, RetryOption, CmssyRetryMode } from "./data/http";
 export { createCmssyClient } from "./data/client";
-export type { CmssyClient, QueryScopedOptions } from "./data/client";
-export type { CmssyTypedDocument } from "./data/document";
+export type {
+  CmssyClient,
+  QueryScopedOptions,
+  ScopedVariables,
+  VariablesParameter,
+} from "./data/client";
+export { typedOperation } from "./data/document";
+export type {
+  CmssyOperation,
+  CmssyOperationInput,
+  CmssyTypedDocument,
+} from "./data/document";
 export { DEFAULT_CMSSY_API_URL } from "./content/content-client";
 export type {
   CmssyClientConfig,
