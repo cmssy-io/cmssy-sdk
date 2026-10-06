@@ -33,10 +33,10 @@ export function getBlockContentForLanguage(
   }
 
   const fallbackKey = Object.keys(localeMap)[0]!;
-  const chosen =
-    localeMap[locale] ?? localeMap[defaultLocale] ?? localeMap[fallbackKey]!;
+  const base = localeMap[defaultLocale] ?? localeMap[fallbackKey]!;
+  const active = localeMap[locale] ?? base;
 
-  return { ...nonTranslatable, ...chosen };
+  return { ...nonTranslatable, ...base, ...active };
 }
 
 export function asBucket(value: unknown): Record<string, unknown> {
