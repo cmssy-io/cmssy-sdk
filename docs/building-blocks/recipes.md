@@ -76,7 +76,7 @@ is mounted, and the first render of a freshly added block still has none. Add
 
 There is no SDK helper for listing pages under a parent - you write the query and
 run it through `queryScoped`, which auto-injects `workspaceId`. The delivery API
-exposes `publicPagesByType` for this (see [Delivery API](../reference/delivery-api.md)).
+exposes `public.page.byType` for this (see [Delivery API](../reference/delivery-api.md)).
 
 ```ts
 // blocks/blog-index/posts-query.ts
@@ -87,41 +87,53 @@ export interface PostSummary {
   slug: string;
   fullSlug: string;
   publishedAt: string | null;
-  displayName: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
+  displayName: unknown;
+  seoTitle: unknown;
+  seoDescription: unknown;
 }
 
 export const PUBLIC_PAGES_BY_TYPE = typedOperation<
-  { publicPagesByType: { items: PostSummary[]; hasMore: boolean } },
+  {
+    public: {
+      page: { byType: { items: PostSummary[]; hasMore: boolean; total: number } };
+    };
+  },
   {
     workspaceId: string;
+    pageType?: string | null;
     parentSlug?: string | null;
     limit?: number | null;
     offset?: number | null;
   }
 >(`query PublicPagesByType(
   $workspaceId: String!
+  $pageType: String
   $parentSlug: String
   $limit: Int
   $offset: Int
 ) {
-  publicPagesByType(
-    workspaceId: $workspaceId
-    parentSlug: $parentSlug
-    limit: $limit
-    offset: $offset
-  ) {
-    items {
-      id
-      slug
-      fullSlug
-      publishedAt
-      displayName
-      seoTitle
-      seoDescription
+  public {
+    page {
+      byType(
+        workspaceId: $workspaceId
+        pageType: $pageType
+        parentSlug: $parentSlug
+        limit: $limit
+        offset: $offset
+      ) {
+        items {
+          id
+          slug
+          fullSlug
+          publishedAt
+          displayName
+          seoTitle
+          seoDescription
+        }
+        hasMore
+        total
+      }
     }
-    hasMore
   }
 }`);
 ```
@@ -147,7 +159,7 @@ export async function loadPosts(vars: { parentSlug: string; limit: number }) {
     ...vars,
     offset: 0,
   });
-  return data.publicPagesByType;
+  return data.public.page.byType;
 }
 ```
 

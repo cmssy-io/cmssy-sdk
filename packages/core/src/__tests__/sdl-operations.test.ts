@@ -186,7 +186,20 @@ function literalText(declaration: ts.VariableDeclaration): string | null {
 
 const typedDeclarations = new Map<string, TypedOperationDeclaration>();
 const duplicateDeclarations: string[] = [];
-const callsWithTypeArguments: string[] = [];
+const pinnedCalls: { where: string; names: string[] }[] = [];
+
+function documentNames(node: ts.Expression): string[] {
+  if (ts.isParenthesizedExpression(node)) return documentNames(node.expression);
+  if (ts.isConditionalExpression(node)) {
+    return [
+      ...documentNames(node.whenTrue),
+      ...documentNames(node.whenFalse),
+    ];
+  }
+  if (ts.isIdentifier(node)) return [node.text];
+  if (ts.isPropertyAccessExpression(node)) return [node.name.text];
+  return [];
+}
 
 function isExpectedToFail(node: ts.Node): boolean {
   const file = node.getSourceFile();
@@ -231,13 +244,12 @@ for (const file of program.getSourceFiles()) {
       node.typeArguments &&
       node.typeArguments.length > 0
     ) {
-      for (const argument of node.arguments ?? []) {
-        if (isExpectedToFail(node)) continue;
-        const type = checker.getTypeAtLocation(argument);
-        if (!type.isUnion() && type.getProperty("__apiType")) {
-          callsWithTypeArguments.push(
-            `${positionOf(node)}: ${argument.getText()}`,
-          );
+      if (!isExpectedToFail(node)) {
+        for (const argument of node.arguments ?? []) {
+          const names = documentNames(argument);
+          if (names.length > 0) {
+            pinnedCalls.push({ where: positionOf(node), names });
+          }
         }
       }
     }
@@ -493,8 +505,15 @@ describe("every SDK operation declares the variables it sends", () => {
 
   it("never pins a result type over a typed operation", () => {
     expect(
-      callsWithTypeArguments,
-      "An explicit type argument at the call site wins over the type the document carries - that is how `queryScoped<{...}>(FORM_QUERY, ...)` sent unchecked variables while looking typed. Let both type parameters infer from the document.",
+      pinnedCalls
+        .filter((call) =>
+          call.names.some((name) => typedDeclarations.has(name)),
+        )
+        .map(
+          (call) =>
+            `${call.where}: ${call.names.filter((name) => typedDeclarations.has(name)).join(", ")}`,
+        ),
+      "An explicit type argument at the call site wins over the type the document carries - that is how `queryScoped<{...}>(FORM_QUERY, ...)` sent unchecked variables while looking typed. Matching by name, not by type, so a ternary between two documents is caught too: its type is a union, and asking a union for `__apiType` silently answered no.",
     ).toEqual([]);
   });
 });

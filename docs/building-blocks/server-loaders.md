@@ -159,7 +159,7 @@ export async function loadPosts(vars: { parentSlug: string; limit: number }) {
     throw new Error("loadPosts must only run on the server");
   }
   const data = await client.queryScoped(PUBLIC_PAGES_QUERY, vars);
-  return data.publicPagesByType;
+  return data.public.page.byType;
 }
 ```
 
@@ -171,10 +171,26 @@ string with them and leaves it a string at runtime:
 import { typedOperation } from "@cmssy/react";
 
 export const PUBLIC_PAGES_QUERY = typedOperation<
-  { publicPagesByType: { items: unknown[]; hasMore: boolean } },
-  { parentSlug: string; limit: number }
->(`query PublicPagesByType($parentSlug: String!, $limit: Int) { ... }`);
+  { public: { page: { byType: { items: unknown[]; hasMore: boolean } } } },
+  { workspaceId: string; parentSlug?: string | null; limit?: number | null }
+>(`query PublicPagesByType(
+  $workspaceId: String!
+  $parentSlug: String
+  $limit: Int
+) {
+  public {
+    page {
+      byType(workspaceId: $workspaceId, parentSlug: $parentSlug, limit: $limit) {
+        items { id slug fullSlug publishedAt }
+        hasMore
+      }
+    }
+  }
+}`);
 ```
+
+`$workspaceId` has to be declared even though you never pass it: `queryScoped`
+injects it only into a document whose text names it.
 
 Without it the call still works - a plain string infers nothing, so you supply
 your own generic as before - but a renamed variable is then a 400 at runtime

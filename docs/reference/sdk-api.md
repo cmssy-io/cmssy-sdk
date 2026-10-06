@@ -74,7 +74,29 @@ authored). A region without `settings` has no settings section.
 
 ```ts
 createCmssyClient(config: CmssyClientConfig): CmssyClient;
-graphqlRequest<T>(config, query, variables, options?, label?): Promise<T>;
+graphqlRequest<Result, Variables>(
+  config,
+  query: CmssyOperationInput<Result, Variables>,
+  variables: Variables,
+  options?,
+  label?,
+): Promise<Result>;
+typedOperation<Result, Variables>(
+  text: string,
+): CmssyOperation<Result, Variables>;
+```
+
+`CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
+that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
+string you marked yourself with `typedOperation`. `CmssyOperation<Result,
+Variables>` is what `typedOperation` returns: still a `string` at runtime, so it
+goes anywhere a query string goes, and nothing has to print it.
+
+```ts
+const SUBMIT = typedOperation<
+  { public: { form: { submit: CmssyFormSubmitResponse } } },
+  { formId: string; input: { data: Record<string, string> } }
+>(`mutation SubmitForm($formId: ID!, $input: SubmitFormInput!) { ... }`);
 ```
 
 **Pass a typed document.** `query` / `queryScoped` still take a query string,

@@ -17,6 +17,7 @@ exports[`@cmssy/astro public surface > exports exactly these names 1`] = `
   "mintCmssyEditToken",
   "resolveCmssyLayout",
   "resolveEditorOrigin",
+  "typedOperation",
   "verifyCmssyEditToken",
   "verifyCmssyWebhook",
 ]

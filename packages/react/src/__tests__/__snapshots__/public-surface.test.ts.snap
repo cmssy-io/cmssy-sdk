@@ -38,6 +38,7 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "resolveCmssyLayoutSlot",
   "resolveEditorBlockData",
   "resolveEditorLayoutBlockData",
+  "typedOperation",
 ]
 `;
 

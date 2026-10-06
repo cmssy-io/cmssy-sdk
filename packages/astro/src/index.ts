@@ -10,6 +10,7 @@ export {
   defineCmssyLayout,
   resolveEditorOrigin,
   createCmssyClient,
+  typedOperation,
   CMSSY_EDIT_HEADER,
   CMSSY_EDIT_TOKEN_HEADER,
   mintCmssyEditToken,
@@ -20,8 +21,15 @@ export {
   CmssyWebhookError,
 } from "@cmssy/core";
 export type {
+  CmssyClient,
   CmssyConfig,
   CmssyEnvConfig,
+  CmssyOperation,
+  CmssyOperationInput,
+  CmssyTypedDocument,
+  QueryScopedOptions,
+  ScopedVariables,
+  VariablesParameter,
   CmssyLayout,
   CmssyRegion,
   CmssyRegionOf,

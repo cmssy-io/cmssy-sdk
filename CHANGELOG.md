@@ -11,8 +11,35 @@ nowhere.
 **Delete the type argument** from any `client.query<...>(...)` or
 `client.queryScoped<...>(...)` call whose document carries its own types - what
 graphql-codegen emits, the file `cmssy types` vendors, or a string you marked
-with the new `typedOperation`. Nothing else to do: plain query strings behave
-exactly as before, and no runtime behaviour changed.
+with the new `typedOperation`. Plain query strings behave exactly as before.
+
+**If you wrap the client behind your own generic function**, forward the
+arguments instead of re-declaring them. The variables parameter is now a tuple
+whose shape depends on the document, and TypeScript cannot resolve that against
+a type parameter it has not seen yet:
+
+```ts
+// stops compiling - TS2345
+function load<R, V>(doc: CmssyTypedDocument<R, V>, vars: Omit<V, "workspaceId">) {
+  return client.queryScoped(doc, vars);
+}
+
+// either forward the tuple...
+function load<R, V>(
+  doc: CmssyTypedDocument<R, V>,
+  ...rest: VariablesParameter<ScopedVariables<V>, QueryScopedOptions>
+) {
+  return client.queryScoped(doc, ...rest);
+}
+
+// ...or take the client's own parameters
+function load(...args: Parameters<typeof client.queryScoped>) {
+  return client.queryScoped(...args);
+}
+```
+
+`VariablesParameter`, `ScopedVariables`, `CmssyOperation` and
+`CmssyOperationInput` are exported for this.
 
 ```ts
 // before - the type argument looked like typing and was the opposite of it
@@ -44,6 +71,11 @@ The variables argument is also required when the document declares a variable
 you must supply. `client.query(FormDocument)` with no variables is a build
 error; a document whose only variable is `$workspaceId` still needs none,
 because `queryScoped` injects it.
+
+Two runtime changes, both additive: `typedOperation` is a new export from
+`@cmssy/core`, `/react`, `/astro` and `/remix`, and `graphqlRequest` and
+`postGraphql` now print a document object you hand them directly, where before
+only the client did that and a raw object went into the `query` field.
 
 ## 19.1.1
 

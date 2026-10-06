@@ -2,7 +2,11 @@ export { graphqlRequest } from "@cmssy/core";
 export type { GraphqlRequestOptions } from "@cmssy/core";
 export { CmssyRequestError } from "@cmssy/core";
 export type { RetryPolicy, RetryOption, CmssyRetryMode } from "@cmssy/core";
-export { createCmssyClient, defineCmssyLayout } from "@cmssy/core";
+export {
+  createCmssyClient,
+  defineCmssyLayout,
+  typedOperation,
+} from "@cmssy/core";
 export type {
   CmssyLayout,
   CmssyRegion,
@@ -14,8 +18,12 @@ export type {
 } from "@cmssy/core";
 export type {
   CmssyClient,
+  CmssyOperation,
+  CmssyOperationInput,
   CmssyTypedDocument,
   QueryScopedOptions,
+  ScopedVariables,
+  VariablesParameter,
 } from "@cmssy/core";
 export type {
   CmssyClientConfig,
