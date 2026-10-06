@@ -42,9 +42,7 @@ async function loadSiteLocales(
 
   let value: CmssySiteLocales | null;
   try {
-    const data = await graphqlRequest<{
-      public: { siteConfig: CmssySiteConfig | null } | null;
-    }>(
+    const data = await graphqlRequest(
       config,
       SITE_CONFIG_QUERY,
       { workspaceSlug: config.workspaceSlug },

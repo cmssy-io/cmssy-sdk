@@ -2,7 +2,7 @@ import {
   resolveApiUrl,
   type CmssyClientConfig,
 } from "../content/content-client";
-import { documentText, type CmssyTypedDocument } from "./document";
+import { documentText, type CmssyOperationInput } from "./document";
 import { graphqlRequest, type GraphqlRequestOptions } from "./graphql-request";
 import { cachedWorkspaceId } from "./settings-client";
 
@@ -13,28 +13,22 @@ export interface QueryScopedOptions extends Omit<
   workspaceId?: string;
 }
 
+export type ScopedVariables<Variables> = Omit<Variables, "workspaceId"> & {
+  workspaceId?: string | null;
+};
+
 export interface CmssyClient {
   readonly config: CmssyClientConfig;
-  query<Result, Variables>(
-    document: CmssyTypedDocument<Result, Variables>,
-    variables: Variables,
+  query<Result = unknown, Variables = Record<string, unknown>>(
+    document: CmssyOperationInput<Result, Variables>,
+    variables?: Variables,
     options?: GraphqlRequestOptions,
   ): Promise<Result>;
-  query<T = unknown>(
-    document: string,
-    variables?: Record<string, unknown>,
-    options?: GraphqlRequestOptions,
-  ): Promise<T>;
-  queryScoped<Result, Variables>(
-    document: CmssyTypedDocument<Result, Variables>,
-    variables: Omit<Variables, "workspaceId">,
+  queryScoped<Result = unknown, Variables = Record<string, unknown>>(
+    document: CmssyOperationInput<Result, Variables>,
+    variables?: ScopedVariables<Variables>,
     options?: QueryScopedOptions,
   ): Promise<Result>;
-  queryScoped<T = unknown>(
-    document: string,
-    variables?: Record<string, unknown>,
-    options?: QueryScopedOptions,
-  ): Promise<T>;
   resolveWorkspaceId(options?: GraphqlRequestOptions): Promise<string>;
 }
 

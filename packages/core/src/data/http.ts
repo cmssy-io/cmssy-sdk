@@ -1,5 +1,6 @@
 import type { FetchLike, FetchLikeResponse } from "../content/content-client";
 import { CMSSY_USER_AGENT } from "../version";
+import { documentText, type CmssyOperationInput } from "./document";
 
 export class CmssyRequestError extends Error {
   readonly status: number;
@@ -194,12 +195,15 @@ export interface PostGraphqlOptions {
   label: string;
 }
 
-export async function postGraphql<T>(
+export async function postGraphql<
+  Result = unknown,
+  Variables = Record<string, unknown>,
+>(
   url: string,
-  query: string,
-  variables: Record<string, unknown>,
+  query: CmssyOperationInput<Result, Variables>,
+  variables: Variables,
   options: PostGraphqlOptions,
-): Promise<T> {
+): Promise<Result> {
   const doFetch =
     options.fetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
   if (typeof doFetch !== "function") {
@@ -218,7 +222,7 @@ export async function postGraphql<T>(
         "user-agent": CMSSY_USER_AGENT,
         ...options.headers,
       },
-      body: JSON.stringify({ query, variables }),
+      body: JSON.stringify({ query: documentText(query), variables }),
       signal: options.signal,
     },
     options.retry,
@@ -228,7 +232,7 @@ export async function postGraphql<T>(
   if (!response.ok) {
     let detail = "";
     try {
-      const body = (await response.json()) as GraphqlEnvelope<T>;
+      const body = (await response.json()) as GraphqlEnvelope<Result>;
       if (body.errors && body.errors.length > 0) {
         detail = ` - ${body.errors
           .map((error) => error.message ?? "GraphQL error")
@@ -249,9 +253,9 @@ export async function postGraphql<T>(
     );
   }
 
-  let json: GraphqlEnvelope<T>;
+  let json: GraphqlEnvelope<Result>;
   try {
-    json = (await response.json()) as GraphqlEnvelope<T>;
+    json = (await response.json()) as GraphqlEnvelope<Result>;
   } catch {
     throw new Error(`cmssy: invalid JSON response from the ${options.label}`);
   }
@@ -261,5 +265,5 @@ export async function postGraphql<T>(
       .join("; ");
     throw new Error(`cmssy: ${options.label} error - ${message}`);
   }
-  return json.data as T;
+  return json.data as Result;
 }

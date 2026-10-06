@@ -155,9 +155,7 @@ describe("a complete delivery payload survives the read that returns it", () => 
     });
 
     const client = createCmssyClient(config);
-    const data = await client.queryScoped<{
-      public: { model: { records: CmssyRecordList } };
-    }>(
+    const data = await client.queryScoped(
       MODEL_RECORDS_QUERY,
       { modelSlug: "products" },
       { fetch, workspaceId: SITE_CONFIG.workspaceId },
@@ -173,9 +171,7 @@ describe("a complete delivery payload survives the read that returns it", () => 
     });
 
     const client = createCmssyClient(config);
-    const data = await client.query<{
-      public: { form: { submit: CmssyFormSubmitResponse } };
-    }>(
+    const data = await client.query(
       SUBMIT_FORM_MUTATION,
       { formId: "f1", input: { data: { reason: "warranty" } } },
       { fetch },

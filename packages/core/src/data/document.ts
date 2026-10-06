@@ -2,6 +2,19 @@ export interface CmssyTypedDocument<Result, Variables> {
   __apiType?: (variables: Variables) => Result;
 }
 
+export type CmssyOperation<Result, Variables> = string &
+  CmssyTypedDocument<Result, Variables>;
+
+export type CmssyOperationInput<Result, Variables> =
+  | string
+  | CmssyTypedDocument<Result, Variables>;
+
+export function typedOperation<Result, Variables>(
+  text: string,
+): CmssyOperation<Result, Variables> {
+  return text as CmssyOperation<Result, Variables>;
+}
+
 interface AstNode {
   kind: string;
   [key: string]: unknown;

@@ -2,9 +2,23 @@ import type { CmssyModelRecord, FieldDefinition, PageRef } from "@cmssy/types";
 import type { CmssyClientConfig } from "../content/content-client";
 import { createCmssyClient } from "./client";
 import type { QueryScopedOptions } from "./client";
+import { typedOperation } from "./document";
 import { MODEL_RECORDS_QUERY } from "./queries";
 
-export const RECORDS_BY_IDS_QUERY = `query PublicRecordsByIds($workspaceId: String!, $ids: [String!]!, $locale: String) {
+export interface RecordsByIdsVariables {
+  workspaceId: string;
+  ids: string[];
+  locale?: string | null;
+}
+
+export interface RecordsByIdsResult {
+  public: { model: { recordsByIds: CmssyModelRecord[] } };
+}
+
+export const RECORDS_BY_IDS_QUERY = typedOperation<
+  RecordsByIdsResult,
+  RecordsByIdsVariables
+>(`query PublicRecordsByIds($workspaceId: String!, $ids: [String!]!, $locale: String) {
   public {
     model {
       recordsByIds(workspaceId: $workspaceId, ids: $ids, locale: $locale) {
@@ -12,7 +26,7 @@ export const RECORDS_BY_IDS_QUERY = `query PublicRecordsByIds($workspaceId: Stri
       }
     }
   }
-}`;
+}`);
 
 const BY_IDS_CHUNK = 50;
 const COLLECTION_DEFAULT_LIMIT = 50;
@@ -350,9 +364,7 @@ async function fetchPickedRecords(
   }
   await Promise.all(
     chunks.map(async (chunk) => {
-      const result = await client.queryScoped<{
-        public: { model: { recordsByIds: CmssyModelRecord[] } };
-      }>(
+      const result = await client.queryScoped(
         RECORDS_BY_IDS_QUERY,
         { ids: chunk, locale: locale ?? null },
         requestOptions,
@@ -374,9 +386,7 @@ async function fetchCollections(
   const byKey = new Map<string, CmssyModelRecord[]>();
   await Promise.all(
     [...collections.entries()].map(async ([key, { model, sort, limit }]) => {
-      const result = await client.queryScoped<{
-        public: { model: { records: { items: CmssyModelRecord[] } } };
-      }>(
+      const result = await client.queryScoped(
         MODEL_RECORDS_QUERY,
         {
           modelSlug: model,

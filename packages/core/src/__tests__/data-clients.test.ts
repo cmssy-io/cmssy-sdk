@@ -56,10 +56,8 @@ describe("createCmssyClient().query (raw)", () => {
       data: { public: { form: { get: { id: "f1", name: "Contact" } } } },
     });
     const client = createCmssyClient(config);
-    const data = await client.query<{
-      public: { form: { get: { name: string } } };
-    }>(FORM_QUERY, { formId: "f1" }, { fetch });
-    expect(data.public.form.get.name).toBe("Contact");
+    const data = await client.query(FORM_QUERY, { formId: "f1" }, { fetch });
+    expect(data.public.form.get?.name).toBe("Contact");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.headers["x-workspace-id"]).toBeUndefined();
     expect(calls[0]?.variables).toEqual({ formId: "f1" });
@@ -71,7 +69,7 @@ describe("createCmssyClient().query (raw)", () => {
     await expect(
       client.query(
         SUBMIT_FORM_MUTATION,
-        { formId: "f1", input: {} },
+        { formId: "f1", input: { data: {} } },
         { fetch },
       ),
     ).rejects.toThrow(/boom/);
