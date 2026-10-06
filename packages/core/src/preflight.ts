@@ -30,11 +30,11 @@ const CMSSY_ADMIN_ORIGIN = "https://www.cmssy.io";
 const ALLOWED_FRAME_HOSTS = ["cmssy.io", "www.cmssy.io"];
 const SETTINGS_PATH = "Settings → Headless";
 
-export interface PreflightSiteConfigVariables {
+interface PreflightSiteConfigVariables {
   workspaceSlug: string;
 }
 
-export interface PreflightSiteConfigResult {
+interface PreflightSiteConfigResult {
   public?: {
     siteConfig?: {
       previewUrl?: string | null;
@@ -43,7 +43,7 @@ export interface PreflightSiteConfigResult {
   } | null;
 }
 
-export const PREFLIGHT_SITE_CONFIG_QUERY = typedOperation<
+const PREFLIGHT_SITE_CONFIG_QUERY = typedOperation<
   PreflightSiteConfigResult,
   PreflightSiteConfigVariables
 >(`query PreflightSiteConfig($workspaceSlug: String!) {
@@ -55,16 +55,16 @@ export const PREFLIGHT_SITE_CONFIG_QUERY = typedOperation<
   }
 }`);
 
-export interface DraftSecretValidVariables {
+interface DraftSecretValidVariables {
   workspaceSlug: string;
   secret: string;
 }
 
-export interface DraftSecretValidResult {
+interface DraftSecretValidResult {
   public?: { draftSecretValid?: boolean } | null;
 }
 
-export const DRAFT_SECRET_VALID_QUERY = typedOperation<
+const DRAFT_SECRET_VALID_QUERY = typedOperation<
   DraftSecretValidResult,
   DraftSecretValidVariables
 >(`query PreflightDraftSecretValid($workspaceSlug: String!, $secret: String!) {

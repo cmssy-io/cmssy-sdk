@@ -170,6 +170,18 @@ interface TypedOperationDeclaration {
   file: string;
   name: string;
   variables: ts.Type;
+  text: string | null;
+}
+
+function literalText(declaration: ts.VariableDeclaration): string | null {
+  const initializer = declaration.initializer;
+  if (!initializer || !ts.isCallExpression(initializer)) return null;
+  const argument = initializer.arguments[0];
+  if (!argument) return null;
+  return ts.isNoSubstitutionTemplateLiteral(argument) ||
+    ts.isStringLiteral(argument)
+    ? argument.text
+    : null;
 }
 
 const typedDeclarations = new Map<string, TypedOperationDeclaration>();
@@ -195,7 +207,11 @@ for (const file of program.getSourceFiles()) {
   if (!file.fileName.includes("/src/")) continue;
   const real = realpathSync(file.fileName);
   const visit = (node: ts.Node): void => {
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      ts.isSourceFile(node.parent.parent.parent)
+    ) {
       const variables = variablesTypeOf(node);
       if (variables) {
         if (typedDeclarations.has(node.name.text)) {
@@ -205,6 +221,7 @@ for (const file of program.getSourceFiles()) {
             file: real,
             name: node.name.text,
             variables,
+            text: literalText(node),
           });
         }
       }
@@ -396,16 +413,33 @@ function gradeOperation(
   return problems;
 }
 
-const graded = operations.flatMap((op) => {
-  const declaration = typedDeclarations.get(op.id.split(":")[1]!);
-  return declaration ? [{ ...op, declaration }] : [];
+function documentOf(declaration: TypedOperationDeclaration): DocumentNode | null {
+  const discovered = operations.find((op) =>
+    op.id.endsWith(`:${declaration.name}`),
+  );
+  if (discovered) return discovered.doc;
+  if (!declaration.text) return null;
+  try {
+    return parse(declaration.text);
+  } catch {
+    return null;
+  }
+}
+
+const graded = [...typedDeclarations.values()].flatMap((declaration) => {
+  const doc = documentOf(declaration);
+  return doc
+    ? [{ id: `${declaration.file}:${declaration.name}`, doc, declaration }]
+    : [];
 });
 
 describe("every SDK operation declares the variables it sends", () => {
   it("leaves no operation untyped", () => {
     expect(
       operations
-        .filter((op) => !graded.some((entry) => entry.id === op.id))
+        .filter(
+          (op) => !typedDeclarations.has(op.id.split(":")[1] ?? ""),
+        )
         .map((op) => op.id),
       "An operation reaching the delivery API through a plain template string takes `Record<string, unknown>`: a renamed or missing variable is then a 400 from production, not a build error. Wrap it with `typedOperation<Result, Variables>` so the compiler grades the call.",
     ).toEqual([]);
@@ -414,7 +448,7 @@ describe("every SDK operation declares the variables it sends", () => {
   it("grades at least as many operations as the package ships", () => {
     expect(
       new Set(graded.map((entry) => entry.declaration.name)).size,
-      "If discovery broke, every per-operation assertion below would iterate an empty list and pass having compared nothing. Counting distinct declarations, not entries - `internal.ts` re-exports five of these, and re-exports must not pad the count.",
+      "If discovery broke, every per-operation assertion below would iterate an empty list and pass having compared nothing.",
     ).toBeGreaterThanOrEqual(14);
   });
 
@@ -443,7 +477,7 @@ describe("every SDK operation declares the variables it sends", () => {
   it("matches each operation to one declaration", () => {
     expect(
       duplicateDeclarations,
-      "Operations are matched to their `Variables` type by constant name. Two declarations sharing a name would silently grade one document against the other's type.",
+      "Operations are matched to their `Variables` type by constant name - module scope only, so a local fixture inside a test is not one. Two module-level declarations sharing a name would silently grade one document against the other's type.",
     ).toEqual([]);
   });
 

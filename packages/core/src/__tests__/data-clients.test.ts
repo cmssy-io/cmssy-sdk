@@ -3,6 +3,7 @@ import { beforeEach, describe, it, expect } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import type { QueryScopedOptions } from "../data/client";
 import { createCmssyClient } from "../data/client";
+import { graphqlRequest } from "../data/graphql-request";
 import { clearWorkspaceIdCache } from "../data/settings-client";
 import type { CmssyTypedDocument } from "../data/document";
 import {
@@ -389,6 +390,21 @@ describe("createCmssyClient().query (typed document)", () => {
 
     expect(data.ok).toBe(true);
     expect(calls[0]?.query).toBe("query Ok { ok }");
+  });
+
+  it("prints a document handed straight to graphqlRequest, without the client", async () => {
+    const { fetch, calls } = capturingFetch({ data: { ok: true } });
+    const document = {
+      toString: () => "query Ok { ok }",
+    } as CmssyTypedDocument<{ ok: boolean }, Record<string, never>>;
+
+    const data = await graphqlRequest(config, document, {}, { fetch });
+
+    expect(
+      calls[0]?.query,
+      "graphqlRequest is a root export, and a caller reaching it directly used to have to print the document itself - an object went into the `query` field and came back a 400.",
+    ).toBe("query Ok { ok }");
+    expect(data.ok).toBe(true);
   });
 });
 
