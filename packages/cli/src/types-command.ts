@@ -92,7 +92,8 @@ async function refusalReason(
   } catch {
     return undefined;
   }
-  const errors = (body as GraphqlResponse<unknown>).errors;
+  const errors =
+    body === null ? undefined : (body as GraphqlResponse<unknown>).errors;
   if (!Array.isArray(errors)) return undefined;
   const said = errors
     .map((error) => error?.message)

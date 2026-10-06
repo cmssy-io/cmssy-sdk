@@ -151,6 +151,25 @@ describe("runTypes", () => {
     ).toContain("CMSSY_ORG_SLUG");
   });
 
+  it.each([
+    ["a bare null", null],
+    ["a bare string", "gateway timeout"],
+    ["a bare array", [{ message: "nope" }]],
+  ])(
+    "still names the slugs when the refusal body parses to %s",
+    async (_label, errorBody) => {
+      const { deps, lines } = makeDeps({ status: 502, errorBody });
+
+      const code = await runTypes({}, deps);
+
+      expect(
+        code,
+        "a proxy or a CDN can answer a non-2xx with a body that is valid JSON and not an object. Reading .errors off it throws out of the helper, so the reader gets a stack trace instead of the fix line",
+      ).not.toBe(0);
+      expect(lines.join("\n")).toContain("CMSSY_ORG_SLUG");
+    },
+  );
+
   it("still names the slugs when the refusal says nothing a reader can use", async () => {
     const { deps, lines } = makeDeps({ status: 404 });
 
