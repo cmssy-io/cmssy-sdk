@@ -8,6 +8,38 @@ import { CliError } from "./admin-client";
 
 const RUNTIME_ONLY_MODULES = ["server-only", "client-only"];
 
+const FRAMEWORK_MODULES = /^(next(\/.*)?|astro:.*)$/;
+
+const FRAMEWORK_STUB = `
+function serve(prop) {
+  if (prop === "__esModule" || prop === "__cmssyFrameworkStub") return true;
+  if (prop === Symbol.toPrimitive) return () => "";
+  if (prop === Symbol.iterator) return () => [][Symbol.iterator]();
+  if (typeof prop === "symbol" || prop === "then") return undefined;
+  return stub;
+}
+const names = new Proxy({}, {
+  get(target, prop) {
+    return serve(prop);
+  },
+});
+const stub = new Proxy(function Stub() {}, {
+  get(target, prop) {
+    return serve(prop);
+  },
+  getPrototypeOf() {
+    return names;
+  },
+  apply() {
+    return stub;
+  },
+  construct() {
+    return stub;
+  },
+});
+module.exports = stub;
+`;
+
 const ASSET_EXTENSIONS = [
   ".module.css",
   ".module.scss",
@@ -34,6 +66,7 @@ const ASSET_EXTENSIONS = [
   ".mp3",
   ".md",
   ".mdx",
+  ".astro",
 ];
 
 const assetLoaders = Object.fromEntries(
@@ -50,6 +83,20 @@ const runtimeOnlyModules: Plugin = {
     }));
     api.onLoad({ filter: /.*/, namespace: "cmssy-empty" }, () => ({
       contents: "export {};",
+      loader: "js",
+    }));
+  },
+};
+
+const frameworkModules: Plugin = {
+  name: "cmssy-framework-modules",
+  setup(api) {
+    api.onResolve({ filter: FRAMEWORK_MODULES }, (args) => ({
+      path: args.path,
+      namespace: "cmssy-framework-stub",
+    }));
+    api.onLoad({ filter: /.*/, namespace: "cmssy-framework-stub" }, () => ({
+      contents: FRAMEWORK_STUB,
       loader: "js",
     }));
   },
@@ -79,7 +126,7 @@ export async function loadSiteModule(
       jsx: "automatic",
       loader: assetLoaders,
       define: { "import.meta.env": "process.env" },
-      plugins: [runtimeOnlyModules],
+      plugins: [runtimeOnlyModules, frameworkModules],
       logLevel: "silent",
     });
     code = result.outputFiles[0]?.text ?? "";
@@ -119,11 +166,42 @@ export async function loadSiteModule(
   try {
     return (await import(pathToFileURL(file).href)) as Record<string, unknown>;
   } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: unknown } | null)?.code;
+    const fromFramework =
+      (code === "ERR_PACKAGE_PATH_NOT_EXPORTED" ||
+        code === "ERR_MODULE_NOT_FOUND") &&
+      /node_modules\/(next|astro)\/|'(next|astro)[/:']/.test(detail);
     throw new CliError(
       `could not load ${entry}`,
-      error instanceof Error ? error.message : String(error),
+      fromFramework
+        ? `${detail}\n  a package imported by ${entry} loads a framework module at import time - cmssy stubs framework imports in your own files, not inside node_modules; import that package from app code instead of the files the manifest reads`
+        : detail,
     );
   } finally {
     rmSync(file, { force: true });
   }
+}
+
+export function findFrameworkStubValues(value: unknown, path = ""): string[] {
+  if (
+    value === null ||
+    (typeof value !== "object" && typeof value !== "function")
+  ) {
+    return [];
+  }
+  if (
+    (value as { __cmssyFrameworkStub?: unknown }).__cmssyFrameworkStub === true
+  ) {
+    return [path || "<root>"];
+  }
+  if (typeof value === "function") return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      findFrameworkStubValues(item, `${path}[${index}]`),
+    );
+  }
+  return Object.entries(value).flatMap(([key, item]) =>
+    findFrameworkStubValues(item, path ? `${path}.${key}` : key),
+  );
 }

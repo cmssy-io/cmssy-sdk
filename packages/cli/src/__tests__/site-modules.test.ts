@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { loadSiteModule } from "../site-modules";
+import { findFrameworkStubValues, loadSiteModule } from "../site-modules";
 
 const packagesDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -115,6 +115,54 @@ describe("loadSiteModule", () => {
     expect(module.cssModule).toEqual({});
   });
 
+  it("loads a registry whose blocks import framework modules Node cannot resolve", async () => {
+    const root = scaffoldSite();
+    write(
+      root,
+      "blocks/promo/Promo.tsx",
+      [
+        'import NextImage from "next/image";',
+        'import { Inter } from "next/font/google";',
+        'import { useRouter } from "next/navigation";',
+        'const inter = Inter({ subsets: ["latin"] });',
+        'import { fields } from "@cmssy/core";',
+        "export const promoProps = { text: fields.text({ required: true }) };",
+        "export default function Promo({ content }: { content: { text: string } }) {",
+        "  void useRouter;",
+        "  return <p className={String(inter)}><NextImage alt='' src='/x.png' width={1} height={1} />{content.text}</p>;",
+        "}",
+      ].join("\n"),
+    );
+    write(
+      root,
+      "blocks/promo/block.ts",
+      [
+        'import Promo, { promoProps } from "./Promo";',
+        'export const promoBlock = { type: "promo", label: "Promo", component: Promo, props: promoProps };',
+      ].join("\n"),
+    );
+    write(
+      root,
+      "cmssy/next-blocks.ts",
+      [
+        'import { promoBlock } from "@/blocks/promo/block";',
+        "export const blocks = [promoBlock];",
+      ].join("\n"),
+    );
+
+    const module = await loadSiteModule(root, "cmssy/next-blocks.ts");
+
+    const blocks = module.blocks as Array<{
+      type: string;
+      props: Record<string, { type: string }>;
+    }>;
+    expect(
+      blocks.map((block) => block.type),
+      "a block importing next/image, next/font/google or next/navigation must still load for schema extraction - Next 16 exposes none of them through its exports map, so an external import crashes bare Node",
+    ).toEqual(["promo"]);
+    expect(blocks[0]!.props.text!.type).toBe("text");
+  });
+
   it("maps import.meta.env onto process.env so an Astro-style block evaluates", async () => {
     const root = scaffoldSite();
     process.env.PUBLIC_SITE_NAME = "Acme";
@@ -171,5 +219,133 @@ describe("loadSiteModule", () => {
         fix: expect.stringContaining("cmssy/broken.ts:2"),
       },
     );
+  });
+});
+
+describe("framework stubs", () => {
+  it("evaluates framework values used in module-scope string and destructuring expressions", async () => {
+    const root = scaffoldSite();
+    write(
+      root,
+      "cmssy/expr-blocks.ts",
+      [
+        'import { Inter } from "next/font/google";',
+        'import { headers } from "next/headers";',
+        'const inter = Inter({ subsets: ["latin"] });',
+        'export const badgeClass = "font-" + inter.className;',
+        "const [firstHeader] = headers();",
+        "export const first = firstHeader;",
+        'export const blocks = [{ type: "badge", label: "Badge", component: () => null, props: {} }];',
+      ].join("\n"),
+    );
+
+    const module = await loadSiteModule(root, "cmssy/expr-blocks.ts");
+
+    expect(Object.keys(module)).toContain("first");
+    expect(
+      module.badgeClass,
+      "string concatenation with a stubbed framework value must yield the empty string - without a Symbol.toPrimitive handler the proxy throws 'Cannot convert object to primitive value' at import time",
+    ).toBe("font-");
+    expect(
+      module.first,
+      "destructuring a stubbed framework call must yield undefined - without a Symbol.iterator handler the proxy throws 'is not iterable' at import time",
+    ).toBeUndefined();
+  });
+
+  it("loads a block that imports a .astro component", async () => {
+    const root = scaffoldSite();
+    write(root, "blocks/astro-hero/Hero.astro", "---\n---\n<h1>hi</h1>");
+    write(
+      root,
+      "blocks/astro-hero/block.ts",
+      [
+        'import Hero from "./Hero.astro";',
+        'export const astroHeroBlock = { type: "astroHero", label: "Astro hero", component: Hero, props: {} };',
+      ].join("\n"),
+    );
+    write(
+      root,
+      "cmssy/astro-blocks.ts",
+      [
+        'import { astroHeroBlock } from "@/blocks/astro-hero/block";',
+        "export const blocks = [astroHeroBlock];",
+      ].join("\n"),
+    );
+
+    const module = await loadSiteModule(root, "cmssy/astro-blocks.ts");
+
+    expect(
+      (module.blocks as Array<{ type: string }>).map((block) => block.type),
+      "the Astro docs offer .astro components for blocks - without an empty loader for the extension esbuild refuses the whole registry with 'No loader is configured'",
+    ).toEqual(["astroHero"]);
+  });
+
+  it("names the framework hop when a dependency imports next/* at load time", async () => {
+    const root = scaffoldSite();
+    write(
+      root,
+      "node_modules/next/package.json",
+      JSON.stringify({
+        name: "next",
+        version: "16.0.0",
+        exports: { ".": "./index.js" },
+      }),
+    );
+    write(root, "node_modules/next/index.js", "module.exports = {};");
+    write(
+      root,
+      "node_modules/uses-next/package.json",
+      JSON.stringify({
+        name: "uses-next",
+        version: "1.0.0",
+        type: "module",
+        exports: { ".": "./index.js" },
+      }),
+    );
+    write(
+      root,
+      "node_modules/uses-next/index.js",
+      'export { useRouter } from "next/navigation";',
+    );
+    write(
+      root,
+      "cmssy/transitive-blocks.ts",
+      [
+        'import { useRouter } from "uses-next";',
+        "export const r = useRouter;",
+        'export const blocks = [{ type: "t", label: "T", component: () => null, props: {} }];',
+      ].join("\n"),
+    );
+
+    await expect(
+      loadSiteModule(root, "cmssy/transitive-blocks.ts"),
+    ).rejects.toMatchObject({
+      name: "CliError",
+      message: "could not load cmssy/transitive-blocks.ts",
+      fix: expect.stringContaining(
+        "cmssy stubs framework imports in your own files",
+      ),
+    });
+  });
+
+  it("brands stubbed framework values so the manifest gate can find them", async () => {
+    const root = scaffoldSite();
+    write(
+      root,
+      "cmssy/stub-default-blocks.ts",
+      [
+        'import { Inter } from "next/font/google";',
+        'import { fields } from "@cmssy/core";',
+        'const inter = Inter({ subsets: ["latin"] });',
+        'export const blocks = [{ type: "badge", label: "Badge", component: () => null, props: { caption: { ...fields.text({ label: "Caption" }), default: inter.className } } }];',
+      ].join("\n"),
+    );
+
+    const module = await loadSiteModule(root, "cmssy/stub-default-blocks.ts");
+
+    expect(
+      findFrameworkStubValues(module.blocks),
+      "a framework value assigned into a block schema is silently dropped by JSON.stringify when the manifest is saved - the stub must carry the __cmssyFrameworkStub brand so collectManifest can refuse it by name",
+    ).toEqual(["[0].props.caption.default"]);
   });
 });

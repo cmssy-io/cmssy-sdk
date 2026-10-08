@@ -18,7 +18,11 @@ import {
   type CliWorkspace,
 } from "./admin-client";
 import { loadEnvFiles } from "./env-load";
-import { loadSiteModule, type SiteModuleLoader } from "./site-modules";
+import {
+  findFrameworkStubValues,
+  loadSiteModule,
+  type SiteModuleLoader,
+} from "./site-modules";
 
 const BLOCKS_CANDIDATES = [
   "cmssy/blocks.ts",
@@ -325,6 +329,13 @@ export async function collectManifest(
     category,
     regions: config.layout?.regions,
   });
+  const stubbedPaths = findFrameworkStubValues(manifest);
+  if (stubbedPaths.length > 0) {
+    throw new CliError(
+      `${blocksPath} feeds framework values into the manifest`,
+      `these entries hold a stubbed next/astro value and would be saved empty: ${stubbedPaths.join(", ")} - the manifest is read without the framework, so compute such values in the component, not in the block schema`,
+    );
+  }
   return {
     manifest,
     blocksPath,
