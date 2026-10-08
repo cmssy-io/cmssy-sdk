@@ -91,6 +91,12 @@ export type {
   TypedField,
 } from "./fields";
 export { evaluateFieldConditionGroup } from "@cmssy/types";
+export {
+  isFormFieldRequired,
+  isFormFieldVisible,
+  visibleFormFields,
+} from "./form-conditions";
+export type { ConditionalFormField } from "./form-conditions";
 export type {
   FieldCondition,
   FieldConditionGroup,

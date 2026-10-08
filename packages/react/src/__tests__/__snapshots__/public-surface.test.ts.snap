@@ -18,9 +18,12 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "defineBlock",
   "defineCmssyLayout",
   "defineCmssyRouteConfig",
+  "evaluateFieldConditionGroup",
   "fields",
   "graphqlRequest",
   "handleBlockDataRequest",
+  "isFormFieldRequired",
+  "isFormFieldVisible",
   "isProtocolCompatible",
   "loadCmssyRoute",
   "mediaAlt",
@@ -39,6 +42,7 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "resolveEditorBlockData",
   "resolveEditorLayoutBlockData",
   "typedOperation",
+  "visibleFormFields",
 ]
 `;
 

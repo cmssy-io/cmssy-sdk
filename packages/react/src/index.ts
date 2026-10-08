@@ -1,4 +1,11 @@
 export { graphqlRequest } from "@cmssy/core";
+export {
+  evaluateFieldConditionGroup,
+  isFormFieldRequired,
+  isFormFieldVisible,
+  visibleFormFields,
+} from "@cmssy/core";
+export type { ConditionalFormField } from "@cmssy/core";
 export type { GraphqlRequestOptions } from "@cmssy/core";
 export { CmssyRequestError } from "@cmssy/core";
 export type { RetryPolicy, RetryOption, CmssyRetryMode } from "@cmssy/core";
