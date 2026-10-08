@@ -26,6 +26,8 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "evaluateFieldConditionGroup",
   "fields",
   "graphqlRequest",
+  "isFormFieldRequired",
+  "isFormFieldVisible",
   "isProtocolCompatible",
   "isTransientRequestError",
   "isVerifiedEditUrl",
@@ -48,6 +50,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "typedOperation",
   "verifyCmssyEditToken",
   "verifyCmssyWebhook",
+  "visibleFormFields",
 ]
 `;
 
