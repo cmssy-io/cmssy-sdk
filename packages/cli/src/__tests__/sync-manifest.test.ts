@@ -822,6 +822,41 @@ describe("cmssy sync-manifest", () => {
     );
   });
 
+  it("refuses a manifest that carries a stubbed framework value, naming the field", async () => {
+    const stubLike = Object.assign(() => null, { __cmssyFrameworkStub: true });
+    const { deps, lines } = makeDeps({
+      modules: {
+        "cmssy/blocks.ts": {
+          blocks: [
+            {
+              type: "badge",
+              label: "Badge",
+              component: () => null,
+              props: {
+                caption: {
+                  ...fields.text({ label: "Caption" }),
+                  default: stubLike,
+                },
+              },
+            },
+          ],
+        },
+        "cmssy.config.ts": { cmssy: { org: "acme", workspaceSlug: "shop" } },
+      },
+    });
+
+    const code = await runSyncManifest({}, deps);
+
+    expect(code).toBe(1);
+    expect(lines[0]).toBe(
+      "cmssy: cmssy/blocks.ts feeds framework values into the manifest",
+    );
+    expect(
+      lines[1],
+      "the refusal must name the field - a stubbed value is silently dropped by JSON.stringify, so this message is the only witness the manifest would save empty",
+    ).toContain("caption");
+  });
+
   it("reports a module that fails to load with the loader's reason", async () => {
     const { deps, lines } = makeDeps();
     deps.load = async () => {
