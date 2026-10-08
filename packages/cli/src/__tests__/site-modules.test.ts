@@ -115,6 +115,54 @@ describe("loadSiteModule", () => {
     expect(module.cssModule).toEqual({});
   });
 
+  it("loads a registry whose blocks import framework modules Node cannot resolve", async () => {
+    const root = scaffoldSite();
+    write(
+      root,
+      "blocks/promo/Promo.tsx",
+      [
+        'import NextImage from "next/image";',
+        'import { Inter } from "next/font/google";',
+        'import { useRouter } from "next/navigation";',
+        'const inter = Inter({ subsets: ["latin"] });',
+        'import { fields } from "@cmssy/core";',
+        "export const promoProps = { text: fields.text({ required: true }) };",
+        "export default function Promo({ content }: { content: { text: string } }) {",
+        "  void useRouter;",
+        "  return <p className={String(inter)}><NextImage alt='' src='/x.png' width={1} height={1} />{content.text}</p>;",
+        "}",
+      ].join("\n"),
+    );
+    write(
+      root,
+      "blocks/promo/block.ts",
+      [
+        'import Promo, { promoProps } from "./Promo";',
+        'export const promoBlock = { type: "promo", label: "Promo", component: Promo, props: promoProps };',
+      ].join("\n"),
+    );
+    write(
+      root,
+      "cmssy/next-blocks.ts",
+      [
+        'import { promoBlock } from "@/blocks/promo/block";',
+        "export const blocks = [promoBlock];",
+      ].join("\n"),
+    );
+
+    const module = await loadSiteModule(root, "cmssy/next-blocks.ts");
+
+    const blocks = module.blocks as Array<{
+      type: string;
+      props: Record<string, { type: string }>;
+    }>;
+    expect(
+      blocks.map((block) => block.type),
+      "a block importing next/image, next/font/google or next/navigation must still load for schema extraction - Next 16 exposes none of them through its exports map, so an external import crashes bare Node",
+    ).toEqual(["promo"]);
+    expect(blocks[0]!.props.text!.type).toBe("text");
+  });
+
   it("maps import.meta.env onto process.env so an Astro-style block evaluates", async () => {
     const root = scaffoldSite();
     process.env.PUBLIC_SITE_NAME = "Acme";

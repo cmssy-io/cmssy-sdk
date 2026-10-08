@@ -8,6 +8,34 @@ import { CliError } from "./admin-client";
 
 const RUNTIME_ONLY_MODULES = ["server-only", "client-only"];
 
+const FRAMEWORK_MODULES = /^(next(\/.*)?|astro:.*)$/;
+
+const FRAMEWORK_STUB = `
+const names = new Proxy({}, {
+  get(target, prop) {
+    if (typeof prop === "symbol" || prop === "then") return undefined;
+    return stub;
+  },
+});
+const stub = new Proxy(function Stub() {}, {
+  get(target, prop) {
+    if (prop === "__esModule") return true;
+    if (typeof prop === "symbol" || prop === "then") return undefined;
+    return stub;
+  },
+  getPrototypeOf() {
+    return names;
+  },
+  apply() {
+    return stub;
+  },
+  construct() {
+    return stub;
+  },
+});
+module.exports = stub;
+`;
+
 const ASSET_EXTENSIONS = [
   ".module.css",
   ".module.scss",
@@ -55,6 +83,20 @@ const runtimeOnlyModules: Plugin = {
   },
 };
 
+const frameworkModules: Plugin = {
+  name: "cmssy-framework-modules",
+  setup(api) {
+    api.onResolve({ filter: FRAMEWORK_MODULES }, (args) => ({
+      path: args.path,
+      namespace: "cmssy-framework-stub",
+    }));
+    api.onLoad({ filter: /.*/, namespace: "cmssy-framework-stub" }, () => ({
+      contents: FRAMEWORK_STUB,
+      loader: "js",
+    }));
+  },
+};
+
 export type SiteModuleLoader = (
   cwd: string,
   entry: string,
@@ -79,7 +121,7 @@ export async function loadSiteModule(
       jsx: "automatic",
       loader: assetLoaders,
       define: { "import.meta.env": "process.env" },
-      plugins: [runtimeOnlyModules],
+      plugins: [runtimeOnlyModules, frameworkModules],
       logLevel: "silent",
     });
     code = result.outputFiles[0]?.text ?? "";
