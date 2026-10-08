@@ -18,10 +18,25 @@ const config = {
 function respondingFetch(
   payload: unknown,
   status = 200,
-): { fetch: FetchLike; calls: Array<{ url: string; body: string }> } {
-  const calls: Array<{ url: string; body: string }> = [];
+): {
+  fetch: FetchLike;
+  calls: Array<{
+    url: string;
+    body: string;
+    headers: Record<string, string> | undefined;
+  }>;
+} {
+  const calls: Array<{
+    url: string;
+    body: string;
+    headers: Record<string, string> | undefined;
+  }> = [];
   const fetch: FetchLike = async (url, init) => {
-    calls.push({ url, body: init.body });
+    calls.push({
+      url,
+      body: init.body,
+      headers: init.headers as Record<string, string> | undefined,
+    });
     return { ok: status < 400, status, json: async () => payload };
   };
   return { fetch, calls };
@@ -47,6 +62,14 @@ describe("checkWorkspaceReachable", () => {
     expect(result.status).toBe("ok");
     expect(result.previewUrl).toBe("http://localhost:3000");
     expect(calls[0]?.url).toBe("https://api.test/public/acme/shop/graphql");
+  });
+
+  it("identifies itself with the @cmssy/core user agent, which the admin reads to derive the connect step", async () => {
+    const { fetch, calls } = respondingFetch({
+      data: { public: { siteConfig: { previewUrl: null } } },
+    });
+    await checkWorkspaceReachable({ ...config, fetch });
+    expect(calls[0]?.headers?.["user-agent"]).toMatch(/^@cmssy\/core\//);
   });
 
   it("omits previewUrl when the workspace has none", async () => {
@@ -202,12 +225,39 @@ describe("checkPreviewUrl", () => {
       "https://staging.example.com",
       "http://localhost:3000",
     );
-    expect(result.status).toBe("fail");
+    expect(
+      result.status,
+      "A deployed preview URL beside a localhost dev server is the correct dev-mode setup; whether the editor reaches this machine depends on the per-member dev-mode switch, which this check cannot read, so it must not report fail.",
+    ).toBe("unknown");
     expect(result.message).toContain("https://staging.example.com");
     expect(result.fix).toContain("toggle dev mode in the editor");
     expect(result.fix).toContain("enter http://localhost:3000 there");
     expect(result.fix).not.toContain("paste");
     expect(result.fix).toContain("Settings → Headless");
+  });
+
+  it("stays unknown when both origins are local, because dev mode overrides the shared preview URL whatever it holds", () => {
+    const result = checkPreviewUrl(
+      "http://localhost:4321",
+      "http://localhost:3000",
+    );
+    expect(result.status).toBe("unknown");
+    expect(result.message).toContain("http://localhost:4321");
+    expect(result.fix).toContain("toggle dev mode in the editor");
+  });
+
+  it("recognises the dev-host spellings the admin accepts - *.localhost and bracketed ::1", () => {
+    for (const devOrigin of [
+      "http://app.localhost:3000",
+      "http://[::1]:3000",
+    ]) {
+      const result = checkPreviewUrl("https://staging.example.com", devOrigin);
+      expect(
+        result.status,
+        `${devOrigin} is a dev host the editor's dev-mode switch serves, so the check cannot call the setup broken`,
+      ).toBe("unknown");
+      expect(result.fix).toContain("toggle dev mode in the editor");
+    }
   });
 
   it("treats 127.0.0.1 as a local machine too", () => {

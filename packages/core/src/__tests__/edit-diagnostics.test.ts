@@ -176,7 +176,7 @@ describe("collectEditDiagnostics", () => {
     const preview = diagnostics.checks.find(
       (check) => check.name === "preview URL",
     );
-    expect(preview?.status).toBe("fail");
+    expect(preview?.status).toBe("unknown");
     expect(preview?.message).toContain("http://localhost:3000");
     expect(preview?.message).toContain("http://localhost:4321");
   });

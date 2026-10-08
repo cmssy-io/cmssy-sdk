@@ -8,6 +8,7 @@ import {
   typedOperation,
   type CmssyOperationInput,
 } from "./data/document";
+import { CMSSY_USER_AGENT } from "./version";
 
 export type PreflightStatus = "ok" | "fail" | "unknown";
 
@@ -102,7 +103,10 @@ async function postPreflightQuery<Result, Variables>(
   try {
     response = await doFetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "user-agent": CMSSY_USER_AGENT,
+      },
       body: JSON.stringify({ query: documentText(query), variables }),
     });
   } catch (error) {
@@ -237,11 +241,10 @@ export async function checkDraftSecret(
       fix: `copy the draft secret from ${SETTINGS_PATH}`,
     };
   }
-  const outcome = await postPreflightQuery(
-    config,
-    DRAFT_SECRET_VALID_QUERY,
-    { workspaceSlug: config.workspaceSlug, secret },
-  );
+  const outcome = await postPreflightQuery(config, DRAFT_SECRET_VALID_QUERY, {
+    workspaceSlug: config.workspaceSlug,
+    secret,
+  });
 
   if (outcome.kind === "network") {
     return {
@@ -287,16 +290,27 @@ function parseOrigin(value: string): string | null {
   }
 }
 
-const LOCAL_HOSTNAMES = ["localhost", "127.0.0.1"];
+function isLocalHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "127.0.0.1" ||
+    host === "::1"
+  );
+}
+
+function isLocalOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  try {
+    return isLocalHostname(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
 
 function previewUrlFix(devOrigin: string): string {
-  let hostname: string | null = null;
-  try {
-    hostname = new URL(devOrigin).hostname;
-  } catch {
-    hostname = null;
-  }
-  if (hostname && LOCAL_HOSTNAMES.includes(hostname)) {
+  if (isLocalOrigin(parseOrigin(devOrigin))) {
     return `toggle dev mode in the editor and enter ${devOrigin} there - ${SETTINGS_PATH} holds the shared preview URL of the DEPLOYED site, not your machine`;
   }
   return `paste ${devOrigin} into the preview URL field in ${SETTINGS_PATH}`;
@@ -327,6 +341,13 @@ export function checkPreviewUrl(
     return {
       status: "ok",
       message: `the workspace preview URL matches ${devOrigin}`,
+    };
+  }
+  if (isLocalOrigin(localOrigin)) {
+    return {
+      status: "unknown",
+      message: `the workspace preview URL is ${previewOrigin}; whether the editor reaches ${devOrigin} depends on the dev-mode switch, which overrides the shared preview URL and cannot be read from here`,
+      fix: previewUrlFix(devOrigin),
     };
   }
   return {
