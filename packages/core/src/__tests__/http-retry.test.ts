@@ -4,6 +4,7 @@ import {
   CMSSY_RATE_LIMIT_WINDOW_MS,
   CMSSY_RETRY_MODES,
   isTransientRequestError,
+  createRetryingFetch,
   postGraphql,
 } from "../data/http";
 import { graphqlRequest } from "../data/graphql-request";
@@ -663,5 +664,52 @@ describe("what a caller may degrade on (CMS-2049)", () => {
     expect(isTransientRequestError(new TypeError("fetch failed"))).toBe(false);
     expect(isTransientRequestError({ status: 429 })).toBe(false);
     expect(isTransientRequestError(null)).toBe(false);
+  });
+});
+
+describe("createRetryingFetch", () => {
+  const INIT = { method: "POST", headers: {}, body: "{}" };
+
+  beforeEach(() => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("retries a 429 on the caller's own fetch and hands back the attempt that succeeded", async () => {
+    const doFetch = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "retry-after": "0" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+    const response = await createRetryingFetch("build", doFetch, "schema")(
+      URL_,
+      INIT,
+    );
+    expect(response.status).toBe(200);
+    expect(doFetch).toHaveBeenCalledTimes(2);
+    expect(doFetch.mock.calls[1]).toEqual([URL_, INIT]);
+  });
+
+  it("returns the refusal untouched once the policy gives up, so the caller can read it", async () => {
+    const body = { errors: [{ message: "slow down" }] };
+    const doFetch = vi
+      .fn()
+      .mockResolvedValue(res(429, body, { "retry-after": "3600" }));
+    const response = await createRetryingFetch("build", doFetch)(URL_, INIT);
+    expect(response.status).toBe(429);
+    expect(doFetch).toHaveBeenCalledTimes(1);
+    await expect(response.json()).resolves.toEqual(body);
+  });
+
+  it("is a plain pass-through when retry is off", async () => {
+    const doFetch = vi
+      .fn()
+      .mockResolvedValue(res(429, {}, { "retry-after": "0" }));
+    const response = await createRetryingFetch(false, doFetch)(URL_, INIT);
+    expect(response.status).toBe(429);
+    expect(doFetch).toHaveBeenCalledTimes(1);
   });
 });

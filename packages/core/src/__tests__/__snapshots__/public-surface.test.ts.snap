@@ -21,6 +21,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "blocksToSchemas",
   "buildBlockManifest",
   "createCmssyClient",
+  "createRetryingFetch",
   "defineCmssyConfig",
   "defineCmssyLayout",
   "evaluateFieldConditionGroup",

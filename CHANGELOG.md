@@ -6,6 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.5.0
+
+**Nothing to do.** `cmssy types` waits out a throttled delivery answer with the
+`build` retry budget instead of failing on the first 429 - five example apps
+building against one demo workspace at once was enough to hit it. The budget is
+the one `graphqlRequest` already uses. `createRetryingFetch(retry, fetch?,
+label?)` from `@cmssy/core` is the same wrapper for any fetch-shaped function,
+such as graphql-codegen's `customFetch`.
+
 ## 19.3.0
 
 **Nothing to do** - but a block whose locale bucket does not carry every field

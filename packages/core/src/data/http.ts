@@ -182,6 +182,22 @@ async function fetchWithRetry(
   return { response, waitedMs };
 }
 
+export function createRetryingFetch<F extends FetchLike = FetchLike>(
+  retry: RetryOption,
+  doFetch?: F,
+  label = "request",
+): F {
+  const wrapped: FetchLike = async (url, init) => {
+    const impl =
+      doFetch ?? (globalThis.fetch as unknown as FetchLike | undefined);
+    if (typeof impl !== "function") {
+      throw new Error("cmssy: no fetch implementation available - pass one");
+    }
+    return (await fetchWithRetry(impl, url, init, retry, label)).response;
+  };
+  return wrapped as F;
+}
+
 interface GraphqlEnvelope<T> {
   data?: T;
   errors?: Array<{ message?: string }>;

@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { runTypes, type TypesDeps } from "../types-command";
 
@@ -73,11 +73,13 @@ function makeDeps(
     definitions?: unknown;
     status?: number;
     errorBody?: unknown;
+    throttle?: { answers: number; retryAfter: string };
   } = {},
 ): { deps: TypesDeps; lines: string[]; calls: Recorded[]; cwd: string } {
   const cwd = mkdtempSync(join(tmpdir(), "cmssy-types-"));
   const lines: string[] = [];
   const calls: Recorded[] = [];
+  let throttled = 0;
   const deps: TypesDeps = {
     cwd,
     env: overrides.env ?? {
@@ -88,6 +90,13 @@ function makeDeps(
     fetch: (async (url: string, init: RequestInit) => {
       const body = JSON.parse(String(init.body)) as Recorded["body"];
       calls.push({ url: String(url), body });
+      if (overrides.throttle && throttled < overrides.throttle.answers) {
+        throttled += 1;
+        return new Response("", {
+          status: 429,
+          headers: { "retry-after": overrides.throttle.retryAfter },
+        });
+      }
       if (overrides.status && overrides.status !== 200) {
         return overrides.errorBody === undefined
           ? new Response("nope", { status: overrides.status })
@@ -140,7 +149,10 @@ describe("runTypes", () => {
   });
 
   it("still names the slugs when the refusal carries an empty errors list", async () => {
-    const { deps, lines } = makeDeps({ status: 400, errorBody: { errors: [] } });
+    const { deps, lines } = makeDeps({
+      status: 400,
+      errorBody: { errors: [] },
+    });
 
     const code = await runTypes({}, deps);
 
@@ -181,6 +193,35 @@ describe("runTypes", () => {
       said,
       "the control: a body that carries no GraphQL errors must keep the old hint, or the test above would pass on code that dropped the hint entirely",
     ).toContain("CMSSY_ORG_SLUG");
+  });
+
+  it("waits out a short 429 instead of failing the run (CMS-2078)", async () => {
+    const { deps, calls, cwd } = makeDeps({
+      throttle: { answers: 1, retryAfter: "0" },
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const code = await runTypes({}, deps);
+
+    expect(code).toBe(0);
+    expect(calls).toHaveLength(3);
+    expect(existsSync(join(cwd, "cmssy/models.ts"))).toBe(true);
+    expect(warn.mock.calls.map(String).join("\n")).toContain(
+      "cmssy types got 429",
+    );
+    warn.mockRestore();
+  });
+
+  it("gives up on a 429 that asks for longer than a build would wait, and names the status", async () => {
+    const { deps, lines, calls } = makeDeps({
+      throttle: { answers: 99, retryAfter: "3600" },
+    });
+
+    const code = await runTypes({}, deps);
+
+    expect(code).not.toBe(0);
+    expect(calls).toHaveLength(1);
+    expect(lines.join("\n")).toContain("the delivery API answered 429");
   });
 
   it("writes the generated types and reports what it found", async () => {
@@ -317,10 +358,7 @@ describe("runTypes", () => {
       );
       expect(preamble).toContain("@cmssy/core");
       expect(preamble).not.toContain("export interface ProductData");
-      writeFileSync(
-        outPath,
-        current.replace(preamble, OLD_PREAMBLE),
-      );
+      writeFileSync(outPath, current.replace(preamble, OLD_PREAMBLE));
 
       const checked = makeDeps();
       checked.deps.cwd = cwd;
@@ -361,7 +399,8 @@ describe("runTypes", () => {
       const pkg = join(root, "node_modules/@cmssy/core");
       mkdirSync(join(pkg, "dist"), { recursive: true });
       const manifest: Record<string, string> = { name: "@cmssy/core", version };
-      if (options.types !== null) manifest.types = options.types ?? "./dist/index.d.ts";
+      if (options.types !== null)
+        manifest.types = options.types ?? "./dist/index.d.ts";
       writeFileSync(join(pkg, "package.json"), JSON.stringify(manifest));
       writeFileSync(
         join(pkg, "dist/index.d.ts"),
@@ -419,7 +458,10 @@ describe("runTypes", () => {
     it("names it when the generated file is already up to date", async () => {
       const first = makeDeps();
       await runTypes({}, first.deps);
-      installCore(first.cwd, "16.6.0", ["CmssyLocalizedValue", "CmssyModelRecord"]);
+      installCore(first.cwd, "16.6.0", [
+        "CmssyLocalizedValue",
+        "CmssyModelRecord",
+      ]);
 
       const again = makeDeps();
       again.deps.cwd = first.cwd;
