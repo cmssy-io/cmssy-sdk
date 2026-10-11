@@ -86,6 +86,12 @@ typedOperation<Result, Variables>(
 ): CmssyOperation<Result, Variables>;
 ```
 
+A response that carries `errors` throws `CmssyGraphqlError`: its `message` is the
+joined server messages as before, `errors` is the array as sent, and `code` is the
+first error's `extensions.code` - so a storefront can answer `NOT_FOUND` with its
+own not-found page and let anything else surface as the failure it is. An HTTP
+failure is a `CmssyRequestError` with `status`, as before.
+
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
 string you marked yourself with `typedOperation`. `CmssyOperation<Result,
@@ -479,6 +485,23 @@ export function publicRequest<R, V>(document, variables) {
 
 It reads the env per call, never at module scope, so one module serves both
 phases. `NEXT_BUILD_PHASE` is the string it compares against.
+
+**A fetch that is not the SDK's gets the same budget.** `createRetryingFetch`
+from `@cmssy/core` wraps any `fetch`-shaped function with a retry option, so a
+tool that only takes a fetch - graphql-codegen's `customFetch` loading the
+delivery schema, a script of your own - waits out a 429 the way `graphqlRequest`
+does, and hands back the last response untouched when the budget runs out:
+
+```ts
+import { createRetryingFetch } from "@cmssy/core";
+
+const config: CodegenConfig = {
+  schema: { [deliverySchemaUrl()]: { customFetch: createRetryingFetch("build", fetch) } },
+};
+```
+
+`cmssy types` uses it internally, so a `pnpm types --check` in CI no longer
+fails on the first throttled answer.
 
 A policy object overrides field by field, on top of `build`:
 

@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve as resolvePath } from "node:path";
 
-import { DEFAULT_CMSSY_API_URL } from "@cmssy/core";
+import { DEFAULT_CMSSY_API_URL, createRetryingFetch } from "@cmssy/core";
 
 import { CliError } from "./admin-client";
 import { cliVersion } from "./init";
@@ -83,9 +83,7 @@ function publicEndpoint(
   return `${base}/public/${org}/${workspace}/graphql`;
 }
 
-async function refusalReason(
-  response: Response,
-): Promise<string | undefined> {
+async function refusalReason(response: Response): Promise<string | undefined> {
   let body: unknown;
   try {
     body = await response.json();
@@ -107,9 +105,10 @@ async function request<T>(
   query: string,
   variables: Record<string, unknown>,
 ): Promise<T> {
+  const doFetch = createRetryingFetch("build", deps.fetch, "cmssy types");
   let response: Response;
   try {
-    response = await deps.fetch(endpoint, {
+    response = await doFetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ query, variables }),
@@ -156,7 +155,9 @@ function exportedNames(declarations: string): Set<string> {
     .replace(/^\s*\/\/.*$/gm, " ");
   const found = new Set<string>();
 
-  for (const [, clause] of source.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/g)) {
+  for (const [, clause] of source.matchAll(
+    /export\s+(?:type\s+)?\{([^}]*)\}/g,
+  )) {
     for (const entry of (clause ?? "").split(",")) {
       const parts = entry.trim().split(/\s+as\s+/);
       const name = (parts[1] ?? parts[0] ?? "").trim();
@@ -178,7 +179,9 @@ interface CoreManifest {
   types?: string;
 }
 
-function coreShapeGap(cwd: string): { version: string; missing: string[] } | null {
+function coreShapeGap(
+  cwd: string,
+): { version: string; missing: string[] } | null {
   const names = preambleImports();
   if (names.length === 0) return null;
 
@@ -234,8 +237,16 @@ function describeDrift(previous: string, next: string): string[] {
     if (removed.length) lines.push(`- ${label}: ${removed.join(", ")}`);
   };
 
-  report("models", declared(body(previous), models), declared(body(next), models));
-  report("fields", declared(body(previous), fields), declared(body(next), fields));
+  report(
+    "models",
+    declared(body(previous), models),
+    declared(body(next), models),
+  );
+  report(
+    "fields",
+    declared(body(previous), fields),
+    declared(body(next), fields),
+  );
   return lines.length ? lines : ["the generated output differs"];
 }
 
@@ -263,7 +274,8 @@ const SKIP_DIRS = new Set([
   ".turbo",
   ".vercel",
 ]);
-const ANY_OPERATION_NAME = /^\s*(?:query|mutation|subscription)\s+([A-Za-z_]\w*)/gm;
+const ANY_OPERATION_NAME =
+  /^\s*(?:query|mutation|subscription)\s+([A-Za-z_]\w*)/gm;
 
 function existingOperationNames(
   cwd: string,
@@ -429,7 +441,8 @@ export async function runTypes(
           : `cmssy: ${shown} is out of date with the "${workspace}" workspace`,
       );
       if (previous !== null) {
-        for (const line of describeDrift(previous, source)) deps.log(`  ${line}`);
+        for (const line of describeDrift(previous, source))
+          deps.log(`  ${line}`);
       }
       deps.log("  run `cmssy types` and commit the result");
       return 1;
@@ -447,9 +460,7 @@ export async function runTypes(
         models.length === 1 ? "" : "s"
       }, ${fieldCount} field${fieldCount === 1 ? "" : "s"}`,
     );
-    deps.log(
-      `  ${models.map((model) => model.slug).join(", ")}`,
-    );
+    deps.log(`  ${models.map((model) => model.slug).join(", ")}`);
     return operationsStatus;
   } catch (error) {
     if (error instanceof CliError) {
