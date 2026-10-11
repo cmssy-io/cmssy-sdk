@@ -26,7 +26,7 @@ visitor's address in the first and a workspace-scoped API token in the second,
 and the delivery API then counts its per-IP limits per visitor instead of per
 server (CMS-2079). Either header alone, an unscoped token or a token for another
 workspace is ignored and the request is keyed by the connecting address as
-before.
+before. Server-side only - the pair never belongs in a browser fetch.
 
 ## 19.3.0
 

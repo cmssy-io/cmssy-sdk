@@ -100,7 +100,9 @@ its per-IP limits - the caller gate, cart, checkout, member sign-in - per visito
 instead of per server. Either header alone, an unscoped token or a token for
 another workspace is ignored and the request is keyed by the connecting address.
 The token header signs nobody in: `Authorization` stays free for the visitor's
-member session.
+member session. Both headers are for your server only: a token in a browser is a
+leaked credential, and a browser can put any address in the second header, so
+never spread the pair into a client-side fetch.
 
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
