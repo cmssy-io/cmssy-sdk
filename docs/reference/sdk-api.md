@@ -92,6 +92,18 @@ first error's `extensions.code` - so a storefront can answer `NOT_FOUND` with it
 own not-found page and let anything else surface as the failure it is. An HTTP
 failure is a `CmssyRequestError` with `status`, as before.
 
+**A site that renders on its own server forwards each visitor's address.** Put
+`CLIENT_IP_HEADER_NAME` (`x-cmssy-client-ip`, the visitor's address) and
+`API_TOKEN_HEADER_NAME` (`x-cmssy-api-token`, an API token scoped to the
+workspace) in `headers` on every delivery request, and the delivery API counts
+its per-IP limits - the caller gate, cart, checkout, member sign-in - per visitor
+instead of per server. Either header alone, an unscoped token or a token for
+another workspace is ignored and the request is keyed by the connecting address.
+The token header signs nobody in: `Authorization` stays free for the visitor's
+member session. Both headers are for your server only: a token in a browser is a
+leaked credential, and a browser can put any address in the second header, so
+never spread the pair into a client-side fetch.
+
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
 string you marked yourself with `typedOperation`. `CmssyOperation<Result,

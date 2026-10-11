@@ -20,6 +20,14 @@ A GraphQL `errors` response now throws `CmssyGraphqlError` instead of a plain
 `errors`. A `catch` that reads `.message` keeps working; one that needs to tell
 `NOT_FOUND` from an outage finally can.
 
+`CLIENT_IP_HEADER_NAME` and `API_TOKEN_HEADER_NAME` are re-exported from
+`@cmssy/types` 0.60.0. A site that renders on its own server sends each
+visitor's address in the first and a workspace-scoped API token in the second,
+and the delivery API then counts its per-IP limits per visitor instead of per
+server (CMS-2079). Either header alone, an unscoped token or a token for another
+workspace is ignored and the request is keyed by the connecting address as
+before. Server-side only - the pair never belongs in a browser fetch.
+
 ## 19.3.0
 
 **Nothing to do** - but a block whose locale bucket does not carry every field
