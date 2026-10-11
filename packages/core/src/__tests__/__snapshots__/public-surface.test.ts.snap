@@ -2,6 +2,8 @@
 
 exports[`@cmssy/core public surface > exports exactly these names from the root 1`] = `
 [
+  "API_TOKEN_HEADER_NAME",
+  "CLIENT_IP_HEADER_NAME",
   "CMSSY_EDIT_HEADER",
   "CMSSY_EDIT_QUERY_PARAM",
   "CMSSY_EDIT_TOKEN_HEADER",

@@ -67,7 +67,12 @@ export {
   mediaUrls,
 } from "./media";
 export type { MediaLike } from "./media";
-export { MediaType, mediaTypeValues } from "@cmssy/types";
+export {
+  MediaType,
+  mediaTypeValues,
+  CLIENT_IP_HEADER_NAME,
+  API_TOKEN_HEADER_NAME,
+} from "@cmssy/types";
 export type {
   ResolvedMedia,
   MediaTransform,
