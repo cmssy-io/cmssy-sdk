@@ -705,6 +705,17 @@ describe("createRetryingFetch", () => {
     await expect(response.json()).resolves.toEqual(body);
   });
 
+  it("retries a call made with the URL alone, as a native fetch allows", async () => {
+    const doFetch = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "retry-after": "0" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+    const response = await createRetryingFetch("build", doFetch)(URL_);
+    expect(response.status).toBe(200);
+    expect(doFetch).toHaveBeenCalledTimes(2);
+    expect(doFetch.mock.calls[1]).toEqual([URL_, undefined]);
+  });
+
   it("is a plain pass-through when retry is off", async () => {
     const doFetch = vi
       .fn()

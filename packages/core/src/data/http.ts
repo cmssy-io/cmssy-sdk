@@ -175,7 +175,7 @@ async function fetchWithRetry(
     console.warn(
       `[cmssy] ${label} got ${response.status}, retrying in ${wait}ms (attempt ${attempt + 1}/${policy.maxRetries})`,
     );
-    await sleep(wait, init.signal);
+    await sleep(wait, init?.signal);
     waitedMs += wait;
     response = await doFetch(url, init);
   }
