@@ -86,6 +86,12 @@ typedOperation<Result, Variables>(
 ): CmssyOperation<Result, Variables>;
 ```
 
+A response that carries `errors` throws `CmssyGraphqlError`: its `message` is the
+joined server messages as before, `errors` is the array as sent, and `code` is the
+first error's `extensions.code` - so a storefront can answer `NOT_FOUND` with its
+own not-found page and let anything else surface as the failure it is. An HTTP
+failure is a `CmssyRequestError` with `status`, as before.
+
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
 string you marked yourself with `typedOperation`. `CmssyOperation<Result,

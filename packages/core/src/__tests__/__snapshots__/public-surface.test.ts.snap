@@ -9,6 +9,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "CMSSY_RATE_LIMIT_WINDOW_MS",
   "CMSSY_RETRY_MODES",
   "CMSSY_SECRET_QUERY_PARAM",
+  "CmssyGraphqlError",
   "CmssyRequestError",
   "CmssyWebhookError",
   "DEFAULT_CMSSY_API_URL",

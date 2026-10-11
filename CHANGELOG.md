@@ -15,6 +15,11 @@ the one `graphqlRequest` already uses. `createRetryingFetch(retry, fetch?,
 label?)` from `@cmssy/core` is the same wrapper for any fetch-shaped function,
 such as graphql-codegen's `customFetch`.
 
+A GraphQL `errors` response now throws `CmssyGraphqlError` instead of a plain
+`Error` - same message, plus `code` (the first error's `extensions.code`) and
+`errors`. A `catch` that reads `.message` keeps working; one that needs to tell
+`NOT_FOUND` from an outage finally can.
+
 ## 19.3.0
 
 **Nothing to do** - but a block whose locale bucket does not carry every field

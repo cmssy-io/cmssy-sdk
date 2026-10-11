@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  CmssyGraphqlError,
   CmssyRequestError,
   CMSSY_RATE_LIMIT_WINDOW_MS,
   CMSSY_RETRY_MODES,
@@ -711,5 +712,46 @@ describe("createRetryingFetch", () => {
     const response = await createRetryingFetch(false, doFetch)(URL_, INIT);
     expect(response.status).toBe(429);
     expect(doFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("postGraphql GraphQL errors", () => {
+  it("throws a CmssyGraphqlError that keeps the server's code, so a caller can tell NOT_FOUND from an outage", async () => {
+    const doFetch = vi.fn().mockResolvedValue(
+      res(200, {
+        errors: [
+          { message: "Order not found", extensions: { code: "NOT_FOUND" } },
+        ],
+      }),
+    );
+    const failure = await postGraphql(URL_, "q", {}, {
+      fetch: doFetch,
+      label: "order",
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(CmssyGraphqlError);
+    const thrown = failure as CmssyGraphqlError;
+    expect(thrown.code).toBe("NOT_FOUND");
+    expect(thrown.message).toBe("cmssy: order error - Order not found");
+    expect(thrown.errors).toEqual([
+      { message: "Order not found", extensions: { code: "NOT_FOUND" } },
+    ]);
+  });
+
+  it("leaves code undefined when the server sent none", async () => {
+    const doFetch = vi
+      .fn()
+      .mockResolvedValue(res(200, { errors: [{ message: "nope" }] }));
+    const failure = await postGraphql(URL_, "q", {}, {
+      fetch: doFetch,
+      label: "x",
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(failure).toBeInstanceOf(CmssyGraphqlError);
+    expect((failure as CmssyGraphqlError).code).toBeUndefined();
   });
 });

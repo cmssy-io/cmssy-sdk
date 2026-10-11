@@ -5,13 +5,19 @@ export type { CmssyConfig, CmssyEnvConfig, CmssyRegionOf } from "./config";
 export { graphqlRequest } from "./data/graphql-request";
 export type { GraphqlRequestOptions } from "./data/graphql-request";
 export {
+  CmssyGraphqlError,
   CmssyRequestError,
   CMSSY_RATE_LIMIT_WINDOW_MS,
   CMSSY_RETRY_MODES,
   createRetryingFetch,
   isTransientRequestError,
 } from "./data/http";
-export type { RetryPolicy, RetryOption, CmssyRetryMode } from "./data/http";
+export type {
+  CmssyGraphqlErrorEntry,
+  RetryPolicy,
+  RetryOption,
+  CmssyRetryMode,
+} from "./data/http";
 export { createCmssyClient } from "./data/client";
 export type {
   CmssyClient,
@@ -62,7 +68,11 @@ export {
 } from "./media";
 export type { MediaLike } from "./media";
 export { MediaType, mediaTypeValues } from "@cmssy/types";
-export type { ResolvedMedia, MediaTransform, FileFieldValue } from "@cmssy/types";
+export type {
+  ResolvedMedia,
+  MediaTransform,
+  FileFieldValue,
+} from "@cmssy/types";
 export { defineCmssyLayout } from "./layout";
 export {
   blocksToMeta,

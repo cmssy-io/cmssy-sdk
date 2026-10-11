@@ -198,9 +198,26 @@ export function createRetryingFetch<F extends FetchLike = FetchLike>(
   return wrapped as F;
 }
 
+export interface CmssyGraphqlErrorEntry {
+  message?: string;
+  extensions?: { code?: string };
+}
+
+export class CmssyGraphqlError extends Error {
+  readonly errors: ReadonlyArray<CmssyGraphqlErrorEntry>;
+  readonly code: string | undefined;
+
+  constructor(message: string, errors: ReadonlyArray<CmssyGraphqlErrorEntry>) {
+    super(message);
+    this.name = "CmssyGraphqlError";
+    this.errors = errors;
+    this.code = errors[0]?.extensions?.code;
+  }
+}
+
 interface GraphqlEnvelope<T> {
   data?: T;
-  errors?: Array<{ message?: string }>;
+  errors?: CmssyGraphqlErrorEntry[];
 }
 
 export interface PostGraphqlOptions {
@@ -279,7 +296,10 @@ export async function postGraphql<
     const message = json.errors
       .map((error) => error.message ?? "GraphQL error")
       .join("; ");
-    throw new Error(`cmssy: ${options.label} error - ${message}`);
+    throw new CmssyGraphqlError(
+      `cmssy: ${options.label} error - ${message}`,
+      json.errors,
+    );
   }
   return json.data as Result;
 }
