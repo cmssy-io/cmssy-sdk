@@ -19,13 +19,13 @@ import {
 
 const DEFAULT_OUT = "cmssy/models.ts";
 
-const SITE_CONFIG_QUERY = `query CliSiteConfig($workspaceSlug: String!) {
+export const SITE_CONFIG_QUERY = `query CliSiteConfig($workspaceSlug: String!) {
   public { siteConfig(workspaceSlug: $workspaceSlug) { workspaceId defaultLanguage } }
 }`;
 
 const DEFINITIONS_PAGE = 4;
 
-const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!, $limit: Int!, $offset: Int!) {
+export const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!, $limit: Int!, $offset: Int!) {
   public {
     model {
       definitions(workspaceId: $workspaceId, limit: $limit, offset: $offset) {

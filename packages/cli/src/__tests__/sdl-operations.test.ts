@@ -6,6 +6,7 @@ import { buildSchema, Kind, parse, validate, type DocumentNode } from "graphql";
 import { describe, expect, it } from "vitest";
 
 import * as adminClient from "../admin-client";
+import { DEFINITIONS_QUERY, SITE_CONFIG_QUERY } from "../types-command";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../..");
@@ -37,5 +38,14 @@ describe("CLI admin operations validate against the backend SDL", () => {
 
   it.each(operations)("%s is valid against the schema", (_name, doc) => {
     expect(validate(schema, doc).map((e) => e.message)).toEqual([]);
+  });
+});
+
+describe("cmssy types' delivery reads validate against the backend SDL", () => {
+  it.each([
+    ["SITE_CONFIG_QUERY", SITE_CONFIG_QUERY],
+    ["DEFINITIONS_QUERY", DEFINITIONS_QUERY],
+  ])("%s is valid against the schema", (_name, query) => {
+    expect(validate(schema, parse(query)).map((e) => e.message)).toEqual([]);
   });
 });
