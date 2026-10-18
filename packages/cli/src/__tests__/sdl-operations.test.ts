@@ -14,6 +14,14 @@ const schemaPath = process.env.CMSSY_SCHEMA_FILE
   ? resolve(repoRoot, process.env.CMSSY_SCHEMA_FILE)
   : resolve(repoRoot, "schema.graphql");
 const schema = buildSchema(readFileSync(schemaPath, "utf8"));
+const deliverySchema = process.env.CMSSY_DELIVERY_SCHEMA_FILE
+  ? buildSchema(
+      readFileSync(
+        resolve(repoRoot, process.env.CMSSY_DELIVERY_SCHEMA_FILE),
+        "utf8",
+      ),
+    )
+  : schema;
 
 const operations = Object.entries(adminClient).flatMap(([name, value]) => {
   if (typeof value !== "string" || !/^\s*(query|mutation)\b/.test(value)) {
@@ -46,6 +54,8 @@ describe("cmssy types' delivery reads validate against the backend SDL", () => {
     ["SITE_CONFIG_QUERY", SITE_CONFIG_QUERY],
     ["DEFINITIONS_QUERY", DEFINITIONS_QUERY],
   ])("%s is valid against the schema", (_name, query) => {
-    expect(validate(schema, parse(query)).map((e) => e.message)).toEqual([]);
+    expect(
+      validate(deliverySchema, parse(query)).map((e) => e.message),
+    ).toEqual([]);
   });
 });
