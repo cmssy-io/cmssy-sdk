@@ -3505,7 +3505,10 @@ type PublicModelDefinition {
 }
 
 type PublicModelQueries {
-  definitions(workspaceId: String!): [PublicModelDefinition!]!
+  """
+  One page of the workspace's readable model definitions, by name. Selecting every field with its options costs more than one request may spend across all models; ask for a few per page and the next page while one comes back full.
+  """
+  definitions(limit: Int = 25, offset: Int = 0, workspaceId: String!): [PublicModelDefinition!]!
   records(
     filter: JSON
     limit: Int = 20
