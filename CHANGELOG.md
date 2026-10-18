@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.6.0
+
+**Upgrade `@cmssy/cli`; nothing else to change.** Model and page-type fields on
+cmssy now carry `label` and `description` as text per language
+(`{ en: "Size", pl: "Rozmiar" }`) and `options` as `{ value, label }`. An older
+`cmssy types` asks for `options` as a list of strings, which the API now refuses,
+so it fails until upgraded. The generated types are the same as before: a select
+field is still the union of its option values, and the doc comment takes the
+label in the workspace's default language.
+
+`cmssy types` reads the models four at a time (`definitions(limit, offset)`):
+every field with its options for every model in one request costs more than the
+delivery API lets one request spend.
+
 ## 19.5.0
 
 **Nothing to do.** `cmssy types` waits out a throttled delivery answer with the
