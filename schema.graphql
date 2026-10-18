@@ -139,6 +139,11 @@ type AiProvider {
   groqModel: String!
   mistralModel: String!
   openaiModel: String!
+
+  """
+  Whether Spotlight may use OpenAI's own web search. OpenAI can open any page while searching, outside the confirmation Spotlight asks for before a change, so it is off until an admin turns it on.
+  """
+  openaiWebSearch: Boolean!
 }
 
 """A model the provider serves to the key it was asked with"""
@@ -497,6 +502,45 @@ type BlockUsageRow {
 input BulkTagMediaInput {
   add: [String!]
   remove: [String!]
+}
+
+type BulkUpdateModelRecordFailure {
+  id: ID!
+  message: String!
+}
+
+input BulkUpdateModelRecordsInput {
+  """
+  Update every record matching `filter` (all of the model's records without one). Ignores `ids`.
+  """
+  allMatching: Boolean
+  cursor: String
+
+  """Field values merged into every selected record, like `records.patch`."""
+  data: JSON
+  filter: JSON
+
+  """Explicit record ids, at most 200."""
+  ids: [ID!]
+  modelId: ID!
+  status: String
+}
+
+type BulkUpdateModelRecordsResult {
+  """Up to 20 failures, with the reason for each."""
+  failed: [BulkUpdateModelRecordFailure!]!
+  failedCount: Int!
+
+  """
+  Set when more records match: pass it as `cursor` with the same input to continue.
+  """
+  nextCursor: String
+
+  """
+  Selected records already at the requested status, with no data to write.
+  """
+  unchanged: Int!
+  updated: Int!
 }
 
 input CancelOrderInput {
@@ -3765,6 +3809,10 @@ type Query {
 }
 
 type RecordMutations {
+  """
+  Apply one data and/or status change to up to 200 records of a model per call.
+  """
+  bulkUpdate(input: BulkUpdateModelRecordsInput!): BulkUpdateModelRecordsResult!
   create(input: CreateModelRecordInput!): ModelRecord!
   delete(force: Boolean, id: ID!): DeletionResult!
   import(input: ImportModelRecordsInput!): ImportModelRecordsResult!
@@ -4318,6 +4366,7 @@ input UpdateAiProviderInput {
   mistralModel: String
   openaiApiKey: String
   openaiModel: String
+  openaiWebSearch: Boolean
 }
 
 input UpdateApiTokenInput {
