@@ -1,13 +1,20 @@
+export type FieldText = Record<string, string>;
+
+export interface ModelFieldOption {
+  value: string;
+  label?: FieldText | null;
+}
+
 export interface ModelFieldDefinition {
   key: string;
-  label?: string | null;
-  description?: string | null;
+  label?: FieldText | null;
+  description?: FieldText | null;
   type: string;
   required?: boolean | null;
   localized?: boolean | null;
   multiple?: boolean | null;
   hidden?: boolean | null;
-  options?: string[] | null;
+  options?: ModelFieldOption[] | null;
   relationTo?: string | null;
   relationType?: string | null;
   fields?: ModelFieldDefinition[] | null;
@@ -53,8 +60,17 @@ function propertyKey(key: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
 }
 
-function stringUnion(options: string[]): string {
-  return options.map((option) => JSON.stringify(option)).join(" | ");
+function stringUnion(options: ModelFieldOption[]): string {
+  return options.map((option) => JSON.stringify(option.value)).join(" | ");
+}
+
+function textIn(
+  text: FieldText | null | undefined,
+  language: string | undefined,
+): string | null {
+  if (!text) return null;
+  if (language && text[language]?.trim()) return text[language];
+  return Object.values(text).find((entry) => entry.trim()) ?? null;
 }
 
 function scalarType(field: ModelFieldDefinition): string {
@@ -90,15 +106,19 @@ function scalarType(field: ModelFieldDefinition): string {
   }
 }
 
-function fieldType(field: ModelFieldDefinition, depth: number): string {
+function fieldType(
+  field: ModelFieldDefinition,
+  depth: number,
+  language: string | undefined,
+): string {
   if (field.type === "object") {
     return field.fields?.length
-      ? objectType(field.fields, depth)
+      ? objectType(field.fields, depth, language)
       : "Record<string, unknown>";
   }
   if (field.type === "repeater" || field.type === "list") {
     if (field.itemFields?.length) {
-      return `Array<${objectType(field.itemFields, depth)}>`;
+      return `Array<${objectType(field.itemFields, depth, language)}>`;
     }
     if (field.itemType) {
       const item = scalarType({ key: field.key, type: field.itemType });
@@ -109,10 +129,16 @@ function fieldType(field: ModelFieldDefinition, depth: number): string {
   return scalarType(field);
 }
 
-function docComment(field: ModelFieldDefinition, pad: string): string[] {
+function docComment(
+  field: ModelFieldDefinition,
+  pad: string,
+  language: string | undefined,
+): string[] {
   const parts: string[] = [];
-  if (field.label && field.label !== field.key) parts.push(field.label);
-  if (field.description) parts.push(field.description);
+  const label = textIn(field.label, language);
+  const description = textIn(field.description, language);
+  if (label && label !== field.key) parts.push(label);
+  if (description) parts.push(description);
   if (field.type === "relation" && field.relationTo) {
     parts.push(
       `Record id(s) from \`${field.relationTo.replace(/^model:/, "")}\`.`,
@@ -122,22 +148,30 @@ function docComment(field: ModelFieldDefinition, pad: string): string[] {
   return [`${pad}/** ${parts.join(" - ")} */`];
 }
 
-function members(fields: ModelFieldDefinition[], depth: number): string[] {
+function members(
+  fields: ModelFieldDefinition[],
+  depth: number,
+  language: string | undefined,
+): string[] {
   const pad = INDENT.repeat(depth + 1);
   const lines: string[] = [];
   for (const field of fields) {
     if (field.hidden) continue;
-    lines.push(...docComment(field, pad));
+    lines.push(...docComment(field, pad, language));
     const optional = field.required ? "" : "?";
     lines.push(
-      `${pad}${propertyKey(field.key)}${optional}: ${fieldType(field, depth + 1)};`,
+      `${pad}${propertyKey(field.key)}${optional}: ${fieldType(field, depth + 1, language)};`,
     );
   }
   return lines;
 }
 
-function objectType(fields: ModelFieldDefinition[], depth: number): string {
-  const body = members(fields, depth);
+function objectType(
+  fields: ModelFieldDefinition[],
+  depth: number,
+  language: string | undefined,
+): string {
+  const body = members(fields, depth, language);
   if (!body.length) return "Record<string, unknown>";
   return ["{", ...body, `${INDENT.repeat(depth)}}`].join("\n");
 }
@@ -156,13 +190,21 @@ export function preambleImports(): string[] {
   if (!clause?.[1]) return [];
   return clause[1]
     .split(",")
-    .map((entry) => entry.trim().split(/\s+as\s+/)[0]?.trim() ?? "")
+    .map(
+      (entry) =>
+        entry
+          .trim()
+          .split(/\s+as\s+/)[0]
+          ?.trim() ?? "",
+    )
     .filter((name) => name.length > 0);
 }
 
 export interface GenerateOptions {
   workspace: string;
   command?: string;
+  /** Language the doc comments are written in; the workspace's default. */
+  language?: string;
 }
 
 export function generateModelTypes(
@@ -201,7 +243,7 @@ export function generateModelTypes(
     blocks.push(
       "",
       doc.join("\n"),
-      `export interface ${name}Data ${objectType(model.fields, 0)}`,
+      `export interface ${name}Data ${objectType(model.fields, 0, options.language)}`,
       "",
       `export type ${name}Record = CmssyRecordOf<${name}Data>;`,
     );

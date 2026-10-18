@@ -14,7 +14,8 @@ const product: ModelDefinition = {
   fields: [
     {
       key: "title",
-      label: "Title",
+      label: { en: "Title", pl: "Tytuł" },
+      description: { en: "Shown on the card" },
       type: "text",
       required: true,
       localized: true,
@@ -26,8 +27,22 @@ const product: ModelDefinition = {
     { key: "gallery", type: "media", multiple: true },
     { key: "manual", type: "file" },
     { key: "attachments", type: "file", multiple: true },
-    { key: "unit", type: "select", options: ["pcs", "kg"] },
-    { key: "tags", type: "multiselect", options: ["new", "sale"] },
+    {
+      key: "unit",
+      type: "select",
+      options: [
+        { value: "pcs", label: { en: "Pieces" } },
+        { value: "kg", label: { en: "Kilograms" } },
+      ],
+    },
+    {
+      key: "tags",
+      type: "multiselect",
+      options: [
+        { value: "new", label: { en: "New" } },
+        { value: "sale", label: { en: "On sale" } },
+      ],
+    },
     {
       key: "category",
       type: "relation",
@@ -137,6 +152,22 @@ describe("generateModelTypes", () => {
     expect(output).toContain("category?: string;");
     expect(output).toContain("related?: string[];");
     expect(output).toContain("Record id(s) from `category`");
+  });
+
+  it("documents a field in the workspace's default language", () => {
+    const output = generateModelTypes([product], {
+      workspace: "acme",
+      language: "pl",
+    });
+    expect(output).toContain("/** Tytuł - Shown on the card */");
+  });
+
+  it("falls back to the first language with text when the default has none", () => {
+    const output = generateModelTypes([product], {
+      workspace: "acme",
+      language: "de",
+    });
+    expect(output).toContain("/** Title - Shown on the card */");
   });
 
   it("inlines object fields and repeater items", () => {

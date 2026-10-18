@@ -47,7 +47,13 @@ const PRODUCT = {
   name: "Product",
   displayField: "title",
   fields: [
-    { key: "title", type: "text", required: true, localized: true },
+    {
+      key: "title",
+      label: { en: "Title", pl: "Tytuł" },
+      type: "text",
+      required: true,
+      localized: true,
+    },
     { key: "price", type: "number", required: true },
   ],
 };
@@ -108,7 +114,11 @@ function makeDeps(
       if (body.query.includes("CliSiteConfig")) {
         return jsonResponse(
           overrides.siteConfig ?? {
-            data: { public: { siteConfig: { workspaceId: "ws_1" } } },
+            data: {
+              public: {
+                siteConfig: { workspaceId: "ws_1", defaultLanguage: "pl" },
+              },
+            },
           },
         );
       }
@@ -232,6 +242,7 @@ describe("runTypes", () => {
     const written = readFileSync(join(cwd, "cmssy/models.ts"), "utf8");
     expect(written).toContain("export interface ProductData");
     expect(written).toContain("title: CmssyLocalized;");
+    expect(written).toContain("/** Tytuł */");
     expect(lines.join("\n")).toContain("1 model, 2 fields");
   });
 

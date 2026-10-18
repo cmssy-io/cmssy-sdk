@@ -20,7 +20,7 @@ import {
 const DEFAULT_OUT = "cmssy/models.ts";
 
 const SITE_CONFIG_QUERY = `query CliSiteConfig($workspaceSlug: String!) {
-  public { siteConfig(workspaceSlug: $workspaceSlug) { workspaceId } }
+  public { siteConfig(workspaceSlug: $workspaceSlug) { workspaceId defaultLanguage } }
 }`;
 
 const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!) {
@@ -40,7 +40,10 @@ const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!) {
           localized
           multiple
           hidden
-          options
+          options {
+            value
+            label
+          }
           relationTo
           relationType
           fields
@@ -385,7 +388,9 @@ export async function runTypes(
     const endpoint = publicEndpoint(deps.env, org, workspace);
 
     const site = await request<{
-      public: { siteConfig: { workspaceId: string } | null };
+      public: {
+        siteConfig: { workspaceId: string; defaultLanguage: string } | null;
+      };
     }>(deps, endpoint, SITE_CONFIG_QUERY, { workspaceSlug: workspace });
     const workspaceId = site.public.siteConfig?.workspaceId;
     if (!workspaceId) {
@@ -411,7 +416,10 @@ export async function runTypes(
     const outPath = resolvePath(deps.cwd, requested);
     const inside = relative(deps.cwd, outPath);
     const shown = inside && !inside.startsWith("..") ? inside : outPath;
-    const source = generateModelTypes(models, { workspace });
+    const source = generateModelTypes(models, {
+      workspace,
+      language: site.public.siteConfig?.defaultLanguage,
+    });
 
     const gap = coreShapeGap(deps.cwd);
     if (gap) {
