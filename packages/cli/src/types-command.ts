@@ -19,14 +19,16 @@ import {
 
 const DEFAULT_OUT = "cmssy/models.ts";
 
-const SITE_CONFIG_QUERY = `query CliSiteConfig($workspaceSlug: String!) {
-  public { siteConfig(workspaceSlug: $workspaceSlug) { workspaceId } }
+export const SITE_CONFIG_QUERY = `query CliSiteConfig($workspaceSlug: String!) {
+  public { siteConfig(workspaceSlug: $workspaceSlug) { workspaceId defaultLanguage } }
 }`;
 
-const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!) {
+const DEFINITIONS_PAGE = 4;
+
+export const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!, $limit: Int!, $offset: Int!) {
   public {
     model {
-      definitions(workspaceId: $workspaceId) {
+      definitions(workspaceId: $workspaceId, limit: $limit, offset: $offset) {
         slug
         name
         description
@@ -40,7 +42,10 @@ const DEFINITIONS_QUERY = `query CliModelDefinitions($workspaceId: String!) {
           localized
           multiple
           hidden
-          options
+          options {
+            value
+            label
+          }
           relationTo
           relationType
           fields
@@ -368,6 +373,26 @@ function syncOperations(options: TypesOptions, deps: TypesDeps): number {
   return 0;
 }
 
+async function readDefinitions(
+  deps: TypesDeps,
+  endpoint: string,
+  workspaceId: string,
+): Promise<ModelDefinition[]> {
+  const models: ModelDefinition[] = [];
+  for (let offset = 0; ; offset += DEFINITIONS_PAGE) {
+    const result = await request<{
+      public: { model: { definitions: ModelDefinition[] } };
+    }>(deps, endpoint, DEFINITIONS_QUERY, {
+      workspaceId,
+      limit: DEFINITIONS_PAGE,
+      offset,
+    });
+    const page = result.public.model.definitions;
+    models.push(...page);
+    if (page.length < DEFINITIONS_PAGE) return models;
+  }
+}
+
 export async function runTypes(
   options: TypesOptions,
   deps: TypesDeps,
@@ -385,7 +410,9 @@ export async function runTypes(
     const endpoint = publicEndpoint(deps.env, org, workspace);
 
     const site = await request<{
-      public: { siteConfig: { workspaceId: string } | null };
+      public: {
+        siteConfig: { workspaceId: string; defaultLanguage: string } | null;
+      };
     }>(deps, endpoint, SITE_CONFIG_QUERY, { workspaceSlug: workspace });
     const workspaceId = site.public.siteConfig?.workspaceId;
     if (!workspaceId) {
@@ -395,10 +422,7 @@ export async function runTypes(
       );
     }
 
-    const result = await request<{
-      public: { model: { definitions: ModelDefinition[] } };
-    }>(deps, endpoint, DEFINITIONS_QUERY, { workspaceId });
-    const models = result.public.model.definitions;
+    const models = await readDefinitions(deps, endpoint, workspaceId);
 
     if (models.length === 0) {
       deps.log(
@@ -411,7 +435,10 @@ export async function runTypes(
     const outPath = resolvePath(deps.cwd, requested);
     const inside = relative(deps.cwd, outPath);
     const shown = inside && !inside.startsWith("..") ? inside : outPath;
-    const source = generateModelTypes(models, { workspace });
+    const source = generateModelTypes(models, {
+      workspace,
+      language: site.public.siteConfig?.defaultLanguage,
+    });
 
     const gap = coreShapeGap(deps.cwd);
     if (gap) {

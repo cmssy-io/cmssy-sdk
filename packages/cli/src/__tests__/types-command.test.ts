@@ -47,7 +47,13 @@ const PRODUCT = {
   name: "Product",
   displayField: "title",
   fields: [
-    { key: "title", type: "text", required: true, localized: true },
+    {
+      key: "title",
+      label: { en: "Title", pl: "Tytuł" },
+      type: "text",
+      required: true,
+      localized: true,
+    },
     { key: "price", type: "number", required: true },
   ],
 };
@@ -70,7 +76,7 @@ function makeDeps(
   overrides: {
     env?: Record<string, string | undefined>;
     siteConfig?: unknown;
-    definitions?: unknown;
+    definitions?: unknown | ((variables: Record<string, unknown>) => unknown);
     status?: number;
     errorBody?: unknown;
     throttle?: { answers: number; retryAfter: string };
@@ -108,9 +114,16 @@ function makeDeps(
       if (body.query.includes("CliSiteConfig")) {
         return jsonResponse(
           overrides.siteConfig ?? {
-            data: { public: { siteConfig: { workspaceId: "ws_1" } } },
+            data: {
+              public: {
+                siteConfig: { workspaceId: "ws_1", defaultLanguage: "pl" },
+              },
+            },
           },
         );
+      }
+      if (typeof overrides.definitions === "function") {
+        return jsonResponse(overrides.definitions(body.variables));
       }
       return jsonResponse(
         overrides.definitions ?? {
@@ -232,6 +245,7 @@ describe("runTypes", () => {
     const written = readFileSync(join(cwd, "cmssy/models.ts"), "utf8");
     expect(written).toContain("export interface ProductData");
     expect(written).toContain("title: CmssyLocalized;");
+    expect(written).toContain("/** Tytuł */");
     expect(lines.join("\n")).toContain("1 model, 2 fields");
   });
 
@@ -241,7 +255,43 @@ describe("runTypes", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[0]?.url).toBe("https://api.cmssy.io/public/acme/shop/graphql");
-    expect(calls[1]?.body.variables).toEqual({ workspaceId: "ws_1" });
+    expect(calls[1]?.body.variables).toEqual({
+      workspaceId: "ws_1",
+      limit: 4,
+      offset: 0,
+    });
+  });
+
+  it("reads the models a page at a time until a page comes back short", async () => {
+    const all = Array.from({ length: 9 }, (_, i) => ({
+      ...PRODUCT,
+      slug: `model-${i}`,
+      name: `Model${i}`,
+    }));
+    const { deps, calls, cwd } = makeDeps({
+      definitions: (variables: Record<string, unknown>) => {
+        const offset = variables.offset as number;
+        const limit = variables.limit as number;
+        return {
+          data: {
+            public: {
+              model: { definitions: all.slice(offset, offset + limit) },
+            },
+          },
+        };
+      },
+    });
+
+    expect(await runTypes({}, deps)).toBe(0);
+
+    expect(
+      calls.slice(1).map((call) => call.body.variables.offset),
+      "every model with its options in one request costs more than the delivery ceiling allows",
+    ).toEqual([0, 4, 8]);
+    const written = readFileSync(join(cwd, "cmssy/models.ts"), "utf8");
+    for (let i = 0; i < 9; i++) {
+      expect(written).toContain(`export interface Model${i}Data`);
+    }
   });
 
   it("writes an absolute --out where it says, not under the app", async () => {
