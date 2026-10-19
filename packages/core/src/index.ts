@@ -190,5 +190,6 @@ export { verifyCmssyWebhook, CmssyWebhookError } from "./verify-webhook";
 export type {
   CmssyWebhookEvent,
   CmssyWebhookOrder,
+  CmssyWebhookReturn,
   VerifyCmssyWebhookOptions,
 } from "./verify-webhook";

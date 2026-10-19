@@ -6,6 +6,14 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.8.0
+
+**Nothing to change.** `@cmssy/types` 0.62.0 adds order returns to the webhook
+contract: the `return.*` events (`requested`, `approved`, `rejected`,
+`canceled`, `received`, `refunded`, `completed`) carry `data.return`, typed as
+`CmssyWebhookReturn` and re-exported from `@cmssy/core` next to
+`CmssyWebhookOrder`.
+
 ## 19.7.0
 
 **One new helper; a webhook handler reading `displayStatus` moves to the axes.**
