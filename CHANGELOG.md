@@ -8,7 +8,13 @@ nowhere.
 
 ## 19.7.0
 
-**Nothing to change; one new helper.** `orderProgress(order)` from `@cmssy/core`
+**One new helper; a webhook handler reading `displayStatus` moves to the axes.**
+`@cmssy/types` 0.61.0 types the webhook order as cmssy sends it now:
+`CmssyWebhookOrder` carries `deliveryStatus`, `state`, `fulfilledAt`,
+`deliveredAt`, `closedAt` and its `shipments` with their `items`, and drops
+`displayStatus`, which cmssy stops sending.
+
+`orderProgress(order)` from `@cmssy/core`
 turns an order into the one step a buyer reads: `placed`, `paid`, `shipped`,
 `out_for_delivery`, `delivered`, `refunded` or `canceled`. It reads the axes
 cmssy now derives from an order's parcels (`state`, `paymentStatus`,

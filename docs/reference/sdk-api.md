@@ -293,6 +293,19 @@ Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
 `createCmssyRevalidateRoute` from `@cmssy/next/server` instead of calling this
 by hand.
 
+### Orders
+
+`orderProgress(order)` folds an order's axes into the one step a buyer reads:
+`CmssyOrderProgress`, one of `orderProgressValues` - `placed`, `paid`,
+`shipped`, `out_for_delivery`, `delivered`, `refunded`, `canceled`. Canceled
+and refunded win over everything else; `out_for_delivery` comes from any parcel
+in that status.
+
+`order` is a `CmssyOrderProgressInput` - `state`, `paymentStatus`,
+`fulfillmentStatus`, `deliveryStatus` and optional `shipments[].status` - which
+both the delivery API's `PublicOrder` and a webhook's `CmssyWebhookOrder`
+satisfy as they come. All from `@cmssy/core`.
+
 ### `@cmssy/core/testing` and `/preflight`
 
 `checkCmssyEditMode(options)` proves a deployed site can still be **edited** - see

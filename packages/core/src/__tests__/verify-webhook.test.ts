@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { createHmac } from "crypto";
-import { verifyCmssyWebhook, CmssyWebhookError } from "../verify-webhook";
+import {
+  verifyCmssyWebhook,
+  CmssyWebhookError,
+  type CmssyWebhookEvent,
+} from "../verify-webhook";
 
 const SECRET = "s".repeat(64);
 
@@ -20,9 +24,13 @@ function makeBody(): string {
       order: {
         id: "o1",
         workspaceId: "ws1",
-        displayStatus: "paid",
         paymentStatus: "paid",
         fulfillmentStatus: "unfulfilled",
+        deliveryStatus: "none",
+        state: "open",
+        fulfilledAt: null,
+        deliveredAt: null,
+        closedAt: null,
         total: 1000,
         currency: "PLN",
         customerId: null,
@@ -30,11 +38,12 @@ function makeBody(): string {
         paymentProvider: "stripe",
         paymentReference: "pi_1",
         refundedAmount: 0,
+        shipments: [],
         createdAt: "2026-06-13T00:00:00.000Z",
         updatedAt: "2026-06-13T00:00:00.000Z",
       },
     },
-  });
+  } satisfies CmssyWebhookEvent);
 }
 
 describe("verifyCmssyWebhook", () => {

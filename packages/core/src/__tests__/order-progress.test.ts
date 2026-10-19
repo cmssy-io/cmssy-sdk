@@ -5,6 +5,7 @@ import {
   orderProgressValues,
   type CmssyOrderProgressInput,
 } from "../order-progress";
+import type { CmssyWebhookOrder } from "../verify-webhook";
 
 function order(
   overrides: Partial<CmssyOrderProgressInput> = {},
@@ -131,14 +132,40 @@ describe("orderProgress: one step a buyer reads", () => {
       deliveryStatus: "partially_delivered",
       shipments: [{ status: "delivered", trackingNumber: "1" }],
     };
-    const webhook = {
+    const webhook: CmssyWebhookOrder = {
       id: "o-2",
-      state: "closed" as const,
+      workspaceId: "ws-1",
       paymentStatus: "paid",
-      fulfillmentStatus: "fulfilled" as const,
-      deliveryStatus: "delivered" as const,
-      shipments: [{ status: "delivered" as const, items: [] }],
+      fulfillmentStatus: "fulfilled",
+      deliveryStatus: "delivered",
+      state: "closed",
+      fulfilledAt: "2026-10-01T00:00:00.000Z",
+      deliveredAt: "2026-10-03T00:00:00.000Z",
+      closedAt: "2026-10-03T00:00:00.000Z",
       total: 100,
+      currency: "PLN",
+      customerId: null,
+      customerEmail: "b@example.com",
+      paymentProvider: null,
+      paymentReference: null,
+      refundedAmount: 0,
+      shipments: [
+        {
+          id: "s-1",
+          carrier: null,
+          trackingNumber: null,
+          trackingUrl: null,
+          labelUrl: null,
+          status: "delivered",
+          items: [],
+          shippedAt: "2026-10-01T00:00:00.000Z",
+          deliveredAt: "2026-10-03T00:00:00.000Z",
+          createdAt: "2026-10-01T00:00:00.000Z",
+          updatedAt: "2026-10-03T00:00:00.000Z",
+        },
+      ],
+      createdAt: "2026-09-30T00:00:00.000Z",
+      updatedAt: "2026-10-03T00:00:00.000Z",
     };
     expect(orderProgress(delivery)).toBe("shipped");
     expect(orderProgress(webhook)).toBe("delivered");
