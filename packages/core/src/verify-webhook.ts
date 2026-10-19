@@ -1,11 +1,17 @@
 import type {
   CmssyWebhookOrder,
   CmssyWebhookEvent,
+  CmssyWebhookReturn,
   VerifyCmssyWebhookOptions,
 } from "@cmssy/types";
 import { hmacSha256Hex, timingSafeHexEqual } from "./internal/hmac";
 
-export type { CmssyWebhookOrder, CmssyWebhookEvent, VerifyCmssyWebhookOptions };
+export type {
+  CmssyWebhookOrder,
+  CmssyWebhookEvent,
+  CmssyWebhookReturn,
+  VerifyCmssyWebhookOptions,
+};
 
 export class CmssyWebhookError extends Error {
   constructor(message: string) {
