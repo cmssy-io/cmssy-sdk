@@ -254,6 +254,8 @@ enum AuditLogAction {
   MODEL_CREATED
   MODEL_DELETED
   MODEL_UPDATED
+  ORDER_ANONYMIZED
+  ORDER_DELETED
   PAGE_CREATED
   PAGE_DELETED
   PAGE_DEV_DRAFT_PROMOTED
@@ -307,6 +309,7 @@ enum AuditLogActorKind {
 enum AuditLogEntityType {
   FORM
   MODEL
+  ORDER
   PAGE
   RECORD
   ROLE
@@ -653,6 +656,7 @@ type CartConfig {
   lowStockThreshold: Int
   maxItemsPerCart: Int!
   maxQuantityPerItem: Int!
+  orderFields: [OrderField!]!
   pricesIncludeTax: Boolean!
   productSources: [CartProductSource!]!
   reservationTtlMinutes: Int
@@ -670,6 +674,11 @@ input CartConfigInput {
   lowStockThreshold: Int
   maxItemsPerCart: Int
   maxQuantityPerItem: Int
+
+  """
+  The full list of order field definitions - replaced wholesale. Removing a field keeps the values orders already hold.
+  """
+  orderFields: [OrderFieldInput!]
   pricesIncludeTax: Boolean
   productSources: [CartProductSourceInput!]
   reservationTtlMinutes: Int
@@ -841,6 +850,10 @@ type CatalogVariantStock {
 }
 
 input CheckoutInput {
+  """
+  Values for the order fields the customer can set (publicCart.orderFields), by key
+  """
+  customFields: JSON
   customerEmail: String!
 
   """Buyer's message for this order (distinct from admin notes)"""
@@ -1036,6 +1049,15 @@ type CustomerAccountEmailResult {
   Whether the email was handed to the mailer. False means the link was issued but no email went out (e.g. the workspace email provider refused it).
   """
   emailSent: Boolean!
+}
+
+type CustomerAnonymization {
+  anonymized: [Order!]!
+
+  """
+  Orders still in progress - left untouched; anonymize them once they are canceled, fulfilled, returned or refunded.
+  """
+  skipped: [Order!]!
 }
 
 type CustomerBulkRefusal {
@@ -2346,6 +2368,11 @@ type Order {
   accessToken: String
   amountPaid: Int!
 
+  """
+  When the buyer's personal data was erased (GDPR). The order keeps its items, money and number.
+  """
+  anonymizedAt: DateTime
+
   """The discount code frozen at order time (CMS-919)"""
   appliedDiscount: OrderDiscount
   balanceDue: Int!
@@ -2361,6 +2388,11 @@ type Order {
   companyName: String
   createdAt: DateTime!
   currency: String!
+
+  """
+  Order custom field values by key (cart.orderFields). A value whose field definition was removed stays under its key. Without order access only the fields the customer can set are returned.
+  """
+  customFields: JSON!
   customerEmail: String!
   customerId: String
 
@@ -2461,6 +2493,54 @@ type OrderEditPreview {
   total: Int!
 }
 
+"""
+A custom field the workspace keeps on its orders. customerCanSet fields are offered at checkout.
+"""
+type OrderField {
+  customerCanSet: Boolean!
+  description: JSON
+  key: String!
+
+  """The field's label per language, e.g. { en: "Gift message" }."""
+  label: JSON!
+  maxLength: Int
+  maxValue: Float
+  minLength: Int
+  minValue: Float
+  options: [PropertyFieldOption!]!
+  pattern: String
+  required: Boolean!
+  type: OrderFieldType!
+}
+
+input OrderFieldInput {
+  customerCanSet: Boolean
+  description: JSON
+  key: String!
+
+  """The label per language, e.g. { en: "Gift message" }."""
+  label: JSON!
+  maxLength: Int
+  maxValue: Float
+  minLength: Int
+  minValue: Float
+  options: [PropertyFieldOptionInput!]
+  pattern: String
+  required: Boolean
+  type: OrderFieldType!
+}
+
+enum OrderFieldType {
+  boolean
+  date
+  email
+  number
+  phone
+  select
+  text
+  url
+}
+
 type OrderItem {
   currency: String!
 
@@ -2492,6 +2572,15 @@ type OrderListResult {
 }
 
 type OrderMutations {
+  """
+  Erase the buyer's personal data from a canceled, fulfilled, returned or refunded order - and from its cart, stored webhook deliveries and Spotlight history. Items, money and the order number stay. Irreversible.
+  """
+  anonymize(orderId: ID!): Order!
+
+  """
+  Anonymize every finished order of one customer: the orders linked to the record plus guest orders placed with its email. Irreversible.
+  """
+  anonymizeCustomer(customerId: ID!): CustomerAnonymization!
   cancel(input: CancelOrderInput!): Order!
   create(input: CreateManualOrderInput!): Order!
 
@@ -2499,6 +2588,11 @@ type OrderMutations {
   Add a parcel to the order. An unfulfilled or partially fulfilled order moves to fulfilled, or to partially_fulfilled when partial is set.
   """
   createShipment(input: CreateShipmentInput!): Order!
+
+  """
+  Permanently delete a canceled order that took no payment and has no invoice - a test or spam order. Its cart, stored webhook deliveries and Spotlight history lose the buyer's data too. Returns the deleted order's id.
+  """
+  deleteJunk(orderId: ID!): ID!
 
   """
   Privileged server-only mutation. Records a payment against an order; it does NOT process or verify a payment. Your backend MUST verify the payment-provider (Stripe, etc.) webhook signature before calling this, and must never expose it to a browser/site-member context. Requires ORDERS_MANAGE.
@@ -3422,6 +3516,9 @@ type PublicCartConfig {
   enableSavedCarts: Boolean!
   maxItemsPerCart: Int!
   maxQuantityPerItem: Int!
+
+  """The order fields a customer can fill in at checkout."""
+  orderFields: [OrderField!]!
   pricesIncludeTax: Boolean!
   productSources: [CartProductSource!]!
   shippingMethods: [ShippingMethodConfig!]!
@@ -3614,6 +3711,11 @@ type PublicOrder {
   canceledAt: DateTime
   createdAt: DateTime!
   currency: String!
+
+  """
+  Values of the order fields the customer can set, by key. Fields kept for staff are left out.
+  """
+  customFields: JSON!
   customerEmail: String!
   customerNote: String
 
@@ -4567,6 +4669,10 @@ input UpdateModelRecordStatusInput {
 }
 
 input UpdateOrderDetailsInput {
+  """
+  Patch of order custom fields by key: a value sets the field, null removes it. Keys not named are left unchanged.
+  """
+  customFields: JSON
   customerEmail: String
   notes: String
   orderId: ID!
