@@ -6,6 +6,22 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.7.0
+
+**One new helper; a webhook handler reading `displayStatus` moves to the axes.**
+`@cmssy/types` 0.61.0 types the webhook order as cmssy sends it now:
+`CmssyWebhookOrder` carries `deliveryStatus`, `state`, `fulfilledAt`,
+`deliveredAt`, `closedAt` and its `shipments` with their `items`, and drops
+`displayStatus`, which cmssy stops sending.
+
+`orderProgress(order)` from `@cmssy/core`
+turns an order into the one step a buyer reads: `placed`, `paid`, `shipped`,
+`out_for_delivery`, `delivered`, `refunded` or `canceled`. It reads the axes
+cmssy now derives from an order's parcels (`state`, `paymentStatus`,
+`fulfillmentStatus`, `deliveryStatus`, and each parcel's `status`), so a
+storefront stops mapping a collapsed `status` into its own labels. It takes the
+delivery API's order and a webhook's order as they come.
+
 ## 19.6.0
 
 **Upgrade `@cmssy/cli`; nothing else to change.** Model and page-type fields on
