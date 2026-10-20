@@ -288,7 +288,8 @@ for a rotation window: hold the new and the previous secret at once and either
 verifies. A non-string is rejected rather than stringified into the key.
 
 Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
-`CmssyWebhookOrder`, `CmssyWebhookReturn`. All from `@cmssy/core`. A Next app that only needs the
+`CmssyWebhookOrder`, `CmssyWebhookReturn`, `CmssyWebhookAccountEvent`,
+`CmssyWebhookAccountRequest`. All from `@cmssy/core`. A Next app that only needs the
 `content.changed` webhook to expire its cache mounts
 `createCmssyRevalidateRoute` from `@cmssy/next/server` instead of calling this
 by hand.
