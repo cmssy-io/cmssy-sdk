@@ -55,6 +55,39 @@ graphqlRequest(cmssy, MY_ORDERS_QUERY, variables, {
 });
 ```
 
+## The member's own account
+
+A signed-in member reads and changes their own record with the same access
+token. No operation takes a record id - each one acts on the session's member,
+in the workspace of the route.
+
+| Operation                                                  | Returns                                                  |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| `account.profile(workspaceId)`                             | `id`, `email`, `pendingEmail`, `data`, `editableFields`  |
+| `siteMember.updateProfile(fields)`                         | the updated profile                                      |
+| `siteMember.changePassword(currentPassword, newPassword)`  | a fresh token pair - every older session ends            |
+| `siteMember.requestEmailChange(newEmail, currentPassword)` | `success`, `message` - a confirm link goes to `newEmail` |
+| `siteMember.confirmEmailChange(token)`                     | `success`, `message` - needs no session                  |
+| `siteMember.deleteAccount(currentPassword)`                | `success`, `message` - the record is removed             |
+
+- **Which fields a member may edit** is set on the account model:
+  `auth.profileFields` in the admin's accounts tab. It is empty by default, and
+  `updateProfile` refuses any key outside it. `editableFields` on the profile
+  tells your form which inputs to render.
+- **Write the new tokens after `changePassword`.** The call ends every session,
+  including the one that made it. The pair it returns is the only way to stay
+  signed in.
+- **Email change takes two steps.** The confirm link points at
+  `<publicSiteUrl>/confirm-email-change?token=...`. Render a page there that
+  confirms on a button press, not on load - mail scanners open links.
+  A password change, a reset or "log out everywhere" voids a pending change.
+- **After `deleteAccount`, clear your session cookie.** Orders the member placed
+  stay with the shop.
+
+A working account page is in next-storefront:
+[`services/account.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/services/account.ts),
+[`lib/actions/account.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/lib/actions/account.ts).
+
 ## The rules that still apply
 
 These are the parts the removed helpers got right, and the parts worth copying
