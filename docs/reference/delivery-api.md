@@ -173,7 +173,7 @@ The `siteMember { ... }` mutations (`siteMember.login`, `siteMember.register`,
 `siteMember.refresh`, `siteMember.logout`, `siteMember.forgotPassword`,
 `siteMember.resetPassword`, `siteMember.verifyEmail`) back the auth flow.
 `account.profile` and `siteMember.updateProfile`, `changePassword`,
-`requestEmailChange`, `confirmEmailChange` and `deleteAccount` let a signed-in
+`requestLoginChange`, `confirmLoginChange` and `deleteAccount` let a signed-in
 member manage their own account. Since
 10.0 you call them yourself - **server-side only**, sealing the returned tokens
 into an httpOnly cookie. Never from the browser: the response carries a refresh
