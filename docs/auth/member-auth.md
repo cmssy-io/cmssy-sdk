@@ -95,14 +95,14 @@ A signed-in member reads and changes their own record with the same access
 token. No operation takes a record id - each one acts on the session's member,
 in the workspace of the route.
 
-| Operation                                                  | Returns                                                        |
-| ---------------------------------------------------------- | -------------------------------------------------------------- |
-| `account.profile(workspaceId)`                             | `id`, `login`, `pendingLogin`, `data`, `editableFields`        |
-| `siteMember.updateProfile(fields)`                         | the updated profile                                            |
-| `siteMember.changePassword(currentPassword, newPassword)`  | a fresh token pair - every older session ends                  |
-| `siteMember.requestLoginChange(newLogin, currentPassword)` | `success`, `message` - raises `account.login_change_requested` |
-| `siteMember.confirmLoginChange(token)`                     | `success`, `message` - needs no session                        |
-| `siteMember.deleteAccount(currentPassword)`                | `success`, `message` - the record is removed                   |
+| Operation                                                  | Returns                                                                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `account.profile(workspaceId)`                             | `id`, `login`, `pendingLogin`, `data`, `editableFields`, `loginField`, `passwordField` |
+| `siteMember.updateProfile(fields)`                         | the updated profile                                                                    |
+| `siteMember.changePassword(currentPassword, newPassword)`  | a fresh token pair - every older session ends                                          |
+| `siteMember.requestLoginChange(newLogin, currentPassword)` | `success`, `message` - raises `account.login_change_requested`                         |
+| `siteMember.confirmLoginChange(token)`                     | `success`, `message` - needs no session                                                |
+| `siteMember.deleteAccount(currentPassword)`                | `success`, `message` - the record is removed                                           |
 
 - **Which fields a member may change** is set per field on the account model:
   "Member can change" (`memberCanSet`) in the field editor. Nothing is open by
@@ -110,7 +110,8 @@ in the workspace of the route.
   for them.
 - **The login and the password have their own flows.** Opening the login field
   allows `requestLoginChange`, opening the password field allows
-  `changePassword`; `updateProfile` refuses both keys.
+  `changePassword`; `updateProfile` refuses both keys. The profile names them:
+  `loginField` and `passwordField` are the keys to route to those flows.
 - **Write the new tokens after `changePassword`.** The call ends every session,
   including the one that made it. The pair it returns is the only way to stay
   signed in.
