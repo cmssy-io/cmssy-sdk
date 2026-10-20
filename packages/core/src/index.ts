@@ -188,6 +188,8 @@ export type {
 } from "./order-progress";
 export { verifyCmssyWebhook, CmssyWebhookError } from "./verify-webhook";
 export type {
+  CmssyWebhookAccountEvent,
+  CmssyWebhookAccountRequest,
   CmssyWebhookEvent,
   CmssyWebhookOrder,
   CmssyWebhookReturn,

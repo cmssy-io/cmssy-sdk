@@ -6,6 +6,17 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.9.0
+
+**Nothing to change.** `@cmssy/types` 0.63.0 adds the account events cmssy
+sends instead of emailing a workspace's members itself:
+`account.verification_requested`, `account.password_reset_requested` and
+`account.login_change_requested`. Each carries a single-use `token` your app
+mails to the member and later passes to the matching `siteMember` mutation.
+`verifyCmssyWebhook` returns the order-shaped `CmssyWebhookEvent`; narrow an
+account event to `CmssyWebhookAccountEvent` by its `event` name. Both types are
+re-exported from `@cmssy/core`.
+
 ## 19.8.0
 
 **Nothing to change.** `@cmssy/types` 0.62.0 adds order returns to the webhook

@@ -1,4 +1,6 @@
 import type {
+  CmssyWebhookAccountEvent,
+  CmssyWebhookAccountRequest,
   CmssyWebhookOrder,
   CmssyWebhookEvent,
   CmssyWebhookReturn,
@@ -7,6 +9,8 @@ import type {
 import { hmacSha256Hex, timingSafeHexEqual } from "./internal/hmac";
 
 export type {
+  CmssyWebhookAccountEvent,
+  CmssyWebhookAccountRequest,
   CmssyWebhookOrder,
   CmssyWebhookEvent,
   CmssyWebhookReturn,
