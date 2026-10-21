@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.11.0
+
+**Nothing to change.** Buyer prices from `@cmssy/core`:
+`getBuyerPrices(config, items, { workspaceId, accessToken })` reads the
+signed-in member's prices (`account.prices`, up to 100 items) - call it once
+after sign-in, server-side, over a catalogue that stays anonymous and cached,
+and never cache its response for another visitor.
+`checkoutErrorReason(error)` names `CART_REPRICED` and `CART_CURRENCY_CHANGED`
+when checkout refuses a cart the buyer's price list moved, and
+`CmssyGraphqlError` gains `reason`. `cmssy types` vendors an eleventh
+operation, `BuyerPrices` - an app that already declares an operation of that
+name gets the collision refusal, not a broken build. See
+[Member auth](docs/auth/member-auth.md#buyer-prices).
+
 ## 19.10.0
 
 **Nothing to change.** `@cmssy/types` 0.64.0 adds `companyId` and `companyName`
