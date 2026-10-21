@@ -1,3 +1,4 @@
+import type { CmssyPriceSource } from "@cmssy/types";
 import type { CmssyClientConfig, FetchLike } from "../content/content-client";
 import { typedOperation } from "./document";
 import { graphqlRequest } from "./graphql-request";
@@ -22,6 +23,8 @@ export interface CmssyBuyerPrice {
   price: number;
   priceMax: number | null;
   listed: boolean;
+  basePrice: number;
+  source: CmssyPriceSource;
   tiers: CmssyPriceTier[];
 }
 
@@ -50,6 +53,8 @@ export const BUYER_PRICES_QUERY = typedOperation<
       price
       priceMax
       listed
+      basePrice
+      source
       tiers {
         minQty
         price
