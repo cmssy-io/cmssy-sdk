@@ -35,6 +35,8 @@ function makeBody(): string {
         currency: "PLN",
         customerId: null,
         customerEmail: "b@example.com",
+        companyId: null,
+        companyName: null,
         paymentProvider: "stripe",
         paymentReference: "pi_1",
         refundedAmount: 0,
