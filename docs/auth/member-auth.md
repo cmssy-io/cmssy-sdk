@@ -33,6 +33,12 @@ workspace:
 | `siteMember.refresh`  | `refreshToken`                              | a rotated token pair                                  |
 | `siteMember.logout`   | `refreshToken`                              | `success`, `message`                                  |
 
+`fields` on `register` takes only fields the account model opens to members
+("Member can change", `memberCanSet`). Any other non-null key refuses the
+sign-up and `message` names it: `Not available at registration: vatId`. The
+login comes from `identity`, the password from `password`; the company field
+is never accepted - the workspace assigns it.
+
 ```ts
 // services/auth.ts
 export function signIn(identity: string, password: string) {
@@ -106,8 +112,8 @@ in the workspace of the route.
 
 - **Which fields a member may change** is set per field on the account model:
   "Member can change" (`memberCanSet`) in the field editor. Nothing is open by
-  default. `editableFields` on the profile lists the open fields; render inputs
-  for them.
+  default. The same flag opens the field at sign-up (`register`'s `fields`).
+  `editableFields` on the profile lists the open fields; render inputs for them.
 - **The login and the password have their own flows.** Opening the login field
   allows `requestLoginChange`, opening the password field allows
   `changePassword`; `updateProfile` refuses both keys. The profile names them:
