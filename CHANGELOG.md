@@ -6,6 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.12.0
+
+**Nothing to change.** `getBuyerPrices` rows carry `basePrice` - the catalogue
+price before the buyer's list, for a struck-through "was" price - and
+`source` (`CmssyPriceSource`): `catalogue`, `price_list_entry` or
+`price_list_percent`. On a variant product asked without `variantKey`, both
+describe the cheapest variant. Needs a cmssy API that serves them (released
+22 October 2026).
+
 ## 19.11.2
 
 **Nothing to change.** `@cmssy/types` 0.66.0 adds `priceSourceValues` /

@@ -41,6 +41,8 @@ const RANGE: CmssyBuyerPrice = {
   price: 900,
   priceMax: 1200,
   listed: true,
+  basePrice: 1000,
+  source: "price_list_percent",
   tiers: [],
 };
 
@@ -51,6 +53,8 @@ const VARIANT: CmssyBuyerPrice = {
   price: 500,
   priceMax: null,
   listed: false,
+  basePrice: 500,
+  source: "catalogue",
   tiers: [{ minQty: 10, price: 450 }],
 };
 
