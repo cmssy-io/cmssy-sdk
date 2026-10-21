@@ -15,9 +15,26 @@ type AcceptOrganizationInvitationResult {
   success: Boolean!
 }
 
+"""
+Whose orders account.orders lists: MINE - the member's own; COMPANY - every order placed for the member's company, which needs the orders.company.read company permission.
+"""
+enum AccountOrderScope {
+  COMPANY
+  MINE
+}
+
 type AccountQueries {
   order(id: ID!, workspaceId: ID!): PublicOrder
-  orders(limit: Int, skip: Int, workspaceId: ID!): PublicOrderListResult!
+
+  """
+  The signed-in member's orders, newest first. scope COMPANY lists every order placed for the member's company and is refused with FORBIDDEN (extensions.reason COMPANY_PERMISSION_REQUIRED, extensions.permission) unless the member's company role grants orders.company.read.
+  """
+  orders(limit: Int, scope: AccountOrderScope = MINE, skip: Int, workspaceId: ID!): PublicOrderListResult!
+
+  """
+  The signed-in member's prices for up to 100 products, one row per item asked; an unknown or hidden product is left out. Read it after the cached, anonymous catalogue has rendered, and never cache the response for another visitor.
+  """
+  prices(items: [PriceQueryItem!]!, workspaceId: ID!): [BuyerPrice!]!
 
   """The signed-in member's own account record."""
   profile(workspaceId: ID!): MemberProfile!
@@ -296,6 +313,7 @@ enum AuditLogAction {
   RECORDS_IMPORTED
   RECORD_CREATED
   RECORD_DELETED
+  RECORD_PRICE_LIST_SET
   RECORD_STATUS_CHANGED
   RECORD_UPDATED
   ROLE_CREATED
@@ -356,6 +374,7 @@ enum AuditLogVia {
 }
 
 type AuthMutations {
+  confirmEmailChange(token: String!): UserAuthResponse!
   login(input: LoginInput!): AuthResponse!
   logout: Boolean!
   oauthLogin(input: OAuthLoginInput!): AuthResponse!
@@ -372,6 +391,22 @@ type AuthResponse {
   accessToken: String!
   accessTokenExpiresIn: Int!
   refreshToken: String
+}
+
+"""A presigned PUT authorizing one avatar upload"""
+type AuthorizeAvatarUploadPayload {
+  """
+  The canonical URL the uploaded avatar is served from, as viewer.updateProfile accepts it
+  """
+  assetUrl: String!
+  maximumSizeInBytes: Int!
+  pathname: String!
+
+  """
+  PUT the bytes here with Content-Type set to the declared mimeType, then pass assetUrl to viewer.updateProfile
+  """
+  uploadUrl: String!
+  validUntil: DateTime!
 }
 
 """A presigned PUT authorizing one direct upload to the media bucket"""
@@ -567,6 +602,33 @@ type BulkUpdateModelRecordsResult {
   updated: Int!
 }
 
+"""
+What the signed-in member pays for one product or variant, in minor units: their price list applied, else the catalogue price.
+"""
+type BuyerPrice {
+  currency: String!
+
+  """True when a price list set this price."""
+  listed: Boolean!
+
+  """
+  Unit price before volume breaks. For a variant product asked without variantKey, the lowest across its variants.
+  """
+  price: Int!
+
+  """
+  The highest price across the variants, set only when a variant product was asked without variantKey.
+  """
+  priceMax: Int
+  recordId: ID!
+
+  """
+  Volume breaks this member gets; empty for a variant product asked without variantKey.
+  """
+  tiers: [PriceTier!]!
+  variantKey: String
+}
+
 input CancelOrderInput {
   orderId: ID!
 }
@@ -753,12 +815,16 @@ type CartItem {
 
 """Snapshot of product data captured at add-to-cart time"""
 type CartItemSnapshot {
+  """
+  Catalogue unit price before the buyer's price list and volume breaks; null on a line added before price lists existed, which was priced without one.
+  """
+  basePrice: Int
   currency: String!
   imageUrl: String
   name: String!
 
   """
-  Base (single-unit) price frozen at add-time. The price actually charged is CartItem.unitPrice, which applies volume breaks.
+  Unit price for this buyer before volume breaks, frozen at add-time (their price list applied). The price actually charged is CartItem.unitPrice, which applies volume breaks.
   """
   price: Int!
   sku: String
@@ -901,6 +967,14 @@ type CommentUser {
   userId: ID!
 }
 
+"""
+A company role a customer can hold, and the permissions it grants on the delivery API.
+"""
+type CompanyRoleDefinition {
+  key: String!
+  permissions: [String!]!
+}
+
 input CreateApiTokenInput {
   expiresInDays: Int
   name: String!
@@ -964,6 +1038,7 @@ input CreateMediaFolderInput {
 input CreateModelDefinitionInput {
   auth: ModelAuthConfigInput
   color: String
+  company: ModelCompanyConfigInput
   defaultSort: DefaultSortInput
   deliveryAccess: ModelDeliveryAccess
   description: String
@@ -1002,6 +1077,13 @@ input CreatePageTypeInput {
   schemaType: String
   slug: String!
   urlPrefix: String
+}
+
+input CreatePriceListInput {
+  name: String!
+
+  """0 to 99.99, at most two decimals. Defaults to 0."""
+  percentOff: Float
 }
 
 input CreateReturnInput {
@@ -1061,9 +1143,18 @@ A record of a model with accounts enabled, seen through its sign-in state.
 """
 type Customer {
   company: CustomerCompany
+
+  """
+  The customer's effective built-in company role (a key of customer.companyRoles), granted for the company they belong to now. buyer unless staff set another for this company; null without a company, or when the linked model is not a Company model.
+  """
   companyRole: String
   createdAt: DateTime!
   displayName: String!
+
+  """
+  The price list cmssy prices this customer's carts and orders from; null when they pay catalogue prices.
+  """
+  effectivePriceList: CustomerEffectivePriceList
   id: String!
   identity: String!
   lastLoginAt: DateTime
@@ -1077,6 +1168,11 @@ type Customer {
   Order count, last order date and net spend. Null for a caller without `orders:view`.
   """
   orderStats: CustomerOrderStats
+
+  """
+  The price list assigned to the customer themselves. While they belong to a live company it is replaced by the company's; effectivePriceList says which one prices them.
+  """
+  priceList: CustomerPriceList
   record(
     """
     Expand the record's model relations to { id, data }. Ignored without models:view, which is what reading another model's records takes.
@@ -1090,7 +1186,6 @@ type Customer {
 
 type CustomerAccountRequestResult {
   customer: Customer!
-  emailSent: Boolean! @deprecated(reason: "cmssy never emails a customer. Use endpointSubscribed.")
 
   """
   Whether an enabled webhook endpoint receives the account event. cmssy never emails a customer: the endpoint's app does. False means the token was issued but nothing will reach the customer.
@@ -1132,6 +1227,14 @@ type CustomerCompany {
   name: String
 }
 
+type CustomerEffectivePriceList {
+  """The company whose list applies, when source is COMPANY."""
+  companyName: String
+  id: ID!
+  name: String!
+  source: PriceListSource!
+}
+
 type CustomerList {
   hasMore: Boolean!
   items: [Customer!]!
@@ -1156,6 +1259,16 @@ type CustomerMutations {
   Issue a password reset token, the same one the forgot-password flow issues, and send it to the workspace's app as account.password_reset_requested - the app emails the customer. Refuses a suspended or unverified customer.
   """
   sendPasswordReset(id: ID!): CustomerAccountRequestResult!
+
+  """
+  Give the customer a company role (a key of customer.companyRoles) in the company they belong to now. The role holds only while they stay in that company: any change of their company clears it, so they are buyer wherever they land, the same company included. Refused when the customer has no company.
+  """
+  setCompanyRole(id: ID!, role: String!): Customer!
+
+  """
+  Assign a price list to a customer without a company; null unassigns. Refused while the customer belongs to a live company - assign the list to that company instead.
+  """
+  setPriceList(id: ID!, priceListId: ID): Customer!
 
   """
   Block sign-in and end every live session of the customer. Orders and carts stay.
@@ -1188,8 +1301,18 @@ type CustomerOrderStats {
   spent: [CustomerSpend!]!
 }
 
+type CustomerPriceList {
+  id: ID!
+  name: String!
+}
+
 type CustomerQueries {
   byIds(ids: [ID!]!): [Customer!]!
+
+  """
+  The company roles a customer can be given with customer.setCompanyRole. Absent a role, a customer is buyer.
+  """
+  companyRoles: [CompanyRoleDefinition!]!
   get(id: ID!): Customer
 
   """
@@ -2036,6 +2159,28 @@ input MemberAuthConfigInput {
   showRegisterInHeader: Boolean
 }
 
+"""
+The company the signed-in member belongs to, and what their company role lets them do.
+"""
+type MemberCompany {
+  id: ID!
+
+  """
+  The company model's display field; null when the record has no usable name.
+  """
+  name: String
+
+  """
+  What the role grants, e.g. orders.company.read for account.orders(scope: COMPANY). Branch on a permission, not on the role name.
+  """
+  permissions: [String!]!
+
+  """
+  The member's company role: buyer unless the workspace gave them another for this company.
+  """
+  role: String!
+}
+
 type MemberMutations {
   add(input: AddWorkspaceMemberInput!): Workspace!
   leave: Boolean!
@@ -2046,9 +2191,20 @@ type MemberMutations {
 }
 
 """
+The price list the signed-in member buys from, for a badge like Gold dealer. Their prices come from account.prices.
+"""
+type MemberPriceList {
+  name: String!
+}
+
+"""
 The signed-in site member's own account record, redacted like a delivery read.
 """
 type MemberProfile {
+  """
+  The member's company; null when they belong to none, or the linked model is not a Company model.
+  """
+  company: MemberCompany
   createdAt: DateTime!
   data: JSON!
 
@@ -2069,6 +2225,11 @@ type MemberProfile {
   A login waiting for confirmLoginChange with the token from account.login_change_requested.
   """
   pendingLogin: String
+
+  """
+  The member's own price list: their company's when they belong to one, else their own; null when none applies.
+  """
+  priceList: MemberPriceList
 }
 
 type MemberScopedGrant {
@@ -2099,11 +2260,6 @@ type ModelAuthConfig {
   Relation field on this model that points at the customer's company (a record of another model).
   """
   companyField: String
-
-  """
-  Select field on this model that holds the customer's role in their company.
-  """
-  companyRoleField: String
   enabled: Boolean!
   identityField: String!
   lockout: ModelAuthLockout!
@@ -2113,7 +2269,6 @@ type ModelAuthConfig {
 
 input ModelAuthConfigInput {
   companyField: String
-  companyRoleField: String
   enabled: Boolean
   identityField: String
   lockout: ModelAuthLockoutInput
@@ -2147,9 +2302,24 @@ input ModelAuthVerificationInput {
   required: Boolean
 }
 
+"""
+Company capability of a model: its records are companies an account model's company field can link. A model is a product, an account or a company model - one at most.
+"""
+type ModelCompanyConfig {
+  enabled: Boolean!
+}
+
+"""
+Company capability PATCH: an omitted enabled keeps the stored value. Turning it off is refused while an account model's company field links this model.
+"""
+input ModelCompanyConfigInput {
+  enabled: Boolean
+}
+
 type ModelDefinition {
   auth: ModelAuthConfig
   color: String
+  company: ModelCompanyConfig
   createdAt: DateTime!
   createdBy: String
   defaultSort: DefaultSort
@@ -2237,6 +2407,11 @@ type ModelRecord {
   modelId: String!
 
   """
+  The price list assigned to this customer or company record with record.setPriceList; null when none.
+  """
+  priceListId: String
+
+  """
   Record-level volume breaks. Price a product without variants, and any variant that defines no tiers of its own.
   """
   priceTiers: [PriceTier!]!
@@ -2283,6 +2458,7 @@ type Mutation {
   pageComment: PageCommentMutations!
   pageTask: PageTaskMutations!
   pageType: PageTypeMutations!
+  priceList: PriceListMutations!
   product: ProductMutations!
   public: PublicMutations!
   record: RecordMutations!
@@ -2506,6 +2682,11 @@ type Order {
 
   """Buyer's purchase-order reference (CMS-913)"""
   poNumber: String
+
+  """
+  The price list the order was priced from, its name frozen at checkout; null when none applied.
+  """
+  priceListName: String
   pricesIncludeTax: Boolean!
   refundedAmount: Int!
   returns: [OrderReturn!]!
@@ -2637,7 +2818,9 @@ type OrderItem {
   """Stable line id; shipments name lines by it."""
   id: ID!
 
-  """Single-unit price this line would have cost without a volume break"""
+  """
+  Catalogue unit price before the buyer's price list and volume breaks. Equals the unit price without a list; can be below price when a list sets a contract price above the catalogue.
+  """
   listPrice: Int
   modelId: String
   name: String!
@@ -3460,6 +3643,130 @@ type PooledUsage {
 }
 
 """
+A price list (Gold, Silver, ...): a percent off the catalogue plus fixed prices per product or variant, assigned to companies and to customers without a company.
+"""
+type PriceList {
+  """Companies and customers the list is assigned to."""
+  assignedCount: Int!
+  createdAt: DateTime!
+  id: ID!
+  name: String!
+
+  """Fixed prices the list holds."""
+  overrideCount: Int!
+
+  """
+  Percent taken off the catalogue price of every product the list has no fixed price for, 0 to 99.99.
+  """
+  percentOff: Float!
+  updatedAt: DateTime!
+}
+
+"""
+A fixed price a list sets for one product, or one variant of it, in minor units.
+"""
+type PriceListEntry {
+  """
+  ISO 4217 code the product is priced in, resolved like a cart line snapshot: the record's currency field, else the cart default currency. Null when the product record was removed.
+  """
+  currency: String
+  id: ID!
+  price: Int!
+  priceListId: ID!
+  recordId: ID!
+
+  """
+  The product or its variant was removed. The entry prices nothing; remove it.
+  """
+  recordMissing: Boolean!
+  tiers: [PriceTier!]!
+  variantKey: String
+}
+
+input PriceListEntryInput {
+  """Unit price in minor units, above 0."""
+  price: Int!
+  recordId: ID!
+  tiers: [PriceTierInput!]
+
+  """
+  Required for a product with variants, and must be one of its variant keys; leave it out otherwise.
+  """
+  variantKey: String
+}
+
+input PriceListEntryKeyInput {
+  recordId: ID!
+  variantKey: String
+}
+
+type PriceListEntryPage {
+  items: [PriceListEntry!]!
+
+  """Pass as `after` for the next page; null on the last."""
+  nextCursor: String
+}
+
+type PriceListMutations {
+  create(input: CreatePriceListInput!): PriceList!
+
+  """
+  Delete the list with its fixed prices and unassign it from every company and customer. Orders keep the name they were priced under.
+  """
+  delete(id: ID!): Boolean!
+
+  """
+  Remove up to 1000 fixed prices by product and variant. Returns how many were removed.
+  """
+  removeEntries(keys: [PriceListEntryKeyInput!]!, priceListId: ID!): Int!
+  removeEntry(id: ID!): Boolean!
+
+  """
+  Upsert up to 1000 fixed prices at once - how an ERP sync writes a list. All or nothing: one invalid row refuses the whole call, and the error names every bad row by index. Returns how many entries were written.
+  """
+  setEntries(entries: [PriceListEntryInput!]!, priceListId: ID!): Int!
+
+  """
+  Set the list's fixed price for one product, or one variant of a product with variants. Replaces the price already set for it.
+  """
+  setEntry(entry: PriceListEntryInput!, priceListId: ID!): PriceListEntry!
+
+  """
+  Rename the list or change its percent. Carts already priced from it keep their prices until the buyer adds again; orders keep theirs.
+  """
+  update(id: ID!, input: UpdatePriceListInput!): PriceList!
+}
+
+type PriceListQueries {
+  """The list's fixed prices, oldest first, at most 200 per page."""
+  entries(after: String, first: Int, priceListId: ID!, recordId: ID): PriceListEntryPage!
+  get(id: ID!): PriceList
+
+  """
+  Every price list of the workspace, by name. Readable with customers:view too, so the customer screen can offer them.
+  """
+  list: [PriceList!]!
+}
+
+"""
+Where a customer's price list comes from: MEMBER - assigned to the customer; COMPANY - assigned to the company they buy for.
+"""
+enum PriceListSource {
+  COMPANY
+  MEMBER
+}
+
+"""A product, or one variant of it, to price for the signed-in member."""
+input PriceQueryItem {
+  recordId: ID!
+
+  """
+  The variant's id as the delivery ProductVariant.id returns it. Leave it out on a variant product to get its lowest and highest price.
+  """
+  variantKey: String
+}
+
+"""
 Volume price break: from `minQty` units, each unit costs `price` (minor units). Sorted ascending by minQty.
 """
 type PriceTier {
@@ -3965,6 +4272,11 @@ type PublicOrder {
   balanceDue: Int!
   canceledAt: DateTime
   closedAt: DateTime
+
+  """
+  The buyer's company as it was named when the order was placed; null for an order placed without one.
+  """
+  companyName: String
   createdAt: DateTime!
   currency: String!
 
@@ -4009,7 +4321,9 @@ type PublicOrderItem {
   currency: String!
   id: ID!
 
-  """Single-unit price without a volume break"""
+  """
+  Catalogue unit price before the buyer's price list and volume breaks. Equals the unit price without a list; can be below price when a list sets a contract price above the catalogue.
+  """
   listPrice: Int
   name: String!
 
@@ -4221,6 +4535,7 @@ type Query {
   pageComment: PageCommentQueries!
   pageTask: PageTaskQueries!
   pageType: PageTypeQueries!
+  priceList: PriceListQueries!
   product: ProductQueries!
   property: PropertyQueries!
   public: PublicQueries!
@@ -4254,6 +4569,11 @@ type RecordMutations {
   delete(force: Boolean, id: ID!): DeletionResult!
   import(input: ImportModelRecordsInput!): ImportModelRecordsResult!
   patch(input: PatchModelRecordInput!): ModelRecord
+
+  """
+  Assign a price list to a record of a Company model, or to a customer without a company; null unassigns. Refused for a customer whose company is live - their company's list prices them.
+  """
+  setPriceList(id: ID!, priceListId: ID): ModelRecord!
   setStatus(input: UpdateModelRecordStatusInput!): ModelRecord
   update(input: UpdateModelRecordInput!): ModelRecord
 }
@@ -4812,6 +5132,9 @@ type SiteMemberMutations {
 }
 
 input SiteMemberRegisterInput {
+  """
+  Initial values, keyed by field. Only fields the account model marks memberCanSet are accepted; any other non-null key refuses the registration and the message names it. Password fields and the company field are never accepted, whatever their flag. The login field may be sent but is ignored: the login comes from identity, the password from password.
+  """
   fields: JSON
   identity: String!
   modelSlug: String!
@@ -5036,6 +5359,7 @@ input UpdateMediaInput {
 input UpdateModelDefinitionInput {
   auth: ModelAuthConfigInput
   color: String
+  company: ModelCompanyConfigInput
   defaultSort: DefaultSortInput
   deliveryAccess: ModelDeliveryAccess
   description: String
@@ -5133,6 +5457,21 @@ input UpdatePageTypeInput {
   schemaType: String
   slug: String
   urlPrefix: String
+}
+
+input UpdatePriceListInput {
+  name: String
+  percentOff: Float
+}
+
+input UpdateProfileInput {
+  """
+  Null removes the avatar. Otherwise the URL of an image this account uploaded through viewer.authorizeAvatarUpload.
+  """
+  avatarUrl: String
+  displayName: String
+  firstName: String
+  lastName: String
 }
 
 input UpdateReturnTrackingInput {
@@ -5274,12 +5613,22 @@ type UsageHistoryTotals {
 type User {
   createdAt: DateTime!
   email: String!
+
+  """
+  Whether the account signs in with a password. Only on the signed-in account itself; null for anyone else.
+  """
+  hasPassword: Boolean
   id: String!
   isOrganizationOwner: Boolean
   isVerified: Boolean!
   joinedAt: DateTime
   lastLoginAt: DateTime
   membershipStatus: String
+
+  """
+  The address an unconfirmed email change is waiting on. Only on the signed-in account itself; null for anyone else.
+  """
+  pendingEmail: String
   profile: UserProfile!
   updatedAt: DateTime!
   username: String
@@ -5333,7 +5682,18 @@ type ValidationRules {
 }
 
 type ViewerMutations {
+  authorizeAvatarUpload(mimeType: String!, size: Int!): AuthorizeAvatarUploadPayload!
   beginMfa: MfaEnrolment!
+
+  """
+  Drop an unconfirmed email change, so the link sent to the new address stops working.
+  """
+  cancelEmailChange: Boolean!
+
+  """
+  Change the password, or set one on an account that has none. Signs out every other device and returns fresh tokens for this one.
+  """
+  changePassword(currentPassword: String, mfaCode: String, newPassword: String!): AuthResponse!
   confirmMfa(code: String!): [String!]!
   deleteAccount: DeletionResult!
   disableMfa(code: String!): MfaStatus!
@@ -5342,8 +5702,17 @@ type ViewerMutations {
   Mint a fresh set of recovery codes and invalidate every outstanding one. Gated on a current authenticator or recovery code, so a hijacked session cannot lock the owner out.
   """
   reissueRecoveryCodes(code: String!): [String!]!
+
+  """
+  Send a confirmation link to a new address. The email changes only when that link is opened.
+  """
+  requestEmailChange(currentPassword: String, mfaCode: String, newEmail: String!): UserAuthResponse!
   resendVerificationEmail: UserAuthResponse!
+
+  """End every session of this account, on every device."""
+  signOutEverywhere: Boolean!
   updateLocale(locale: String!): User!
+  updateProfile(input: UpdateProfileInput!): User!
 }
 
 type ViewerQueries {
