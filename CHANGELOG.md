@@ -6,6 +6,14 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.11.1
+
+**Nothing to change.** `@cmssy/types` 0.65.0: the order, cart, shipment and
+return vocabularies the server uses are exported from one place
+(`orderPaymentStatusValues`, `orderQueueValues`, `cartStatusValues` and
+friends), and a webhook order's `paymentStatus` is typed as that vocabulary
+instead of `string`.
+
 ## 19.11.0
 
 **Nothing to change.** Buyer prices from `@cmssy/core`:
