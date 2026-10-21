@@ -303,6 +303,7 @@ other file.
 PublicSiteConfig   PublicPage        PublicPageById    PublicPages
 PublicPageMeta     PublicPageLayouts PublicModelRecords
 PublicRecordsByIds PublicForm        SubmitForm
+BuyerPrices
 ```
 
 **Point your codegen at it, or nothing reads it.** The generated file lives

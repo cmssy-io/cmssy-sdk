@@ -89,7 +89,8 @@ typedOperation<Result, Variables>(
 A response that carries `errors` throws `CmssyGraphqlError`: its `message` is the
 joined server messages as before, `errors` is the array as sent, and `code` is the
 first error's `extensions.code` - so a storefront can answer `NOT_FOUND` with its
-own not-found page and let anything else surface as the failure it is. An HTTP
+own not-found page and let anything else surface as the failure it is. `reason`
+is the first error's `extensions.reason`, when the server names one. An HTTP
 failure is a `CmssyRequestError` with `status`, as before.
 
 **A site that renders on its own server forwards each visitor's address.** Put
@@ -306,6 +307,26 @@ in that status.
 `fulfillmentStatus`, `deliveryStatus` and optional `shipments[].status` - which
 both the delivery API's `PublicOrder` and a webhook's `CmssyWebhookOrder`
 satisfy as they come. All from `@cmssy/core`.
+
+### Buyer prices
+
+`await getBuyerPrices(config, items, { workspaceId, accessToken, fetch?, signal?, retry? })`
+reads the signed-in member's prices - `account.prices` on the delivery route,
+with the member's token. `items` is up to `CMSSY_BUYER_PRICES_MAX_ITEMS` (100)
+`CmssyPriceQueryItem`s - `{ recordId, variantKey? }`; an empty list sends
+nothing, a longer one or a missing token throws before the network. It returns
+`CmssyBuyerPrice[]`: `recordId`, `variantKey`, `currency`, `price`, `priceMax`,
+`listed`, `tiers` (`CmssyPriceTier[]`). Server-side only, and never cached for
+another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
+
+`checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
+`checkoutErrorReasonValues`, `CART_REPRICED` or `CART_CURRENCY_CHANGED` - when
+checkout refused the cart for that reason, `undefined` otherwise.
+`CmssyGraphqlError.reason` carries the first error's `extensions.reason` raw.
+
+Also exported: `BUYER_PRICES_QUERY`, `BuyerPricesResult`,
+`BuyerPricesVariables`, `GetBuyerPricesOptions`, `CmssyMemberPriceList`. All
+from `@cmssy/core`.
 
 ### `@cmssy/core/testing` and `/preflight`
 
