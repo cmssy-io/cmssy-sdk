@@ -86,7 +86,7 @@ describe("cmssy types, operations half", () => {
     expect(written).toContain("query PublicSiteConfig(");
     expect(fetchCalls).toHaveLength(0);
     expect(code).toBe(1);
-    expect(lines.join("\n")).toContain("10 operations");
+    expect(lines.join("\n")).toContain("11 operations");
   });
 
   it("rewrites an edited file instead of protecting it", async () => {

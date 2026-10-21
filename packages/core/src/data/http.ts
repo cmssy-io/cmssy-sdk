@@ -200,18 +200,20 @@ export function createRetryingFetch<F extends FetchLike = FetchLike>(
 
 export interface CmssyGraphqlErrorEntry {
   message?: string;
-  extensions?: { code?: string };
+  extensions?: { code?: string; reason?: string; [key: string]: unknown };
 }
 
 export class CmssyGraphqlError extends Error {
   readonly errors: ReadonlyArray<CmssyGraphqlErrorEntry>;
   readonly code: string | undefined;
+  readonly reason: string | undefined;
 
   constructor(message: string, errors: ReadonlyArray<CmssyGraphqlErrorEntry>) {
     super(message);
     this.name = "CmssyGraphqlError";
     this.errors = errors;
     this.code = errors[0]?.extensions?.code;
+    this.reason = errors[0]?.extensions?.reason;
   }
 }
 

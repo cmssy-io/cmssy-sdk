@@ -6,6 +6,7 @@ import {
   PUBLIC_PAGE_QUERY,
 } from "../content/content-client";
 import { RECORDS_BY_IDS_QUERY } from "./block-content";
+import { BUYER_PRICES_QUERY } from "./buyer-prices";
 import {
   FORM_QUERY,
   MODEL_RECORDS_QUERY,
@@ -59,5 +60,10 @@ export const CMSSY_DELIVERY_OPERATIONS: readonly CmssyDeliveryOperation[] = [
     purpose:
       "Submitting that form - rendering one without this is half a feature.",
     document: SUBMIT_FORM_MUTATION,
+  },
+  {
+    purpose:
+      "The signed-in member's prices, read once after the anonymous catalogue rendered.",
+    document: BUYER_PRICES_QUERY,
   },
 ];

@@ -103,7 +103,7 @@ in the workspace of the route.
 
 | Operation                                                  | Returns                                                                                |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `account.profile(workspaceId)`                             | `id`, `login`, `pendingLogin`, `data`, `editableFields`, `loginField`, `passwordField` |
+| `account.profile(workspaceId)`                             | `id`, `login`, `pendingLogin`, `data`, `editableFields`, `loginField`, `passwordField`, `priceList` |
 | `siteMember.updateProfile(fields)`                         | the updated profile                                                                    |
 | `siteMember.changePassword(currentPassword, newPassword)`  | a fresh token pair - every older session ends                                          |
 | `siteMember.requestLoginChange(newLogin, currentPassword)` | `success`, `message` - raises `account.login_change_requested`                         |
@@ -132,6 +132,129 @@ next-storefront:
 [`services/account.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/services/account.ts),
 [`lib/actions/account.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/lib/actions/account.ts),
 [`app/api/cmssy/webhook/route.ts`](https://github.com/cmssy-io/examples/blob/main/next-storefront/app/api/cmssy/webhook/route.ts).
+
+## Buyer prices
+
+A member can buy from a price list - their company's, or their own. The
+catalogue a visitor sees stays the anonymous one; the member's prices are a
+second, per-member read on top of it.
+
+1. **Keep catalogue pages anonymous and cacheable.** Render the product grid
+   and the product page with the catalogue price, exactly as for a signed-out
+   visitor. Never key a cached page on the member.
+2. **After sign-in, ask once for the products on screen.** `getBuyerPrices`
+   from `@cmssy/core` takes up to 100 items (`CMSSY_BUYER_PRICES_MAX_ITEMS`)
+   and the member's access token, server-side:
+
+```ts
+import { getBuyerPrices } from "@cmssy/core";
+
+const prices = await getBuyerPrices(
+  cmssy,
+  products.map((product) => ({ recordId: product.id })),
+  { workspaceId, accessToken },
+);
+```
+
+3. **Never cache that response for anyone else.** It is the member's price -
+   no shared fetch cache, no CDN, no `unstable_cache` keyed without the member.
+   Read it from a Server Action or a dynamic route segment and patch the prices
+   into the page you already rendered.
+
+Each row is a `CmssyBuyerPrice`: `recordId`, `variantKey`, `currency`,
+`price`, `priceMax`, `listed` and the volume `tiers` this member gets. Amounts
+are in minor units. Pass `variantKey` (the delivery `ProductVariant.id`) for
+one variant; leave it out on a variant product to get a range - `price` is the
+lowest, `priceMax` the highest, and `tiers` is empty. `listed` is true when a
+price list set the price, for a "your price" badge. A product the member
+cannot see, or that does not exist, is left out - match rows by `recordId`
+and `variantKey`, not by position.
+
+The operation is vendored as `BuyerPrices` by `cmssy types`; the raw document
+is `BUYER_PRICES_QUERY`:
+
+```graphql
+query BuyerPrices($workspaceId: ID!, $items: [PriceQueryItem!]!) {
+  account {
+    prices(workspaceId: $workspaceId, items: $items) {
+      recordId
+      variantKey
+      currency
+      price
+      priceMax
+      listed
+      tiers {
+        minQty
+        price
+      }
+    }
+  }
+}
+```
+
+The profile names the list, for a label like "Gold dealer" -
+`account.profile.priceList { name }`, `null` when none applies:
+
+```graphql
+query MyPriceList($workspaceId: ID!) {
+  account {
+    profile(workspaceId: $workspaceId) {
+      priceList {
+        name
+      }
+    }
+  }
+}
+```
+
+### The cart is priced for the buyer
+
+A line in the cart already carries the member's price: `unitPrice` is what is
+charged. `snapshot.basePrice` is the catalogue price before the price list and
+volume breaks, for a struck-through "was" price; it is `null` on a line added
+before price lists existed.
+
+```graphql
+query CartBasePrices($workspaceId: ID!) {
+  cart {
+    get(workspaceId: $workspaceId) {
+      items {
+        id
+        unitPrice
+        snapshot {
+          basePrice
+          currency
+        }
+      }
+    }
+  }
+}
+```
+
+### Checkout can refuse a repriced cart
+
+Signing in, signing out or a change to the member's price list can move the
+cart's prices after the buyer saw them. Checkout then refuses rather than
+charging a total nobody showed. `checkoutErrorReason(error)` from `@cmssy/core`
+names the case; `CmssyGraphqlError.reason` carries the raw value.
+
+| Reason                  | What happened                                                         | What to do                                                       |
+| ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `CART_REPRICED`         | The buyer's prices changed since the cart was read                    | Read the cart again, show the new total, let the buyer check out |
+| `CART_CURRENCY_CHANGED` | The buyer's price list prices a line in another currency than the cart | Remove that line (`extensions.itemId`) and add the product again |
+
+```ts
+import { checkoutErrorReason } from "@cmssy/core";
+
+try {
+  await checkout(input);
+} catch (error) {
+  const reason = checkoutErrorReason(error);
+  if (reason === "CART_REPRICED") return { refreshCart: true };
+  if (reason === "CART_CURRENCY_CHANGED") return { removeStaleLine: true };
+  throw error;
+}
+```
 
 ## The rules that still apply
 
