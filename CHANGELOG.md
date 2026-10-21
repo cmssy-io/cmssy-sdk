@@ -6,6 +6,12 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.10.0
+
+**Nothing to change.** `@cmssy/types` 0.64.0 adds `companyId` and `companyName`
+to `CmssyWebhookOrder`: the company the ordering member belongs to, `null` for
+an order placed without one.
+
 ## 19.9.0
 
 **Nothing to change.** `@cmssy/types` 0.63.0 adds the account events cmssy

@@ -146,6 +146,8 @@ describe("orderProgress: one step a buyer reads", () => {
       currency: "PLN",
       customerId: null,
       customerEmail: "b@example.com",
+      companyId: null,
+      companyName: null,
       paymentProvider: null,
       paymentReference: null,
       refundedAmount: 0,
