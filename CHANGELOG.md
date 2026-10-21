@@ -6,6 +6,12 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.11.2
+
+**Nothing to change.** `@cmssy/types` 0.66.0 adds `priceSourceValues` /
+`CmssyPriceSource`: where a buyer's unit price came from (`catalogue`,
+`price_list_entry`, `price_list_percent`).
+
 ## 19.11.1
 
 **Nothing to change.** `@cmssy/types` 0.65.0: the order, cart, shipment and
