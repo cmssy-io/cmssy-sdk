@@ -32,11 +32,14 @@ const fetchPage = vi.hoisted(() => vi.fn());
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
 const resolveWorkspaceId = vi.hoisted(() => vi.fn());
 const resolveForms = vi.hoisted(() => vi.fn());
+const createCmssyClient = vi.hoisted(() =>
+  vi.fn((_config: unknown) => ({ resolveWorkspaceId })),
+);
 vi.mock("@cmssy/react", async (importActual) => {
   const actual = await importActual<typeof import("@cmssy/react")>();
   return {
     ...actual,
-    createCmssyClient: () => ({ resolveWorkspaceId }),
+    createCmssyClient,
   };
 });
 vi.mock("@cmssy/core/internal", async (importActual) => {
@@ -872,6 +875,21 @@ describe("createCmssyPage", () => {
     const element = unwrap(await Page({ params: params(["about"]) }));
     expect(element.props.auth).toBeUndefined();
     expect(element.props.workspace).toBeUndefined();
+  });
+});
+
+describe("createCmssyPage sales channel (CMS-2123)", () => {
+  it("hands the config's channel to the client its block loaders query through", () => {
+    createCmssyClient.mockClear();
+
+    createCmssyPage({ ...CONFIG, channel: "horeca" }, []);
+
+    expect(createCmssyClient).toHaveBeenCalledWith({
+      apiUrl: CONFIG.apiUrl,
+      org: "acme",
+      workspaceSlug: "pilot",
+      channel: "horeca",
+    });
   });
 });
 

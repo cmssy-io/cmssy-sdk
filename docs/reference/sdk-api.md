@@ -137,12 +137,17 @@ A `TypedDocumentNode` (AST), a `TypedDocumentString` and a plain string all
 work, so an app never needs `graphql` at runtime just to print a document it
 already generated.
 
-`CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string }` -
-`apiUrl` [defaults to cmssy cloud](./delivery-api.md); `org` + `workspaceSlug`
-form the org-scoped delivery path `{apiBase}/public/{org}/{workspaceSlug}/graphql`,
-where `apiBase` is `apiUrl` with its trailing `/graphql` stripped (default
-`https://api.cmssy.io`). A workspace slug only needs to be unique within its
-organization. The client has exactly three members:
+`CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string;
+channel?: string }` - `apiUrl` [defaults to cmssy cloud](./delivery-api.md);
+`org` + `workspaceSlug` form the org-scoped delivery path
+`{apiBase}/public/{org}/{workspaceSlug}/graphql`, where `apiBase` is `apiUrl`
+with its trailing `/graphql` stripped (default `https://api.cmssy.io`). A
+workspace slug only needs to be unique within its organization. `channel` is
+the sales channel the storefront sells through: `query`, `queryScoped` and
+`graphqlRequest` fill `$channel` from it on any operation that declares it and
+does not pass one - an explicit value, `null` included, wins (see
+[Sales channels](../auth/member-auth.md#sales-channels)). The client has exactly
+three members:
 
 ```ts
 interface CmssyClient {
@@ -310,17 +315,34 @@ satisfy as they come. All from `@cmssy/core`.
 
 ### Buyer prices
 
-`await getBuyerPrices(config, items, { workspaceId, accessToken, fetch?, signal?, retry? })`
+`await getBuyerPrices(config, items, { workspaceId, accessToken, channel?, fetch?, signal?, retry? })`
 reads the signed-in member's prices - `account.prices` on the delivery route,
 with the member's token. `items` is up to `CMSSY_BUYER_PRICES_MAX_ITEMS` (100)
 `CmssyPriceQueryItem`s - `{ recordId, variantKey? }`; an empty list sends
 nothing, a longer one or a missing token throws before the network. It returns
 `CmssyBuyerPrice[]`: `recordId`, `variantKey`, `currency`, `price`, `priceMax`,
-`listed`, `minQuantity`, `maxQuantity`, `increment`, `tiers`
+`listed`, `listSource` (`CmssyPriceListSource`, one of `priceListSourceValues`:
+`MEMBER`, `COMPANY`, `CHANNEL`; `null` for the catalogue), `minQuantity`, `maxQuantity`, `increment`, `tiers`
 (`CmssyPriceTier[]`), `displayMode` (`CmssyPriceDisplayMode`, one of
 `priceDisplayModeValues`: `gross`, `net`), `taxRate`, and `priceAmount`,
 `priceMaxAmount`, `basePriceAmount` (`CmssyTaxedAmount` - `{ net, tax,
 gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
+`channel` prices on that sales channel; left out, the config's `channel` is
+used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way.
+
+`await getPublicPrices(config, items, { workspaceId, channel?, locale?, fetch?, signal?, retry? })`
+reads a sales channel's prices for an anonymous visitor - `public.pricing.prices`,
+no member token, cacheable. `items` is up to `CMSSY_PUBLIC_PRICES_MAX_ITEMS`
+(50); the channel comes from the options, else the config, and a missing one
+throws before the network. It returns `CmssyPublicPriceResult`: `items`
+(`CmssyPublicPricedRecord[]` - `{ record, price }`, `price` a `CmssyBuyerPrice`
+or `null` when withheld), `displayMode`, `priceWithheld`
+(`CmssyPriceWithheldReason | null`, one of `priceWithheldReasonValues`:
+`MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`) and `nextChangeAt` (ISO string or
+`null`). `getPublicCatalogPrices(config, query, options)` takes the
+`getBuyerCatalogPrices` listing arguments and returns `CmssyPublicCatalogPage` -
+the same plus `total` and `hasMore`. See
+[Anonymous channel prices](../auth/member-auth.md#anonymous-channel-prices).
 
 `checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
 `checkoutErrorReasonValues`: `CART_REPRICED`, `CART_CURRENCY_CHANGED`,
@@ -331,10 +353,18 @@ the API refused the cart for that reason, `undefined` otherwise.
 `{ reason, quantity, minQuantity, maxQuantity, increment, itemId }` - for a
 quantity reason, from checkout or from adding or updating a line.
 `CmssyGraphqlError.reason` carries the first error's `extensions.reason` raw.
+`channelRefusal(error)` returns `CmssyChannelRefusal` - `{ reason, channel }`,
+`reason` one of `channelRefusalReasonValues`: `UNKNOWN_CHANNEL` (a key the
+workspace does not have), `MEMBERS_ONLY` or `COMPANY_MEMBERS_ONLY` (the
+channel's price access refused the buyer) - `undefined` otherwise.
 
 Also exported: `BUYER_PRICES_QUERY`, `BuyerPricesResult`,
-`BuyerPricesVariables`, `GetBuyerPricesOptions`, `CmssyMemberPriceList`. All
-from `@cmssy/core`.
+`BuyerPricesVariables`, `GetBuyerPricesOptions`, `CmssyMemberPriceList`,
+`PUBLIC_PRICES_QUERY`, `PUBLIC_CATALOG_PRICES_QUERY`, `PublicPricesResult`,
+`PublicPricesVariables`, `PublicCatalogPricesResult`,
+`PublicCatalogPricesVariables`, `GetPublicPricesOptions`,
+`GetPublicCatalogPricesQuery`, `CmssyPublicPricedRecordData`. All from
+`@cmssy/core`.
 
 ### `@cmssy/core/testing` and `/preflight`
 

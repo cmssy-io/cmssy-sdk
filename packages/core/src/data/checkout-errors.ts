@@ -1,4 +1,8 @@
 import { CmssyGraphqlError } from "./http";
+import {
+  priceWithheldReasonValues,
+  type CmssyPriceWithheldReason,
+} from "./public-prices";
 
 export const quantityRuleReasonValues = [
   "QUANTITY_BELOW_MIN",
@@ -73,6 +77,43 @@ export function quantityRuleViolation(
       increment,
       itemId: typeof itemId === "string" ? itemId : null,
     };
+  }
+  return undefined;
+}
+
+export const channelRefusalReasonValues = [
+  "UNKNOWN_CHANNEL",
+  ...priceWithheldReasonValues,
+] as const;
+
+export type CmssyChannelRefusalReason =
+  (typeof channelRefusalReasonValues)[number];
+
+export interface CmssyChannelRefusal {
+  reason: CmssyChannelRefusalReason;
+  channel: string;
+}
+
+const WITHHELD_REASONS: ReadonlySet<string> = new Set(
+  priceWithheldReasonValues,
+);
+
+export function channelRefusal(
+  error: unknown,
+): CmssyChannelRefusal | undefined {
+  if (!(error instanceof CmssyGraphqlError)) return undefined;
+  for (const entry of error.errors) {
+    const ext = entry.extensions;
+    if (!ext || typeof ext.channel !== "string") continue;
+    if (typeof ext.reason === "string" && WITHHELD_REASONS.has(ext.reason)) {
+      return {
+        reason: ext.reason as CmssyPriceWithheldReason,
+        channel: ext.channel,
+      };
+    }
+    if (ext.code === "BAD_USER_INPUT" && ext.reason === undefined) {
+      return { reason: "UNKNOWN_CHANNEL", channel: ext.channel };
+    }
   }
   return undefined;
 }

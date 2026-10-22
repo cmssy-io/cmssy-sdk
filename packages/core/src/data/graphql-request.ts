@@ -4,7 +4,7 @@ import {
   type CmssyClientConfig,
   type FetchLike,
 } from "../content/content-client";
-import type { CmssyOperationInput } from "./document";
+import { documentText, type CmssyOperationInput } from "./document";
 import { postGraphql, type RetryOption } from "./http";
 
 export interface GraphqlRequestOptions {
@@ -28,11 +28,29 @@ export async function graphqlRequest<
   const url = options.public
     ? resolvePublicUrl(config)
     : resolveApiUrl(config.apiUrl);
-  return postGraphql<Result, Variables>(url, query, variables, {
-    fetch: options.fetch,
-    signal: options.signal,
-    headers: options.headers,
-    retry: options.retry,
-    label,
-  });
+  const text = documentText(query);
+  return postGraphql<Result, Variables>(
+    url,
+    text,
+    withConfigChannel(config, text, variables),
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      headers: options.headers,
+      retry: options.retry,
+      label,
+    },
+  );
+}
+
+function withConfigChannel<Variables>(
+  config: CmssyClientConfig,
+  document: string,
+  variables: Variables,
+): Variables {
+  const channel = config.channel?.trim();
+  if (!channel || !/\$channel\b/.test(document)) return variables;
+  const current = (variables ?? {}) as Record<string, unknown>;
+  if (current.channel !== undefined) return variables;
+  return { ...current, channel } as Variables;
 }

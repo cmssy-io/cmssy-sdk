@@ -57,6 +57,7 @@ export interface CmssyConfig<L extends CmssyLayout = CmssyLayout> {
   apiUrl?: string;
   org: string;
   workspaceSlug: string;
+  channel?: string;
   draftSecret: string;
   devToken?: string;
   editorOrigin?: string | string[];

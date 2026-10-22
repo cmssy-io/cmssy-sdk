@@ -13,16 +13,20 @@ export interface QueryScopedOptions extends Omit<
   workspaceId?: string;
 }
 
-export type ScopedVariables<Variables> = "workspaceId" extends keyof Variables
+type WorkspaceScoped<Variables> = "workspaceId" extends keyof Variables
   ? Omit<Variables, "workspaceId"> & { workspaceId?: string | null }
   : Variables;
 
-export type VariablesParameter<Variables, Options> = Record<
-  string,
-  never
-> extends Variables
-  ? [variables?: Variables, options?: Options]
-  : [variables: Variables, options?: Options];
+export type ScopedVariables<Variables> = "channel" extends keyof Variables
+  ? Omit<WorkspaceScoped<Variables>, "channel"> & {
+      channel?: string | null;
+    }
+  : WorkspaceScoped<Variables>;
+
+export type VariablesParameter<Variables, Options> =
+  Record<string, never> extends Variables
+    ? [variables?: Variables, options?: Options]
+    : [variables: Variables, options?: Options];
 
 export interface CmssyClient {
   readonly config: CmssyClientConfig;

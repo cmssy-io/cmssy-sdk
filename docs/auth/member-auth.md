@@ -314,6 +314,124 @@ try {
 }
 ```
 
+## Sales channels
+
+A workspace can sell one catalogue to several audiences - a HoReCa storefront
+and a retail one, say - through **sales channels**. A price list published to a
+channel prices that channel's visitors. Name the channel your storefront sells
+through once, in the config:
+
+```ts
+export const cmssy = defineCmssyConfig({
+  org: process.env.CMSSY_ORG_SLUG,
+  workspaceSlug: process.env.CMSSY_WORKSPACE_SLUG,
+  draftSecret: process.env.CMSSY_DRAFT_SECRET,
+  channel: "horeca",
+});
+```
+
+`channel` on the config (`CmssyClientConfig` or `CmssyConfig`) fills
+`$channel` on every operation that declares it and does not pass one -
+`queryScoped`, `query` and `graphqlRequest` alike, and `getBuyerPrices` /
+`getBuyerCatalogPrices`. Pass `channel` yourself to pick another channel for
+one call, or `null` for the cart without a channel. Without a `channel` in the
+config nothing changes: an operation that does not send one behaves exactly as
+before channels existed.
+
+**The cart is per channel.** Every cart field takes an optional `channel` -
+`get`, `addItem` and `updateItem` (in the input), `removeItem`, `clear`,
+`applyDiscount`, `removeDiscount`, `setShippingAddress`, `setShippingMethod`,
+`merge` and `checkout` (in the input). A buyer has one active cart per channel,
+and the channel is frozen when the cart is created: switching channel switches
+cart, it never reprices one. `Cart.channel` is the key the cart was started on,
+`null` for a cart without one. Declare `$channel` and the config fills it:
+
+```graphql
+query ChannelCart($workspaceId: ID!, $channel: String) {
+  cart {
+    get(workspaceId: $workspaceId, channel: $channel) {
+      id
+      channel
+      totalGross
+    }
+  }
+}
+```
+
+`merge` at sign-in folds every guest cart of the session into the member's cart
+on the same channel; its `channel` only picks which cart the response returns.
+
+**Signed-in prices take the channel too.** With a channel, `account.prices` and
+`account.catalogPrices` price each product from the member's own list, then the
+channel's dated list, then its base list, then the catalogue.
+`CmssyBuyerPrice.listSource` names whose list priced the row - `MEMBER`,
+`COMPANY` or `CHANNEL` (`priceListSourceValues`), `null` for the catalogue.
+
+### Anonymous channel prices
+
+A visitor who is not signed in reads the channel's prices from
+`public.pricing` - no member token, no session, so the response is the same for
+every visitor on that channel and safe to cache:
+
+```ts
+import { getPublicPrices } from "@cmssy/core";
+
+const { items, displayMode, priceWithheld, nextChangeAt } =
+  await getPublicPrices(
+    cmssy,
+    products.map((product) => ({ recordId: product.id })),
+    { workspaceId },
+  );
+```
+
+`getPublicPrices(config, items, { workspaceId, channel?, locale? })` takes up to
+`CMSSY_PUBLIC_PRICES_MAX_ITEMS` (50) items; `getPublicCatalogPrices(config,
+query, { workspaceId, channel? })` lists, filters and sorts a model by the
+channel's price, with the same arguments as `getBuyerCatalogPrices`. Both read
+the channel from the options, else from the config, and throw before the network
+when neither has one. Each item is `{ record, price }`; an unknown or hidden
+product is left out.
+
+- **`priceWithheld`** is set when the channel shows prices only to signed-in
+  customers (`MEMBERS_ONLY`) or to buyers of an approved company
+  (`COMPANY_MEMBERS_ONLY`) - one of `priceWithheldReasonValues`. Every `price`
+  is then `null` and the catalogue page is empty: list the products through
+  `public.model.records` and show "log in for prices".
+- **`nextChangeAt`** is when the channel's prices next change - the next start
+  or end of a dated list. Use it as the revalidation deadline of a cached page
+  and as JSON-LD `Offer.priceValidUntil`.
+- **`displayMode`** is the channel's net or gross default; the price amounts are
+  already split into `{ net, tax, gross }`.
+
+The raw documents are `PUBLIC_PRICES_QUERY` and `PUBLIC_CATALOG_PRICES_QUERY`.
+
+### Channel refusals
+
+`channelRefusal(error)` reads why the API refused a channel:
+`{ reason, channel }` with `reason` one of `channelRefusalReasonValues`.
+
+| `reason`               | When                                                                                 | What the storefront does                       |
+| ---------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `UNKNOWN_CHANNEL`      | The key is not a channel of the workspace, or not a valid key (`BAD_USER_INPUT`)     | Fix the config - the channel was deleted or misspelt |
+| `MEMBERS_ONLY`         | The channel sells to signed-in customers only (`UNAUTHORIZED`)                       | Send the visitor to sign in                    |
+| `COMPANY_MEMBERS_ONLY` | The channel sells to buyers of an approved company only (`UNAUTHORIZED` or `FORBIDDEN`) | Explain the account needs an approved company |
+
+The price-access refusals come from cart writes, merge, checkout and
+`account.prices` / `account.catalogPrices`; `public.pricing` withholds instead
+of refusing.
+
+```ts
+import { channelRefusal } from "@cmssy/core";
+
+try {
+  await addToCart(input);
+} catch (error) {
+  const refusal = channelRefusal(error);
+  if (refusal?.reason === "MEMBERS_ONLY") return { signIn: true };
+  throw error;
+}
+```
+
 ## The rules that still apply
 
 These are the parts the removed helpers got right, and the parts worth copying
