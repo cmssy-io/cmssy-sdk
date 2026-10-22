@@ -6,6 +6,23 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.16.0
+
+**Nothing to change.** Sales channels: a `channel` in the config
+(`CmssyClientConfig`, `CmssyConfig`) fills `$channel` on every operation that
+declares it and does not pass one - cart reads and writes, checkout,
+`getBuyerPrices` / `getBuyerCatalogPrices` (which now declare it, and take a
+per-call `channel`). No channel in the config sends nothing new.
+`getPublicPrices` / `getPublicCatalogPrices` read a channel's prices for an
+anonymous visitor from `public.pricing`, with `priceWithheld`
+(`priceWithheldReasonValues`) and `nextChangeAt`. Buyer price rows carry
+`listSource` (`priceListSourceValues`: `MEMBER`, `COMPANY`, `CHANNEL`).
+`channelRefusal(error)` names an unknown channel and the price-access refusals
+(`MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`). The vendored SDL adds `Cart.channel`,
+the cart and checkout `channel` arguments, `public.pricing` and the order's
+channel and pricing chain. `@cmssy/types` 0.67.0. Needs a cmssy API that serves
+sales channels.
+
 ## 19.15.0
 
 **Nothing to change.** `getBuyerPrices` and `getBuyerCatalogPrices` rows carry

@@ -39,6 +39,11 @@ Every operation is **workspace-scoped**, in one of two ways:
 await client.queryScoped(MY_QUERY, { modelSlug: "products", limit: 20 });
 ```
 
+A storefront that sells through a sales channel sets `channel` in the config,
+and the SDK fills `$channel` the same way on any operation that declares it -
+the cart, checkout and the price reads. See
+[Sales channels](../auth/member-auth.md#sales-channels).
+
 ## Wrapped by the SDK
 
 You normally never write these - the listed helper calls them for you.

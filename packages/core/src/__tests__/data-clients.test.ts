@@ -213,6 +213,121 @@ describe("createCmssyClient().queryScoped", () => {
   });
 });
 
+describe("the config's sales channel (CMS-2123)", () => {
+  const onHoreca = { ...config, channel: "horeca" };
+  const CART_GET = `query CartGet($workspaceId: ID!, $channel: String) {
+  cart { get(workspaceId: $workspaceId, channel: $channel) { id } }
+}`;
+  const ADD_ITEM = `mutation CartAdd($channel: String) {
+  cart { addItem(input: { recordId: "p1", quantity: 1, channel: $channel }) { id } }
+}`;
+  const cartPayload = { data: { cart: { get: { id: "c1" } } } };
+
+  it("fills $channel on a cart read through queryScoped when the document declares it", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+
+    await createCmssyClient(onHoreca).queryScoped(
+      CART_GET,
+      {},
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables).toEqual({ workspaceId: "w1", channel: "horeca" });
+  });
+
+  it("fills $channel on a mutation that carries it inside an input", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+
+    await createCmssyClient(onHoreca).queryScoped(
+      ADD_ITEM,
+      {},
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables).toEqual({ channel: "horeca" });
+  });
+
+  it("fills $channel through query and graphqlRequest too", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+
+    await createCmssyClient(onHoreca).query(
+      CART_GET,
+      { workspaceId: "w1" },
+      { fetch, public: true },
+    );
+    await graphqlRequest(
+      onHoreca,
+      CART_GET,
+      { workspaceId: "w1" },
+      { fetch, public: true },
+    );
+
+    expect(calls[0]?.variables.channel).toBe("horeca");
+    expect(calls[1]?.variables.channel).toBe("horeca");
+  });
+
+  it("keeps the call's own channel, and an explicit null for the no-channel cart", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+    const client = createCmssyClient(onHoreca);
+
+    await client.queryScoped(
+      CART_GET,
+      { channel: "retail" },
+      { fetch, workspaceId: "w1" },
+    );
+    await client.queryScoped(
+      CART_GET,
+      { channel: null },
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables.channel).toBe("retail");
+    expect(calls[1]?.variables.channel).toBeNull();
+  });
+
+  it("sends no channel to a document that does not declare one", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: {
+        public: {
+          model: { records: { items: [], total: 0, hasMore: false } },
+        },
+      },
+    });
+
+    await createCmssyClient(onHoreca).queryScoped(
+      MODEL_RECORDS_QUERY,
+      { modelSlug: "posts" },
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables).not.toHaveProperty("channel");
+  });
+
+  it("sends no channel when the config has none, so today's storefronts are untouched", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+
+    await createCmssyClient(config).queryScoped(
+      CART_GET,
+      {},
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables).toEqual({ workspaceId: "w1" });
+  });
+
+  it("does not mistake a longer variable name for $channel", async () => {
+    const { fetch, calls } = capturingFetch(cartPayload);
+
+    await createCmssyClient(onHoreca).queryScoped(
+      "query Q($channelKey: String) { anything(key: $channelKey) }",
+      {},
+      { fetch, workspaceId: "w1" },
+    );
+
+    expect(calls[0]?.variables).toEqual({});
+  });
+});
+
 describe("clients built from the same config share the workspace id (CMS-1618)", () => {
   function countingFetch() {
     let siteConfigCalls = 0;

@@ -7,10 +7,13 @@ import {
   getBuyerCatalogPrices,
   getBuyerPrices,
   priceDisplayModeValues,
+  priceListSourceValues,
   type CmssyBuyerCatalogPage,
   type CmssyBuyerPrice,
 } from "../data/buyer-prices";
 import {
+  channelRefusal,
+  channelRefusalReasonValues,
   checkoutErrorReason,
   checkoutErrorReasonValues,
   quantityRuleReasonValues,
@@ -50,6 +53,7 @@ const RANGE: CmssyBuyerPrice = {
   listed: true,
   basePrice: 1000,
   source: "price_list_percent",
+  listSource: "COMPANY",
   minQuantity: 6,
   maxQuantity: 120,
   increment: 6,
@@ -70,6 +74,7 @@ const VARIANT: CmssyBuyerPrice = {
   listed: false,
   basePrice: 500,
   source: "catalogue",
+  listSource: null,
   minQuantity: 1,
   maxQuantity: 99,
   increment: 1,
@@ -108,6 +113,50 @@ describe("getBuyerPrices", () => {
       workspaceId: "w1",
       items: [{ recordId: "p1" }, { recordId: "p2", variantKey: "v1" }],
     });
+  });
+
+  it("prices on the config's channel, declared and passed through to account.prices", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { prices: [RANGE] } },
+    });
+
+    await getBuyerPrices(
+      { ...config, channel: "horeca" },
+      [{ recordId: "p1" }],
+      { workspaceId: "w1", accessToken: "tok", fetch },
+    );
+
+    expect(calls[0]?.query).toMatch(/\$channel: String\b/);
+    expect(calls[0]?.query).toMatch(/prices\([^)]*channel: \$channel/);
+    expect(calls[0]?.query).toMatch(/source\s+listSource\s+minQuantity/);
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      items: [{ recordId: "p1" }],
+      channel: "horeca",
+    });
+  });
+
+  it("lets the call pick another channel, or none with null, over the config's", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { prices: [] } },
+    });
+    const onHoreca = { ...config, channel: "horeca" };
+
+    await getBuyerPrices(onHoreca, [{ recordId: "p1" }], {
+      workspaceId: "w1",
+      accessToken: "tok",
+      channel: "retail",
+      fetch,
+    });
+    await getBuyerPrices(onHoreca, [{ recordId: "p1" }], {
+      workspaceId: "w1",
+      accessToken: "tok",
+      channel: null,
+      fetch,
+    });
+
+    expect(calls[0]?.variables.channel).toBe("retail");
+    expect(calls[1]?.variables.channel).toBeNull();
   });
 
   it("drops an empty or null variantKey rather than sending it", async () => {
@@ -341,6 +390,59 @@ describe("quantityRuleViolation", () => {
   });
 });
 
+describe("channelRefusal", () => {
+  it("names a channel the workspace does not have (BAD_USER_INPUT with extensions.channel)", async () => {
+    const error = await checkoutFailure({
+      code: "BAD_USER_INPUT",
+      channel: "horeka",
+    });
+
+    expect(channelRefusal(error)).toEqual({
+      reason: "UNKNOWN_CHANNEL",
+      channel: "horeka",
+    });
+  });
+
+  it.each([
+    ["MEMBERS_ONLY", "UNAUTHORIZED"],
+    ["COMPANY_MEMBERS_ONLY", "FORBIDDEN"],
+  ])(
+    "names the %s price-access refusal (%s) and its channel",
+    async (reason, code) => {
+      const error = await checkoutFailure({ code, reason, channel: "horeca" });
+
+      expect(channelRefusal(error)).toEqual({ reason, channel: "horeca" });
+      expect(checkoutErrorReason(error)).toBeUndefined();
+    },
+  );
+
+  it("lists the unknown channel and every price-access refusal", () => {
+    expect([...channelRefusalReasonValues].sort()).toEqual(
+      ["COMPANY_MEMBERS_ONLY", "MEMBERS_ONLY", "UNKNOWN_CHANNEL"].sort(),
+    );
+  });
+
+  it("returns undefined for a BAD_USER_INPUT that names no channel", async () => {
+    const error = await checkoutFailure({ code: "BAD_USER_INPUT" });
+
+    expect(channelRefusal(error)).toBeUndefined();
+  });
+
+  it("returns undefined for an admin publishing conflict that names a channel", async () => {
+    const error = await checkoutFailure({
+      code: "CONFLICT",
+      reason: "CHANNEL_BASE_TAKEN",
+      channel: "horeca",
+    });
+
+    expect(channelRefusal(error)).toBeUndefined();
+  });
+
+  it("returns undefined for an error that is not a GraphQL refusal", () => {
+    expect(channelRefusal(new Error("MEMBERS_ONLY"))).toBeUndefined();
+  });
+});
+
 describe("getBuyerCatalogPrices", () => {
   const PAGE: CmssyBuyerCatalogPage = {
     total: 2,
@@ -355,6 +457,7 @@ describe("getBuyerCatalogPrices", () => {
         listed: true,
         basePrice: 3000,
         source: "price_list_entry",
+        listSource: "CHANNEL",
         minQuantity: 12,
         maxQuantity: 96,
         increment: 12,
@@ -402,6 +505,26 @@ describe("getBuyerCatalogPrices", () => {
     });
   });
 
+  it("lists on the config's channel", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { catalogPrices: PAGE } },
+    });
+
+    await getBuyerCatalogPrices(
+      { ...config, channel: "horeca" },
+      { modelSlug: "products" },
+      { workspaceId: "w1", accessToken: "tok", fetch },
+    );
+
+    expect(calls[0]?.query).toMatch(/\$channel: String\b/);
+    expect(calls[0]?.query).toMatch(/channel: \$channel\s*\)/);
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      modelSlug: "products",
+      channel: "horeca",
+    });
+  });
+
   it("refuses without a member token, before the network", async () => {
     const { fetch, calls } = capturingFetch({});
 
@@ -427,5 +550,20 @@ describe("priceDisplayModeValues", () => {
     expect(
       isEnumType(mode) ? mode.getValues().map((v) => v.name).sort() : [],
     ).toEqual([...priceDisplayModeValues].sort());
+  });
+});
+
+describe("priceListSourceValues", () => {
+  it("lists exactly the PriceListSource values the API serves, CHANNEL included", () => {
+    const schema = buildSchema(
+      readFileSync(new URL("../../../../schema.graphql", import.meta.url), "utf8"),
+    );
+    const source = schema.getType("PriceListSource");
+
+    expect(isEnumType(source)).toBe(true);
+    expect(
+      isEnumType(source) ? source.getValues().map((v) => v.name).sort() : [],
+    ).toEqual([...priceListSourceValues].sort());
+    expect(priceListSourceValues).toContain("CHANNEL");
   });
 });

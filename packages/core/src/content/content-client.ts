@@ -1,5 +1,5 @@
 import type {
-  CmssyClientConfig,
+  CmssyClientConfig as CmssyBaseClientConfig,
   RawBlock,
   CmssyPageData,
   RawLayoutBlock,
@@ -12,8 +12,11 @@ import type {
 import { typedOperation } from "../data/document";
 import { postGraphql, type RetryOption } from "../data/http";
 
+export interface CmssyClientConfig extends CmssyBaseClientConfig {
+  channel?: string;
+}
+
 export type {
-  CmssyClientConfig,
   RawBlock,
   CmssyPageData,
   RawLayoutBlock,

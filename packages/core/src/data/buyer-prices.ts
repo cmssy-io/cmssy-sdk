@@ -20,6 +20,10 @@ export const priceDisplayModeValues = ["gross", "net"] as const;
 
 export type CmssyPriceDisplayMode = (typeof priceDisplayModeValues)[number];
 
+export const priceListSourceValues = ["MEMBER", "COMPANY", "CHANNEL"] as const;
+
+export type CmssyPriceListSource = (typeof priceListSourceValues)[number];
+
 export interface CmssyTaxedAmount {
   net: number;
   tax: number;
@@ -35,6 +39,7 @@ export interface CmssyBuyerPrice {
   listed: boolean;
   basePrice: number;
   source: CmssyPriceSource;
+  listSource: CmssyPriceListSource | null;
   minQuantity: number;
   maxQuantity: number;
   increment: number;
@@ -53,6 +58,7 @@ export interface CmssyMemberPriceList {
 export interface BuyerPricesVariables {
   workspaceId: string;
   items: CmssyPriceQueryItem[];
+  channel?: string | null;
 }
 
 export interface BuyerPricesResult {
@@ -62,9 +68,13 @@ export interface BuyerPricesResult {
 export const BUYER_PRICES_QUERY = typedOperation<
   BuyerPricesResult,
   BuyerPricesVariables
->(`query BuyerPrices($workspaceId: ID!, $items: [PriceQueryItem!]!) {
+>(`query BuyerPrices(
+  $workspaceId: ID!
+  $items: [PriceQueryItem!]!
+  $channel: String
+) {
   account {
-    prices(workspaceId: $workspaceId, items: $items) {
+    prices(workspaceId: $workspaceId, items: $items, channel: $channel) {
       recordId
       variantKey
       currency
@@ -73,6 +83,7 @@ export const BUYER_PRICES_QUERY = typedOperation<
       listed
       basePrice
       source
+      listSource
       minQuantity
       maxQuantity
       increment
@@ -104,6 +115,7 @@ export const BUYER_PRICES_QUERY = typedOperation<
 export interface GetBuyerPricesOptions {
   workspaceId: string;
   accessToken: string;
+  channel?: string | null;
   fetch?: FetchLike;
   signal?: AbortSignal;
   retry?: RetryOption;
@@ -133,6 +145,7 @@ export async function getBuyerPrices(
       items: items.map(({ recordId, variantKey }) =>
         variantKey ? { recordId, variantKey } : { recordId },
       ),
+      ...channelVariable(options.channel),
     },
     {
       public: true,
@@ -159,6 +172,7 @@ export interface CmssyBuyerCatalogPrice {
   listed: boolean;
   basePrice: number;
   source: CmssyPriceSource;
+  listSource: CmssyPriceListSource | null;
   minQuantity: number;
   maxQuantity: number;
   increment: number;
@@ -189,6 +203,7 @@ export interface BuyerCatalogPricesVariables {
   sort?: CmssyBuyerCatalogSort | null;
   limit?: number | null;
   offset?: number | null;
+  channel?: string | null;
 }
 
 export interface BuyerCatalogPricesResult {
@@ -211,6 +226,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
   $sort: BuyerCatalogSort
   $limit: Int
   $offset: Int
+  $channel: String
 ) {
   account {
     catalogPrices(
@@ -226,6 +242,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
       sort: $sort
       limit: $limit
       offset: $offset
+      channel: $channel
     ) {
       total
       hasMore
@@ -238,6 +255,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
         listed
         basePrice
         source
+        listSource
         minQuantity
         maxQuantity
         increment
@@ -265,7 +283,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
 
 export type GetBuyerCatalogPricesQuery = Omit<
   BuyerCatalogPricesVariables,
-  "workspaceId"
+  "workspaceId" | "channel"
 >;
 
 export async function getBuyerCatalogPrices(
@@ -281,7 +299,11 @@ export async function getBuyerCatalogPrices(
   const data = await graphqlRequest(
     config,
     BUYER_CATALOG_PRICES_QUERY,
-    { ...query, workspaceId: options.workspaceId },
+    {
+      ...query,
+      workspaceId: options.workspaceId,
+      ...channelVariable(options.channel),
+    },
     {
       public: true,
       fetch: options.fetch,
@@ -295,4 +317,10 @@ export async function getBuyerCatalogPrices(
     "buyer catalogue prices",
   );
   return data.account.catalogPrices;
+}
+
+function channelVariable(
+  channel: string | null | undefined,
+): { channel?: string | null } {
+  return channel === undefined ? {} : { channel };
 }

@@ -37,6 +37,7 @@ function makeBody(): string {
         customerEmail: "b@example.com",
         companyId: null,
         companyName: null,
+        channel: null,
         paymentProvider: "stripe",
         paymentReference: "pi_1",
         refundedAmount: 0,
