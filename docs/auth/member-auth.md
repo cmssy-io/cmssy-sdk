@@ -165,7 +165,11 @@ Each row is a `CmssyBuyerPrice`: `recordId`, `variantKey`, `currency`,
 `price`, `priceMax`, `listed`, the quantity rule (`minQuantity`,
 `maxQuantity`, `increment` - order in multiples of `increment`, `1` when any
 quantity goes) and the volume `tiers` this member gets. Amounts
-are in minor units. Pass `variantKey` (the delivery `ProductVariant.id`) for
+are in minor units. `displayMode` says how this buyer reads prices - `net` for
+a company buyer, `gross` for a consumer, unless the company overrides it - and
+`priceAmount`, `priceMaxAmount` and `basePriceAmount` split `price`,
+`priceMax` and `basePrice` into `{ net, tax, gross }` at `taxRate`. Show the
+side `displayMode` names rather than recomputing VAT in the storefront. Pass `variantKey` (the delivery `ProductVariant.id`) for
 one variant; leave it out on a variant product to get a range - `price` is the
 lowest, `priceMax` the highest, and `tiers` is empty. `listed` is true when a
 price list set the price, for a "your price" badge. A product the member
@@ -191,6 +195,13 @@ query BuyerPrices($workspaceId: ID!, $items: [PriceQueryItem!]!) {
       tiers {
         minQty
         price
+      }
+      displayMode
+      taxRate
+      priceAmount {
+        net
+        tax
+        gross
       }
     }
   }
@@ -237,6 +248,34 @@ query CartBasePrices($workspaceId: ID!) {
 }
 ```
 
+The cart, its lines, shipping methods and orders carry the same net/gross
+split for the buyer: `Cart.displayMode` and `taxRoundingMethod`,
+`Cart.amounts { subtotal discount shipping total }` (each
+`{ net tax gross }`), `CartItem.unit`, `line` and `taxRate`,
+`ShippingMethod.amount`, and on `PublicOrder` / `PublicOrderItem` the
+`amounts`, `displayMode`, `taxRoundingMethod`, `unit` and `line` frozen at
+checkout. VAT for a company buyer is rounded per line or per rate as the
+workspace (or the company) chose; a consumer is always per line.
+
+```graphql
+query CartAmounts($workspaceId: ID!) {
+  cart {
+    get(workspaceId: $workspaceId) {
+      displayMode
+      amounts {
+        subtotal { net tax gross }
+        shipping { net tax gross }
+        total { net tax gross }
+      }
+      items {
+        id
+        line { net tax gross }
+      }
+    }
+  }
+}
+```
+
 ### Checkout can refuse a repriced cart
 
 Signing in, signing out or a change to the member's price list can move the
@@ -248,6 +287,7 @@ names the case; `CmssyGraphqlError.reason` carries the raw value.
 | ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `CART_REPRICED`         | The buyer's prices changed since the cart was read                    | Read the cart again, show the new total, let the buyer check out |
 | `CART_CURRENCY_CHANGED` | The buyer's price list prices a line in another currency than the cart | Remove that line (`extensions.itemId`) and add the product again |
+| `BUYER_CHANGED`         | The cart was restamped for another buyer (company switch, guest cart bound at sign-in) | Read the cart again, show the new total, let the buyer check out |
 | `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
 | `QUANTITY_BELOW_MIN`    | A line is below the buyer's minimum                                   | Set the line to an allowed quantity                              |
 | `QUANTITY_ABOVE_MAX`    | A line is above the buyer's maximum                                   | Set the line to an allowed quantity                              |

@@ -16,6 +16,16 @@ export interface CmssyPriceTier {
   price: number;
 }
 
+export const priceDisplayModeValues = ["gross", "net"] as const;
+
+export type CmssyPriceDisplayMode = (typeof priceDisplayModeValues)[number];
+
+export interface CmssyTaxedAmount {
+  net: number;
+  tax: number;
+  gross: number;
+}
+
 export interface CmssyBuyerPrice {
   recordId: string;
   variantKey: string | null;
@@ -29,6 +39,11 @@ export interface CmssyBuyerPrice {
   maxQuantity: number;
   increment: number;
   tiers: CmssyPriceTier[];
+  displayMode: CmssyPriceDisplayMode;
+  taxRate: number;
+  priceAmount: CmssyTaxedAmount;
+  priceMaxAmount: CmssyTaxedAmount | null;
+  basePriceAmount: CmssyTaxedAmount;
 }
 
 export interface CmssyMemberPriceList {
@@ -64,6 +79,23 @@ export const BUYER_PRICES_QUERY = typedOperation<
       tiers {
         minQty
         price
+      }
+      displayMode
+      taxRate
+      priceAmount {
+        net
+        tax
+        gross
+      }
+      priceMaxAmount {
+        net
+        tax
+        gross
+      }
+      basePriceAmount {
+        net
+        tax
+        gross
       }
     }
   }
@@ -130,12 +162,18 @@ export interface CmssyBuyerCatalogPrice {
   minQuantity: number;
   maxQuantity: number;
   increment: number;
+  displayMode: CmssyPriceDisplayMode;
+  taxRate: number;
+  priceAmount: CmssyTaxedAmount;
+  priceMaxAmount: CmssyTaxedAmount | null;
+  basePriceAmount: CmssyTaxedAmount;
 }
 
 export interface CmssyBuyerCatalogPage {
   items: CmssyBuyerCatalogPrice[];
   total: number;
   hasMore: boolean;
+  displayMode: CmssyPriceDisplayMode;
 }
 
 export interface BuyerCatalogPricesVariables {
@@ -191,6 +229,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
     ) {
       total
       hasMore
+      displayMode
       items {
         recordId
         currency
@@ -202,6 +241,23 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
         minQuantity
         maxQuantity
         increment
+        displayMode
+        taxRate
+        priceAmount {
+          net
+          tax
+          gross
+        }
+        priceMaxAmount {
+          net
+          tax
+          gross
+        }
+        basePriceAmount {
+          net
+          tax
+          gross
+        }
       }
     }
   }

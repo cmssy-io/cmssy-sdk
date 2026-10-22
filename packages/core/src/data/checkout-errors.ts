@@ -11,6 +11,7 @@ export type CmssyQuantityRuleReason = (typeof quantityRuleReasonValues)[number];
 export const checkoutErrorReasonValues = [
   "CART_REPRICED",
   "CART_CURRENCY_CHANGED",
+  "BUYER_CHANGED",
   "PRODUCT_NOT_SOLD",
   ...quantityRuleReasonValues,
 ] as const;
