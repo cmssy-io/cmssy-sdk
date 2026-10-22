@@ -10,6 +10,8 @@ import {
 import {
   checkoutErrorReason,
   checkoutErrorReasonValues,
+  quantityRuleReasonValues,
+  quantityRuleViolation,
 } from "../data/checkout-errors";
 import { graphqlRequest } from "../data/graphql-request";
 import { CmssyGraphqlError, CmssyRequestError } from "../data/http";
@@ -45,6 +47,9 @@ const RANGE: CmssyBuyerPrice = {
   listed: true,
   basePrice: 1000,
   source: "price_list_percent",
+  minQuantity: 6,
+  maxQuantity: 120,
+  increment: 6,
   tiers: [],
 };
 
@@ -57,6 +62,9 @@ const VARIANT: CmssyBuyerPrice = {
   listed: false,
   basePrice: 500,
   source: "catalogue",
+  minQuantity: 1,
+  maxQuantity: 99,
+  increment: 1,
   tiers: [{ minQty: 10, price: 450 }],
 };
 
@@ -78,6 +86,7 @@ describe("getBuyerPrices", () => {
     expect(calls[0]?.headers.authorization).toBe("Bearer tok");
     expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
     expect(calls[0]?.query).toContain("query BuyerPrices");
+    expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       items: [{ recordId: "p1" }, { recordId: "p2", variantKey: "v1" }],
@@ -246,6 +255,66 @@ describe("checkoutErrorReason", () => {
   });
 });
 
+describe("quantityRuleViolation", () => {
+  it.each(quantityRuleReasonValues)(
+    "reads %s with the rule the quantity broke",
+    async (reason) => {
+      const error = await checkoutFailure({
+        code: "CONFLICT",
+        reason,
+        quantity: 7,
+        minQuantity: 6,
+        maxQuantity: 120,
+        increment: 6,
+        itemId: "line-1",
+      });
+
+      expect(checkoutErrorReason(error)).toBe(reason);
+      expect(quantityRuleViolation(error)).toEqual({
+        reason,
+        quantity: 7,
+        minQuantity: 6,
+        maxQuantity: 120,
+        increment: 6,
+        itemId: "line-1",
+      });
+    },
+  );
+
+  it("gives a null itemId when an add or update refused the quantity", async () => {
+    const error = await checkoutFailure({
+      code: "LIMIT_EXCEEDED",
+      reason: "QUANTITY_ABOVE_MAX",
+      quantity: 200,
+      minQuantity: 1,
+      maxQuantity: 120,
+      increment: 1,
+    });
+
+    expect(quantityRuleViolation(error)?.itemId).toBeNull();
+  });
+
+  it("returns undefined for another reason, a missing bound, or a non-GraphQL error", async () => {
+    expect(
+      quantityRuleViolation(
+        await checkoutFailure({ code: "CONFLICT", reason: "CART_REPRICED" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      quantityRuleViolation(
+        await checkoutFailure({
+          code: "BAD_USER_INPUT",
+          reason: "QUANTITY_NOT_ON_STEP",
+          quantity: 7,
+          minQuantity: 1,
+          maxQuantity: 99,
+        }),
+      ),
+    ).toBeUndefined();
+    expect(quantityRuleViolation(new Error("QUANTITY_BELOW_MIN"))).toBeUndefined();
+  });
+});
+
 describe("getBuyerCatalogPrices", () => {
   const PAGE: CmssyBuyerCatalogPage = {
     total: 2,
@@ -259,6 +328,9 @@ describe("getBuyerCatalogPrices", () => {
         listed: true,
         basePrice: 3000,
         source: "price_list_entry",
+        minQuantity: 12,
+        maxQuantity: 96,
+        increment: 12,
       },
     ],
   };
@@ -285,6 +357,7 @@ describe("getBuyerCatalogPrices", () => {
     expect(calls[0]?.url).toBe("https://api.test/public/acme/ws/graphql");
     expect(calls[0]?.headers.authorization).toBe("Bearer tok");
     expect(calls[0]?.query).toContain("query BuyerCatalogPrices");
+    expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       modelSlug: "products",

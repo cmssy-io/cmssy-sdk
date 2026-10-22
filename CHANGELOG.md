@@ -6,6 +6,17 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.14.0
+
+**Nothing to change.** `getBuyerPrices` and `getBuyerCatalogPrices` rows carry
+the buyer's quantity rule: `minQuantity`, `maxQuantity` and `increment` (order
+in multiples of it, `1` when any quantity goes). `checkoutErrorReason` also
+names `PRODUCT_NOT_SOLD`, `QUANTITY_BELOW_MIN`, `QUANTITY_ABOVE_MAX` and
+`QUANTITY_NOT_ON_STEP`; new `quantityRuleViolation(error)` reads the broken
+rule from checkout or from adding or updating a line. The vendored SDL drops
+`productSources` / `CartProductSource`, which the SDK never read. Needs a cmssy
+API that serves the quantity rules.
+
 ## 19.13.0
 
 **Nothing to change.** New `getBuyerCatalogPrices(config, query, options)`:

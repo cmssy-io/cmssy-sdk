@@ -82,8 +82,14 @@ export type {
 export {
   checkoutErrorReason,
   checkoutErrorReasonValues,
+  quantityRuleReasonValues,
+  quantityRuleViolation,
 } from "./data/checkout-errors";
-export type { CmssyCheckoutErrorReason } from "./data/checkout-errors";
+export type {
+  CmssyCheckoutErrorReason,
+  CmssyQuantityRuleReason,
+  CmssyQuantityRuleViolation,
+} from "./data/checkout-errors";
 
 export { fields } from "./fields";
 export {

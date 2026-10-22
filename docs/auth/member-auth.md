@@ -162,7 +162,9 @@ const prices = await getBuyerPrices(
    into the page you already rendered.
 
 Each row is a `CmssyBuyerPrice`: `recordId`, `variantKey`, `currency`,
-`price`, `priceMax`, `listed` and the volume `tiers` this member gets. Amounts
+`price`, `priceMax`, `listed`, the quantity rule (`minQuantity`,
+`maxQuantity`, `increment` - order in multiples of `increment`, `1` when any
+quantity goes) and the volume `tiers` this member gets. Amounts
 are in minor units. Pass `variantKey` (the delivery `ProductVariant.id`) for
 one variant; leave it out on a variant product to get a range - `price` is the
 lowest, `priceMax` the highest, and `tiers` is empty. `listed` is true when a
@@ -183,6 +185,9 @@ query BuyerPrices($workspaceId: ID!, $items: [PriceQueryItem!]!) {
       price
       priceMax
       listed
+      minQuantity
+      maxQuantity
+      increment
       tiers {
         minQty
         price
@@ -243,9 +248,19 @@ names the case; `CmssyGraphqlError.reason` carries the raw value.
 | ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `CART_REPRICED`         | The buyer's prices changed since the cart was read                    | Read the cart again, show the new total, let the buyer check out |
 | `CART_CURRENCY_CHANGED` | The buyer's price list prices a line in another currency than the cart | Remove that line (`extensions.itemId`) and add the product again |
+| `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
+| `QUANTITY_BELOW_MIN`    | A line is below the buyer's minimum                                   | Set the line to an allowed quantity                              |
+| `QUANTITY_ABOVE_MAX`    | A line is above the buyer's maximum                                   | Set the line to an allowed quantity                              |
+| `QUANTITY_NOT_ON_STEP`  | A line is not a multiple of the product's order step                  | Set the line to an allowed quantity                              |
+
+Adding or updating a line raises the three quantity reasons too, before the
+cart changes - `LIMIT_EXCEEDED` above the maximum, `BAD_USER_INPUT` below the
+minimum or off the step. `quantityRuleViolation(error)` reads the rule the
+quantity broke: `{ reason, quantity, minQuantity, maxQuantity, increment,
+itemId }`, `itemId` set only when checkout names the line.
 
 ```ts
-import { checkoutErrorReason } from "@cmssy/core";
+import { checkoutErrorReason, quantityRuleViolation } from "@cmssy/core";
 
 try {
   await checkout(input);
@@ -253,6 +268,8 @@ try {
   const reason = checkoutErrorReason(error);
   if (reason === "CART_REPRICED") return { refreshCart: true };
   if (reason === "CART_CURRENCY_CHANGED") return { removeStaleLine: true };
+  const rule = quantityRuleViolation(error);
+  if (rule) return { fixQuantity: rule };
   throw error;
 }
 ```

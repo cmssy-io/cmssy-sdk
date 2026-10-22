@@ -25,6 +25,9 @@ export interface CmssyBuyerPrice {
   listed: boolean;
   basePrice: number;
   source: CmssyPriceSource;
+  minQuantity: number;
+  maxQuantity: number;
+  increment: number;
   tiers: CmssyPriceTier[];
 }
 
@@ -55,6 +58,9 @@ export const BUYER_PRICES_QUERY = typedOperation<
       listed
       basePrice
       source
+      minQuantity
+      maxQuantity
+      increment
       tiers {
         minQty
         price
@@ -121,6 +127,9 @@ export interface CmssyBuyerCatalogPrice {
   listed: boolean;
   basePrice: number;
   source: CmssyPriceSource;
+  minQuantity: number;
+  maxQuantity: number;
+  increment: number;
 }
 
 export interface CmssyBuyerCatalogPage {
@@ -190,6 +199,9 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
         listed
         basePrice
         source
+        minQuantity
+        maxQuantity
+        increment
       }
     }
   }
