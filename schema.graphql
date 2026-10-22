@@ -1127,10 +1127,14 @@ input CreatePageTypeInput {
 }
 
 input CreatePriceListInput {
+  endsAt: DateTime
   name: String!
 
-  """0 to 99.99, at most two decimals. Defaults to 0."""
+  """
+  -1000 to 99.99, at most two decimals; negative is a markup. Defaults to 0.
+  """
   percentOff: Float
+  startsAt: DateTime
 }
 
 input CreateReturnInput {
@@ -3703,9 +3707,19 @@ type PooledUsage {
 A price list (Gold, Silver, ...): a percent off the catalogue plus fixed prices per product or variant, assigned to companies and to customers without a company.
 """
 type PriceList {
+  """
+  True when now is inside startsAt..endsAt, so the list prices its buyers.
+  """
+  active: Boolean!
+
   """Companies and customers the list is assigned to."""
   assignedCount: Int!
   createdAt: DateTime!
+
+  """
+  When the list stops pricing its buyers; null = never. From it on, they pay catalogue prices.
+  """
+  endsAt: DateTime
   id: ID!
   name: String!
 
@@ -3713,9 +3727,14 @@ type PriceList {
   overrideCount: Int!
 
   """
-  Percent taken off the catalogue price of every product the list has no fixed price for, 0 to 99.99.
+  Percent taken off the catalogue price of every product the list has no fixed price for, -1000 to 99.99. Negative is a markup: -10 charges 10% above the catalogue.
   """
   percentOff: Float!
+
+  """
+  When the list starts pricing its buyers; null = already. Before it, they pay catalogue prices.
+  """
+  startsAt: DateTime
   updatedAt: DateTime!
 }
 
@@ -3816,7 +3835,7 @@ type PriceListMutations {
   setEntry(entry: PriceListEntryInput!, priceListId: ID!): PriceListEntry!
 
   """
-  Rename the list or change its percent. Carts already priced from it keep their prices until the buyer adds again; orders keep theirs.
+  Rename the list, change its percent or its startsAt..endsAt window. Carts already priced from it keep their prices until the buyer adds again, except that a window opening or closing reprices them on their next read; orders keep theirs.
   """
   update(id: ID!, input: UpdatePriceListInput!): PriceList!
 }
@@ -5555,8 +5574,13 @@ input UpdatePageTypeInput {
 }
 
 input UpdatePriceListInput {
+  """Pass null to clear; leave out to keep."""
+  endsAt: DateTime
   name: String
   percentOff: Float
+
+  """Pass null to clear; leave out to keep."""
+  startsAt: DateTime
 }
 
 input UpdateProfileInput {
