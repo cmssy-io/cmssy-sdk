@@ -328,14 +328,20 @@ per cart, price read and order - `TaxTreatmentKind`, one of
 | `standard`       | Everyone else: consumers, guests, domestic B2B, unverified VAT ids, goods shipped home or outside the EU | As before   |
 | `exempt`         | The company has a recorded exemption                                                 | 0           |
 | `reverse_charge` | The workspace sells from the EU and the company has a verified EU VAT id of another member state; shipped to another EU state, or no address | 0           |
+| `export`         | The workspace sells from outside the EU (Norway, Switzerland, UK...) and the order ships to another country - any buyer, guests included | 0           |
 
-A `reverse_charge` or `exempt` buyer in a workspace that stores gross prices
+A `reverse_charge`, `exempt` or `export` order in a workspace that stores gross prices
 pays net: the VAT inside the stored price is taken out, not charged. Price rows
 carry `taxTreatmentKind`; `Cart.taxTreatment`, `BuyerPricePage.taxTreatment`
 and `PublicOrder.taxTreatment` carry the decision and the facts it rests on
 (`CmssyTaxTreatment`); on an order they are frozen at checkout. Tax summary
 lines name their `treatment`. `legalNote` is the text to print on the invoice,
 `null` for `standard`.
+
+`export` is decided from the shipping address, so a cart or price read without
+one shows `standard`. Set the address on the cart (`setShippingAddress`) before
+checkout: a foreign address sent only to `checkout` changes the treatment the
+buyer saw and is refused with `TAX_TREATMENT_CHANGED`.
 
 ```graphql
 query CartTaxTreatment($workspaceId: ID!) {
