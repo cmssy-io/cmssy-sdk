@@ -317,12 +317,14 @@ with the member's token. `items` is up to `CMSSY_BUYER_PRICES_MAX_ITEMS` (100)
 nothing, a longer one or a missing token throws before the network. It returns
 `CmssyBuyerPrice[]`: `recordId`, `variantKey`, `currency`, `price`, `priceMax`,
 `listed`, `minQuantity`, `maxQuantity`, `increment`, `tiers`
-(`CmssyPriceTier[]`). Server-side only, and never cached for
-another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
+(`CmssyPriceTier[]`), `displayMode` (`CmssyPriceDisplayMode`, one of
+`priceDisplayModeValues`: `gross`, `net`), `taxRate`, and `priceAmount`,
+`priceMaxAmount`, `basePriceAmount` (`CmssyTaxedAmount` - `{ net, tax,
+gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 
 `checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
 `checkoutErrorReasonValues`: `CART_REPRICED`, `CART_CURRENCY_CHANGED`,
-`PRODUCT_NOT_SOLD` or a `quantityRuleReasonValues` reason
+`BUYER_CHANGED`, `PRODUCT_NOT_SOLD` or a `quantityRuleReasonValues` reason
 (`QUANTITY_BELOW_MIN`, `QUANTITY_ABOVE_MAX`, `QUANTITY_NOT_ON_STEP`) - when
 the API refused the cart for that reason, `undefined` otherwise.
 `quantityRuleViolation(error)` returns `CmssyQuantityRuleViolation` -

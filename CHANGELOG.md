@@ -6,6 +6,21 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.15.0
+
+**Nothing to change.** `getBuyerPrices` and `getBuyerCatalogPrices` rows carry
+how the buyer reads prices: `displayMode` (`net` for a company buyer, `gross`
+for a consumer, a company can override it), `taxRate`, and `priceAmount`,
+`priceMaxAmount` and `basePriceAmount` split into `{ net, tax, gross }`
+(`CmssyTaxedAmount`). The catalogue page carries `displayMode` too. New
+`priceDisplayModeValues` / `CmssyPriceDisplayMode`. `checkoutErrorReason` also
+names `BUYER_CHANGED`: the cart was restamped for another buyer (a company
+switch, or a guest cart bound at sign-in) - read the cart again and let the
+buyer check out. The vendored SDL adds the net/gross amounts on carts, cart
+lines, shipping methods and orders (`amounts`, `unit`, `line`, `amount`,
+`displayMode`, `taxRoundingMethod`), for operations you vendor with
+`cmssy types`. Needs a cmssy API that serves them.
+
 ## 19.14.0
 
 **Nothing to change.** `getBuyerPrices` and `getBuyerCatalogPrices` rows carry

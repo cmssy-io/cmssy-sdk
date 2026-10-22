@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { buildSchema, isEnumType } from "graphql";
 import { describe, expect, it } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import {
   CMSSY_BUYER_PRICES_MAX_ITEMS,
   getBuyerCatalogPrices,
   getBuyerPrices,
+  priceDisplayModeValues,
   type CmssyBuyerCatalogPage,
   type CmssyBuyerPrice,
 } from "../data/buyer-prices";
@@ -51,6 +54,11 @@ const RANGE: CmssyBuyerPrice = {
   maxQuantity: 120,
   increment: 6,
   tiers: [],
+  displayMode: "net",
+  taxRate: 23,
+  priceAmount: { net: 900, tax: 207, gross: 1107 },
+  priceMaxAmount: { net: 1200, tax: 276, gross: 1476 },
+  basePriceAmount: { net: 1000, tax: 230, gross: 1230 },
 };
 
 const VARIANT: CmssyBuyerPrice = {
@@ -66,6 +74,11 @@ const VARIANT: CmssyBuyerPrice = {
   maxQuantity: 99,
   increment: 1,
   tiers: [{ minQty: 10, price: 450 }],
+  displayMode: "gross",
+  taxRate: 0,
+  priceAmount: { net: 500, tax: 0, gross: 500 },
+  priceMaxAmount: null,
+  basePriceAmount: { net: 500, tax: 0, gross: 500 },
 };
 
 describe("getBuyerPrices", () => {
@@ -87,6 +100,10 @@ describe("getBuyerPrices", () => {
     expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
     expect(calls[0]?.query).toContain("query BuyerPrices");
     expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
+    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate/);
+    expect(calls[0]?.query).toMatch(/priceAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
+    expect(calls[0]?.query).toMatch(/priceMaxAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
+    expect(calls[0]?.query).toMatch(/basePriceAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       items: [{ recordId: "p1" }, { recordId: "p2", variantKey: "v1" }],
@@ -229,6 +246,15 @@ describe("checkoutErrorReason", () => {
     expect(error.errors[0]?.extensions?.itemId).toBe("line-1");
   });
 
+  it("names BUYER_CHANGED, the cart restamped for another buyer at checkout", async () => {
+    const error = await checkoutFailure({
+      code: "CONFLICT",
+      reason: "BUYER_CHANGED",
+    });
+
+    expect(checkoutErrorReason(error)).toBe("BUYER_CHANGED");
+  });
+
   it("returns undefined for a reason that is not a checkout reason", async () => {
     const error = await checkoutFailure({
       code: "FORBIDDEN",
@@ -319,6 +345,7 @@ describe("getBuyerCatalogPrices", () => {
   const PAGE: CmssyBuyerCatalogPage = {
     total: 2,
     hasMore: true,
+    displayMode: "net",
     items: [
       {
         recordId: "p2",
@@ -331,6 +358,11 @@ describe("getBuyerCatalogPrices", () => {
         minQuantity: 12,
         maxQuantity: 96,
         increment: 12,
+        displayMode: "net",
+        taxRate: 23,
+        priceAmount: { net: 500, tax: 115, gross: 615 },
+        priceMaxAmount: null,
+        basePriceAmount: { net: 3000, tax: 690, gross: 3690 },
       },
     ],
   };
@@ -358,6 +390,8 @@ describe("getBuyerCatalogPrices", () => {
     expect(calls[0]?.headers.authorization).toBe("Bearer tok");
     expect(calls[0]?.query).toContain("query BuyerCatalogPrices");
     expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
+    expect(calls[0]?.query).toMatch(/hasMore\s+displayMode\s+items/);
+    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       modelSlug: "products",
@@ -379,5 +413,19 @@ describe("getBuyerCatalogPrices", () => {
       ),
     ).rejects.toThrow(/accessToken/);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("priceDisplayModeValues", () => {
+  it("lists exactly the PriceDisplayMode values the API serves", () => {
+    const schema = buildSchema(
+      readFileSync(new URL("../../../../schema.graphql", import.meta.url), "utf8"),
+    );
+    const mode = schema.getType("PriceDisplayMode");
+
+    expect(isEnumType(mode)).toBe(true);
+    expect(
+      isEnumType(mode) ? mode.getValues().map((v) => v.name).sort() : [],
+    ).toEqual([...priceDisplayModeValues].sort());
   });
 });
