@@ -278,15 +278,19 @@ query CartAmounts($workspaceId: ID!) {
 
 ### Checkout can refuse a repriced cart
 
-Signing in, signing out or a change to the member's price list can move the
-cart's prices after the buyer saw them. Checkout then refuses rather than
-charging a total nobody showed. `checkoutErrorReason(error)` from `@cmssy/core`
+Signing in, signing out, a change to the member's price list, or the merchant
+changing a catalogue or price-list price can move the cart's prices after the
+buyer saw them - every cart read re-prices its lines to the live price. Checkout
+then refuses rather than charging a total nobody showed. Send the total you
+displayed as `expectedTotal` (minor units, the cart's `totalGross`) in
+`CheckoutInput`: checkout refuses with `CART_REPRICED` whenever it computes a
+different total, even when another read re-priced the cart first. `checkoutErrorReason(error)` from `@cmssy/core`
 names the case; `CmssyGraphqlError.reason` carries the raw value.
 
 | Reason                  | What happened                                                         | What to do                                                       |
 | ----------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `CART_REPRICED`         | The buyer's prices changed since the cart was read                    | Read the cart again, show the new total, let the buyer check out |
-| `CART_CURRENCY_CHANGED` | The buyer's price list prices a line in another currency than the cart | Remove that line (`extensions.itemId`) and add the product again |
+| `CART_REPRICED`         | The buyer's prices changed since the cart was read, or the total differs from `expectedTotal` | Read the cart again, show the new total, let the buyer check out |
+| `CART_CURRENCY_CHANGED` | A line is now priced in another currency than the cart (its price list or the product changed) | Remove that line (`extensions.itemId`) and add the product again |
 | `BUYER_CHANGED`         | The cart was restamped for another buyer (company switch, guest cart bound at sign-in) | Read the cart again, show the new total, let the buyer check out |
 | `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
 | `TAX_TREATMENT_CHANGED` | The checkout address taxes the order unlike the cart (reverse charge, see below) | Set the address on the cart (`cart.setShippingAddress`), read the cart again, then check out |

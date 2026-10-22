@@ -914,7 +914,7 @@ type CartItem {
   notes: String
 
   """
-  True when currentPrice differs from unitPrice. Frontend should show a 'price updated' badge.
+  True when currentPrice differs from unitPrice. Cart reads re-price lines, so this stays true only for a line in another currency. Checkout refuses with CART_REPRICED when its own read changed a price.
   """
   priceMismatch: Boolean!
   quantity: Int!
@@ -1074,6 +1074,11 @@ input CheckoutInput {
 
   """Buyer's message for this order (distinct from admin notes)"""
   customerNote: String
+
+  """
+  The totalGross (minor units) the buyer was shown. If checkout computes another total it fails with CART_REPRICED and writes nothing.
+  """
+  expectedTotal: Int
 
   """Buyer's purchase-order reference, frozen on the order"""
   poNumber: String
@@ -2646,7 +2651,6 @@ type Mutation {
   salesChannel: SalesChannelMutations!
   siteConfig: SiteConfigMutations!
   siteMember: SiteMemberMutations!
-  user: UserMutations!
   viewer: ViewerMutations!
   webhook: WebhookMutations!
   workspace: WorkspaceMutations!
@@ -6097,12 +6101,6 @@ input UpdateSiteConfigInput {
   siteName: JSON
 }
 
-input UpdateUserInput {
-  profile: UserProfileInput
-  roleId: String
-  username: String
-}
-
 input UpdateWebhookEndpointInput {
   description: String
   enabled: Boolean
@@ -6221,11 +6219,6 @@ type UserAuthResponse {
   success: Boolean!
 }
 
-type UserMutations {
-  delete(id: ID!): DeletionResult!
-  update(id: ID!, input: UpdateUserInput!): User!
-}
-
 type UserProfile {
   avatarUrl: String
   displayName: String
@@ -6233,13 +6226,6 @@ type UserProfile {
   lastName: String
   phone: String
   preferredLocale: String
-}
-
-input UserProfileInput {
-  displayName: String
-  firstName: String
-  lastName: String
-  phone: String
 }
 
 type UserQueries {
