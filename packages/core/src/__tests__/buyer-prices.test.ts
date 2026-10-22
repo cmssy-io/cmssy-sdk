@@ -8,6 +8,7 @@ import {
   getBuyerPrices,
   priceDisplayModeValues,
   priceListSourceValues,
+  taxTreatmentKindValues,
   type CmssyBuyerCatalogPage,
   type CmssyBuyerPrice,
 } from "../data/buyer-prices";
@@ -60,6 +61,7 @@ const RANGE: CmssyBuyerPrice = {
   tiers: [],
   displayMode: "net",
   taxRate: 23,
+  taxTreatmentKind: "standard",
   priceAmount: { net: 900, tax: 207, gross: 1107 },
   priceMaxAmount: { net: 1200, tax: 276, gross: 1476 },
   basePriceAmount: { net: 1000, tax: 230, gross: 1230 },
@@ -81,6 +83,7 @@ const VARIANT: CmssyBuyerPrice = {
   tiers: [{ minQty: 10, price: 450 }],
   displayMode: "gross",
   taxRate: 0,
+  taxTreatmentKind: "reverse_charge",
   priceAmount: { net: 500, tax: 0, gross: 500 },
   priceMaxAmount: null,
   basePriceAmount: { net: 500, tax: 0, gross: 500 },
@@ -105,7 +108,7 @@ describe("getBuyerPrices", () => {
     expect(calls[0]?.headers["x-workspace-id"]).toBe("w1");
     expect(calls[0]?.query).toContain("query BuyerPrices");
     expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
-    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate/);
+    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.query).toMatch(/priceAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
     expect(calls[0]?.query).toMatch(/priceMaxAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
     expect(calls[0]?.query).toMatch(/basePriceAmount\s*\{\s*net\s+tax\s+gross\s*\}/);
@@ -304,6 +307,15 @@ describe("checkoutErrorReason", () => {
     expect(checkoutErrorReason(error)).toBe("BUYER_CHANGED");
   });
 
+  it("names TAX_TREATMENT_CHANGED, the checkout address taxing the order unlike the cart", async () => {
+    const error = await checkoutFailure({
+      code: "CONFLICT",
+      reason: "TAX_TREATMENT_CHANGED",
+    });
+
+    expect(checkoutErrorReason(error)).toBe("TAX_TREATMENT_CHANGED");
+  });
+
   it("returns undefined for a reason that is not a checkout reason", async () => {
     const error = await checkoutFailure({
       code: "FORBIDDEN",
@@ -448,6 +460,15 @@ describe("getBuyerCatalogPrices", () => {
     total: 2,
     hasMore: true,
     displayMode: "net",
+    taxTreatment: {
+      kind: "reverse_charge",
+      legalNote:
+        "Reverse charge - VAT to be accounted for by the customer (Article 196, Directive 2006/112/EC)",
+      buyerVatId: "DE123456789",
+      buyerVatCountry: "DE",
+      sellerCountry: "PL",
+      shipToCountry: null,
+    },
     items: [
       {
         recordId: "p2",
@@ -462,10 +483,11 @@ describe("getBuyerCatalogPrices", () => {
         maxQuantity: 96,
         increment: 12,
         displayMode: "net",
-        taxRate: 23,
-        priceAmount: { net: 500, tax: 115, gross: 615 },
+        taxRate: 0,
+        taxTreatmentKind: "reverse_charge",
+        priceAmount: { net: 500, tax: 0, gross: 500 },
         priceMaxAmount: null,
-        basePriceAmount: { net: 3000, tax: 690, gross: 3690 },
+        basePriceAmount: { net: 3000, tax: 0, gross: 3000 },
       },
     ],
   };
@@ -493,8 +515,10 @@ describe("getBuyerCatalogPrices", () => {
     expect(calls[0]?.headers.authorization).toBe("Bearer tok");
     expect(calls[0]?.query).toContain("query BuyerCatalogPrices");
     expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
-    expect(calls[0]?.query).toMatch(/hasMore\s+displayMode\s+items/);
-    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate\s+priceAmount/);
+    expect(calls[0]?.query).toMatch(
+      /hasMore\s+displayMode\s+taxTreatment\s*\{\s*kind\s+legalNote\s+buyerVatId\s+buyerVatCountry\s+sellerCountry\s+shipToCountry\s*\}\s*items/,
+    );
+    expect(calls[0]?.query).toMatch(/displayMode\s+taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       modelSlug: "products",
@@ -565,5 +589,19 @@ describe("priceListSourceValues", () => {
       isEnumType(source) ? source.getValues().map((v) => v.name).sort() : [],
     ).toEqual([...priceListSourceValues].sort());
     expect(priceListSourceValues).toContain("CHANNEL");
+  });
+});
+
+describe("taxTreatmentKindValues", () => {
+  it("lists exactly the TaxTreatmentKind values the API serves", () => {
+    const schema = buildSchema(
+      readFileSync(new URL("../../../../schema.graphql", import.meta.url), "utf8"),
+    );
+    const kind = schema.getType("TaxTreatmentKind");
+
+    expect(isEnumType(kind)).toBe(true);
+    expect(
+      isEnumType(kind) ? kind.getValues().map((v) => v.name).sort() : [],
+    ).toEqual([...taxTreatmentKindValues].sort());
   });
 });

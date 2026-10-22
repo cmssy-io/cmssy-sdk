@@ -295,7 +295,9 @@ verifies. A non-string is rejected rather than stringified into the key.
 
 Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
 `CmssyWebhookOrder`, `CmssyWebhookReturn`, `CmssyWebhookAccountEvent`,
-`CmssyWebhookAccountRequest`. All from `@cmssy/core`. A Next app that only needs the
+`CmssyWebhookAccountRequest`, `CmssyWebhookTaxTreatment`. An order webhook
+carries `tax` and `taxTreatment` (both optional - older deliveries lack them),
+and `channel` is optional too. All from `@cmssy/core`. A Next app that only needs the
 `content.changed` webhook to expire its cache mounts
 `createCmssyRevalidateRoute` from `@cmssy/next/server` instead of calling this
 by hand.
@@ -324,11 +326,17 @@ nothing, a longer one or a missing token throws before the network. It returns
 `listed`, `listSource` (`CmssyPriceListSource`, one of `priceListSourceValues`:
 `MEMBER`, `COMPANY`, `CHANNEL`; `null` for the catalogue), `minQuantity`, `maxQuantity`, `increment`, `tiers`
 (`CmssyPriceTier[]`), `displayMode` (`CmssyPriceDisplayMode`, one of
-`priceDisplayModeValues`: `gross`, `net`), `taxRate`, and `priceAmount`,
+`priceDisplayModeValues`: `gross`, `net`), `taxRate`, `taxTreatmentKind`
+(`CmssyTaxTreatmentKind`, one of `taxTreatmentKindValues`: `standard`,
+`reverse_charge`, `exempt`), and `priceAmount`,
 `priceMaxAmount`, `basePriceAmount` (`CmssyTaxedAmount` - `{ net, tax,
 gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 `channel` prices on that sales channel; left out, the config's `channel` is
 used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way.
+`getBuyerCatalogPrices` returns `CmssyBuyerCatalogPage` with `taxTreatment`
+(`CmssyTaxTreatment` - `{ kind, legalNote, buyerVatId, buyerVatCountry,
+sellerCountry, shipToCountry }`), the treatment the listed prices were taxed
+under. See [Reverse charge and VAT exemptions](../auth/member-auth.md#reverse-charge-and-vat-exemptions).
 
 `await getPublicPrices(config, items, { workspaceId, channel?, locale?, fetch?, signal?, retry? })`
 reads a sales channel's prices for an anonymous visitor - `public.pricing.prices`,
@@ -346,7 +354,8 @@ the same plus `total` and `hasMore`. See
 
 `checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
 `checkoutErrorReasonValues`: `CART_REPRICED`, `CART_CURRENCY_CHANGED`,
-`BUYER_CHANGED`, `PRODUCT_NOT_SOLD` or a `quantityRuleReasonValues` reason
+`BUYER_CHANGED`, `PRODUCT_NOT_SOLD`, `TAX_TREATMENT_CHANGED` or a
+`quantityRuleReasonValues` reason
 (`QUANTITY_BELOW_MIN`, `QUANTITY_ABOVE_MAX`, `QUANTITY_NOT_ON_STEP`) - when
 the API refused the cart for that reason, `undefined` otherwise.
 `quantityRuleViolation(error)` returns `CmssyQuantityRuleViolation` -

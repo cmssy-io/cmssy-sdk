@@ -17,6 +17,7 @@ export const checkoutErrorReasonValues = [
   "CART_CURRENCY_CHANGED",
   "BUYER_CHANGED",
   "PRODUCT_NOT_SOLD",
+  "TAX_TREATMENT_CHANGED",
   ...quantityRuleReasonValues,
 ] as const;
 

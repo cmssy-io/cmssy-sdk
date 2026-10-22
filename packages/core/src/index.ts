@@ -65,6 +65,7 @@ export {
   getBuyerPrices,
   priceDisplayModeValues,
   priceListSourceValues,
+  taxTreatmentKindValues,
 } from "./data/buyer-prices";
 export type {
   BuyerCatalogPricesResult,
@@ -82,6 +83,8 @@ export type {
   CmssyPriceListSource,
   CmssyPriceTier,
   CmssyTaxedAmount,
+  CmssyTaxTreatment,
+  CmssyTaxTreatmentKind,
   GetBuyerPricesOptions,
 } from "./data/buyer-prices";
 export {
@@ -256,5 +259,6 @@ export type {
   CmssyWebhookEvent,
   CmssyWebhookOrder,
   CmssyWebhookReturn,
+  CmssyWebhookTaxTreatment,
   VerifyCmssyWebhookOptions,
 } from "./verify-webhook";
