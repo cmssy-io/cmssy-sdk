@@ -57,6 +57,8 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "parseEditorMessage",
   "postToEditor",
   "propsToSchema",
+  "quantityRuleReasonValues",
+  "quantityRuleViolation",
   "registryToManifestBlocks",
   "resolveCmssyLocale",
   "resolveEditorOrigin",

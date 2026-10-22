@@ -316,12 +316,18 @@ with the member's token. `items` is up to `CMSSY_BUYER_PRICES_MAX_ITEMS` (100)
 `CmssyPriceQueryItem`s - `{ recordId, variantKey? }`; an empty list sends
 nothing, a longer one or a missing token throws before the network. It returns
 `CmssyBuyerPrice[]`: `recordId`, `variantKey`, `currency`, `price`, `priceMax`,
-`listed`, `tiers` (`CmssyPriceTier[]`). Server-side only, and never cached for
+`listed`, `minQuantity`, `maxQuantity`, `increment`, `tiers`
+(`CmssyPriceTier[]`). Server-side only, and never cached for
 another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 
 `checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
-`checkoutErrorReasonValues`, `CART_REPRICED` or `CART_CURRENCY_CHANGED` - when
-checkout refused the cart for that reason, `undefined` otherwise.
+`checkoutErrorReasonValues`: `CART_REPRICED`, `CART_CURRENCY_CHANGED`,
+`PRODUCT_NOT_SOLD` or a `quantityRuleReasonValues` reason
+(`QUANTITY_BELOW_MIN`, `QUANTITY_ABOVE_MAX`, `QUANTITY_NOT_ON_STEP`) - when
+the API refused the cart for that reason, `undefined` otherwise.
+`quantityRuleViolation(error)` returns `CmssyQuantityRuleViolation` -
+`{ reason, quantity, minQuantity, maxQuantity, increment, itemId }` - for a
+quantity reason, from checkout or from adding or updating a line.
 `CmssyGraphqlError.reason` carries the first error's `extensions.reason` raw.
 
 Also exported: `BUYER_PRICES_QUERY`, `BuyerPricesResult`,
