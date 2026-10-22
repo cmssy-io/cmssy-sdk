@@ -211,8 +211,9 @@ query MyPriceList($workspaceId: ID!) {
 
 A line in the cart already carries the member's price: `unitPrice` is what is
 charged. `snapshot.basePrice` is the catalogue price before the price list and
-volume breaks, for a struck-through "was" price; it is `null` on a line added
-before price lists existed.
+volume breaks, for a struck-through "was" price - show it only when it is
+above `unitPrice`, since a list with a markup prices above the catalogue; it is
+`null` on a line added before price lists existed.
 
 ```graphql
 query CartBasePrices($workspaceId: ID!) {
