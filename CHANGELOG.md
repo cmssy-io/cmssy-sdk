@@ -6,6 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.13.0
+
+**Nothing to change.** New `getBuyerCatalogPrices(config, query, options)`:
+a page of the signed-in member's prices for a product listing, sorted
+(`PRICE_ASC` / `PRICE_DESC`), filtered by `priceMin` / `priceMax` and the
+catalogue's own `filter`, with `total` and `hasMore`. Read the records
+themselves from the cached catalogue. Needs a cmssy API that serves
+`account.catalogPrices`.
+
 ## 19.12.0
 
 **Nothing to change.** `getBuyerPrices` rows carry `basePrice` - the catalogue

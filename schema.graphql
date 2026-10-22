@@ -24,6 +24,30 @@ enum AccountOrderScope {
 }
 
 type AccountQueries {
+  """
+  A product listing ordered, filtered and paged by the signed-in member's own price - their price list applied, else the catalogue price. Rows are prices only: read the records themselves from the cached, anonymous catalogue (public.model.recordsByIds). A variant product is priced from its lowest variant. filter, stockState, sku and locale work as on public.model.records; a listing that matches more than 2000 products is refused - narrow it with filter. Never cache the response for another visitor.
+  """
+  catalogPrices(
+    """
+    Keep only products priced in this currency. Required when the listing mixes currencies, which it then refuses without.
+    """
+    currency: String
+    filter: JSON
+    limit: Int = 20
+    locale: String
+    modelSlug: String!
+    offset: Int = 0
+
+    """Highest price to include, in minor units of the listing's currency."""
+    priceMax: Int
+
+    """Lowest price to include, in minor units of the listing's currency."""
+    priceMin: Int
+    sku: String
+    sort: BuyerCatalogSort = PRICE_ASC
+    stockState: String
+    workspaceId: ID!
+  ): BuyerPricePage!
   order(id: ID!, workspaceId: ID!): PublicOrder
 
   """
@@ -602,6 +626,12 @@ type BulkUpdateModelRecordsResult {
   updated: Int!
 }
 
+"""Order of account.catalogPrices by the member's own price."""
+enum BuyerCatalogSort {
+  PRICE_ASC
+  PRICE_DESC
+}
+
 """
 What the signed-in member pays for one product or variant, in minor units: their price list applied, else the catalogue price.
 """
@@ -636,6 +666,14 @@ type BuyerPrice {
   """
   tiers: [PriceTier!]!
   variantKey: String
+}
+
+type BuyerPricePage {
+  hasMore: Boolean!
+  items: [BuyerPrice!]!
+
+  """Products matching the filter and the price range."""
+  total: Int!
 }
 
 input CancelOrderInput {

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { FetchLike } from "../content/content-client";
 import {
   CMSSY_BUYER_PRICES_MAX_ITEMS,
+  getBuyerCatalogPrices,
   getBuyerPrices,
+  type CmssyBuyerCatalogPage,
   type CmssyBuyerPrice,
 } from "../data/buyer-prices";
 import {
@@ -241,5 +243,68 @@ describe("checkoutErrorReason", () => {
         errors: [{ extensions: { reason: "CART_REPRICED" } }],
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("getBuyerCatalogPrices", () => {
+  const PAGE: CmssyBuyerCatalogPage = {
+    total: 2,
+    hasMore: true,
+    items: [
+      {
+        recordId: "p2",
+        currency: "EUR",
+        price: 500,
+        priceMax: null,
+        listed: true,
+        basePrice: 3000,
+        source: "price_list_entry",
+      },
+    ],
+  };
+
+  it("asks the delivery route with the member's token and the listing's arguments", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { catalogPrices: PAGE } },
+    });
+
+    const page = await getBuyerCatalogPrices(
+      config,
+      {
+        modelSlug: "products",
+        filter: { category: "tools" },
+        priceMax: 5000,
+        sort: "PRICE_ASC",
+        limit: 1,
+      },
+      { workspaceId: "w1", accessToken: "tok", fetch },
+    );
+
+    expect(page).toEqual(PAGE);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://api.test/public/acme/ws/graphql");
+    expect(calls[0]?.headers.authorization).toBe("Bearer tok");
+    expect(calls[0]?.query).toContain("query BuyerCatalogPrices");
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      modelSlug: "products",
+      filter: { category: "tools" },
+      priceMax: 5000,
+      sort: "PRICE_ASC",
+      limit: 1,
+    });
+  });
+
+  it("refuses without a member token, before the network", async () => {
+    const { fetch, calls } = capturingFetch({});
+
+    await expect(
+      getBuyerCatalogPrices(
+        config,
+        { modelSlug: "products" },
+        { workspaceId: "w1", accessToken: "", fetch },
+      ),
+    ).rejects.toThrow(/accessToken/);
+    expect(calls).toHaveLength(0);
   });
 });

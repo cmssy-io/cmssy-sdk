@@ -3,6 +3,7 @@
 exports[`@cmssy/core public surface > exports exactly these names from the root 1`] = `
 [
   "API_TOKEN_HEADER_NAME",
+  "BUYER_CATALOG_PRICES_QUERY",
   "BUYER_PRICES_QUERY",
   "CLIENT_IP_HEADER_NAME",
   "CMSSY_BUYER_PRICES_MAX_ITEMS",
@@ -33,6 +34,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "defineCmssyLayout",
   "evaluateFieldConditionGroup",
   "fields",
+  "getBuyerCatalogPrices",
   "getBuyerPrices",
   "graphqlRequest",
   "isFormFieldRequired",
