@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.18.0
+
+**Act if you sell from outside the EU.** `taxTreatmentKindValues` and
+`CmssyTaxTreatmentKind` gain `export` (`@cmssy/types` 0.69.0): a workspace whose
+seller country is outside the EU zero-rates every order shipped to another
+country, for any buyer, with the merchant's export note as `legalNote`. A
+`switch` over the kind that lists every value needs an `export` case. Export is
+decided from the shipping address: set it on the cart before checkout, or a
+foreign address given only to `checkout` is refused with
+`TAX_TREATMENT_CHANGED`. Buyer price rows never report `export` - they are read
+before any address. The vendored SDL adds `exportNote` on cart config,
+`assigneePreview` on price lists and `channel` on `PublicOrder`. Needs a cmssy
+API that serves exports.
+
 ## 19.17.0
 
 **Nothing to change.** Reverse charge and VAT exemptions: buyer and public

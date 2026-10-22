@@ -328,7 +328,7 @@ nothing, a longer one or a missing token throws before the network. It returns
 (`CmssyPriceTier[]`), `displayMode` (`CmssyPriceDisplayMode`, one of
 `priceDisplayModeValues`: `gross`, `net`), `taxRate`, `taxTreatmentKind`
 (`CmssyTaxTreatmentKind`, one of `taxTreatmentKindValues`: `standard`,
-`reverse_charge`, `exempt`), and `priceAmount`,
+`reverse_charge`, `exempt`, `export`), and `priceAmount`,
 `priceMaxAmount`, `basePriceAmount` (`CmssyTaxedAmount` - `{ net, tax,
 gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 `channel` prices on that sales channel; left out, the config's `channel` is
