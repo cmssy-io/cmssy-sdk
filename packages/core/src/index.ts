@@ -58,11 +58,19 @@ export type {
   SubmitFormInput,
 } from "./data/queries";
 export {
+  BUYER_CATALOG_PRICES_QUERY,
   BUYER_PRICES_QUERY,
   CMSSY_BUYER_PRICES_MAX_ITEMS,
+  getBuyerCatalogPrices,
   getBuyerPrices,
 } from "./data/buyer-prices";
 export type {
+  BuyerCatalogPricesResult,
+  BuyerCatalogPricesVariables,
+  CmssyBuyerCatalogPage,
+  CmssyBuyerCatalogPrice,
+  CmssyBuyerCatalogSort,
+  GetBuyerCatalogPricesQuery,
   BuyerPricesResult,
   BuyerPricesVariables,
   CmssyBuyerPrice,

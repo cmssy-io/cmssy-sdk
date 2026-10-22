@@ -110,3 +110,121 @@ export async function getBuyerPrices(
   );
   return data.account.prices;
 }
+
+export type CmssyBuyerCatalogSort = "PRICE_ASC" | "PRICE_DESC";
+
+export interface CmssyBuyerCatalogPrice {
+  recordId: string;
+  currency: string;
+  price: number;
+  priceMax: number | null;
+  listed: boolean;
+  basePrice: number;
+  source: CmssyPriceSource;
+}
+
+export interface CmssyBuyerCatalogPage {
+  items: CmssyBuyerCatalogPrice[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface BuyerCatalogPricesVariables {
+  workspaceId: string;
+  modelSlug: string;
+  filter?: Record<string, unknown> | null;
+  stockState?: string | null;
+  sku?: string | null;
+  locale?: string | null;
+  currency?: string | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  sort?: CmssyBuyerCatalogSort | null;
+  limit?: number | null;
+  offset?: number | null;
+}
+
+export interface BuyerCatalogPricesResult {
+  account: { catalogPrices: CmssyBuyerCatalogPage };
+}
+
+export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
+  BuyerCatalogPricesResult,
+  BuyerCatalogPricesVariables
+>(`query BuyerCatalogPrices(
+  $workspaceId: ID!
+  $modelSlug: String!
+  $filter: JSON
+  $stockState: String
+  $sku: String
+  $locale: String
+  $currency: String
+  $priceMin: Int
+  $priceMax: Int
+  $sort: BuyerCatalogSort
+  $limit: Int
+  $offset: Int
+) {
+  account {
+    catalogPrices(
+      workspaceId: $workspaceId
+      modelSlug: $modelSlug
+      filter: $filter
+      stockState: $stockState
+      sku: $sku
+      locale: $locale
+      currency: $currency
+      priceMin: $priceMin
+      priceMax: $priceMax
+      sort: $sort
+      limit: $limit
+      offset: $offset
+    ) {
+      total
+      hasMore
+      items {
+        recordId
+        currency
+        price
+        priceMax
+        listed
+        basePrice
+        source
+      }
+    }
+  }
+}`);
+
+export type GetBuyerCatalogPricesQuery = Omit<
+  BuyerCatalogPricesVariables,
+  "workspaceId"
+>;
+
+export async function getBuyerCatalogPrices(
+  config: CmssyClientConfig,
+  query: GetBuyerCatalogPricesQuery,
+  options: GetBuyerPricesOptions,
+): Promise<CmssyBuyerCatalogPage> {
+  if (!options.accessToken) {
+    throw new Error(
+      "cmssy: getBuyerCatalogPrices needs the signed-in member's accessToken - an anonymous visitor reads the catalogue",
+    );
+  }
+  const data = await graphqlRequest(
+    config,
+    BUYER_CATALOG_PRICES_QUERY,
+    { ...query, workspaceId: options.workspaceId },
+    {
+      public: true,
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: options.retry,
+      headers: {
+        "x-workspace-id": options.workspaceId,
+        authorization: `Bearer ${options.accessToken}`,
+      },
+    },
+    "buyer catalogue prices",
+  );
+  return data.account.catalogPrices;
+}
