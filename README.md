@@ -104,6 +104,11 @@ const data = await graphqlRequest(
 );
 ```
 
+Reverse charge and VAT exemptions are the same: cmssy decides the tax
+treatment and records it on the cart and order (`taxTreatment`, with the
+`legalNote` to print); the invoice wording and the VAT filings stay the
+merchant's. See [Reverse charge and VAT exemptions](docs/auth/member-auth.md#reverse-charge-and-vat-exemptions).
+
 Two apps show the whole shape, and both build against the published packages:
 
 - [**simple-blog**](https://github.com/cmssy-io/examples/tree/main/simple-blog) - the

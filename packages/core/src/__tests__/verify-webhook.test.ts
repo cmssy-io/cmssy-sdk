@@ -32,6 +32,16 @@ function makeBody(): string {
         deliveredAt: null,
         closedAt: null,
         total: 1000,
+        tax: 0,
+        taxTreatment: {
+          kind: "reverse_charge",
+          legalNote:
+            "Reverse charge - VAT to be accounted for by the customer (Article 196, Directive 2006/112/EC)",
+          buyerVatId: "DE123456789",
+          buyerVatCountry: "DE",
+          sellerCountry: "PL",
+          shipToCountry: null,
+        },
         currency: "PLN",
         customerId: null,
         customerEmail: "b@example.com",
@@ -64,6 +74,9 @@ describe("verifyCmssyWebhook", () => {
     expect(event.event).toBe("order.paid");
     expect(event.id).toBe("wh_123");
     expect(event.data.order.paymentStatus).toBe("paid");
+    expect(event.data.order.tax).toBe(0);
+    expect(event.data.order.taxTreatment?.kind).toBe("reverse_charge");
+    expect(event.data.order.taxTreatment?.buyerVatId).toBe("DE123456789");
   });
 
   it("ignores header part order and extra parts", async () => {

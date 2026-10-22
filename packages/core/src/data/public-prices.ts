@@ -110,6 +110,7 @@ export const PUBLIC_PRICES_QUERY = typedOperation<
             }
             displayMode
             taxRate
+            taxTreatmentKind
             priceAmount {
               net
               tax
@@ -223,6 +224,7 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
             }
             displayMode
             taxRate
+            taxTreatmentKind
             priceAmount {
               net
               tax

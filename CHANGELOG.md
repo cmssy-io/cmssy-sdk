@@ -6,6 +6,23 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.17.0
+
+**Nothing to change.** Reverse charge and VAT exemptions: buyer and public
+price rows carry `taxTreatmentKind` (`CmssyTaxTreatmentKind`,
+`taxTreatmentKindValues`: `standard`, `reverse_charge`, `exempt`), and
+`getBuyerCatalogPrices` returns the page's `taxTreatment` (`CmssyTaxTreatment`:
+kind, `legalNote`, buyer VAT id and country, seller and ship-to country).
+`checkoutErrorReason` names `TAX_TREATMENT_CHANGED` - the checkout address
+taxes the order unlike the cart; set the address on the cart and read it again.
+The vendored SDL adds `TaxTreatment` on `Cart`, `BuyerPricePage` and
+`PublicOrder`, and `treatment` on tax summary lines. cmssy records the decision;
+invoice wording and VAT filings stay the merchant's. `@cmssy/types` 0.68.0:
+`CmssyWebhookOrder` gains optional `tax` and `taxTreatment`
+(`CmssyWebhookTaxTreatment`, re-exported from `@cmssy/core`), and `channel` is
+now optional - a handler that read it as `string | null` reads `undefined` on
+older deliveries. Needs a cmssy API that serves tax treatments.
+
 ## 19.16.0
 
 **Nothing to change.** Sales channels: a `channel` in the config

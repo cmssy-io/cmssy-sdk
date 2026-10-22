@@ -289,6 +289,7 @@ names the case; `CmssyGraphqlError.reason` carries the raw value.
 | `CART_CURRENCY_CHANGED` | The buyer's price list prices a line in another currency than the cart | Remove that line (`extensions.itemId`) and add the product again |
 | `BUYER_CHANGED`         | The cart was restamped for another buyer (company switch, guest cart bound at sign-in) | Read the cart again, show the new total, let the buyer check out |
 | `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
+| `TAX_TREATMENT_CHANGED` | The checkout address taxes the order unlike the cart (reverse charge, see below) | Set the address on the cart (`cart.setShippingAddress`), read the cart again, then check out |
 | `QUANTITY_BELOW_MIN`    | A line is below the buyer's minimum                                   | Set the line to an allowed quantity                              |
 | `QUANTITY_ABOVE_MAX`    | A line is above the buyer's maximum                                   | Set the line to an allowed quantity                              |
 | `QUANTITY_NOT_ON_STEP`  | A line is not a multiple of the product's order step                  | Set the line to an allowed quantity                              |
@@ -313,6 +314,62 @@ try {
   throw error;
 }
 ```
+
+### Reverse charge and VAT exemptions
+
+A company buyer can be taxed other than `standard`. The workspace sets its
+seller country; the merchant sets a company's EU VAT id and marks it verified,
+or records a VAT exemption with its legal basis. cmssy then picks one treatment
+per cart, price read and order - `TaxTreatmentKind`, one of
+`taxTreatmentKindValues`:
+
+| Kind             | When                                                                                 | Tax         |
+| ---------------- | ------------------------------------------------------------------------------------ | ----------- |
+| `standard`       | Everyone else: consumers, guests, domestic B2B, unverified VAT ids, goods shipped home or outside the EU | As before   |
+| `exempt`         | The company has a recorded exemption                                                 | 0           |
+| `reverse_charge` | The workspace sells from the EU and the company has a verified EU VAT id of another member state; shipped to another EU state, or no address | 0           |
+
+A `reverse_charge` or `exempt` buyer in a workspace that stores gross prices
+pays net: the VAT inside the stored price is taken out, not charged. Price rows
+carry `taxTreatmentKind`; `Cart.taxTreatment`, `BuyerPricePage.taxTreatment`
+and `PublicOrder.taxTreatment` carry the decision and the facts it rests on
+(`CmssyTaxTreatment`); on an order they are frozen at checkout. Tax summary
+lines name their `treatment`. `legalNote` is the text to print on the invoice,
+`null` for `standard`.
+
+```graphql
+query CartTaxTreatment($workspaceId: ID!) {
+  cart {
+    get(workspaceId: $workspaceId) {
+      taxTreatment {
+        kind
+        legalNote
+        buyerVatId
+        buyerVatCountry
+        sellerCountry
+        shipToCountry
+      }
+      taxSummary {
+        rate
+        base
+        amount
+        treatment
+      }
+    }
+  }
+}
+```
+
+The ship-to country can flip the decision, so send the address to the cart
+(`cart.setShippingAddress`) before checkout. Checkout with an address that
+taxes the order differently from what the cart showed refuses with
+`TAX_TREATMENT_CHANGED`.
+
+**cmssy records the decision; the merchant owns the tax.** cmssy decides the
+treatment from the data the merchant entered and stores it with the order.
+The invoice wording (`legalNote`, editable per workspace), checking the VAT id
+(for example in VIES), the VAT returns and EC Sales List, and the evidence that
+goods left the country are the merchant's responsibility.
 
 ## Sales channels
 

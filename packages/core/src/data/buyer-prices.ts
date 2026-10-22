@@ -1,4 +1,8 @@
-import type { CmssyPriceSource } from "@cmssy/types";
+import {
+  taxTreatmentKindValues,
+  type CmssyPriceSource,
+  type CmssyTaxTreatmentKind,
+} from "@cmssy/types";
 import type { CmssyClientConfig, FetchLike } from "../content/content-client";
 import { typedOperation } from "./document";
 import { graphqlRequest } from "./graphql-request";
@@ -24,6 +28,18 @@ export const priceListSourceValues = ["MEMBER", "COMPANY", "CHANNEL"] as const;
 
 export type CmssyPriceListSource = (typeof priceListSourceValues)[number];
 
+export { taxTreatmentKindValues };
+export type { CmssyTaxTreatmentKind };
+
+export interface CmssyTaxTreatment {
+  kind: CmssyTaxTreatmentKind;
+  legalNote: string | null;
+  buyerVatId: string | null;
+  buyerVatCountry: string | null;
+  sellerCountry: string | null;
+  shipToCountry: string | null;
+}
+
 export interface CmssyTaxedAmount {
   net: number;
   tax: number;
@@ -46,6 +62,7 @@ export interface CmssyBuyerPrice {
   tiers: CmssyPriceTier[];
   displayMode: CmssyPriceDisplayMode;
   taxRate: number;
+  taxTreatmentKind: CmssyTaxTreatmentKind;
   priceAmount: CmssyTaxedAmount;
   priceMaxAmount: CmssyTaxedAmount | null;
   basePriceAmount: CmssyTaxedAmount;
@@ -93,6 +110,7 @@ export const BUYER_PRICES_QUERY = typedOperation<
       }
       displayMode
       taxRate
+      taxTreatmentKind
       priceAmount {
         net
         tax
@@ -178,6 +196,7 @@ export interface CmssyBuyerCatalogPrice {
   increment: number;
   displayMode: CmssyPriceDisplayMode;
   taxRate: number;
+  taxTreatmentKind: CmssyTaxTreatmentKind;
   priceAmount: CmssyTaxedAmount;
   priceMaxAmount: CmssyTaxedAmount | null;
   basePriceAmount: CmssyTaxedAmount;
@@ -188,6 +207,7 @@ export interface CmssyBuyerCatalogPage {
   total: number;
   hasMore: boolean;
   displayMode: CmssyPriceDisplayMode;
+  taxTreatment: CmssyTaxTreatment;
 }
 
 export interface BuyerCatalogPricesVariables {
@@ -247,6 +267,14 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
       total
       hasMore
       displayMode
+      taxTreatment {
+        kind
+        legalNote
+        buyerVatId
+        buyerVatCountry
+        sellerCountry
+        shipToCountry
+      }
       items {
         recordId
         currency
@@ -261,6 +289,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
         increment
         displayMode
         taxRate
+        taxTreatmentKind
         priceAmount {
           net
           tax

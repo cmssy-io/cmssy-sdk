@@ -4,6 +4,7 @@ import type {
   CmssyWebhookOrder,
   CmssyWebhookEvent,
   CmssyWebhookReturn,
+  CmssyWebhookTaxTreatment,
   VerifyCmssyWebhookOptions,
 } from "@cmssy/types";
 import { hmacSha256Hex, timingSafeHexEqual } from "./internal/hmac";
@@ -14,6 +15,7 @@ export type {
   CmssyWebhookOrder,
   CmssyWebhookEvent,
   CmssyWebhookReturn,
+  CmssyWebhookTaxTreatment,
   VerifyCmssyWebhookOptions,
 };
 

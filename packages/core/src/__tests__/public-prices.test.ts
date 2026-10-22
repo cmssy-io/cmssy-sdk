@@ -66,6 +66,7 @@ const RESULT: CmssyPublicPriceResult = {
         tiers: [],
         displayMode: "gross",
         taxRate: 23,
+        taxTreatmentKind: "standard",
         priceAmount: { net: 732, tax: 168, gross: 900 },
         priceMaxAmount: null,
         basePriceAmount: { net: 813, tax: 187, gross: 1000 },
@@ -96,6 +97,7 @@ describe("getPublicPrices", () => {
       /displayMode\s+priceWithheld\s+nextChangeAt/,
     );
     expect(calls[0]?.query).toMatch(/source\s+listSource/);
+    expect(calls[0]?.query).toMatch(/taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       channel: "horeca",
@@ -193,6 +195,7 @@ describe("getPublicCatalogPrices", () => {
     expect(calls[0]?.query).toMatch(
       /total\s+hasMore\s+displayMode\s+priceWithheld\s+nextChangeAt/,
     );
+    expect(calls[0]?.query).toMatch(/taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       channel: "horeca",
