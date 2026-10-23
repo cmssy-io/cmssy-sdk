@@ -9,6 +9,7 @@ export interface RecordsByIdsVariables {
   workspaceId: string;
   ids: string[];
   locale?: string | null;
+  previewSecret?: string | null;
 }
 
 export interface RecordsByIdsResult {
@@ -18,10 +19,10 @@ export interface RecordsByIdsResult {
 export const RECORDS_BY_IDS_QUERY = typedOperation<
   RecordsByIdsResult,
   RecordsByIdsVariables
->(`query PublicRecordsByIds($workspaceId: String!, $ids: [String!]!, $locale: String) {
+>(`query PublicRecordsByIds($workspaceId: String!, $ids: [String!]!, $locale: String, $previewSecret: String) {
   public {
     model {
-      recordsByIds(workspaceId: $workspaceId, ids: $ids, locale: $locale) {
+      recordsByIds(workspaceId: $workspaceId, ids: $ids, locale: $locale, previewSecret: $previewSecret) {
         id modelId data status createdAt updatedAt
       }
     }
@@ -279,6 +280,7 @@ export async function resolveRelationContent(
   schemas: BlockSchemaMap,
   locale?: string,
   requestOptions: QueryScopedOptions = {},
+  previewSecret?: string,
 ): Promise<void> {
   const refs = collectRefs(entries, schemas);
   if (refs.length === 0) return;
@@ -309,8 +311,20 @@ export async function resolveRelationContent(
   let collectionItems: Map<string, CmssyModelRecord[]>;
   try {
     [recordsById, collectionItems] = await Promise.all([
-      fetchPickedRecords(client, [...pickedIds], locale, requestOptions),
-      fetchCollections(client, collections, locale, requestOptions),
+      fetchPickedRecords(
+        client,
+        [...pickedIds],
+        locale,
+        requestOptions,
+        previewSecret,
+      ),
+      fetchCollections(
+        client,
+        collections,
+        locale,
+        requestOptions,
+        previewSecret,
+      ),
     ]);
   } catch (err) {
     if (typeof console !== "undefined") {
@@ -356,6 +370,7 @@ async function fetchPickedRecords(
   ids: string[],
   locale?: string,
   requestOptions: QueryScopedOptions = {},
+  previewSecret?: string,
 ): Promise<Map<string, CmssyModelRecord>> {
   const byId = new Map<string, CmssyModelRecord>();
   const chunks: string[][] = [];
@@ -366,7 +381,11 @@ async function fetchPickedRecords(
     chunks.map(async (chunk) => {
       const result = await client.queryScoped(
         RECORDS_BY_IDS_QUERY,
-        { ids: chunk, locale: locale ?? null },
+        {
+          ids: chunk,
+          locale: locale ?? null,
+          previewSecret: previewSecret ?? null,
+        },
         requestOptions,
       );
       for (const record of result.public.model.recordsByIds) {
@@ -382,6 +401,7 @@ async function fetchCollections(
   collections: Map<string, { model: string; sort?: string; limit?: number }>,
   locale?: string,
   requestOptions: QueryScopedOptions = {},
+  previewSecret?: string,
 ): Promise<Map<string, CmssyModelRecord[]>> {
   const byKey = new Map<string, CmssyModelRecord[]>();
   await Promise.all(
@@ -393,6 +413,7 @@ async function fetchCollections(
           sort: sort ?? null,
           limit: limit ?? COLLECTION_DEFAULT_LIMIT,
           locale: locale ?? null,
+          previewSecret: previewSecret ?? null,
         },
         requestOptions,
       );

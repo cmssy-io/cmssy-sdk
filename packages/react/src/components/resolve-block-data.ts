@@ -52,6 +52,7 @@ export interface ResolveBlockDataOptions {
   isPreview?: boolean;
   config?: CmssyClientConfig;
   appContext?: Record<string, unknown>;
+  previewSecret?: string;
 }
 
 export async function resolveEditorBlockData({
@@ -64,6 +65,7 @@ export async function resolveEditorBlockData({
   isPreview = false,
   config,
   appContext,
+  previewSecret,
 }: ResolveBlockDataOptions): Promise<EditorBlockData> {
   if (!page) return { data: {}, content: {} };
   const loaderMap = buildLoaderMap(blocks);
@@ -82,7 +84,7 @@ export async function resolveEditorBlockData({
     defaultLocale,
     context,
     enabledLocales,
-    { schemas: blocksToSchemas(blocks), config },
+    { schemas: blocksToSchemas(blocks), config, previewSecret },
   );
   return collectBlockData(page.blocks, resolved, isPreview);
 }
@@ -105,6 +107,7 @@ export interface ResolveLayoutBlockDataOptions {
   isPreview?: boolean;
   config?: CmssyClientConfig;
   appContext?: Record<string, unknown>;
+  previewSecret?: string;
 }
 
 export async function resolveEditorLayoutBlockData({
@@ -119,6 +122,7 @@ export async function resolveEditorLayoutBlockData({
   isPreview = false,
   config,
   appContext,
+  previewSecret,
 }: ResolveLayoutBlockDataOptions): Promise<EditorBlockData> {
   const group = groups.find((g) => g.region === region);
   const layoutBlocks: RawLayoutBlock[] = group
@@ -144,7 +148,7 @@ export async function resolveEditorLayoutBlockData({
     defaultLocale,
     context,
     enabledLocales,
-    { schemas: blocksToSchemas(blocks), config },
+    { schemas: blocksToSchemas(blocks), config, previewSecret },
   );
   return collectBlockData(layoutBlocks, resolved, isPreview);
 }

@@ -85,6 +85,7 @@ export interface ModelRecordsVariables {
   limit?: number | null;
   offset?: number | null;
   populate?: string[] | null;
+  previewSecret?: string | null;
 }
 
 export interface ModelRecordsResult {
@@ -94,10 +95,10 @@ export interface ModelRecordsResult {
 export const MODEL_RECORDS_QUERY = typedOperation<
   ModelRecordsResult,
   ModelRecordsVariables
->(`query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!]) {
+>(`query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!], $previewSecret: String) {
   public {
     model {
-      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, populate: $populate) {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, populate: $populate, previewSecret: $previewSecret) {
         items { id modelId data status createdAt updatedAt }
         total
         hasMore
@@ -136,7 +137,8 @@ export const FORM_QUERY = typedOperation<FormResult, FormVariables>(
       }
     }
   }
-}`);
+}`,
+);
 
 export interface SubmitFormVariables {
   formId: string;

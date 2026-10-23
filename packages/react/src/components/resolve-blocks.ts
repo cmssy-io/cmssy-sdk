@@ -19,6 +19,7 @@ export interface ResolveBlocksOptions {
   schemas?: BlockSchemaMap;
   config?: CmssyClientConfig;
   workspaceId?: string;
+  previewSecret?: string;
 }
 
 export async function resolveFoldedBlocks(
@@ -38,6 +39,7 @@ export async function resolveFoldedBlocks(
         schemas,
         locale,
         options.workspaceId ? { workspaceId: options.workspaceId } : {},
+        options.previewSecret,
       );
     }
     blocks.forEach((block, i) => {

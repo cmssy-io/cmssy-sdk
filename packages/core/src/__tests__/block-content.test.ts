@@ -7,6 +7,7 @@ import {
   resolveRelationContent,
   type BlockSchemaMap,
 } from "../data/block-content";
+import { MODEL_RECORDS_QUERY } from "../data/queries";
 
 const config = {
   apiUrl: "https://api.test/graphql",
@@ -134,6 +135,47 @@ describe("resolveRelationContent", () => {
     expect(content).not.toHaveProperty("author");
     const byIdsCall = calls.find((c) => c.query === RECORDS_BY_IDS_QUERY);
     expect(byIdsCall?.variables.ids).toEqual(["a", "gone", "b"]);
+  });
+
+  it("previews unpublished records through both relation reads when given the draft secret", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("a", { name: "A" })],
+    });
+    await resolveRelationContent(
+      config,
+      [
+        { type: "featured", content: { pick: ["a"] } },
+        { type: "testimonials", content: {} },
+      ],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+      "draft-1",
+    );
+
+    const byIds = calls.find((c) => c.query === RECORDS_BY_IDS_QUERY);
+    const collection = calls.find((c) => c.query === MODEL_RECORDS_QUERY);
+    expect(
+      byIds?.variables.previewSecret,
+      "Without the secret the API drops an unpublished record, so the editor preview of a block picking it shows nothing.",
+    ).toBe("draft-1");
+    expect(collection?.variables.previewSecret).toBe("draft-1");
+  });
+
+  it("asks for published records only when no secret is given", async () => {
+    const { fetch, calls } = routerFetch({ byIds: () => [] });
+    await resolveRelationContent(
+      config,
+      [{ type: "featured", content: { pick: ["a"] } }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(
+      calls.find((c) => c.query === RECORDS_BY_IDS_QUERY)?.variables
+        .previewSecret,
+    ).toBeNull();
   });
 
   it("keeps a relation that arrives already resolved instead of deleting it", async () => {
