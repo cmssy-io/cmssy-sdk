@@ -316,6 +316,28 @@ describe("checkoutErrorReason", () => {
     expect(checkoutErrorReason(error)).toBe("TAX_TREATMENT_CHANGED");
   });
 
+  it("names NO_PRICE_IN_CURRENCY, a product with no price in the channel's currency, and keeps what it names", async () => {
+    const error = (await checkoutFailure({
+      code: "NOT_APPLICABLE",
+      reason: "NO_PRICE_IN_CURRENCY",
+      currency: "EUR",
+      recordId: "p1",
+      variantKey: null,
+    })) as CmssyGraphqlError;
+
+    expect(checkoutErrorReason(error)).toBe("NO_PRICE_IN_CURRENCY");
+    expect(error.errors[0]?.extensions).toMatchObject({
+      currency: "EUR",
+      recordId: "p1",
+    });
+  });
+
+  it("lists every cart currency reason @cmssy/types names", () => {
+    expect(checkoutErrorReasonValues).toEqual(
+      expect.arrayContaining(["CART_CURRENCY_CHANGED", "NO_PRICE_IN_CURRENCY"]),
+    );
+  });
+
   it("returns undefined for a reason that is not a checkout reason", async () => {
     const error = await checkoutFailure({
       code: "FORBIDDEN",
@@ -459,6 +481,7 @@ describe("getBuyerCatalogPrices", () => {
   const PAGE: CmssyBuyerCatalogPage = {
     total: 2,
     hasMore: true,
+    currency: "EUR",
     displayMode: "net",
     taxTreatment: {
       kind: "reverse_charge",
@@ -516,7 +539,7 @@ describe("getBuyerCatalogPrices", () => {
     expect(calls[0]?.query).toContain("query BuyerCatalogPrices");
     expect(calls[0]?.query).toMatch(/minQuantity\s+maxQuantity\s+increment/);
     expect(calls[0]?.query).toMatch(
-      /hasMore\s+displayMode\s+taxTreatment\s*\{\s*kind\s+legalNote\s+buyerVatId\s+buyerVatCountry\s+sellerCountry\s+shipToCountry\s*\}\s*items/,
+      /hasMore\s+currency\s+displayMode\s+taxTreatment\s*\{\s*kind\s+legalNote\s+buyerVatId\s+buyerVatCountry\s+sellerCountry\s+shipToCountry\s*\}\s*items/,
     );
     expect(calls[0]?.query).toMatch(/displayMode\s+taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({

@@ -34,6 +34,7 @@ function capturingFetch(payload: unknown): { fetch: FetchLike; calls: Call[] } {
 }
 
 const RESULT: CmssyPublicPriceResult = {
+  currency: "EUR",
   displayMode: "gross",
   priceWithheld: null,
   nextChangeAt: "2026-11-01T00:00:00.000Z",
@@ -94,7 +95,7 @@ describe("getPublicPrices", () => {
     expect(calls[0]?.headers.authorization).toBeUndefined();
     expect(calls[0]?.query).toContain("query PublicPrices");
     expect(calls[0]?.query).toMatch(
-      /displayMode\s+priceWithheld\s+nextChangeAt/,
+      /currency\s+displayMode\s+priceWithheld\s+nextChangeAt/,
     );
     expect(calls[0]?.query).toMatch(/source\s+listSource/);
     expect(calls[0]?.query).toMatch(/taxRate\s+taxTreatmentKind\s+priceAmount/);
@@ -124,6 +125,20 @@ describe("getPublicPrices", () => {
 
     expect(result.priceWithheld).toBe("MEMBERS_ONLY");
     expect(result.items[0]?.price).toBeNull();
+  });
+
+  it("returns the currency the channel prices in", async () => {
+    const { fetch } = capturingFetch({
+      data: { public: { pricing: { prices: RESULT } } },
+    });
+
+    const result = await getPublicPrices(
+      { ...config, channel: "eu-export" },
+      [{ recordId: "p1" }],
+      { workspaceId: "w1", fetch },
+    );
+
+    expect(result.currency).toBe("EUR");
   });
 
   it("prices on the call's channel over the config's", async () => {
@@ -193,7 +208,7 @@ describe("getPublicCatalogPrices", () => {
     expect(calls[0]?.headers.authorization).toBeUndefined();
     expect(calls[0]?.query).toContain("query PublicCatalogPrices");
     expect(calls[0]?.query).toMatch(
-      /total\s+hasMore\s+displayMode\s+priceWithheld\s+nextChangeAt/,
+      /total\s+hasMore\s+currency\s+displayMode\s+priceWithheld\s+nextChangeAt/,
     );
     expect(calls[0]?.query).toMatch(/taxRate\s+taxTreatmentKind\s+priceAmount/);
     expect(calls[0]?.variables).toEqual({
@@ -202,6 +217,30 @@ describe("getPublicCatalogPrices", () => {
       modelSlug: "products",
       sort: "PRICE_DESC",
       limit: 10,
+    });
+  });
+
+  it("returns the page's currency, null when its rows are mixed, and still sends the deprecated row-currency filter", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: {
+        public: {
+          pricing: { catalogPrices: { ...PAGE, currency: null } },
+        },
+      },
+    });
+
+    const page = await getPublicCatalogPrices(
+      { ...config, channel: "eu-export" },
+      { modelSlug: "products", currency: "EUR" },
+      { workspaceId: "w1", fetch },
+    );
+
+    expect(page.currency).toBeNull();
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      channel: "eu-export",
+      modelSlug: "products",
+      currency: "EUR",
     });
   });
 

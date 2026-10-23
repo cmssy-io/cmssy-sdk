@@ -1,3 +1,4 @@
+import { cartCurrencyReasonValues } from "@cmssy/types";
 import { CmssyGraphqlError } from "./http";
 import {
   priceWithheldReasonValues,
@@ -14,7 +15,7 @@ export type CmssyQuantityRuleReason = (typeof quantityRuleReasonValues)[number];
 
 export const checkoutErrorReasonValues = [
   "CART_REPRICED",
-  "CART_CURRENCY_CHANGED",
+  ...cartCurrencyReasonValues,
   "BUYER_CHANGED",
   "PRODUCT_NOT_SOLD",
   "TAX_TREATMENT_CHANGED",

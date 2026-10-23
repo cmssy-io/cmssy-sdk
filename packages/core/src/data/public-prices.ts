@@ -38,6 +38,7 @@ export interface CmssyPublicPricedRecord {
 
 export interface CmssyPublicPriceResult {
   items: CmssyPublicPricedRecord[];
+  currency: string | null;
   displayMode: CmssyPriceDisplayMode;
   priceWithheld: CmssyPriceWithheldReason | null;
   nextChangeAt: string | null;
@@ -76,6 +77,7 @@ export const PUBLIC_PRICES_QUERY = typedOperation<
         items: $items
         locale: $locale
       ) {
+        currency
         displayMode
         priceWithheld
         nextChangeAt
@@ -190,6 +192,7 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
       ) {
         total
         hasMore
+        currency
         displayMode
         priceWithheld
         nextChangeAt

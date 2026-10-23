@@ -206,6 +206,7 @@ export interface CmssyBuyerCatalogPage {
   items: CmssyBuyerCatalogPrice[];
   total: number;
   hasMore: boolean;
+  currency: string | null;
   displayMode: CmssyPriceDisplayMode;
   taxTreatment: CmssyTaxTreatment;
 }
@@ -266,6 +267,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
     ) {
       total
       hasMore
+      currency
       displayMode
       taxTreatment {
         kind

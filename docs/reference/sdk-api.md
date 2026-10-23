@@ -333,7 +333,8 @@ nothing, a longer one or a missing token throws before the network. It returns
 gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 `channel` prices on that sales channel; left out, the config's `channel` is
 used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way.
-`getBuyerCatalogPrices` returns `CmssyBuyerCatalogPage` with `taxTreatment`
+`getBuyerCatalogPrices` returns `CmssyBuyerCatalogPage` with `currency`
+(`string | null`, the page's currency) and `taxTreatment`
 (`CmssyTaxTreatment` - `{ kind, legalNote, buyerVatId, buyerVatCountry,
 sellerCountry, shipToCountry }`), the treatment the listed prices were taxed
 under. See [Reverse charge and VAT exemptions](../auth/member-auth.md#reverse-charge-and-vat-exemptions).
@@ -344,17 +345,22 @@ no member token, cacheable. `items` is up to `CMSSY_PUBLIC_PRICES_MAX_ITEMS`
 (50); the channel comes from the options, else the config, and a missing one
 throws before the network. It returns `CmssyPublicPriceResult`: `items`
 (`CmssyPublicPricedRecord[]` - `{ record, price }`, `price` a `CmssyBuyerPrice`
-or `null` when withheld), `displayMode`, `priceWithheld`
+or `null` when withheld or not sold in the channel's currency), `currency` (the
+channel's currency, `null` when the rows are mixed or none), `displayMode`, `priceWithheld`
 (`CmssyPriceWithheldReason | null`, one of `priceWithheldReasonValues`:
 `MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`) and `nextChangeAt` (ISO string or
 `null`). `getPublicCatalogPrices(config, query, options)` takes the
 `getBuyerCatalogPrices` listing arguments and returns `CmssyPublicCatalogPage` -
-the same plus `total` and `hasMore`. See
+the same plus `total` and `hasMore`. `currency` in those arguments filters rows
+by their currency on a default-currency channel and is not needed on a channel
+in an additional currency. See
+[Currency comes from the channel](../auth/member-auth.md#currency-comes-from-the-channel) and
 [Anonymous channel prices](../auth/member-auth.md#anonymous-channel-prices).
 
 `checkoutErrorReason(error)` returns `CmssyCheckoutErrorReason` - one of
 `checkoutErrorReasonValues`: `CART_REPRICED`, `CART_CURRENCY_CHANGED`,
-`BUYER_CHANGED`, `PRODUCT_NOT_SOLD`, `TAX_TREATMENT_CHANGED` or a
+`NO_PRICE_IN_CURRENCY` (the product has no price in the channel's currency -
+`addItem` raises it too), `BUYER_CHANGED`, `PRODUCT_NOT_SOLD`, `TAX_TREATMENT_CHANGED` or a
 `quantityRuleReasonValues` reason
 (`QUANTITY_BELOW_MIN`, `QUANTITY_ABOVE_MAX`, `QUANTITY_NOT_ON_STEP`) - when
 the API refused the cart for that reason, `undefined` otherwise.
