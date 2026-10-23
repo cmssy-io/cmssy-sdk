@@ -50,6 +50,18 @@ export function checkoutErrorReason(
   return undefined;
 }
 
+export function checkoutErrorItemId(error: unknown): string | undefined {
+  if (!(error instanceof CmssyGraphqlError)) return undefined;
+  for (const entry of error.errors) {
+    const ext = entry.extensions;
+    if (!ext || typeof ext.reason !== "string" || !REASONS.has(ext.reason)) {
+      continue;
+    }
+    return typeof ext.itemId === "string" ? ext.itemId : undefined;
+  }
+  return undefined;
+}
+
 function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value);
 }

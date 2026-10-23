@@ -15,6 +15,7 @@ import {
 import {
   channelRefusal,
   channelRefusalReasonValues,
+  checkoutErrorItemId,
   checkoutErrorReason,
   checkoutErrorReasonValues,
   quantityRuleReasonValues,
@@ -382,6 +383,50 @@ describe("checkoutErrorReason", () => {
     expect(
       checkoutErrorReason({
         errors: [{ extensions: { reason: "CART_REPRICED" } }],
+      }),
+    ).toBeUndefined();
+  });
+});
+
+describe("checkoutErrorItemId", () => {
+  it("names the unpublished line a PRODUCT_NOT_SOLD refusal points at", async () => {
+    const error = await checkoutFailure({
+      code: "CONFLICT",
+      reason: "PRODUCT_NOT_SOLD",
+      itemId: "line-7",
+    });
+
+    expect(checkoutErrorReason(error)).toBe("PRODUCT_NOT_SOLD");
+    expect(checkoutErrorItemId(error)).toBe("line-7");
+  });
+
+  it("returns undefined when the refusal names no line", async () => {
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({ code: "CONFLICT", reason: "CART_REPRICED" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({
+          code: "CONFLICT",
+          reason: "PRODUCT_NOT_SOLD",
+          itemId: 7,
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("ignores an itemId on an error that is not a checkout refusal", async () => {
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({ code: "NOT_FOUND", itemId: "line-7" }),
+      ),
+    ).toBeUndefined();
+    expect(checkoutErrorItemId(new Error("PRODUCT_NOT_SOLD"))).toBeUndefined();
+    expect(
+      checkoutErrorItemId({
+        errors: [{ extensions: { reason: "PRODUCT_NOT_SOLD", itemId: "x" } }],
       }),
     ).toBeUndefined();
   });

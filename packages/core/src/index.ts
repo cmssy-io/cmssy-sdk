@@ -111,6 +111,7 @@ export type {
 export {
   channelRefusal,
   channelRefusalReasonValues,
+  checkoutErrorItemId,
   checkoutErrorReason,
   checkoutErrorReasonValues,
   quantityRuleReasonValues,

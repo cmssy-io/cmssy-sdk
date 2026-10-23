@@ -372,6 +372,9 @@ the API refused the cart for that reason, `undefined` otherwise.
 `quantityRuleViolation(error)` returns `CmssyQuantityRuleViolation` -
 `{ reason, quantity, minQuantity, maxQuantity, increment, itemId }` - for a
 quantity reason, from checkout or from adding or updating a line.
+`checkoutErrorItemId(error)` returns the `extensions.itemId` of a checkout
+refusal that names a cart line (`PRODUCT_NOT_SOLD`, `CART_CURRENCY_CHANGED`, a
+quantity reason), `undefined` otherwise.
 `CmssyGraphqlError.reason` carries the first error's `extensions.reason` raw.
 `channelRefusal(error)` returns `CmssyChannelRefusal` - `{ reason, channel }`,
 `reason` one of `channelRefusalReasonValues`: `UNKNOWN_CHANNEL` (a key the
