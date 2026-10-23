@@ -6,6 +6,13 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.22.0
+
+**Remove `currency` if you pass it.** `getPublicCatalogPrices` /
+`getBuyerCatalogPrices` no longer take the `currency` argument deprecated in
+19.21.0 - cmssy removed it from the API. TypeScript now flags a call that still
+passes it; drop it, the listing is the channel's page in the channel's currency.
+
 ## 19.21.0
 
 **Nothing to do.** The `currency` argument of `getPublicCatalogPrices` /

@@ -312,7 +312,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
 export type GetBuyerCatalogPricesQuery = Omit<
   BuyerCatalogPricesVariables,
   "workspaceId" | "channel"
-> & { currency?: string | null };
+>;
 
 export async function getBuyerCatalogPrices(
   config: CmssyClientConfig,
@@ -324,12 +324,11 @@ export async function getBuyerCatalogPrices(
       "cmssy: getBuyerCatalogPrices needs the signed-in member's accessToken - an anonymous visitor reads the catalogue",
     );
   }
-  const { currency: _currency, ...listing } = query;
   const data = await graphqlRequest(
     config,
     BUYER_CATALOG_PRICES_QUERY,
     {
-      ...listing,
+      ...query,
       workspaceId: options.workspaceId,
       ...channelVariable(options.channel),
     },

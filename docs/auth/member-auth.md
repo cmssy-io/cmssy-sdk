@@ -549,10 +549,8 @@ const cards = page.items.map(({ record, price }) => ({
 }));
 ```
 
-The `currency` argument of `getPublicCatalogPrices` / `getBuyerCatalogPrices`
-is deprecated. It is still accepted, but no longer sent: every row is in the
-channel's currency, so the listing is always the channel's page. Pick the
-currency by picking the channel.
+Every catalogue row is in the channel's currency, so the listing is always the
+channel's page. Pick the currency by picking the channel.
 
 **A cart, its order and everything on them share one currency.**
 `Cart.currency` is the first line's currency (`null` while the cart is empty);

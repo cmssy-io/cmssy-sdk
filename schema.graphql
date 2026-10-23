@@ -29,11 +29,6 @@ type AccountQueries {
   """
   catalogPrices(
     channel: String
-
-    """
-    Keep only products priced in this currency. Required when the listing mixes currencies, which it then refuses without.
-    """
-    currency: String
     filter: JSON
     limit: Int = 20
     locale: String
@@ -659,7 +654,7 @@ type BuyerPrice {
   basePrice: Int!
   basePriceAmount: TaxedAmount!
 
-  """Channel's currency, else the product's."""
+  """Channel's currency, else the default."""
   currency: String!
   displayMode: PriceDisplayMode!
 
@@ -802,6 +797,10 @@ type CartAnalytics {
   funnel: CartFunnel!
   series: [CartSeriesPoint!]!
   to: DateTime!
+
+  """
+  Grouped by currency, the default currency first, and ranked within each currency; `limit` applies per currency. Values are never added across currencies.
+  """
   topAbandonedProducts(limit: Int): [AbandonedProduct!]!
 }
 
@@ -1042,6 +1041,11 @@ type CartTaxSummaryLine {
 type CatalogItem {
   available: Int
   createdAt: DateTime!
+
+  """
+  Record-level prices in additional currencies. The price is read only while the product has no variants; tiers also price variants without their own.
+  """
+  currencyPrices: [CurrencyPrice!]!
   data: JSON!
   hasVariants: Boolean!
   id: String!
@@ -1067,6 +1071,11 @@ type CatalogVariantSelection {
 
 type CatalogVariantStock {
   available: Int
+
+  """
+  The variant's prices in additional currencies; disabled currencies come back with enabled false.
+  """
+  currencyPrices: [CurrencyPrice!]!
   key: String!
   onHand: Int
   price: Int!
@@ -2586,7 +2595,6 @@ type ModelMutations {
 Commerce capability of a model. The *Field values are what is stored (null = no override); `roles` is what the cart actually reads.
 """
 type ModelProductConfig {
-  currencyField: String
   enabled: Boolean!
   imageField: String
   inventoryField: String!
@@ -2599,13 +2607,9 @@ type ModelProductConfig {
 }
 
 """
-Commerce capability PATCH: omitted keys keep their stored values. nameField/currencyField/imageField/taxRateField are overrides - null clears one so the resolved default applies again; skuField/priceField/inventoryField always hold a key. Every role is graded against the key it RESOLVES to, cleared or not: that field must exist and must be of a type the role can read - a number for priceField/inventoryField, a string-valued type for nameField/currencyField/skuField/taxRateField (and currencyField/skuField/taxRateField may not name a translatable field: something reads each of those three without resolving a locale), media, a list of media, text or url for imageField. A role resolving to nothing is refused only where the reader cannot do without it: nameField always, priceField while variantAxes is empty.
+Commerce capability PATCH: omitted keys keep their stored values. nameField/imageField/taxRateField are overrides - null clears one so the resolved default applies again; skuField/priceField/inventoryField always hold a key. Every role is graded against the key it RESOLVES to, cleared or not: that field must exist and must be of a type the role can read - a number for priceField/inventoryField, a string-valued type for nameField/skuField/taxRateField (and skuField/taxRateField may not name a translatable field: something reads each of those two without resolving a locale), media, a list of media, text or url for imageField. A role resolving to nothing is refused only where the reader cannot do without it: nameField always, priceField while variantAxes is empty.
 """
 input ModelProductConfigInput {
-  """
-  Retired (CMS-2140): only null is accepted, which clears a stored value. Set prices per currency instead.
-  """
-  currencyField: String
   enabled: Boolean
   imageField: String
   inventoryField: String
@@ -3354,9 +3358,32 @@ type OrderPricingChain {
 }
 
 type OrderQueries {
+  """
+  Every currency the workspace's orders carry, including ones no longer enabled - for filtering orders by currency (CMS-2142).
+  """
+  currencies: [String!]!
   editPreview(input: EditOrderInput!): OrderEditPreview!
   get(id: ID!): Order
-  list(companyId: ID, customerId: ID, dateFrom: DateTime, dateTo: DateTime, deliveryStatus: OrderDeliveryStatus, fulfillmentStatus: String, limit: Int, paymentStatus: String, pipelineStageId: String, queue: OrderQueue, search: String, skip: Int, state: OrderState): OrderListResult!
+  list(
+    companyId: ID
+
+    """
+    Only orders placed in this currency (ISO 4217). Order amounts are never added across currencies.
+    """
+    currency: String
+    customerId: ID
+    dateFrom: DateTime
+    dateTo: DateTime
+    deliveryStatus: OrderDeliveryStatus
+    fulfillmentStatus: String
+    limit: Int
+    paymentStatus: String
+    pipelineStageId: String
+    queue: OrderQueue
+    search: String
+    skip: Int
+    state: OrderState
+  ): OrderListResult!
 
   """
   The number the workspace's next order will get. Order numbers only ever go up.
@@ -4348,7 +4375,6 @@ type ProductCatalogList {
 Which record fields carry the roles the cart reads, resolved server-side: an unset role falls back to the model's displayField (name) or the conventional key.
 """
 type ProductFieldRoles {
-  currency: String!
   image: String!
   name: String!
   price: String!
@@ -4370,7 +4396,7 @@ type ProductMutations {
   ): Int!
 
   """
-  Replace a product's record-level prices in additional currencies (CMS-2140).
+  Replace a product's prices in additional currencies - the record's and, optionally, its variants' - in one write (CMS-2140, CMS-2142).
   """
   setCurrencyPrices(input: SetProductCurrencyPricesInput!): ModelRecord!
 
@@ -4998,7 +5024,7 @@ type PublicPriceRange {
 }
 
 type PublicPriceResult {
-  """Null when none or mixed."""
+  """The channel currency, else the default."""
   currency: String
   displayMode: PriceDisplayMode!
   items: [PublicPricedRecord!]!
@@ -5013,7 +5039,7 @@ type PublicPricedRecord {
 }
 
 type PublicPricedRecordPage {
-  """Null when none or mixed."""
+  """The channel currency, else the default."""
   currency: String
   displayMode: PriceDisplayMode!
   hasMore: Boolean!
@@ -5024,7 +5050,7 @@ type PublicPricedRecordPage {
 }
 
 type PublicPricingQueries {
-  catalogPrices(channel: String!, currency: String, filter: JSON, limit: Int = 20, locale: String, modelSlug: String!, offset: Int = 0, priceMax: Int, priceMin: Int, sku: String, sort: BuyerCatalogSort = PRICE_ASC, stockState: String, workspaceId: String!): PublicPricedRecordPage!
+  catalogPrices(channel: String!, filter: JSON, limit: Int = 20, locale: String, modelSlug: String!, offset: Int = 0, priceMax: Int, priceMin: Int, sku: String, sort: BuyerCatalogSort = PRICE_ASC, stockState: String, workspaceId: String!): PublicPricedRecordPage!
   prices(channel: String!, items: [PriceQueryItem!]!, locale: String, workspaceId: String!): PublicPriceResult!
 }
 
@@ -5558,6 +5584,11 @@ input SetProductCurrencyPricesInput {
   """
   prices: [CurrencyPriceInput!]!
   recordId: ID!
+
+  """
+  Variant prices per currency, written in the same update as the record's. Variants left out keep theirs; never touches price, sku or stock.
+  """
+  variants: [VariantCurrencyPricesInput!]
 }
 
 input SetProductTiersInput {
@@ -5763,6 +5794,7 @@ type SiteConfig {
   branding: SiteBranding
   canUseCart: Boolean!
   cart: CartConfig
+  currencies: WorkspaceCurrencies!
   defaultLanguage: String!
   enabledFeatures: [String!]!
   enabledLanguages: [String!]!
@@ -6452,6 +6484,12 @@ type VariantCurrencyPrices {
   variantKey: String!
 }
 
+input VariantCurrencyPricesInput {
+  """Replaces this variant's list; [] clears it."""
+  prices: [VariantCurrencyPriceInput!]!
+  variantKey: String!
+}
+
 type ViewerMutations {
   authorizeAvatarUpload(mimeType: String!, size: Int!): AuthorizeAvatarUploadPayload!
   beginMfa: MfaEnrolment!
@@ -6631,6 +6669,14 @@ type WorkspaceBranding {
   logoDarkUrl: String
   logoUrl: String
   ogImageUrl: String
+}
+
+"""
+The currencies the workspace prices in, resolved the way pricing resolves them - set even when the workspace never saved a cart config.
+"""
+type WorkspaceCurrencies {
+  additionalCurrencies: [String!]!
+  defaultCurrency: String!
 }
 
 type WorkspaceMemberType {

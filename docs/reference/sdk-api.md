@@ -353,9 +353,8 @@ channel's currency, else the workspace default - every row is in it),
 `MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`) and `nextChangeAt` (ISO string or
 `null`). `getPublicCatalogPrices(config, query, options)` takes the
 `getBuyerCatalogPrices` listing arguments and returns `CmssyPublicCatalogPage` -
-the same plus `total` and `hasMore`. `currency` in those arguments is
-deprecated and no longer sent: every row is in the channel's currency, so the
-listing is always the channel's page. See
+the same plus `total` and `hasMore`. Every row is in the channel's currency, so
+the listing is always the channel's page. See
 [Currency comes from the channel](../auth/member-auth.md#currency-comes-from-the-channel) and
 [Anonymous channel prices](../auth/member-auth.md#anonymous-channel-prices).
 
