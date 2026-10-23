@@ -220,29 +220,6 @@ describe("getPublicCatalogPrices", () => {
     });
   });
 
-  it("takes the deprecated currency option but never sends it, so the channel's page comes back", async () => {
-    const { fetch, calls } = capturingFetch({
-      data: {
-        public: {
-          pricing: { catalogPrices: PAGE },
-        },
-      },
-    });
-
-    const page = await getPublicCatalogPrices(
-      { ...config, channel: "eu-export" },
-      { modelSlug: "products", currency: "EUR" },
-      { workspaceId: "w1", fetch },
-    );
-
-    expect(page).toEqual(PAGE);
-    expect(calls[0]?.query).not.toMatch(/\$currency/);
-    expect(calls[0]?.variables).toEqual({
-      workspaceId: "w1",
-      channel: "eu-export",
-      modelSlug: "products",
-    });
-  });
 
   it("refuses without a channel, before the network", async () => {
     const { fetch, calls } = capturingFetch({});

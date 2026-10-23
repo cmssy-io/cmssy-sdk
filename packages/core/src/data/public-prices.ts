@@ -307,7 +307,7 @@ export async function getPublicPrices(
 export type GetPublicCatalogPricesQuery = Omit<
   PublicCatalogPricesVariables,
   "workspaceId" | "channel"
-> & { currency?: string | null };
+>;
 
 export async function getPublicCatalogPrices(
   config: CmssyClientConfig,
@@ -315,11 +315,10 @@ export async function getPublicCatalogPrices(
   options: Omit<GetPublicPricesOptions, "locale">,
 ): Promise<CmssyPublicCatalogPage> {
   const channel = requireChannel(config, options, "getPublicCatalogPrices");
-  const { currency: _currency, ...listing } = query;
   const data = await graphqlRequest(
     config,
     PUBLIC_CATALOG_PRICES_QUERY,
-    { ...listing, workspaceId: options.workspaceId, channel },
+    { ...query, workspaceId: options.workspaceId, channel },
     {
       public: true,
       fetch: options.fetch,

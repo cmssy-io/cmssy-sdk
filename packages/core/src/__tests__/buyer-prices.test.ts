@@ -572,25 +572,6 @@ describe("getBuyerCatalogPrices", () => {
     });
   });
 
-  it("takes the deprecated currency option but never sends it, so the channel's page comes back", async () => {
-    const { fetch, calls } = capturingFetch({
-      data: { account: { catalogPrices: PAGE } },
-    });
-
-    const page = await getBuyerCatalogPrices(
-      { ...config, channel: "horeca" },
-      { modelSlug: "products", currency: "USD" },
-      { workspaceId: "w1", accessToken: "tok", fetch },
-    );
-
-    expect(page).toEqual(PAGE);
-    expect(calls[0]?.query).not.toMatch(/\$currency/);
-    expect(calls[0]?.variables).toEqual({
-      workspaceId: "w1",
-      modelSlug: "products",
-      channel: "horeca",
-    });
-  });
 
   it("refuses without a member token, before the network", async () => {
     const { fetch, calls } = capturingFetch({});
