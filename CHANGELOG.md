@@ -6,6 +6,17 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.19.0
+
+**Send `expectedTotal`.** cmssy re-prices cart lines to the live price on
+every cart read (a catalogue or price-list price changed after the line was
+added), where it used to keep the price from the moment of adding. Checkout
+refuses with `CART_REPRICED` when its own read changed a price. Pass the
+`totalGross` you showed as `CheckoutInput.expectedTotal`: checkout then also
+refuses when another read re-priced the cart silently before checkout. A line
+whose product changed currency now refuses with `CART_CURRENCY_CHANGED`. The
+vendored SDL adds `expectedTotal`. Needs a cmssy API that serves it.
+
 ## 19.18.0
 
 **Act if you sell from outside the EU.** `taxTreatmentKindValues` and
