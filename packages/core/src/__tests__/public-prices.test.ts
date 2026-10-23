@@ -107,6 +107,20 @@ describe("getPublicPrices", () => {
     });
   });
 
+  it("previews unpublished products with the draft secret", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { pricing: { prices: RESULT } } },
+    });
+
+    await getPublicPrices(
+      { ...config, channel: "horeca" },
+      [{ recordId: "p1" }],
+      { workspaceId: "w1", previewSecret: "draft-1", fetch },
+    );
+
+    expect(calls[0]?.variables.previewSecret).toBe("draft-1");
+  });
+
   it("returns a withheld result as served: no prices and the reason", async () => {
     const withheld: CmssyPublicPriceResult = {
       ...RESULT,
@@ -220,6 +234,19 @@ describe("getPublicCatalogPrices", () => {
     });
   });
 
+  it("lists unpublished products too with the draft secret", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { pricing: { catalogPrices: PAGE } } },
+    });
+
+    await getPublicCatalogPrices(
+      { ...config, channel: "horeca" },
+      { modelSlug: "products" },
+      { workspaceId: "w1", previewSecret: "draft-1", fetch },
+    );
+
+    expect(calls[0]?.variables.previewSecret).toBe("draft-1");
+  });
 
   it("refuses without a channel, before the network", async () => {
     const { fetch, calls } = capturingFetch({});

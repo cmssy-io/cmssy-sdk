@@ -133,6 +133,7 @@ export async function loadCmssyRoute(
     isPreview,
     config: config as CmssyConfig,
     appContext,
+    previewSecret: secret,
   };
 
   const [pageBlocks, ...layoutBlocks] = await Promise.all([

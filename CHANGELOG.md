@@ -6,6 +6,21 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.23.0
+
+**Nothing to do.** cmssy can now unpublish a record: an unpublished record is
+left out of every public read until it is published again. A preview still
+shows it:
+
+- the editor preview, `loadCmssyRoute({ isPreview })` and a previewed layout
+  resolve block relations with the draft secret, so a block that picks an
+  unpublished product shows that product in the preview;
+- `getPublicPrices` and `getPublicCatalogPrices` take `previewSecret`;
+- the relation reads (`RECORDS_BY_IDS_QUERY`, `MODEL_RECORDS_QUERY`) accept
+  `previewSecret`.
+
+Published sites are unchanged: without the secret, unpublished records stay out.
+
 ## 19.22.0
 
 **Remove `currency` if you pass it.** `getPublicCatalogPrices` /

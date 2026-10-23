@@ -98,8 +98,7 @@ export async function resolveCmssyLayoutSlot(
   const slugSegments = fromPath.path ?? [];
   const page = layoutSlotPage(explicitPage ?? "/" + slugSegments.join("/"));
 
-  const previewSecret =
-    editMode || preview ? config.draftSecret : undefined;
+  const previewSecret = editMode || preview ? config.draftSecret : undefined;
   let groups: CmssyLayoutGroup[] = [];
   let unavailable: CmssyLayoutUnavailable | undefined;
   try {
@@ -153,6 +152,7 @@ export async function resolveCmssyLayoutSlot(
     isPreview: true,
     config,
     appContext,
+    previewSecret,
   });
 
   return {

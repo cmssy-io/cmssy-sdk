@@ -54,6 +54,7 @@ export interface PublicPricesVariables {
   channel: string;
   items: CmssyPriceQueryItem[];
   locale?: string | null;
+  previewSecret?: string | null;
 }
 
 export interface PublicPricesResult {
@@ -68,6 +69,7 @@ export const PUBLIC_PRICES_QUERY = typedOperation<
   $channel: String!
   $items: [PriceQueryItem!]!
   $locale: String
+  $previewSecret: String
 ) {
   public {
     pricing {
@@ -76,6 +78,7 @@ export const PUBLIC_PRICES_QUERY = typedOperation<
         channel: $channel
         items: $items
         locale: $locale
+        previewSecret: $previewSecret
       ) {
         currency
         displayMode
@@ -148,6 +151,7 @@ export interface PublicCatalogPricesVariables {
   sort?: CmssyBuyerCatalogSort | null;
   limit?: number | null;
   offset?: number | null;
+  previewSecret?: string | null;
 }
 
 export interface PublicCatalogPricesResult {
@@ -170,6 +174,7 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
   $sort: BuyerCatalogSort
   $limit: Int
   $offset: Int
+  $previewSecret: String
 ) {
   public {
     pricing {
@@ -186,6 +191,7 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
         sort: $sort
         limit: $limit
         offset: $offset
+        previewSecret: $previewSecret
       ) {
         total
         hasMore
@@ -251,6 +257,7 @@ export interface GetPublicPricesOptions {
   workspaceId: string;
   channel?: string;
   locale?: string | null;
+  previewSecret?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
   retry?: RetryOption;
@@ -291,6 +298,9 @@ export async function getPublicPrices(
         variantKey ? { recordId, variantKey } : { recordId },
       ),
       ...(options.locale ? { locale: options.locale } : {}),
+      ...(options.previewSecret
+        ? { previewSecret: options.previewSecret }
+        : {}),
     },
     {
       public: true,
@@ -306,7 +316,7 @@ export async function getPublicPrices(
 
 export type GetPublicCatalogPricesQuery = Omit<
   PublicCatalogPricesVariables,
-  "workspaceId" | "channel"
+  "workspaceId" | "channel" | "previewSecret"
 >;
 
 export async function getPublicCatalogPrices(
@@ -318,7 +328,14 @@ export async function getPublicCatalogPrices(
   const data = await graphqlRequest(
     config,
     PUBLIC_CATALOG_PRICES_QUERY,
-    { ...query, workspaceId: options.workspaceId, channel },
+    {
+      ...query,
+      workspaceId: options.workspaceId,
+      channel,
+      ...(options.previewSecret
+        ? { previewSecret: options.previewSecret }
+        : {}),
+    },
     {
       public: true,
       fetch: options.fetch,

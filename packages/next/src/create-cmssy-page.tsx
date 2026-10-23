@@ -231,6 +231,7 @@ function buildCmssyPageRenderer(
         isPreview: true,
         config,
         appContext,
+        previewSecret: config.draftSecret,
       });
       return (
         <CmssyLocaleProvider value={localeContext}>

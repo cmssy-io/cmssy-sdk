@@ -42,8 +42,7 @@ const PAGE = {
 const fetchLayouts = vi.hoisted(() => vi.fn());
 const fetchPage = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
-  const actual =
-    await importActual<typeof import("@cmssy/core/internal")>();
+  const actual = await importActual<typeof import("@cmssy/core/internal")>();
   return { ...actual, fetchLayouts, fetchPage };
 });
 
@@ -161,6 +160,25 @@ describe("loadCmssyRoute (CMS-1874)", () => {
     expect(fetchLayouts.mock.calls[0]?.[2]).toMatchObject({
       previewSecret: "draft-secret-1234",
     });
+  });
+
+  it("resolves block relations with the preview secret, so unpublished records show in a preview", async () => {
+    setup();
+
+    await loadCmssyRoute(CONFIG, { blocks: [], path: [], isPreview: true });
+    expect(
+      resolveEditorBlockData.mock.calls[0]?.[0].previewSecret,
+      "The page is previewed as a draft; a block relation to a record not yet published must preview with it.",
+    ).toBe("draft-secret-1234");
+    expect(resolveEditorLayoutBlockData.mock.calls[0]?.[0].previewSecret).toBe(
+      "draft-secret-1234",
+    );
+
+    resolveEditorBlockData.mockClear();
+    await loadCmssyRoute(CONFIG, { blocks: [], path: [] });
+    expect(
+      resolveEditorBlockData.mock.calls[0]?.[0].previewSecret,
+    ).toBeUndefined();
   });
 
   it("forwards a caller who asked for no retries at all", async () => {

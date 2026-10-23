@@ -340,7 +340,7 @@ used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way
 sellerCountry, shipToCountry }`), the treatment the listed prices were taxed
 under. See [Reverse charge and VAT exemptions](../auth/member-auth.md#reverse-charge-and-vat-exemptions).
 
-`await getPublicPrices(config, items, { workspaceId, channel?, locale?, fetch?, signal?, retry? })`
+`await getPublicPrices(config, items, { workspaceId, channel?, locale?, previewSecret?, fetch?, signal?, retry? })`
 reads a sales channel's prices for an anonymous visitor - `public.pricing.prices`,
 no member token, cacheable. `items` is up to `CMSSY_PUBLIC_PRICES_MAX_ITEMS`
 (50); the channel comes from the options, else the config, and a missing one
@@ -354,7 +354,9 @@ channel's currency, else the workspace default - every row is in it),
 `null`). `getPublicCatalogPrices(config, query, options)` takes the
 `getBuyerCatalogPrices` listing arguments and returns `CmssyPublicCatalogPage` -
 the same plus `total` and `hasMore`. Every row is in the channel's currency, so
-the listing is always the channel's page. See
+the listing is always the channel's page. Both leave out a product its editor
+unpublished; pass the workspace draft secret as `previewSecret` to price it in a
+preview. See
 [Currency comes from the channel](../auth/member-auth.md#currency-comes-from-the-channel) and
 [Anonymous channel prices](../auth/member-auth.md#anonymous-channel-prices).
 
