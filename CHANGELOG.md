@@ -6,6 +6,21 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.24.0
+
+**Nothing to do.** `getBuyerPrices` and `getBuyerCatalogPrices` take
+`previewSecret`, like the public price helpers: with the workspace draft secret
+a signed-in member is priced for an unpublished product too, so a draft product
+in a storefront preview shows the member's price. Needs the cmssy API that
+accepts `previewSecret` on `account.prices` / `account.catalogPrices`; without
+the secret nothing changes.
+
+`checkoutErrorItemId(error)` (new) returns the cart line a checkout refusal
+names, from `extensions.itemId`. cmssy now refuses checkout and a quantity
+change with `PRODUCT_NOT_SOLD` and the line's `itemId` when a line's product was
+unpublished, and serves that line's `CartItem.currentPrice` as `null`; quantity
+0 still removes it.
+
 ## 19.23.0
 
 **Nothing to do.** cmssy can now unpublish a record: an unpublished record is

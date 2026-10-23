@@ -317,7 +317,7 @@ satisfy as they come. All from `@cmssy/core`.
 
 ### Buyer prices
 
-`await getBuyerPrices(config, items, { workspaceId, accessToken, channel?, fetch?, signal?, retry? })`
+`await getBuyerPrices(config, items, { workspaceId, accessToken, channel?, previewSecret?, fetch?, signal?, retry? })`
 reads the signed-in member's prices - `account.prices` on the delivery route,
 with the member's token. `items` is up to `CMSSY_BUYER_PRICES_MAX_ITEMS` (100)
 `CmssyPriceQueryItem`s - `{ recordId, variantKey? }`; an empty list sends
@@ -333,6 +333,8 @@ nothing, a longer one or a missing token throws before the network. It returns
 gross }`). Server-side only, and never cached for another visitor - see [Member auth](../auth/member-auth.md#buyer-prices).
 `channel` prices on that sales channel; left out, the config's `channel` is
 used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way.
+Both leave out a product its editor unpublished; pass the workspace draft
+secret as `previewSecret` to price it for the member in a preview.
 `getBuyerCatalogPrices` returns `CmssyBuyerCatalogPage` with `currency`
 (`string | null`, the page's currency, by the same rule as
 `CmssyPublicPriceResult.currency`) and `taxTreatment`
@@ -370,6 +372,9 @@ the API refused the cart for that reason, `undefined` otherwise.
 `quantityRuleViolation(error)` returns `CmssyQuantityRuleViolation` -
 `{ reason, quantity, minQuantity, maxQuantity, increment, itemId }` - for a
 quantity reason, from checkout or from adding or updating a line.
+`checkoutErrorItemId(error)` returns the `extensions.itemId` of a checkout
+refusal that names a cart line (`PRODUCT_NOT_SOLD`, `CART_CURRENCY_CHANGED`, a
+quantity reason), `undefined` otherwise.
 `CmssyGraphqlError.reason` carries the first error's `extensions.reason` raw.
 `channelRefusal(error)` returns `CmssyChannelRefusal` - `{ reason, channel }`,
 `reason` one of `channelRefusalReasonValues`: `UNKNOWN_CHANNEL` (a key the

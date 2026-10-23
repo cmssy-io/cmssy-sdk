@@ -292,7 +292,7 @@ names the case; `CmssyGraphqlError.reason` carries the raw value.
 | `CART_REPRICED`         | The buyer's prices changed since the cart was read, or the total differs from `expectedTotal` | Read the cart again, show the new total, let the buyer check out |
 | `CART_CURRENCY_CHANGED` | A line is now priced in another currency than the cart (its price list or the product changed) | Remove that line (`extensions.itemId`) and add the product again |
 | `BUYER_CHANGED`         | The cart was restamped for another buyer (company switch, guest cart bound at sign-in) | Read the cart again, show the new total, let the buyer check out |
-| `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
+| `PRODUCT_NOT_SOLD`      | A line's product is no longer sold or was unpublished; `updateItem` with a quantity above 0 raises it too, and that line's `currentPrice` is `null` | Remove that line (`checkoutErrorItemId(error)`)                  |
 | `TAX_TREATMENT_CHANGED` | The checkout address taxes the order unlike the cart (reverse charge, see below) | Set the address on the cart (`cart.setShippingAddress`), read the cart again, then check out |
 | `NO_PRICE_IN_CURRENCY`  | The product has no price in the channel's currency (see [Currency comes from the channel](#currency-comes-from-the-channel)); also raised by `addItem` | Do not offer the product on this channel                         |
 | `QUANTITY_BELOW_MIN`    | A line is below the buyer's minimum                                   | Set the line to an allowed quantity                              |

@@ -31,6 +31,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "buildBlockManifest",
   "channelRefusal",
   "channelRefusalReasonValues",
+  "checkoutErrorItemId",
   "checkoutErrorReason",
   "checkoutErrorReasonValues",
   "createCmssyClient",

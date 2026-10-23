@@ -15,6 +15,7 @@ import {
 import {
   channelRefusal,
   channelRefusalReasonValues,
+  checkoutErrorItemId,
   checkoutErrorReason,
   checkoutErrorReasonValues,
   quantityRuleReasonValues,
@@ -160,6 +161,29 @@ describe("getBuyerPrices", () => {
 
     expect(calls[0]?.variables.channel).toBe("retail");
     expect(calls[1]?.variables.channel).toBeNull();
+  });
+
+  it("passes previewSecret to account.prices only when it is set", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { prices: [] } },
+    });
+    const options = { workspaceId: "w1", accessToken: "tok", fetch };
+
+    await getBuyerPrices(config, [{ recordId: "p1" }], {
+      ...options,
+      previewSecret: "draft-1",
+    });
+    await getBuyerPrices(config, [{ recordId: "p1" }], options);
+    await getBuyerPrices(config, [{ recordId: "p1" }], {
+      ...options,
+      previewSecret: "",
+    });
+
+    expect(calls[0]?.query).toMatch(/\$previewSecret: String\b/);
+    expect(calls[0]?.query).toMatch(/prices\([^)]*previewSecret: \$previewSecret/);
+    expect(calls[0]?.variables.previewSecret).toBe("draft-1");
+    expect(calls[1]?.variables).not.toHaveProperty("previewSecret");
+    expect(calls[2]?.variables).not.toHaveProperty("previewSecret");
   });
 
   it("drops an empty or null variantKey rather than sending it", async () => {
@@ -359,6 +383,50 @@ describe("checkoutErrorReason", () => {
     expect(
       checkoutErrorReason({
         errors: [{ extensions: { reason: "CART_REPRICED" } }],
+      }),
+    ).toBeUndefined();
+  });
+});
+
+describe("checkoutErrorItemId", () => {
+  it("names the unpublished line a PRODUCT_NOT_SOLD refusal points at", async () => {
+    const error = await checkoutFailure({
+      code: "CONFLICT",
+      reason: "PRODUCT_NOT_SOLD",
+      itemId: "line-7",
+    });
+
+    expect(checkoutErrorReason(error)).toBe("PRODUCT_NOT_SOLD");
+    expect(checkoutErrorItemId(error)).toBe("line-7");
+  });
+
+  it("returns undefined when the refusal names no line", async () => {
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({ code: "CONFLICT", reason: "CART_REPRICED" }),
+      ),
+    ).toBeUndefined();
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({
+          code: "CONFLICT",
+          reason: "PRODUCT_NOT_SOLD",
+          itemId: 7,
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("ignores an itemId on an error that is not a checkout refusal", async () => {
+    expect(
+      checkoutErrorItemId(
+        await checkoutFailure({ code: "NOT_FOUND", itemId: "line-7" }),
+      ),
+    ).toBeUndefined();
+    expect(checkoutErrorItemId(new Error("PRODUCT_NOT_SOLD"))).toBeUndefined();
+    expect(
+      checkoutErrorItemId({
+        errors: [{ extensions: { reason: "PRODUCT_NOT_SOLD", itemId: "x" } }],
       }),
     ).toBeUndefined();
   });
@@ -572,6 +640,29 @@ describe("getBuyerCatalogPrices", () => {
     });
   });
 
+
+  it("passes previewSecret to account.catalogPrices only when it is set", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { catalogPrices: PAGE } },
+    });
+    const options = { workspaceId: "w1", accessToken: "tok", fetch };
+
+    await getBuyerCatalogPrices(
+      config,
+      { modelSlug: "products" },
+      { ...options, previewSecret: "draft-1" },
+    );
+    await getBuyerCatalogPrices(config, { modelSlug: "products" }, options);
+
+    expect(calls[0]?.query).toMatch(/\$previewSecret: String\b/);
+    expect(calls[0]?.query).toMatch(/catalogPrices\([^)]*previewSecret: \$previewSecret/);
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      modelSlug: "products",
+      previewSecret: "draft-1",
+    });
+    expect(calls[1]?.variables).not.toHaveProperty("previewSecret");
+  });
 
   it("refuses without a member token, before the network", async () => {
     const { fetch, calls } = capturingFetch({});

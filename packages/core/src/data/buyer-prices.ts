@@ -76,6 +76,7 @@ export interface BuyerPricesVariables {
   workspaceId: string;
   items: CmssyPriceQueryItem[];
   channel?: string | null;
+  previewSecret?: string | null;
 }
 
 export interface BuyerPricesResult {
@@ -89,9 +90,15 @@ export const BUYER_PRICES_QUERY = typedOperation<
   $workspaceId: ID!
   $items: [PriceQueryItem!]!
   $channel: String
+  $previewSecret: String
 ) {
   account {
-    prices(workspaceId: $workspaceId, items: $items, channel: $channel) {
+    prices(
+      workspaceId: $workspaceId
+      items: $items
+      channel: $channel
+      previewSecret: $previewSecret
+    ) {
       recordId
       variantKey
       currency
@@ -134,6 +141,7 @@ export interface GetBuyerPricesOptions {
   workspaceId: string;
   accessToken: string;
   channel?: string | null;
+  previewSecret?: string;
   fetch?: FetchLike;
   signal?: AbortSignal;
   retry?: RetryOption;
@@ -164,6 +172,7 @@ export async function getBuyerPrices(
         variantKey ? { recordId, variantKey } : { recordId },
       ),
       ...channelVariable(options.channel),
+      ...previewSecretVariable(options.previewSecret),
     },
     {
       public: true,
@@ -224,6 +233,7 @@ export interface BuyerCatalogPricesVariables {
   limit?: number | null;
   offset?: number | null;
   channel?: string | null;
+  previewSecret?: string | null;
 }
 
 export interface BuyerCatalogPricesResult {
@@ -246,6 +256,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
   $limit: Int
   $offset: Int
   $channel: String
+  $previewSecret: String
 ) {
   account {
     catalogPrices(
@@ -260,6 +271,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
       sort: $sort
       limit: $limit
       offset: $offset
+      previewSecret: $previewSecret
       channel: $channel
     ) {
       total
@@ -311,7 +323,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
 
 export type GetBuyerCatalogPricesQuery = Omit<
   BuyerCatalogPricesVariables,
-  "workspaceId" | "channel"
+  "workspaceId" | "channel" | "previewSecret"
 >;
 
 export async function getBuyerCatalogPrices(
@@ -331,6 +343,7 @@ export async function getBuyerCatalogPrices(
       ...query,
       workspaceId: options.workspaceId,
       ...channelVariable(options.channel),
+      ...previewSecretVariable(options.previewSecret),
     },
     {
       public: true,
@@ -351,4 +364,10 @@ function channelVariable(
   channel: string | null | undefined,
 ): { channel?: string | null } {
   return channel === undefined ? {} : { channel };
+}
+
+function previewSecretVariable(
+  previewSecret: string | undefined,
+): { previewSecret?: string } {
+  return previewSecret ? { previewSecret } : {};
 }
