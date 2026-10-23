@@ -162,6 +162,29 @@ describe("getBuyerPrices", () => {
     expect(calls[1]?.variables.channel).toBeNull();
   });
 
+  it("passes previewSecret to account.prices only when it is set", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { prices: [] } },
+    });
+    const options = { workspaceId: "w1", accessToken: "tok", fetch };
+
+    await getBuyerPrices(config, [{ recordId: "p1" }], {
+      ...options,
+      previewSecret: "draft-1",
+    });
+    await getBuyerPrices(config, [{ recordId: "p1" }], options);
+    await getBuyerPrices(config, [{ recordId: "p1" }], {
+      ...options,
+      previewSecret: "",
+    });
+
+    expect(calls[0]?.query).toMatch(/\$previewSecret: String\b/);
+    expect(calls[0]?.query).toMatch(/prices\([^)]*previewSecret: \$previewSecret/);
+    expect(calls[0]?.variables.previewSecret).toBe("draft-1");
+    expect(calls[1]?.variables).not.toHaveProperty("previewSecret");
+    expect(calls[2]?.variables).not.toHaveProperty("previewSecret");
+  });
+
   it("drops an empty or null variantKey rather than sending it", async () => {
     const { fetch, calls } = capturingFetch({
       data: { account: { prices: [] } },
@@ -572,6 +595,29 @@ describe("getBuyerCatalogPrices", () => {
     });
   });
 
+
+  it("passes previewSecret to account.catalogPrices only when it is set", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { account: { catalogPrices: PAGE } },
+    });
+    const options = { workspaceId: "w1", accessToken: "tok", fetch };
+
+    await getBuyerCatalogPrices(
+      config,
+      { modelSlug: "products" },
+      { ...options, previewSecret: "draft-1" },
+    );
+    await getBuyerCatalogPrices(config, { modelSlug: "products" }, options);
+
+    expect(calls[0]?.query).toMatch(/\$previewSecret: String\b/);
+    expect(calls[0]?.query).toMatch(/catalogPrices\([^)]*previewSecret: \$previewSecret/);
+    expect(calls[0]?.variables).toEqual({
+      workspaceId: "w1",
+      modelSlug: "products",
+      previewSecret: "draft-1",
+    });
+    expect(calls[1]?.variables).not.toHaveProperty("previewSecret");
+  });
 
   it("refuses without a member token, before the network", async () => {
     const { fetch, calls } = capturingFetch({});

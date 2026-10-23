@@ -35,6 +35,11 @@ type AccountQueries {
     modelSlug: String!
     offset: Int = 0
 
+    """
+    The workspace draft secret. With it, unpublished records are priced too - for previewing a record before it goes live.
+    """
+    previewSecret: String
+
     """Highest price to include, in minor units of the listing's currency."""
     priceMax: Int
 
@@ -55,7 +60,16 @@ type AccountQueries {
   """
   The signed-in member's prices for up to 100 products, one row per item asked; an unknown or hidden product is left out. Read it after the cached, anonymous catalogue has rendered, and never cache the response for another visitor.
   """
-  prices(channel: String, items: [PriceQueryItem!]!, workspaceId: ID!): [BuyerPrice!]!
+  prices(
+    channel: String
+    items: [PriceQueryItem!]!
+
+    """
+    The workspace draft secret. With it, unpublished records are priced too - for previewing a record before it goes live.
+    """
+    previewSecret: String
+    workspaceId: ID!
+  ): [BuyerPrice!]!
 
   """The signed-in member's own account record."""
   profile(workspaceId: ID!): MemberProfile!
@@ -5310,6 +5324,9 @@ type RecordQueries {
     offset: Int
     populate: [String!]
     sort: String
+
+    """Only published or only unpublished records. All when omitted."""
+    visibility: RecordVisibility
   ): ModelRecordList!
 
   """
@@ -5343,6 +5360,14 @@ type RecordUsage {
   pageSlug: String!
   position: String!
   version: String!
+}
+
+"""
+Whether a record is served by the delivery API. `unpublished` records are hidden from every public read until published again.
+"""
+enum RecordVisibility {
+  published
+  unpublished
 }
 
 input RefundOrderInput {
