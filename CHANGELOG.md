@@ -6,6 +6,30 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.20.0
+
+**Act if you format prices yourself.** cmssy sells in several currencies: a
+workspace keeps one default currency and may enable additional ones, and each
+sales channel sells in one of them - nothing is converted. Format every amount
+with the `currency` the API returns next to it, never a hard-coded or default
+currency, and divide by that currency's own decimals rather than 100. New:
+`CmssyPublicPriceResult.currency`, `CmssyPublicCatalogPage.currency` and
+`CmssyBuyerCatalogPage.currency` (`string | null` - the channel's currency on a
+channel in an additional currency; on a default-currency channel, where a row
+may carry its own currency, the rows' single currency, null when mixed or
+none). Format each amount with its row's `currency`. `checkoutErrorReason` names
+`NO_PRICE_IN_CURRENCY` - the product has no price in the channel's currency,
+raised by `addItem` too; `checkoutErrorReasonValues` takes the cart currency
+reasons from `@cmssy/types` 0.70.0 (`cartCurrencyReasonValues`). On a channel
+in an additional currency, `public.pricing` leaves `price` null for a product
+not sold in it and the catalogue pages leave it out. The `currency` argument of
+`getPublicCatalogPrices` / `getBuyerCatalogPrices` keeps filtering rows by
+currency. The vendored SDL adds `additionalCurrencies` on cart config,
+`currency` on sales channels and pricing pages, and `currencyPrices` on
+shipping methods. See
+[Currency comes from the channel](docs/auth/member-auth.md#currency-comes-from-the-channel).
+Needs a cmssy API that serves multi-currency.
+
 ## 19.19.0
 
 **Send `expectedTotal`.** cmssy re-prices cart lines to the live price on

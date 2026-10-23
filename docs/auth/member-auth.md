@@ -294,6 +294,7 @@ names the case; `CmssyGraphqlError.reason` carries the raw value.
 | `BUYER_CHANGED`         | The cart was restamped for another buyer (company switch, guest cart bound at sign-in) | Read the cart again, show the new total, let the buyer check out |
 | `PRODUCT_NOT_SOLD`      | A line's product is no longer sold                                    | Remove that line (`extensions.itemId`)                           |
 | `TAX_TREATMENT_CHANGED` | The checkout address taxes the order unlike the cart (reverse charge, see below) | Set the address on the cart (`cart.setShippingAddress`), read the cart again, then check out |
+| `NO_PRICE_IN_CURRENCY`  | The product has no price in the channel's currency (see [Currency comes from the channel](#currency-comes-from-the-channel)); also raised by `addItem` | Do not offer the product on this channel                         |
 | `QUANTITY_BELOW_MIN`    | A line is below the buyer's minimum                                   | Set the line to an allowed quantity                              |
 | `QUANTITY_ABOVE_MAX`    | A line is above the buyer's maximum                                   | Set the line to an allowed quantity                              |
 | `QUANTITY_NOT_ON_STEP`  | A line is not a multiple of the product's order step                  | Set the line to an allowed quantity                              |
@@ -498,6 +499,73 @@ try {
   throw error;
 }
 ```
+
+### Currency comes from the channel
+
+A workspace keeps one **default currency** and may enable **additional
+currencies**; each sales channel sells in one of them. The buyer never picks a
+currency - the storefront picks the channel, and the channel's currency prices
+everything. Nothing is converted: the merchant sets an explicit price in every
+currency a product is sold in (product, variant, volume breaks, price-list
+rows, shipping methods, discount minimums). The site config's `publicCart` lists
+`defaultCurrency` and `additionalCurrencies`.
+
+**A product with no price in the channel's currency is not sold there.**
+`getPublicPrices` returns its row with `price: null`, `getPublicCatalogPrices`
+and `getBuyerCatalogPrices` leave it out of the page, and `addItem` refuses it
+with `NO_PRICE_IN_CURRENCY` (`extensions.currency`, `recordId`, `variantKey`) -
+one of `checkoutErrorReasonValues`, from `@cmssy/types`
+`cartCurrencyReasonValues`.
+
+**Format with the currency the API returns, never a hard-coded one.** Every
+price row carries `currency`; `CmssyPublicPriceResult.currency`,
+`CmssyPublicCatalogPage.currency` and `CmssyBuyerCatalogPage.currency` name the
+page's currency. On a channel in an additional currency it is always that
+currency, even on an empty page or with prices withheld. On a channel in the
+default currency (or none), a row may still carry its own currency - a product
+whose currency field names another currency is priced in it - so the page
+names a currency only when every matched row shares it or the `currency`
+argument picked one, and is `null` when there are no rows or they are mixed.
+Format each amount with its own row's `currency`, never with the page's alone.
+Amounts are minor units of that currency - divide by its
+own number of decimals (`Intl.NumberFormat(locale, { style: "currency",
+currency }).resolvedOptions().maximumFractionDigits`), not by 100: JPY has
+none. On a channel whose currency is not the default, read listing and product
+prices from `public.pricing` / `account.*`, not from the record's price field -
+that field holds the default-currency price only.
+
+```ts
+import { getPublicCatalogPrices } from "@cmssy/core";
+
+const page = await getPublicCatalogPrices(
+  cmssy,
+  { modelSlug: "products", limit: 24 },
+  { workspaceId, channel: "eu-export" },
+);
+const format = (minor: number, currency: string) => {
+  const nf = new Intl.NumberFormat("de-DE", { style: "currency", currency });
+  return nf.format(minor / 10 ** nf.resolvedOptions().maximumFractionDigits!);
+};
+const cards = page.items.map(({ record, price }) => ({
+  id: record.id,
+  label: price ? format(price.price, price.currency) : null,
+}));
+```
+
+The `currency` argument of `getPublicCatalogPrices` / `getBuyerCatalogPrices`
+is a row-currency filter for a default-currency channel that still lists
+products with their own currency field; a channel in an additional currency
+never needs it.
+
+**A cart, its order and everything on them share one currency.**
+`Cart.currency` is the first line's currency (`null` while the cart is empty);
+lines, shipping, discounts and totals are in it. The order keeps it:
+`PublicOrder.currency` names the currency of every amount on the order, and
+payments and refunds have no currency of their own - they are always in the
+order's currency, as are the amounts of the order webhooks. A fixed-amount
+discount code applies only in its own currency and a code with minimum
+subtotals only in the currencies they name; elsewhere `applyDiscount` refuses
+it with `NOT_APPLICABLE`.
 
 ## The rules that still apply
 
