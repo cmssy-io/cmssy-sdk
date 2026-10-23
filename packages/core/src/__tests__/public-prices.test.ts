@@ -220,11 +220,11 @@ describe("getPublicCatalogPrices", () => {
     });
   });
 
-  it("returns the page's currency, null when its rows are mixed, and still sends the deprecated row-currency filter", async () => {
+  it("takes the deprecated currency option but never sends it, so the channel's page comes back", async () => {
     const { fetch, calls } = capturingFetch({
       data: {
         public: {
-          pricing: { catalogPrices: { ...PAGE, currency: null } },
+          pricing: { catalogPrices: PAGE },
         },
       },
     });
@@ -235,12 +235,12 @@ describe("getPublicCatalogPrices", () => {
       { workspaceId: "w1", fetch },
     );
 
-    expect(page.currency).toBeNull();
+    expect(page).toEqual(PAGE);
+    expect(calls[0]?.query).not.toMatch(/\$currency/);
     expect(calls[0]?.variables).toEqual({
       workspaceId: "w1",
       channel: "eu-export",
       modelSlug: "products",
-      currency: "EUR",
     });
   });
 

@@ -6,6 +6,19 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.21.0
+
+**Nothing to do.** The `currency` argument of `getPublicCatalogPrices` /
+`getBuyerCatalogPrices` is deprecated: cmssy retired per-product currency, so
+every catalogue row is in the sales channel's currency and the API now only
+uses the argument to filter to that currency. The SDK still accepts it but no
+longer sends it, so a call that passed it gets the channel's page rather than
+the empty page the API returns for any other currency. Pick the currency by picking the channel.
+`CmssyPublicCatalogPage.currency` / `CmssyBuyerCatalogPage.currency` name the
+channel's currency, else the workspace default. `@cmssy/types` 0.71.0 drops
+`CURRENCY_USED_BY_RECORDS` from `currencyConflictReasonValues` - the API no
+longer raises it.
+
 ## 19.20.0
 
 **Act if you format prices yourself.** cmssy sells in several currencies: a

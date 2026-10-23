@@ -143,7 +143,6 @@ export interface PublicCatalogPricesVariables {
   stockState?: string | null;
   sku?: string | null;
   locale?: string | null;
-  currency?: string | null;
   priceMin?: number | null;
   priceMax?: number | null;
   sort?: CmssyBuyerCatalogSort | null;
@@ -166,7 +165,6 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
   $stockState: String
   $sku: String
   $locale: String
-  $currency: String
   $priceMin: Int
   $priceMax: Int
   $sort: BuyerCatalogSort
@@ -183,7 +181,6 @@ export const PUBLIC_CATALOG_PRICES_QUERY = typedOperation<
         stockState: $stockState
         sku: $sku
         locale: $locale
-        currency: $currency
         priceMin: $priceMin
         priceMax: $priceMax
         sort: $sort
@@ -310,7 +307,7 @@ export async function getPublicPrices(
 export type GetPublicCatalogPricesQuery = Omit<
   PublicCatalogPricesVariables,
   "workspaceId" | "channel"
->;
+> & { currency?: string | null };
 
 export async function getPublicCatalogPrices(
   config: CmssyClientConfig,
@@ -318,10 +315,11 @@ export async function getPublicCatalogPrices(
   options: Omit<GetPublicPricesOptions, "locale">,
 ): Promise<CmssyPublicCatalogPage> {
   const channel = requireChannel(config, options, "getPublicCatalogPrices");
+  const { currency: _currency, ...listing } = query;
   const data = await graphqlRequest(
     config,
     PUBLIC_CATALOG_PRICES_QUERY,
-    { ...query, workspaceId: options.workspaceId, channel },
+    { ...listing, workspaceId: options.workspaceId, channel },
     {
       public: true,
       fetch: options.fetch,

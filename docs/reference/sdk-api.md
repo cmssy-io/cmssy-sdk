@@ -347,16 +347,15 @@ no member token, cacheable. `items` is up to `CMSSY_PUBLIC_PRICES_MAX_ITEMS`
 throws before the network. It returns `CmssyPublicPriceResult`: `items`
 (`CmssyPublicPricedRecord[]` - `{ record, price }`, `price` a `CmssyBuyerPrice`
 or `null` when withheld or not sold in the channel's currency), `currency` (the
-channel's currency; on a default-currency channel, where rows may carry their
-own currency, the rows' single currency, `null` when they are mixed or none),
+channel's currency, else the workspace default - every row is in it),
 `displayMode`, `priceWithheld`
 (`CmssyPriceWithheldReason | null`, one of `priceWithheldReasonValues`:
 `MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`) and `nextChangeAt` (ISO string or
 `null`). `getPublicCatalogPrices(config, query, options)` takes the
 `getBuyerCatalogPrices` listing arguments and returns `CmssyPublicCatalogPage` -
-the same plus `total` and `hasMore`. `currency` in those arguments filters rows
-by their currency on a default-currency channel and is not needed on a channel
-in an additional currency. See
+the same plus `total` and `hasMore`. `currency` in those arguments is
+deprecated and no longer sent: every row is in the channel's currency, so the
+listing is always the channel's page. See
 [Currency comes from the channel](../auth/member-auth.md#currency-comes-from-the-channel) and
 [Anonymous channel prices](../auth/member-auth.md#anonymous-channel-prices).
 
