@@ -14,8 +14,10 @@ sales channel sells in one of them - nothing is converted. Format every amount
 with the `currency` the API returns next to it, never a hard-coded or default
 currency, and divide by that currency's own decimals rather than 100. New:
 `CmssyPublicPriceResult.currency`, `CmssyPublicCatalogPage.currency` and
-`CmssyBuyerCatalogPage.currency` (`string | null` - the page's currency, null
-when its rows are mixed or none). `checkoutErrorReason` names
+`CmssyBuyerCatalogPage.currency` (`string | null` - the channel's currency on a
+channel in an additional currency; on a default-currency channel, where a row
+may carry its own currency, the rows' single currency, null when mixed or
+none). Format each amount with its row's `currency`. `checkoutErrorReason` names
 `NO_PRICE_IN_CURRENCY` - the product has no price in the channel's currency,
 raised by `addItem` too; `checkoutErrorReasonValues` takes the cart currency
 reasons from `@cmssy/types` 0.70.0 (`cartCurrencyReasonValues`). On a channel

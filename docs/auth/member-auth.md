@@ -520,9 +520,14 @@ one of `checkoutErrorReasonValues`, from `@cmssy/types`
 **Format with the currency the API returns, never a hard-coded one.** Every
 price row carries `currency`; `CmssyPublicPriceResult.currency`,
 `CmssyPublicCatalogPage.currency` and `CmssyBuyerCatalogPage.currency` name the
-page's currency (`null` when the rows are mixed or there are none, which only
-happens on a channel in the default currency while a product still carries its
-own legacy currency). Amounts are minor units of that currency - divide by its
+page's currency. On a channel in an additional currency it is always that
+currency, even on an empty page or with prices withheld. On a channel in the
+default currency (or none), a row may still carry its own currency - a product
+whose currency field names another currency is priced in it - so the page
+names a currency only when every matched row shares it or the `currency`
+argument picked one, and is `null` when there are no rows or they are mixed.
+Format each amount with its own row's `currency`, never with the page's alone.
+Amounts are minor units of that currency - divide by its
 own number of decimals (`Intl.NumberFormat(locale, { style: "currency",
 currency }).resolvedOptions().maximumFractionDigits`), not by 100: JPY has
 none. On a channel whose currency is not the default, read listing and product

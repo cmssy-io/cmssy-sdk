@@ -334,7 +334,8 @@ gross }`). Server-side only, and never cached for another visitor - see [Member 
 `channel` prices on that sales channel; left out, the config's `channel` is
 used, and `null` asks without one. `getBuyerCatalogPrices` takes it the same way.
 `getBuyerCatalogPrices` returns `CmssyBuyerCatalogPage` with `currency`
-(`string | null`, the page's currency) and `taxTreatment`
+(`string | null`, the page's currency, by the same rule as
+`CmssyPublicPriceResult.currency`) and `taxTreatment`
 (`CmssyTaxTreatment` - `{ kind, legalNote, buyerVatId, buyerVatCountry,
 sellerCountry, shipToCountry }`), the treatment the listed prices were taxed
 under. See [Reverse charge and VAT exemptions](../auth/member-auth.md#reverse-charge-and-vat-exemptions).
@@ -346,7 +347,9 @@ no member token, cacheable. `items` is up to `CMSSY_PUBLIC_PRICES_MAX_ITEMS`
 throws before the network. It returns `CmssyPublicPriceResult`: `items`
 (`CmssyPublicPricedRecord[]` - `{ record, price }`, `price` a `CmssyBuyerPrice`
 or `null` when withheld or not sold in the channel's currency), `currency` (the
-channel's currency, `null` when the rows are mixed or none), `displayMode`, `priceWithheld`
+channel's currency; on a default-currency channel, where rows may carry their
+own currency, the rows' single currency, `null` when they are mixed or none),
+`displayMode`, `priceWithheld`
 (`CmssyPriceWithheldReason | null`, one of `priceWithheldReasonValues`:
 `MEMBERS_ONLY`, `COMPANY_MEMBERS_ONLY`) and `nextChangeAt` (ISO string or
 `null`). `getPublicCatalogPrices(config, query, options)` takes the
