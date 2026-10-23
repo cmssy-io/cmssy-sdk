@@ -218,7 +218,6 @@ export interface BuyerCatalogPricesVariables {
   stockState?: string | null;
   sku?: string | null;
   locale?: string | null;
-  currency?: string | null;
   priceMin?: number | null;
   priceMax?: number | null;
   sort?: CmssyBuyerCatalogSort | null;
@@ -241,7 +240,6 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
   $stockState: String
   $sku: String
   $locale: String
-  $currency: String
   $priceMin: Int
   $priceMax: Int
   $sort: BuyerCatalogSort
@@ -257,7 +255,6 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
       stockState: $stockState
       sku: $sku
       locale: $locale
-      currency: $currency
       priceMin: $priceMin
       priceMax: $priceMax
       sort: $sort
@@ -315,7 +312,7 @@ export const BUYER_CATALOG_PRICES_QUERY = typedOperation<
 export type GetBuyerCatalogPricesQuery = Omit<
   BuyerCatalogPricesVariables,
   "workspaceId" | "channel"
->;
+> & { currency?: string | null };
 
 export async function getBuyerCatalogPrices(
   config: CmssyClientConfig,
@@ -327,11 +324,12 @@ export async function getBuyerCatalogPrices(
       "cmssy: getBuyerCatalogPrices needs the signed-in member's accessToken - an anonymous visitor reads the catalogue",
     );
   }
+  const { currency: _currency, ...listing } = query;
   const data = await graphqlRequest(
     config,
     BUYER_CATALOG_PRICES_QUERY,
     {
-      ...query,
+      ...listing,
       workspaceId: options.workspaceId,
       ...channelVariable(options.channel),
     },
