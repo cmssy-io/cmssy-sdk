@@ -26,11 +26,16 @@ cmssy: dry run - pushing 11 blocks to acme/shop would change: (cmssy/blocks.ts, 
   moves 6 stored values in 2 documents
   2 moves would drop stored values (a translation or a differing copy) in 1 document
 cmssy: not pushed - rerun with --allow-lossy to accept dropping those values
+cmssy: not pushed - it removes the block types, fields or regions listed above from acme/shop; rerun with --allow-removals if that is intended
 ```
 
-- **Removed types and fields only warn.** The push still happens and the
-  command exits 0. Blocks of a removed type stay stored, but the site no
-  longer renders them and the delivery API stops resolving their media.
+- **A removed type, field or region stops the push** and exits 1, including
+  on `--dry-run`. Rerun with `--allow-removals` once you have checked the
+  pages it names. Blocks of a removed type stay stored, but the site no longer
+  renders them and the delivery API stops resolving their media. The backend
+  refuses such a push from any API token client unless it sends
+  `allowRemovals: true`, so pushing from the wrong checkout (another site, a
+  playground) cannot silently replace the workspace's manifest.
 - **A move that would drop a value stops the push** and exits 1, including on
   `--dry-run`. This happens when a field becomes shared or moves to another
   tab and the stored copies disagree, or when a translation would be lost.

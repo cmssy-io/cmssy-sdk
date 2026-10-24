@@ -44,7 +44,7 @@ const CONFIG_CANDIDATES = [
 export const SYNC_MANIFEST_USAGE = [
   "  cmssy sync-manifest [--blocks <path>] [--config <path>] [--token <cs_...>]",
   "                      [--org <slug>] [--workspace <slug>] [--dry-run]",
-  "                      [--allow-lossy] [--help]",
+  "                      [--allow-lossy] [--allow-removals] [--help]",
 ];
 
 export interface SyncManifestOptions {
@@ -56,6 +56,7 @@ export interface SyncManifestOptions {
   workspace?: string;
   dryRun?: boolean;
   allowLossy?: boolean;
+  allowRemovals?: boolean;
 }
 
 export interface SyncManifestDeps {
@@ -244,6 +245,14 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
+function removesFromWorkspace(impact: BlockManifestImpact): boolean {
+  return (
+    impact.removedTypes.length > 0 ||
+    impact.removedFields.length > 0 ||
+    impact.removedRegions.length > 0
+  );
+}
+
 export function describeImpact(impact: BlockManifestImpact): string[] {
   const lines: string[] = [];
   for (const removed of impact.removedTypes) {
@@ -428,12 +437,20 @@ export async function runSyncManifest(
     for (const line of effects) deps.log(line);
     for (const line of describe(manifest)) deps.log(line);
 
-    if (impact.lossyMoves > 0 && !options.allowLossy) {
+    const refusedLossy = impact.lossyMoves > 0 && !options.allowLossy;
+    const refusedRemovals =
+      removesFromWorkspace(impact) && !options.allowRemovals;
+    if (refusedLossy) {
       deps.log(
         `cmssy: not pushed - rerun with --allow-lossy to accept dropping those values`,
       );
-      return 1;
     }
+    if (refusedRemovals) {
+      deps.log(
+        `cmssy: not pushed - it removes the block types, fields or regions listed above from ${org}/${slug}; rerun with --allow-removals if that is intended`,
+      );
+    }
+    if (refusedLossy || refusedRemovals) return 1;
     if (options.dryRun) {
       deps.log("cmssy: dry run - nothing pushed");
       return 0;
@@ -446,6 +463,7 @@ export async function runSyncManifest(
           ? { onlyIfAbsent: true }
           : { expectedHash: impact.activeHash }),
         ...(options.allowLossy ? { allowLossy: true } : {}),
+        ...(options.allowRemovals ? { allowRemovals: true } : {}),
       });
     } catch (error) {
       if (error instanceof CliError && error.code === "CONFLICT") {

@@ -397,6 +397,7 @@ the editor canvas. A deploy that adds a region or a setting is invisible in
 npx @cmssy/cli sync-manifest
 cmssy sync-manifest --dry-run          # show what the push would change, push nothing
 cmssy sync-manifest --allow-lossy      # accept moves that drop stored values
+cmssy sync-manifest --allow-removals   # accept removing block types, fields or regions
 cmssy sync-manifest --blocks lib/registry.ts --config lib/site.ts
 ```
 
@@ -433,9 +434,13 @@ environment:
    fields, reshaped types and regions, added types, and the stored values the
    relocation would move. A manifest the workspace already holds is reported
    as unchanged and not sent.
-5. Stops with exit code 1 when a move would drop a stored value (a
-   translation or a differing copy), unless `--allow-lossy` is given. Removed
-   types and fields only warn.
+5. Stops with exit code 1, including on `--dry-run`, when a move would drop a
+   stored value (a translation or a differing copy), unless `--allow-lossy` is
+   given, and when the push removes a block type, a field or a layout region
+   the workspace's manifest has, unless `--allow-removals` is given. The
+   backend enforces the same rule: a token push that removes something without
+   `allowRemovals: true` is refused with `MANIFEST_REMOVALS_REFUSED`, so an
+   older CLI cannot replace the manifest either.
 6. Calls `blockManifest.save` with the token, guarded by the hash it compared
    against: if the workspace's manifest changed meanwhile, nothing is written
    and the command says so. The token's user needs the `PAGES_EDIT`
@@ -469,6 +474,8 @@ the working directory or absolute; `--token <cs_...>` overrides
 `CMSSY_API_TOKEN`; `--org <slug>` and `--workspace <slug>` override the config
 and the env; `--dry-run` prints what the push would change and sends nothing (without a
 token it prints only the manifest summary); `--allow-lossy` lets a push drop
-stored values the relocation cannot keep;
+stored values the relocation cannot keep; `--allow-removals` lets a push remove
+block types, fields and layout regions (and sends `allowRemovals: true`, which
+only then appears in the request);
 `--help` prints the usage. A flag given without a value is an error, never a
 silent fallback.

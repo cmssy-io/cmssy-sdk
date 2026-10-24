@@ -547,7 +547,7 @@ type BlockManifestImpact {
 type BlockManifestMutations {
   activate(hash: String!): BlockManifest!
   rollback: BlockManifest!
-  save(allowLossy: Boolean, blocks: JSON!, expectedHash: String, onlyIfAbsent: Boolean, regions: JSON): BlockManifest!
+  save(allowLossy: Boolean, allowRemovals: Boolean, blocks: JSON!, expectedHash: String, onlyIfAbsent: Boolean, regions: JSON): BlockManifest!
 }
 
 type BlockManifestProposal {
@@ -864,7 +864,7 @@ type CartConfig {
   enableSavedCarts: Boolean!
 
   """
-  Legal note frozen on export orders (a seller outside the EU shipping to another country); null uses the default wording.
+  Legal note frozen on export orders (goods shipped out of the EU VAT area, or from a seller outside the EU to another country); null uses the default wording.
   """
   exportNote: String
   loggedInTTLDays: Int!
@@ -886,7 +886,7 @@ type CartConfig {
   reverseChargeNote: String
 
   """
-  ISO country the workspace sells from. Needed for reverse charge: a verified EU VAT id of another member state zero-rates the order. A country outside the EU zero-rates every order shipped to another country as an export.
+  ISO country the workspace sells from. Needed for reverse charge: a verified EU VAT id of another member state zero-rates the order. Goods shipped out of the EU VAT area, or from a country outside the EU to any other country, are zero-rated as an export.
   """
   sellerCountry: String
   sessionTTLDays: Int!
@@ -3016,9 +3016,17 @@ type Order {
   pricingChain: OrderPricingChain
 
   """
+  The refund references recorded on the order, oldest first. A refund sent with one of them changes nothing.
+  """
+  refundReferences: [String!]!
+
+  """
   Minor units of the order's currency - payments and refunds carry no currency of their own.
   """
   refundedAmount: Int!
+
+  """When the latest refund was recorded; null when none."""
+  refundedAt: DateTime
 
   """
   VAT taken out of gross-stored prices for a zero-rated (reverse_charge, exempt or export) order, in minor units; 0 otherwise. total = subtotal - discount + shippingTotal - removedTax.

@@ -279,7 +279,7 @@ describe("cmssy sync-manifest", () => {
 
     const code = await runSyncManifest({ dryRun: true }, deps);
 
-    expect(code).toBe(0);
+    expect(code).toBe(1);
     expect(
       calls.map((call) => call.body.query.match(/Cli\w+/)?.[0]),
     ).toStrictEqual(["CliWorkspacesMine", "CliBlockManifestImpact"]);
@@ -294,7 +294,17 @@ describe("cmssy sync-manifest", () => {
       "  reshapes the settings of region `header`",
       "  moves 5 stored values in 2 documents",
     ]);
-    expect(lines.at(-1)).toBe("cmssy: dry run - nothing pushed");
+    expect(lines.at(-1)).toContain("--allow-removals");
+
+    const allowed = makeDeps({
+      impact: {
+        removedTypes: [{ type: "banner", pages: 0, publishedPages: 0 }],
+      },
+    });
+    expect(
+      await runSyncManifest({ dryRun: true, allowRemovals: true }, allowed.deps),
+    ).toBe(0);
+    expect(allowed.lines.at(-1)).toBe("cmssy: dry run - nothing pushed");
   });
 
   it("refuses a push that would drop stored values unless --allow-lossy is given", async () => {
@@ -323,14 +333,80 @@ describe("cmssy sync-manifest", () => {
     expect(save?.body.variables.allowLossy).toBe(true);
   });
 
-  it("does not exit non-zero for removed types alone", async () => {
-    const { deps } = makeDeps({
+  it.each([
+    [
+      "a block type",
+      { removedTypes: [{ type: "testimonials", pages: 14, publishedPages: 3 }] },
+      "  removes `testimonials`, used on 14 pages (3 published)",
+    ],
+    [
+      "a field",
+      { removedFields: [{ type: "hero", fields: ["subtitle"] }] },
+      "  removes fields from `hero`: subtitle",
+    ],
+    [
+      "a layout region",
+      { removedRegions: ["sidebar"] },
+      "  removes region `sidebar`",
+    ],
+  ])(
+    "refuses a push that removes %s from the workspace unless --allow-removals is given",
+    async (_label, removal, printed) => {
+      const refused = makeDeps({ impact: removal });
+
+      expect(await runSyncManifest({}, refused.deps)).toBe(1);
+      expect(
+        refused.calls.some((call) =>
+          call.body.query.includes("CliSaveBlockManifest"),
+        ),
+      ).toBe(false);
+      expect(refused.lines).toContain(printed);
+      expect(refused.lines.at(-1)).toBe(
+        "cmssy: not pushed - it removes the block types, fields or regions listed above from acme/shop; rerun with --allow-removals if that is intended",
+      );
+    },
+  );
+
+  it("sends allowRemovals to the server only when --allow-removals is given", async () => {
+    const removal = {
+      removedTypes: [{ type: "testimonials", pages: 14, publishedPages: 3 }],
+    };
+    const accepted = makeDeps({ impact: removal });
+
+    expect(
+      await runSyncManifest({ allowRemovals: true }, accepted.deps),
+    ).toBe(0);
+    const save = accepted.calls.find((call) =>
+      call.body.query.includes("CliSaveBlockManifest"),
+    );
+    expect(save?.body.query).toContain("allowRemovals: true");
+    expect(save?.body.variables).not.toHaveProperty("allowRemovals");
+
+    const plain = makeDeps();
+    expect(await runSyncManifest({}, plain.deps)).toBe(0);
+    const plainSave = plain.calls.find((call) =>
+      call.body.query.includes("CliSaveBlockManifest"),
+    );
+    expect(plainSave).toBeDefined();
+    expect(plainSave?.body.query).not.toContain("allowRemovals");
+  });
+
+  it("asks for both flags when a push both removes and drops stored values", async () => {
+    const { deps, lines } = makeDeps({
       impact: {
-        removedTypes: [{ type: "testimonials", pages: 14, publishedPages: 3 }],
+        removedRegions: ["sidebar"],
+        moves: 1,
+        lossyMoves: 1,
+        documents: 1,
+        heldDocuments: 1,
       },
     });
 
-    expect(await runSyncManifest({}, deps)).toBe(0);
+    expect(await runSyncManifest({ allowLossy: true }, deps)).toBe(1);
+    expect(lines.at(-1)).toContain("--allow-removals");
+    expect(lines).not.toContain(
+      "cmssy: not pushed - rerun with --allow-lossy to accept dropping those values",
+    );
   });
 
   it("reports a manifest that changed between the comparison and the push", async () => {
