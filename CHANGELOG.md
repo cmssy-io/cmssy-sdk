@@ -6,6 +6,17 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.25.0
+
+**Maybe.** `cmssy sync-manifest` now stops with exit code 1 when the push
+removes a block type, a field or a layout region the workspace's manifest has.
+Pass `--allow-removals` when the removal is intended - a `postbuild` step that
+deliberately drops blocks needs the flag. The flag sends `allowRemovals: true`
+on `blockManifest.save`; without the flag the request is unchanged. The cmssy
+API now refuses an API token push that removes something without
+`allowRemovals: true` (`MANIFEST_REMOVALS_REFUSED`), so an older CLI is refused
+the same way and needs this release to push a removal.
+
 ## 19.24.0
 
 **Nothing to do.** `getBuyerPrices` and `getBuyerCatalogPrices` take

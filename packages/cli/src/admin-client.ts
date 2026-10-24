@@ -152,6 +152,15 @@ export const SAVE_BLOCK_MANIFEST_MUTATION = `mutation CliSaveBlockManifest($bloc
   }
 }`;
 
+export const SAVE_BLOCK_MANIFEST_ALLOWING_REMOVALS_MUTATION = `mutation CliSaveBlockManifestAllowingRemovals($blocks: JSON!, $regions: JSON, $expectedHash: String, $onlyIfAbsent: Boolean, $allowLossy: Boolean) {
+  blockManifest {
+    save(blocks: $blocks, regions: $regions, expectedHash: $expectedHash, onlyIfAbsent: $onlyIfAbsent, allowLossy: $allowLossy, allowRemovals: true) {
+      hash
+      updatedAt
+    }
+  }
+}`;
+
 export interface CliWorkspace {
   id: string;
   slug: string;
@@ -223,6 +232,7 @@ export interface SaveBlockManifestGuard {
   expectedHash?: string;
   onlyIfAbsent?: boolean;
   allowLossy?: boolean;
+  allowRemovals?: boolean;
 }
 
 export async function saveBlockManifest(
@@ -230,11 +240,14 @@ export async function saveBlockManifest(
   options: AdminRequestOptions,
   guard: SaveBlockManifestGuard = {},
 ): Promise<SavedBlockManifest> {
+  const { allowRemovals, ...variables } = guard;
   const data = await adminGraphql<{
     blockManifest: { save: SavedBlockManifest };
   }>(
-    SAVE_BLOCK_MANIFEST_MUTATION,
-    { ...manifest, ...guard },
+    allowRemovals
+      ? SAVE_BLOCK_MANIFEST_ALLOWING_REMOVALS_MUTATION
+      : SAVE_BLOCK_MANIFEST_MUTATION,
+    { ...manifest, ...variables },
     {
       ...options,
       denied: NEEDS_MANIFEST_WRITE_HINT,

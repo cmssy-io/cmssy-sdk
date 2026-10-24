@@ -98,6 +98,7 @@ async function main(): Promise<void> {
         workspace: flagValue(args, "--workspace"),
         dryRun: hasFlag(args, "--dry-run"),
         allowLossy: hasFlag(args, "--allow-lossy"),
+        allowRemovals: hasFlag(args, "--allow-removals"),
       },
       {
         cwd: process.cwd(),

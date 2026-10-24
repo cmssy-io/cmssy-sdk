@@ -547,7 +547,7 @@ type BlockManifestImpact {
 type BlockManifestMutations {
   activate(hash: String!): BlockManifest!
   rollback: BlockManifest!
-  save(allowLossy: Boolean, blocks: JSON!, expectedHash: String, onlyIfAbsent: Boolean, regions: JSON): BlockManifest!
+  save(allowLossy: Boolean, allowRemovals: Boolean, blocks: JSON!, expectedHash: String, onlyIfAbsent: Boolean, regions: JSON): BlockManifest!
 }
 
 type BlockManifestProposal {
