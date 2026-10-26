@@ -6,6 +6,13 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.26.0
+
+**Nothing to do.** `@cmssy/types` 0.72.0: the order webhook events gain
+`order.invoiced` and `order.invoice_corrected`, and `CmssyWebhookOrder` gains
+`invoices` - the invoice and its corrections recorded on the order. A handler
+typed with `CmssyOrderWebhookEvent` can switch on the two new events.
+
 ## 19.25.0
 
 **Maybe.** `cmssy sync-manifest` now stops with exit code 1 when the push
