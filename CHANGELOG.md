@@ -14,9 +14,12 @@ and footer rendered nothing and said nothing. In `src/pages/[...path].astro` and
 `src/pages/cmssy-edit/[...path].astro` rename `position="header"` /
 `position="footer"` to `region=`, and `position:` to `region:` in the two
 `resolveEditorLayoutBlockData` calls. And `src/cmssy.config.ts` now loads
-`.env.local` (where `cmssy link` writes) itself, because Astro does not put it in
-`process.env`: add `if (existsSync(".env.local")) process.loadEnvFile(".env.local");`
-under an `existsSync` import from `node:fs`, or keep loading it your own way.
+`.env.local` (where `cmssy link` writes) itself in `astro dev`, because Astro does
+not put it in `process.env` there. Copy the `loadLocalEnv` block from a fresh
+`cmssy init`, or keep loading it your own way. It only runs under
+`import.meta.env.DEV`, so production builds carry no `node:` import and stay
+valid for edge middleware; in production set the variables in your host, or start
+with `node --env-file-if-exists=.env.local dist/server/entry.mjs`.
 Next.js and React Router apps: nothing to do.
 
 ## 19.26.0

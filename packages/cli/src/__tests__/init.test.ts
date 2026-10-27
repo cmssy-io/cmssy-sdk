@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { FRAMEWORKS } from "../framework";
 import { runInit, type InitDeps } from "../init";
@@ -534,7 +534,7 @@ describe("init templates", () => {
   function usedProps(page: string): string[] {
     return [...page.matchAll(/<LayoutSlot\b([\s\S]*?)\/>/g)].flatMap(
       ([, attributes]) =>
-        [...attributes!.matchAll(/^\s+(\w+)=/gm)].map((m) => m[1]!),
+        [...attributes!.matchAll(/(?:^|\s)(\w+)=/g)].map((m) => m[1]!),
     );
   }
 
@@ -571,9 +571,43 @@ describe("init templates", () => {
     for (const args of calls) expect(args).toMatch(/\bregion: "/);
   });
 
-  it("loads .env.local where cmssy link writes it, for astro", () => {
-    expect(read("astro/src/cmssy.config.ts")).toContain(
-      'if (existsSync(".env.local")) process.loadEnvFile(".env.local");',
-    );
+  it("loads .env.local where cmssy link writes it, in astro dev only", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cmssy-astro-env-"));
+    writeFileSync(join(dir, ".env.local"), "CMSSY_ORG_SLUG=from-env-local\n");
+    const config = join(dir, "cmssy.config.ts");
+    writeFileSync(config, read("astro/src/cmssy.config.ts"));
+    vi.doMock("@cmssy/astro", () => ({
+      defineCmssyConfig: (value: unknown) => value,
+      defineCmssyLayout: (value: unknown) => value,
+    }));
+    const cwd = process.cwd();
+    const previous = process.env.CMSSY_ORG_SLUG;
+    delete process.env.CMSSY_ORG_SLUG;
+    process.chdir(dir);
+    try {
+      vi.stubEnv("DEV", true);
+      const dev = (await import(`${config}?dev`)) as {
+        cmssy: { org?: string };
+      };
+      expect(dev.cmssy.org).toBe("from-env-local");
+
+      delete process.env.CMSSY_ORG_SLUG;
+      vi.stubEnv("DEV", false);
+      const prod = (await import(`${config}?prod`)) as {
+        cmssy: { org?: string };
+      };
+      expect(prod.cmssy.org).toBeUndefined();
+    } finally {
+      process.chdir(cwd);
+      vi.unstubAllEnvs();
+      vi.doUnmock("@cmssy/astro");
+      if (previous === undefined) delete process.env.CMSSY_ORG_SLUG;
+      else process.env.CMSSY_ORG_SLUG = previous;
+    }
   });
+
+  it("keeps node built-ins out of the astro config, which the middleware bundles", () => {
+    expect(read("astro/src/cmssy.config.ts")).not.toMatch(/from "node:/);
+  });
+
 });
