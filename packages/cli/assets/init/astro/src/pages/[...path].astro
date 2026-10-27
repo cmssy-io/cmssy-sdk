@@ -41,8 +41,8 @@ const layoutSlot = {
   config: cmssy,
 };
 const [header, footer] = await Promise.all([
-  resolveEditorLayoutBlockData({ ...layoutSlot, position: "header" }),
-  resolveEditorLayoutBlockData({ ...layoutSlot, position: "footer" }),
+  resolveEditorLayoutBlockData({ ...layoutSlot, region: "header" }),
+  resolveEditorLayoutBlockData({ ...layoutSlot, region: "footer" }),
 ]);
 ---
 
@@ -54,7 +54,7 @@ const [header, footer] = await Promise.all([
   <body>
     <LayoutSlot
       groups={layouts}
-      position="header"
+      region="header"
       page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
@@ -78,7 +78,7 @@ const [header, footer] = await Promise.all([
     }
     <LayoutSlot
       groups={layouts}
-      position="footer"
+      region="footer"
       page={pageContext}
       locale={locale}
       defaultLocale={defaultLocale}
