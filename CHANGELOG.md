@@ -6,6 +6,19 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.26.1
+
+**Astro apps wired by `cmssy init` - yes, two edits.** The Astro templates still
+passed the slot a `position` prop that 15.0.0 renamed to `region`, so the header
+and footer rendered nothing and said nothing. In `src/pages/[...path].astro` and
+`src/pages/cmssy-edit/[...path].astro` rename `position="header"` /
+`position="footer"` to `region=`, and `position:` to `region:` in the two
+`resolveEditorLayoutBlockData` calls. And `src/cmssy.config.ts` now loads
+`.env.local` (where `cmssy link` writes) itself, because Astro does not put it in
+`process.env`: add `if (existsSync(".env.local")) process.loadEnvFile(".env.local");`
+under an `existsSync` import from `node:fs`, or keep loading it your own way.
+Next.js and React Router apps: nothing to do.
+
 ## 19.26.0
 
 **Nothing to do.** `@cmssy/types` 0.72.0: the order webhook events gain

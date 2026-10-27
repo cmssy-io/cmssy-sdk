@@ -1,4 +1,7 @@
+import { existsSync } from "node:fs";
 import { defineCmssyConfig, defineCmssyLayout } from "@cmssy/astro";
+
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 export const layout = defineCmssyLayout({
   regions: [

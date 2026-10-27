@@ -519,3 +519,61 @@ describe("runInit", () => {
     expect(readPkg(cwd).dependencies?.["@cmssy/remix"]).toBe(`^${CLI_VERSION}`);
   });
 });
+
+describe("init templates", () => {
+  const assets = fileURLToPath(new URL("../../assets/init/", import.meta.url));
+  const read = (path: string) => readFileSync(join(assets, path), "utf8");
+
+  function declaredProps(slot: string): string[] {
+    const body = /export interface LayoutSlotProps \{([\s\S]*?)\n\}/.exec(
+      slot,
+    )?.[1];
+    return [...(body ?? "").matchAll(/^\s+(\w+)\??:/gm)].map((m) => m[1]!);
+  }
+
+  function usedProps(page: string): string[] {
+    return [...page.matchAll(/<LayoutSlot\b([\s\S]*?)\/>/g)].flatMap(
+      ([, attributes]) =>
+        [...attributes!.matchAll(/^\s+(\w+)=/gm)].map((m) => m[1]!),
+    );
+  }
+
+  it.each([
+    {
+      slot: "astro/src/cmssy/layout-slot.tsx",
+      pages: [
+        "astro/src/pages/[...path].astro",
+        "astro/src/pages/cmssy-edit/[...path].astro",
+      ],
+    },
+    {
+      slot: "remix/app/cmssy/layout-slot.tsx",
+      pages: ["remix/app/routes/page.tsx"],
+    },
+  ])("$slot gets only the props it declares", ({ slot, pages }) => {
+    const declared = declaredProps(read(slot));
+    expect(declared).toContain("region");
+    for (const page of pages) {
+      const used = usedProps(read(page));
+      expect(used, page).toContain("region");
+      expect(used.filter((prop) => !declared.includes(prop)), page).toEqual(
+        [],
+      );
+    }
+  });
+
+  it("resolves editor layout data by region on the astro page", () => {
+    const page = read("astro/src/pages/[...path].astro");
+    const calls = [
+      ...page.matchAll(/resolveEditorLayoutBlockData\(\{([^}]*)\}\)/g),
+    ].map(([, args]) => args);
+    expect(calls).toHaveLength(2);
+    for (const args of calls) expect(args).toMatch(/\bregion: "/);
+  });
+
+  it("loads .env.local where cmssy link writes it, for astro", () => {
+    expect(read("astro/src/cmssy.config.ts")).toContain(
+      'if (existsSync(".env.local")) process.loadEnvFile(".env.local");',
+    );
+  });
+});
