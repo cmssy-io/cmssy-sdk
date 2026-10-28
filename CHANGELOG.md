@@ -6,6 +6,12 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.26.2
+
+**No.** The CLI's "no API token" hint (`cmssy link`, `cmssy sync-manifest`, the
+admin client) now points at **API Tokens** in the cmssy dashboard sidebar - the
+"Settings → API Tokens" path it named does not exist.
+
 ## 19.26.1
 
 **Astro apps wired by `cmssy init` - yes, two edits.** The Astro templates still

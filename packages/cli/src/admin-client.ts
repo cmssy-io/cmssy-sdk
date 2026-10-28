@@ -15,7 +15,7 @@ export interface AdminRequestOptions {
 
 export const BAD_TOKEN_HINT: DeniedHint = {
   message: "the cmssy API rejected the token",
-  fix: "create an API token in the cmssy dashboard (Settings → API Tokens) and pass it via --token or CMSSY_API_TOKEN",
+  fix: "create an API token under API Tokens in the cmssy dashboard sidebar and pass it via --token or CMSSY_API_TOKEN",
 };
 
 export const NEEDS_MANIFEST_WRITE_HINT: DeniedHint = {

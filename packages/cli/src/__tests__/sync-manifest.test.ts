@@ -679,7 +679,7 @@ describe("cmssy sync-manifest", () => {
 
     expect(code).toBe(1);
     expect(lines[1]).toBe("cmssy: the cmssy API rejected the token");
-    expect(lines[2]).toContain("Settings → API Tokens");
+    expect(lines[2]).toContain("API Tokens in the cmssy dashboard sidebar");
   });
 
   it("reports a missing pages:edit permission as exactly that", async () => {

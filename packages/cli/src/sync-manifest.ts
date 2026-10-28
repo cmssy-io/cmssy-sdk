@@ -192,7 +192,7 @@ function resolveToken(
   if (!token) {
     throw new CliError(
       "no API token given",
-      "create an API token in the cmssy dashboard (Settings → API Tokens) and set CMSSY_API_TOKEN in the deploy environment, or pass --token cs_...",
+      "create an API token under API Tokens in the cmssy dashboard sidebar and set CMSSY_API_TOKEN in the deploy environment, or pass --token cs_...",
     );
   }
   return token;

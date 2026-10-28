@@ -54,7 +54,7 @@ function resolveToken(options: LinkOptions, deps: LinkDeps): string {
   if (!token) {
     throw new CliError(
       "no API token given",
-      "create an API token in the cmssy dashboard (Settings → API Tokens), then run cmssy link --token cs_... or set CMSSY_API_TOKEN",
+      "create an API token under API Tokens in the cmssy dashboard sidebar, then run cmssy link --token cs_... or set CMSSY_API_TOKEN",
     );
   }
   return token;
