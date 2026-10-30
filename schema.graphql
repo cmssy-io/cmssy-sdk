@@ -518,6 +518,16 @@ type AuthorizeMediaUploadPayload {
   validUntil: DateTime!
 }
 
+"""A presigned PUT authorizing one support screenshot upload"""
+type AuthorizeSupportScreenshotUploadPayload {
+  maximumSizeInBytes: Int!
+
+  """Pass this to support.submitRequest once the PUT succeeded"""
+  pathname: String!
+  uploadUrl: String!
+  validUntil: DateTime!
+}
+
 type BlockData {
   advanced: JSON
   blockVersion: String
@@ -2851,6 +2861,7 @@ type Mutation {
   salesChannel: SalesChannelMutations!
   siteConfig: SiteConfigMutations!
   siteMember: SiteMemberMutations!
+  support: SupportMutations!
   viewer: ViewerMutations!
   webhook: WebhookMutations!
   workspace: WorkspaceMutations!
@@ -3841,7 +3852,13 @@ type OrganizationBilling {
   isTrial: Boolean!
   paymentMethod: PaymentMethod
   pendingCycleChange: PendingBillingCycleChange
+  pendingPlanChange: PendingPlanChange
   priceAmount: Int
+
+  """
+  Whether a paid subscription backs this organization. Only then does delivery keep serving past the Content API request and transfer limits.
+  """
+  provisioned: Boolean!
   renewsAt: DateTime
   seatsIncluded: Int
   subscriptionStatus: String
@@ -3854,15 +3871,27 @@ type OrganizationBilling {
 }
 
 type OrganizationLimits {
-  canRemoveBranding: Boolean!
-  canUseCart: Boolean!
   canUseSso: Boolean!
-  maxApiRequestsMonth: Int
-  maxBandwidthGbMonth: Int
-  maxMembers: Int
+  maxApiRequestsMonth: Int!
+
+  """
+  Content API transfer per usage period, in GB: GraphQL response bytes. Media served from the CDN is not counted.
+  """
+  maxBandwidthGbMonth: Int!
+  maxMembers: Int!
+
+  """
+  Orders the organization may take per usage period, pooled across its workspaces. Null is unlimited.
+  """
+  maxOrdersMonth: Int
+
+  """Null is unlimited."""
   maxPages: Int
-  maxStorageMb: Int
-  maxWorkspaces: Int
+  maxStorageMb: Int!
+
+  """The largest single file the organization may upload, in MB."""
+  maxUploadMb: Int!
+  maxWorkspaces: Int!
 }
 
 type OrganizationMember {
@@ -3882,6 +3911,11 @@ type OrganizationMutations {
   """
   cancelBillingCycleChange(organizationId: ID!): Organization!
   cancelInvitation(email: String!, organizationId: ID!): Organization!
+
+  """
+  Cancel a move to a lower plan scheduled for the end of the paid period, releasing its Stripe subscription schedule. The pending change clears when Stripe's webhook confirms the release.
+  """
+  cancelPlanChange(organizationId: ID!): Organization!
   create(input: CreateOrganizationInput!): Organization!
   delete(id: ID!): DeletionResult!
   inviteMember(input: InviteOrganizationMemberInput!, organizationId: ID!): InviteMemberResult!
@@ -3903,6 +3937,11 @@ type OrganizationMutations {
   Move a Pro subscription that carries add-ons, plan and add-ons together, to the other billing cycle. The Stripe customer portal cannot change a subscription with several products, so this is the path while add-ons are held. Moving to annual is immediate and charges the prorated difference now; moving to monthly is scheduled for the end of the paid annual period and charges nothing now.
   """
   switchBillingCycle(cycle: String!, organizationId: ID!): Organization!
+
+  """
+  Move a paid subscription between Pro and Enterprise on the same billing cycle. Moving up is immediate and charges the prorated difference now, dropping any Pro add-ons; moving down is scheduled for the end of the paid period and charges nothing now. Not available during a trial or on a subscription set to cancel.
+  """
+  switchPlan(organizationId: ID!, plan: String!): Organization!
 
   """
   Hand the organization - and with it the permission bypass over every workspace it owns - to another active member. Owner-only.
@@ -3952,6 +3991,11 @@ type OrganizationWorkspaceUsage {
   bandwidthBytes: Float!
   mediaSignings: Int!
   membersCount: Int!
+
+  """
+  Orders this workspace created in the organization's current usage period and did not cancel.
+  """
+  ordersCount: Int!
   pagesCount: Int!
   storageBytes: Float!
 }
@@ -4258,6 +4302,11 @@ type PendingBillingCycleChange {
   to: String!
 }
 
+type PendingPlanChange {
+  at: DateTime!
+  to: String!
+}
+
 """A category of permissions"""
 type PermissionCategory {
   key: String!
@@ -4276,6 +4325,11 @@ type PooledUsage {
   bandwidthBytes: Float!
   mediaSignings: Int!
   membersCount: Int!
+
+  """
+  Orders created since the organization's usage period started and not cancelled, pooled across its workspaces.
+  """
+  ordersCount: Int!
   pagesCount: Int!
   storageBytes: Float!
 }
@@ -5375,7 +5429,6 @@ type PublicResolvedLayoutBlock {
 
 type PublicSiteConfig {
   branding: SiteBranding
-  canUseCart: Boolean!
   defaultLanguage: String!
   enabledFeatures: [String!]!
   enabledLanguages: [String!]!
@@ -6087,7 +6140,6 @@ type SiteBranding {
 type SiteConfig {
   apiToken: String
   branding: SiteBranding
-  canUseCart: Boolean!
   cart: CartConfig
   currencies: WorkspaceCurrencies!
   defaultLanguage: String!
@@ -6265,6 +6317,46 @@ enum StockState {
 input SubmitFormInput {
   data: JSON!
   website: String
+}
+
+type SupportMutations {
+  authorizeScreenshotUpload(mimeType: String!, size: Int!): AuthorizeSupportScreenshotUploadPayload!
+  submitRequest(input: SupportRequestInput!): SupportRequestReceipt!
+}
+
+input SupportRequestInput {
+  appVersion: String
+  description: String!
+
+  """
+  The organization the caller was in. Kept only when the caller is a member; the plan is read from it, never sent.
+  """
+  organizationSlug: String
+
+  """
+  Pathnames returned by support.authorizeScreenshotUpload, already uploaded
+  """
+  screenshots: [String!]
+  type: SupportRequestType!
+  url: String
+  userAgent: String
+  workspaceSlug: String
+}
+
+type SupportRequestReceipt {
+  """
+  Whether the confirmation reached the caller's mailbox provider; false when it failed or no support mailbox is configured
+  """
+  confirmationSent: Boolean!
+  number: Int!
+}
+
+enum SupportRequestType {
+  account_access
+  billing
+  bug
+  feature_request
+  question
 }
 
 type TaskUser {
@@ -7038,7 +7130,7 @@ type WorkspaceOrganization {
   id: ID!
 
   """
-  Set only on the Free plan, and only for its owner and admins: the page, storage, API request or bandwidth limit closest to being hit, from 75% used. Seats and workspaces are left out - Free fills them on day one.
+  Set only on the Free plan, and only for its owner and admins: the page, storage, API request, bandwidth or order limit closest to being hit, from 75% used. Seats and workspaces are left out - Free fills them on day one.
   """
   limitNudge: LimitNudge
   limits: OrganizationLimits!
