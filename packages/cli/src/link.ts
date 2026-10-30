@@ -160,11 +160,20 @@ async function selectWorkspace(
     .join(", ");
   if (options.workspace) {
     const wanted = options.workspace.trim();
-    const match = workspaces.find(
+    const matches = workspaces.filter(
       (workspace) =>
         workspace.slug === wanted ||
         `${workspace.organizationSlug}/${workspace.slug}` === wanted,
     );
+    const match = matches[0];
+    if (matches.length > 1) {
+      throw new CliError(
+        `"${wanted}" names a workspace in more than one organization`,
+        `pass <organization>/<workspace> - one of: ${matches
+          .map((workspace) => `${workspace.organizationSlug}/${workspace.slug}`)
+          .join(", ")}`,
+      );
+    }
     if (!match) {
       throw new CliError(
         `no workspace named "${wanted}"`,

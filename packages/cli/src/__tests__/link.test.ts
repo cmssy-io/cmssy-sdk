@@ -430,6 +430,53 @@ describe("runLink", () => {
     expect(lines.join("\n")).toContain("PAGES_EDIT");
   });
 
+  it("refuses a bare slug two organizations share and names both", async () => {
+    const { fetch, calls } = adminFetch({
+      mine: {
+        data: {
+          workspace: {
+            mine: [
+              ...workspaces,
+              { id: "w3", slug: "blog", name: "Blog", organizationSlug: "beta" },
+            ],
+          },
+        },
+      },
+    });
+    const { deps, lines } = makeDeps(fetch);
+    const code = await runLink({ token: "cs_test", workspace: "blog" }, deps);
+    expect(code).toBe(1);
+    expect(lines.join("\n")).toContain("acme/blog, beta/blog");
+    expect(
+      calls.filter((call) => call.variables.workspaceId !== undefined),
+      "linking must not read a secret from whichever workspace came first",
+    ).toEqual([]);
+  });
+
+  it("links the org-scoped name when two organizations share the slug", async () => {
+    const { fetch } = adminFetch({
+      mine: {
+        data: {
+          workspace: {
+            mine: [
+              ...workspaces,
+              { id: "w3", slug: "blog", name: "Blog", organizationSlug: "beta" },
+            ],
+          },
+        },
+      },
+    });
+    const { deps, cwd } = makeDeps(fetch);
+    const code = await runLink(
+      { token: "cs_test", workspace: "beta/blog" },
+      deps,
+    );
+    expect(code).toBe(0);
+    expect(readFileSync(join(cwd, ".env.local"), "utf8")).toContain(
+      "CMSSY_ORG_SLUG=beta",
+    );
+  });
+
   it("rejects an unknown --workspace with the available slugs", async () => {
     const { fetch } = adminFetch();
     const { deps, lines } = makeDeps(fetch);
