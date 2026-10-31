@@ -125,6 +125,16 @@ export type {
   CmssyQuantityRuleViolation,
 } from "./data/checkout-errors";
 
+export {
+  MAINTENANCE_QUERY,
+  getMaintenance,
+  maintenanceRefusal,
+} from "./data/maintenance";
+export type {
+  CmssyMaintenance,
+  CmssyMaintenanceRefusal,
+} from "./data/maintenance";
+
 export { fields } from "./fields";
 export {
   mediaAlt,
