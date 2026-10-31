@@ -389,6 +389,25 @@ Also exported: `BUYER_PRICES_QUERY`, `BuyerPricesResult`,
 `GetPublicCatalogPricesQuery`, `CmssyPublicPricedRecordData`. All from
 `@cmssy/core`.
 
+### Maintenance
+
+`await getMaintenance(config, { fetch?, signal?, retry? })` reads
+`public.maintenance` on the delivery route, with no token. It returns a
+`CmssyMaintenance` - `{ startsAt, endsAt }`, ISO strings - for the current or
+next full freeze, or `null` when none is scheduled. A notice or a read-only
+window returns `null`, because neither changes anything on a site. During a
+freeze, delivery keeps answering queries but refuses every mutation: carts,
+checkout, member sign-ins and form posts. A site can read this ahead of time to
+show its own notice.
+
+`maintenanceRefusal(error)` returns `CmssyMaintenanceRefusal` -
+`{ endsAt, retryAfter }`, ISO string and seconds, each `null` when the API did
+not send it - when the error is a `CmssyGraphqlError` refused with
+`extensions.code` `MAINTENANCE`, and `null` otherwise. Use it to tell the buyer
+when to try again instead of showing a generic failure.
+
+Also exported: `MAINTENANCE_QUERY`. All from `@cmssy/core`.
+
 ### `@cmssy/core/testing` and `/preflight`
 
 `checkCmssyEditMode(options)` proves a deployed site can still be **edited** - see
