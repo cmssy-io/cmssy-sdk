@@ -15,7 +15,7 @@ export interface MaintenanceResult {
 export const MAINTENANCE_QUERY = typedOperation<
   MaintenanceResult,
   Record<string, never>
->(`query PublicMaintenance {
+>(`query Maintenance {
   public {
     maintenance {
       startsAt
