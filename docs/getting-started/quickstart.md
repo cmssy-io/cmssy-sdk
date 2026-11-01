@@ -50,14 +50,14 @@ On cmssy cloud you only set the two per-workspace values. `apiUrl` and
 `editorOrigin` are fixed platform values and **default automatically** -
 override them only for self-hosted or staging deployments.
 
-| Env var                | What it is                                                                                                                                                                                                    | Required       |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `CMSSY_ORG_SLUG`       | The organization slug (part of the org-scoped delivery path).                                                                                                                                                 | yes            |
-| `CMSSY_WORKSPACE_SLUG` | The workspace slug (unique within the organization).                                                                                                                                                          | yes            |
-| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work. | yes            |
-| `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                              | no (self-host) |
+| Env var                | What it is                                                                                                                                                                                                                                              | Required       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `CMSSY_ORG_SLUG`       | The organization slug (part of the org-scoped delivery path).                                                                                                                                                                                           | yes            |
+| `CMSSY_WORKSPACE_SLUG` | The workspace slug (unique within the organization).                                                                                                                                                                                                    | yes            |
+| `CMSSY_DRAFT_SECRET`   | Server-only secret that gates draft/preview. Copy the generated value from **Settings → Headless** in the cmssy dashboard - it is unique per workspace and must match for the editor's draft preview to work.                                           | yes            |
+| `CMSSY_API_URL`        | GraphQL delivery endpoint. Defaults to the cmssy cloud endpoint.                                                                                                                                                                                        | no (self-host) |
 | `CMSSY_EDITOR_ORIGIN`  | Origin allowed to frame your app in the editor, or several separated by commas (`https://admin.example.com,https://www.admin.example.com`). Setting it replaces the cmssy admin defaults, so list every origin you still need, `www` variants included. | no (self-host) |
-| `CMSSY_API_TOKEN`      | A `cs_…` API token used only in development to preview in-progress editor edits (dev drafts) on your local site. See [Dev preview](#7-dev-preview-optional). Server-only; ignored in production.              | no (dev only)  |
+| `CMSSY_API_TOKEN`      | A `cs_…` API token used only in development to preview in-progress editor edits (dev drafts) on your local site. See [Dev preview](#7-dev-preview-optional). Server-only; ignored in production.                                                        | no (dev only)  |
 
 ```ts
 // self-host / staging only:
@@ -113,10 +113,12 @@ import { CmssyEditor } from "@/cmssy/editor";
 export default createCmssyPage(cmssy, blocks, { editor: CmssyEditor });
 ```
 
-The cmssy editor frames this page with `?cmssyEdit=1`; `createCmssyPage` then
-mounts the edit bridge and serves draft content using the server-side
-`draftSecret` (no secret reaches the editor). Without the flag it serves
-published content.
+This route serves **published** content only. A page that exists in the
+workspace but is not published answers 404 here - publish it in the editor (or
+with the `publish_page` MCP tool) before you open its public URL.
+
+It does **not** handle the editor. `createCmssyPage` ignores `?cmssyEdit=1`;
+the editor gets its own route and a proxy that sends it there (step 6).
 
 ## 5. Enable draft mode
 
@@ -139,46 +141,57 @@ prints this URL ready to open.
 `content.changed` webhook points at that route, a publish shows up on the next
 request instead of after `revalidate` seconds.
 
-## 6. Let the editor frame your app
+## 6. Give the editor its own route
 
-```ts
-// middleware.ts
-import { NextResponse, type NextRequest } from "next/server";
-import {
-  applyCmssyCsp,
-  isCmssyEditRequest,
-  CMSSY_EDIT_HEADER,
-} from "@cmssy/next/middleware";
+The cmssy editor frames your site at the page's own URL with
+`?cmssyEdit=1&cmssySecret=<draft secret>`. A static public page never sees that
+query string, so the editor needs two more files. **Both are required** -
+without either one the editor shows "the preview did not respond".
+
+The edit route renders draft content with the edit bridge:
+
+```tsx
+// app/cmssy-edit/[[...path]]/page.tsx
+import { createCmssyEditPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy.config";
+import { blocks } from "@/cmssy/blocks";
+import { CmssyEditor } from "@/cmssy/editor";
 
-export function middleware(request: NextRequest) {
-  const editMode = isCmssyEditRequest(request);
+export const dynamic = "force-dynamic";
 
-  // Strip any inbound value so a client can't forge edit mode, then set it
-  // ourselves so server components (e.g. the root layout) can read it.
-  const headers = new Headers(request.headers);
-  headers.delete(CMSSY_EDIT_HEADER);
-  if (editMode) headers.set(CMSSY_EDIT_HEADER, "1");
-
-  const response = NextResponse.next({ request: { headers } });
-  if (editMode) applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin });
-  return response;
-}
+export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
 ```
 
-On the `/cmssy-edit` route - which is `force-dynamic` - read
-`isCmssyEditMode()` to fetch draft rather than published data. Do **not** read it
-on a public route: it calls `headers()`, and one such read makes the route
-uncacheable for good. Public routes pass `editMode={false}` and let the proxy
-rewrite editor traffic to `/cmssy-edit`.
+The proxy verifies the secret, rewrites `/about?cmssyEdit=1&cmssySecret=…` to
+`/cmssy-edit/about`, and sets the CSP that lets the cmssy admin frame the page:
 
-> **Security.** `?cmssyEdit=1` is a developer-controllable flag - any request can
-> opt into edit mode. This is not an escalation: draft **content** is still gated
-> by the server-held `draftSecret`, and `frame-ancestors` only restricts framing
-> to your `editorOrigin` (set it to a concrete origin, never `*`). For
-> production, gate the edit path behind a server-set capability (auth/session
-> cookie or signed token) and scope this middleware with `config.matcher` to
-> editable routes only.
+```ts
+// proxy.ts (Next.js 16) - on Next.js 15 name it middleware.ts and export `middleware`
+import { createCmssyProxy } from "@cmssy/next/middleware";
+import { cmssy } from "@/cmssy.config";
+
+export const proxy = createCmssyProxy(cmssy);
+
+export const config = {
+  matcher: ["/((?!_next/|api/|.*\\..*).*)"],
+};
+```
+
+Put `proxy.ts` next to your `app` directory: the project root, or `src/` when
+the app lives in `src/app`. Keep `matcher` a literal - Next parses it at build
+time and rejects an imported constant.
+
+Then set the workspace **preview URL** (Settings → Headless, or `cmssy link`)
+to the exact deployed origin, e.g. `https://my-site.vercel.app` - no extra
+`www.` and no path.
+
+On the `/cmssy-edit` route read `isCmssyEditMode()` to fetch draft rather than
+published data. Do **not** read it on a public route: it calls `headers()`, and
+one such read makes the route uncacheable for good.
+
+> **Security.** A bare `?cmssyEdit=1` does not enter edit mode: the proxy
+> rewrites only when `cmssySecret` matches your server-held `draftSecret`, and
+> `/cmssy-edit` itself answers 404 to any request without a matching secret.
 
 That is a working headless site: published pages render server-side, and editors
 arrange your blocks visually through the cmssy editor.
