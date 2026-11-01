@@ -13,7 +13,7 @@ pnpm add @cmssy/next @cmssy/react
 
 ```tsx
 // app/[[...path]]/page.tsx
-import { createCmssyPage } from "@cmssy/next";
+import { createCmssyPage } from "@cmssy/next/server";
 import { cmssy } from "@/cmssy/config";
 import { blocks } from "@/cmssy/blocks";
 import { CmssyEditor } from "@/cmssy/editor";
@@ -37,9 +37,43 @@ export const cmssy = defineCmssyConfig({
 });
 ```
 
-`createCmssyPage` fetches the page for the request path and renders it. In edit
-mode (draft cookie or `?cmssyEdit=1`) it renders your `editor` instead and frames
-the live-edit bridge. A published build does **not** require `editorOrigin`.
+`createCmssyPage` fetches the published page for the request path and renders
+it; an unpublished page answers 404. It does not handle the editor - that needs
+the edit route and proxy below. A published build does **not** require
+`editorOrigin`.
+
+## Let the editor frame your site
+
+The cmssy editor frames the page's own URL with
+`?cmssyEdit=1&cmssySecret=<draft secret>`. The proxy verifies the secret and
+rewrites that request to `/cmssy-edit/...`, which renders draft content with
+your `editor`. Both files are required; without them the editor reports that
+the preview did not respond.
+
+```tsx
+// app/cmssy-edit/[[...path]]/page.tsx
+import { createCmssyEditPage } from "@cmssy/next/server";
+import { cmssy } from "@/cmssy/config";
+import { blocks } from "@/cmssy/blocks";
+import { CmssyEditor } from "@/cmssy/editor";
+
+export const dynamic = "force-dynamic";
+
+export default createCmssyEditPage(cmssy, blocks, { editor: CmssyEditor });
+```
+
+```ts
+// proxy.ts (Next.js 16) - on Next.js 15 name it middleware.ts and export `middleware`
+import { createCmssyProxy } from "@cmssy/next/middleware";
+import { cmssy } from "@/cmssy/config";
+
+export const proxy = createCmssyProxy(cmssy);
+export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
+```
+
+`proxy.ts` sits next to `app/` (in `src/` when the app is `src/app`). Set the
+workspace preview URL to the exact deployed origin, e.g.
+`https://my-site.vercel.app`.
 
 ## Draft preview
 
@@ -70,11 +104,9 @@ webhook. Draft mode and the editor always read live.
 
 ## Edit-mode CSP
 
-```ts
-import { cmssyCspHeaders, applyCmssyCsp } from "@cmssy/next";
-```
-
-Helpers to frame the page inside the cmssy editor only in edit mode.
+`createCmssyProxy` already sets it on editor requests. For a hand-written proxy,
+`applyCmssyCsp(response, { editorOrigin: cmssy.editorOrigin })` from
+`@cmssy/next/middleware` lets the cmssy editor frame the response.
 
 ## Localized navigation (path prefix)
 
@@ -91,21 +123,8 @@ import { localizeHref } from "@cmssy/next";
 <Link href={localizeHref("/about", locale)}>About</Link>; // → /en/about while EN is active
 ```
 
-Add middleware so the root layout (which can't read the path) resolves the right
-locale from the path prefix. On Next.js 16 the file is `proxy.ts` (the renamed
-middleware convention); on Next.js 15 use `middleware.ts` with the same body.
-
-```ts
-// proxy.ts (Next.js 16) — or middleware.ts on Next.js 15
-import { createCmssyLocaleMiddleware } from "@cmssy/next";
-import { cmssy } from "@/cmssy/config";
-
-export const proxy = createCmssyLocaleMiddleware(cmssy);
-export const config = { matcher: ["/((?!_next/|api/|.*\\..*).*)"] };
-```
-
-On Next.js 15, name the file `middleware.ts` and rename the export to
-`middleware` (`export const middleware = createCmssyLocaleMiddleware(cmssy)`).
+The root layout can't read the path, so the proxy resolves the locale from the
+path prefix: the `createCmssyProxy` from the editor section already does it.
 
 `localizeHref(href, locale)` and the `CMSSY_LOCALE_HEADER` constant are
 re-exported from `@cmssy/next` (and `@cmssy/core`).
