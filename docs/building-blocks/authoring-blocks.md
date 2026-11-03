@@ -257,6 +257,36 @@ export default createCmssyPage(cmssy, blocks);
 The editor lazy-imports this registry on the client, so keep server-only code in
 a [loader](./server-loaders.md), not at the top of the block module.
 
+## Seeing a block locally
+
+A new block needs no deploy and no manifest sync before you can see it with
+real content. The editor can frame your dev server, and what you write there
+lands on a draft only you see:
+
+1. **Run the app on localhost.** The block and its schema hot reload; the
+   bridge hands the editor your current block types on every handshake, so a
+   type that exists only on your machine already shows in the palette.
+2. **Switch the editor to dev mode and point it at your host.** `cmssy link`
+   prints the editor deep link ([CLI](../cli.md)); the switch needs the
+   `site:preview:dev` permission. Every edit from now on goes to your
+   **per-user dev draft** - the shared draft and the published page stay as
+   they were, and content validation against the block manifest waits until
+   you promote, so an undeployed type is allowed on the dev draft.
+3. **Render the dev draft on localhost.** With `CMSSY_API_TOKEN` set as
+   `devToken`, a development build serves your dev draft instead of the
+   published page - see [Dev preview](../getting-started/quickstart.md#7-dev-preview-optional).
+4. **Fill it without clicking.** The cmssy MCP page tools take
+   `target: "devDraft"` (`add_block_to_page`, `update_page_blocks`), so an
+   agent can seed a block's content in one call and you review it in the
+   editor and on localhost at once.
+5. **Promote, then publish.** Promote the dev draft to the shared draft when
+   the block looks right; the manifest check runs there.
+
+There is no offline sample renderer and no sample content on a block
+definition: a block renders what the CMS holds, and an empty field renders
+nothing (see [Content defaults](#content-defaults-render-dont-fabricate)).
+Keep the trial content in the dev draft, not in a JSON file next to the code.
+
 ## Testing
 
 Co-locate a test next to the block and render the component with mock `content`:
