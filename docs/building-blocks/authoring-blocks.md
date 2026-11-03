@@ -146,6 +146,14 @@ export const cardProps = {
 // content.features → { title: string; icon?: string }[] | undefined
 ```
 
+An `itemSchema` takes any field, a `fields.repeater` included, so a repeater
+nests to any depth: the editor renders rows inside rows, content validation,
+media resolution and `localized` apply at every level, and the inferred type
+follows (`{ title: string; links?: { label?: string }[] }[]`). One limit:
+AI content generation fills the first level of a repeater only and skips a
+repeater nested in it. Before nesting, check [Models for data](./models-for-data.md):
+rows with an identity of their own belong in a model, not in a repeater.
+
 ## The component contract
 
 A block component receives three props, all of them typed by

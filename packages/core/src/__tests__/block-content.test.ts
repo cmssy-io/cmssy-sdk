@@ -400,6 +400,50 @@ describe("fields nested in a repeater", () => {
     ]);
   });
 
+  it("resolves a relation declared two repeater levels down", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const nested: BlockSchemaMap = {
+      "mega-menu": {
+        columns: fields.repeater({
+          label: "Columns",
+          itemSchema: {
+            heading: fields.text(),
+            links: fields.repeater({
+              label: "Links",
+              itemSchema: {
+                label: fields.text(),
+                category: fields.relation({ model: "category" }),
+              },
+            }),
+          },
+        }),
+      },
+    };
+    const content: Record<string, unknown> = {
+      columns: [
+        { heading: "Shop", links: [{ label: "Pumps", category: "c1" }] },
+      ],
+    };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "mega-menu", content }],
+      nested,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(content.columns).toEqual([
+      {
+        heading: "Shop",
+        links: [{ label: "Pumps", category: record("c1", { name: "Pumps" }) }],
+      },
+    ]);
+  });
+
   it("copies rows instead of writing through to the stored content", async () => {
     const { fetch } = routerFetch({
       byIds: () => [record("c1", { name: "Pumps" })],
