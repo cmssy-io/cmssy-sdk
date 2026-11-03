@@ -275,8 +275,8 @@ lands on a draft only you see:
 3. **Render the dev draft on localhost.** With `CMSSY_API_TOKEN` set as
    `devToken`, a development build serves your dev draft instead of the
    published page - see [Dev preview](../getting-started/quickstart.md#7-dev-preview-optional).
-4. **Fill it without clicking.** The cmssy MCP page tools take
-   `target: "devDraft"` (`add_block_to_page`, `update_page_blocks`), so an
+4. **Fill it without clicking.** The cmssy MCP page write tools take
+   `target: "devDraft"` (`update_page_blocks`, `update_block_content`), so an
    agent can seed a block's content in one call and you review it in the
    editor and on localhost at once.
 5. **Promote, then publish.** Promote the dev draft to the shared draft when
