@@ -89,6 +89,7 @@ export interface PublicPageResult {
         pageType?: string | null;
         blocks?: RawBlock[] | null;
         publishedBlocks?: RawBlock[] | null;
+        devPreviewApplied?: boolean | null;
       } | null;
     } | null;
   } | null;
@@ -121,6 +122,7 @@ export const PUBLIC_PAGE_DEV_QUERY = typedOperation<
         id
         slug
         pageType
+        devPreviewApplied
         blocks { id type content style advanced }
         publishedBlocks { id type content style advanced }
       }
@@ -252,6 +254,21 @@ export function normalizeSlug(path: string | string[] | undefined): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
+const devPreviewRefusalsWarned = new Set<string>();
+
+function warnDevPreviewRefused(config: CmssyClientConfig): void {
+  const key = `${config.org}/${config.workspaceSlug}`;
+  if (devPreviewRefusalsWarned.has(key)) return;
+  devPreviewRefusalsWarned.add(key);
+  console.warn(
+    `cmssy: devToken was not accepted for dev preview on ${key} - its user must own the workspace or hold site:preview_dev there. Rendering published content; the editor's dev draft will not show on this host until the token is fixed.`,
+  );
+}
+
+export function resetDevPreviewRefusalWarnings(): void {
+  devPreviewRefusalsWarned.clear();
+}
+
 export async function fetchPage(
   config: CmssyClientConfig,
   path: string | string[] | undefined,
@@ -298,7 +315,9 @@ export async function fetchPage(
       );
   const page = data?.public?.page?.get;
   if (!page) return null;
-  const draft = previewSecret !== null || devPreview;
+  const devApplied = devPreview && page.devPreviewApplied === true;
+  if (devPreview && !devApplied) warnDevPreviewRefused(config);
+  const draft = previewSecret !== null || devApplied;
   const blocks = (draft ? page.blocks : page.publishedBlocks) ?? [];
   return {
     id: page.id,

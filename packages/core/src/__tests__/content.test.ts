@@ -3,6 +3,7 @@ import { getBlockContentForLanguage } from "../content/get-block-content";
 import {
   normalizeSlug,
   fetchPage,
+  resetDevPreviewRefusalWarnings,
   fetchPageById,
   fetchPages,
   fetchLayouts,
@@ -244,6 +245,7 @@ describe("fetchPage", () => {
               page: {
                 get: {
                   id: "p1",
+                  devPreviewApplied: true,
                   blocks: [{ id: "dev1", type: "hero", content: {} }],
                   publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
                 },
@@ -264,6 +266,66 @@ describe("fetchPage", () => {
     expect(sentHeaders?.["x-workspace-id"]).toBe("ws-object-id");
     expect(sentBody?.variables.devPreview).toBe(true);
     expect(sentBody?.query).toContain("$devPreview");
+    expect(sentBody?.query).toContain("devPreviewApplied");
+  });
+
+  it("falls back to publishedBlocks and warns once when the API did not honour devPreview", async () => {
+    resetDevPreviewRefusalWarnings();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetch = mockFetch({
+      data: {
+        public: {
+          page: {
+            get: {
+              id: "p1",
+              devPreviewApplied: false,
+              blocks: [],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        },
+      },
+    });
+    const options = { fetch, devPreview: true, devToken: "cs_devtoken" };
+
+    const first = await fetchPage(config, "/", options);
+    const second = await fetchPage(config, "/about", options);
+
+    expect(first?.blocks.map((b) => b.id)).toEqual(["b1"]);
+    expect(second?.blocks.map((b) => b.id)).toEqual(["b1"]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain("acme/ws");
+    expect(warn.mock.calls[0]?.[0]).toContain("site:preview_dev");
+    warn.mockRestore();
+  });
+
+  it("does not warn when devPreview was honoured without an overlay", async () => {
+    resetDevPreviewRefusalWarnings();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetch = mockFetch({
+      data: {
+        public: {
+          page: {
+            get: {
+              id: "p1",
+              devPreviewApplied: true,
+              blocks: [{ id: "b1", type: "hero", content: {} }],
+              publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
+            },
+          },
+        },
+      },
+    });
+
+    const page = await fetchPage(config, "/", {
+      fetch,
+      devPreview: true,
+      devToken: "cs_devtoken",
+    });
+
+    expect(page?.blocks.map((b) => b.id)).toEqual(["b1"]);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("ignores devPreview without a devToken (no auth header, published read)", async () => {
@@ -282,6 +344,7 @@ describe("fetchPage", () => {
               page: {
                 get: {
                   id: "p1",
+                  devPreviewApplied: true,
                   blocks: [{ id: "dev1", type: "hero", content: {} }],
                   publishedBlocks: [{ id: "b1", type: "hero", content: {} }],
                 },

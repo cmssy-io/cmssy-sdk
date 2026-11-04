@@ -214,8 +214,9 @@ export const cmssy: CmssyConfig = {
 
 Create the token on the **API Tokens** page in the cmssy dashboard. It must
 belong to a user with dev-preview access - the workspace **owner**, or a member
-whose role grants the dev-preview permission. A token from any other user
-authenticates but silently falls back to published content.
+whose role grants the `site:preview_dev` permission. A token from any other
+user is refused for dev preview: the SDK renders the published page and warns
+once in the dev server console naming the missing permission.
 
 How it works: when `NODE_ENV === "development"` **and** a `devToken` is set, the
 SDK sends the token on every page fetch. The backend resolves it to that user and

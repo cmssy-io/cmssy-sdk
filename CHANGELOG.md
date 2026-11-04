@@ -6,6 +6,19 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.28.0
+
+**No - unless your local site was blank.** In development with `devToken`
+set, a token whose user is not the workspace owner and does not hold
+`site:preview_dev` used to render every page empty: the API refused the dev
+preview, answered with the draft stripped to nothing, and `fetchPage` read that
+as the overlay. The API now says whether it honoured the request
+(`PublicPage.devPreviewApplied`); when it did not, `@cmssy/core` renders the
+published page and warns once per workspace in the server console, naming the
+permission the token's user needs. Needs a cmssy API that serves
+`devPreviewApplied` - older APIs reject the query, so update after your
+workspace is on the current platform (hosted cmssy already is).
+
 ## 19.26.2
 
 **No.** The CLI's "no API token" hint (`cmssy link`, `cmssy sync-manifest`, the
