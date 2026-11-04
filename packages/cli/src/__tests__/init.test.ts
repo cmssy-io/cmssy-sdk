@@ -99,7 +99,7 @@ describe("runInit", () => {
     const output = lines.join("\n");
     expect(output).toContain("detected Next.js");
     expect(output).toContain(`${NEXT_FILES.length} files written, 0 skipped.`);
-    expect(output).toContain("npx @cmssy/cli link");
+    expect(output).toContain("npx @cmssy/cli@latest link");
   });
 
   it("says what every file it writes is for, and what not to break", () => {

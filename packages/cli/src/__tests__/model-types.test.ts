@@ -83,7 +83,7 @@ describe("generateModelTypes", () => {
   it("names the workspace and the command in the header", () => {
     const output = generate();
     expect(output).toContain('from the "acme" workspace');
-    expect(output).toContain("npx @cmssy/cli types");
+    expect(output).toContain("npx @cmssy/cli@latest types");
     expect(output).toContain("Do not edit");
   });
 

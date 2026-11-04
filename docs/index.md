@@ -28,8 +28,8 @@ wire cmssy into it:
 ```bash
 npx create-next-app@latest my-site   # or: npm create astro@latest / npx create-react-router@latest
 cd my-site
-npx @cmssy/cli init   # generates the cmssy wiring for the detected framework
-npx @cmssy/cli link   # connects it to your workspace
+npx @cmssy/cli@latest init   # generates the cmssy wiring for the detected framework
+npx @cmssy/cli@latest link   # connects it to your workspace
 ```
 
 ## Packages

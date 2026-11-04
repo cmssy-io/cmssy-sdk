@@ -40,7 +40,7 @@ const REQUIRED_ENV = [
 ] as const;
 
 const SETTINGS_FIX =
-  "copy the values from Settings → Headless in the cmssy dashboard, or run npx @cmssy/cli link";
+  "copy the values from Settings → Headless in the cmssy dashboard, or run npx @cmssy/cli@latest link";
 
 export async function collectEditDiagnostics(
   input: EditDiagnosticsInput,

@@ -15,9 +15,28 @@ and `.env.example`.
 ```bash
 npx create-next-app@latest my-site
 cd my-site
-npx @cmssy/cli init
+npx @cmssy/cli@latest init
 cmssy init --dir ../my-site --force
 ```
+
+## Running the CLI
+
+`npx @cmssy/cli@latest` always runs the current release - a bare
+`npx @cmssy/cli` can resolve to whatever version the npx cache holds, and an
+old one fails against today's API with errors such as
+`Cannot query field "myWorkspaces"`.
+
+The CLI depends on `esbuild`, which has a postinstall script. pnpm 10+ skips
+dependency build scripts unless you allow them, and then `pnpm exec cmssy`
+fails with `ERR_PNPM_IGNORED_BUILDS`. Allow it in `pnpm-workspace.yaml`:
+
+```yaml
+allowBuilds:
+  esbuild: true
+```
+
+or in `package.json` with `"pnpm": { "onlyBuiltDependencies": ["esbuild"] }`,
+then run `pnpm install` again.
 
 ## What it does
 
@@ -121,7 +140,7 @@ them was right. `cmssy link` does the copying for you and then proves the
 wiring works.
 
 ```bash
-npx @cmssy/cli link
+npx @cmssy/cli@latest link
 cmssy link --token cs_... --workspace acme/shop --preview-url https://shop.example.com
 ```
 
@@ -234,9 +253,9 @@ A model record comes over the wire as a JSON blob, so without this every read is
 `data.specs as Specs`. The CMS already knows the shape. This makes it say so:
 
 ```bash
-npx @cmssy/cli types                  # cmssy/models.ts + cmssy/operations.graphql
-npx @cmssy/cli types --out types/cms.ts
-npx @cmssy/cli types --no-operations  # no codegen in this app
+npx @cmssy/cli@latest types                  # cmssy/models.ts + cmssy/operations.graphql
+npx @cmssy/cli@latest types --out types/cms.ts
+npx @cmssy/cli@latest types --no-operations  # no codegen in this app
 ```
 
 It reads the workspace's model definitions over the **public** delivery path -
@@ -394,7 +413,7 @@ the editor canvas. A deploy that adds a region or a setting is invisible in
 `/layouts` until then. This command sends the same manifest from the build:
 
 ```bash
-npx @cmssy/cli sync-manifest
+npx @cmssy/cli@latest sync-manifest
 cmssy sync-manifest --dry-run          # show what the push would change, push nothing
 cmssy sync-manifest --allow-lossy      # accept moves that drop stored values
 cmssy sync-manifest --allow-removals   # accept removing block types, fields or regions
