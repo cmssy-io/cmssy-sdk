@@ -6,6 +6,16 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.28.1
+
+**No.** Every `npx @cmssy/cli` hint the CLI prints, the `.env.example` it
+writes, the header of generated `models.ts` and the edit-diagnostics fix hint
+now say `npx @cmssy/cli@latest`: a stale npx cache otherwise runs an old
+release that fails with `Cannot query field "myWorkspaces"`. Docs now also
+name the pnpm 10+ build approval the CLI needs (`allowBuilds: esbuild: true`,
+or `pnpm.onlyBuiltDependencies`) - without it `pnpm exec cmssy` fails with
+`ERR_PNPM_IGNORED_BUILDS`.
+
 ## 19.28.0
 
 **No - unless your local site was blank.** In development with `devToken`

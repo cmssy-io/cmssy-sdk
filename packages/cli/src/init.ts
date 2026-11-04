@@ -295,7 +295,7 @@ export function runInit(options: InitOptions, deps: InitDeps): number {
     log("Next steps:");
     let step = 1;
     if (added.length > 0) log(`  ${step++}. ${detectInstallCommand(root)}`);
-    log(`  ${step++}. npx @cmssy/cli link --token cs_...`);
+    log(`  ${step++}. npx @cmssy/cli@latest link --token cs_...`);
     const registry = frameworkFiles(framework, root).find((file) =>
       file.target.endsWith("cmssy/blocks.ts"),
     );

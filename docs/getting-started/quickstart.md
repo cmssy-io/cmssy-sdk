@@ -18,11 +18,18 @@ route and proxy - for the framework it detects:
 ```bash
 npx create-next-app@latest my-site   # or: npm create astro@latest / npx create-react-router@latest
 cd my-site
-npx @cmssy/cli init
+npx @cmssy/cli@latest init
 
 # or wire it by hand:
 npm i @cmssy/core @cmssy/react @cmssy/next
 ```
+
+`@latest` makes npx run the current release instead of whatever a stale npx
+cache holds. On pnpm 10+ the CLI's `esbuild` dependency needs its build script
+allowed, or `pnpm exec cmssy` fails with `ERR_PNPM_IGNORED_BUILDS` - add
+`allowBuilds: { esbuild: true }` to `pnpm-workspace.yaml` (or
+`pnpm.onlyBuiltDependencies: ["esbuild"]` to `package.json`), see
+[the CLI docs](../cli.md#running-the-cli).
 
 Then connect the app to your workspace with [`cmssy link`](../cli.md) instead
 of hand-copying values from the dashboard - it writes `CMSSY_ORG_SLUG`,
@@ -30,7 +37,7 @@ of hand-copying values from the dashboard - it writes `CMSSY_ORG_SLUG`,
 workspace preview URL, verifies the wiring and prints the editor deep link:
 
 ```bash
-npx @cmssy/cli link --token cs_...
+npx @cmssy/cli@latest link --token cs_...
 ```
 
 ## 2. Configure

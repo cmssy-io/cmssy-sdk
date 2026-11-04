@@ -49,7 +49,7 @@ describe("collectEditDiagnostics", () => {
     expect(configuration?.message).toContain("CMSSY_DRAFT_SECRET");
     expect(configuration?.message).not.toContain("CMSSY_ORG_SLUG");
     expect(configuration?.fix).toContain("Settings → Headless");
-    expect(configuration?.fix).toContain("npx @cmssy/cli link");
+    expect(configuration?.fix).toContain("npx @cmssy/cli@latest link");
     expect(fetch).not.toHaveBeenCalled();
   });
 

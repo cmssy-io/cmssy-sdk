@@ -211,7 +211,7 @@ export function generateModelTypes(
   models: ModelDefinition[],
   options: GenerateOptions,
 ): string {
-  const command = options.command ?? "npx @cmssy/cli types";
+  const command = options.command ?? "npx @cmssy/cli@latest types";
   const sorted = [...models].sort((a, b) => a.slug.localeCompare(b.slug));
 
   const used = new Map<string, string>();
