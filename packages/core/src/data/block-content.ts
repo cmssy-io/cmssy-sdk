@@ -3,7 +3,7 @@ import type { CmssyClientConfig } from "../content/content-client";
 import { createCmssyClient } from "./client";
 import type { QueryScopedOptions } from "./client";
 import { typedOperation } from "./document";
-import { MODEL_RECORDS_QUERY } from "./queries";
+import { MODEL_RECORDS_QUERY, type CmssyRecordSort } from "./queries";
 
 export interface RecordsByIdsVariables {
   workspaceId: string;
@@ -290,13 +290,15 @@ export async function resolveRelationContent(
   const pickedIds = new Set<string>();
   const collections = new Map<
     string,
-    { model: string; sort?: string; limit?: number }
+    { model: string; sort?: CmssyRecordSort; limit?: number }
   >();
   for (const ref of refs) {
     if (ref.field.relationMode === "all") {
       collections.set(collectionKey(ref), {
         model: ref.model,
-        sort: ref.field.sort,
+        // fields.relation types the grammar; a schema read off the wire is
+        // passed through as is, and the API rejects what it does not accept.
+        sort: ref.field.sort as CmssyRecordSort | undefined,
         limit: ref.field.limit,
       });
     } else {
@@ -398,7 +400,7 @@ async function fetchPickedRecords(
 
 async function fetchCollections(
   client: ReturnType<typeof createCmssyClient>,
-  collections: Map<string, { model: string; sort?: string; limit?: number }>,
+  collections: Map<string, { model: string; sort?: CmssyRecordSort; limit?: number }>,
   locale?: string,
   requestOptions: QueryScopedOptions = {},
   previewSecret?: string,

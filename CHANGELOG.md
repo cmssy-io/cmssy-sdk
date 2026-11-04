@@ -6,6 +6,17 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.29.0
+
+**Fix any relation `sort` outside `<fieldKey>_asc` / `<fieldKey>_desc`.** The
+records list API now rejects every other sort - `-createdAt`, `createdAt DESC`,
+or an unknown field key - with `BAD_USER_INPUT`, and the SDK resolves every
+relation on a page in one batch, so one bad block blanks all of them. `fields.relation({ sort })` and `ModelRecordsVariables.sort` are now
+typed `CmssyRecordSort` (`` `${string}_${"asc" | "desc"}` ``, exported from
+`@cmssy/core`), so the old grammar fails to compile instead of at runtime:
+`sort: "-createdAt"` becomes `sort: "createdAt_desc"`. Omit `sort` for the
+model's default sort, else newest first.
+
 ## 19.28.1
 
 **No.** Every `npx @cmssy/cli` hint the CLI prints, the `.env.example` it

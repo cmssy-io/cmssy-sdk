@@ -76,11 +76,19 @@ export const MODEL_DEFINITIONS_QUERY = typedOperation<
   }
 }`);
 
+/**
+ * How the records list API orders a model's records: `<fieldKey>_asc` or
+ * `<fieldKey>_desc`. The API rejects any other value with BAD_USER_INPUT,
+ * as it does an unknown field key. Omit it for the model's default sort,
+ * else newest first.
+ */
+export type CmssyRecordSort = `${string}_${"asc" | "desc"}`;
+
 export interface ModelRecordsVariables {
   workspaceId: string;
   modelSlug: string;
   filter?: Record<string, unknown> | null;
-  sort?: string | null;
+  sort?: CmssyRecordSort | null;
   locale?: string | null;
   limit?: number | null;
   offset?: number | null;

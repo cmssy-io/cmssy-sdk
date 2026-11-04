@@ -51,6 +51,7 @@ export type {
   CmssyModelDefinition,
   CmssyModelRecord,
   CmssyRecordList,
+  CmssyRecordSort,
   CmssyFormDefinition,
   CmssyFormField,
   CmssyFormSettings,
