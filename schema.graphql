@@ -5337,6 +5337,10 @@ type PublicPage {
   blocks: [PublicBlockData!]!
   customFields: [PageCustomField!]!
   description: String
+  """
+  True when a devPreview read was honoured: the caller is the workspace owner or holds site:preview_dev there, so blocks carries the dev overlay or, without one, the published blocks. False when devPreview was not requested or the caller was not authorized - blocks is then the ordinary draft read, which an anonymous caller sees stripped.
+  """
+  devPreviewApplied: Boolean!
   displayName: JSON!
   id: String!
   inheritsLayout: Boolean!
