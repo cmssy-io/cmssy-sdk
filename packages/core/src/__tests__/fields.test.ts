@@ -1,6 +1,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import type { BlockPropsSchema, InferBlockContent } from "@cmssy/types";
 import { fields } from "../fields";
+import type { CmssyRecordSort, ModelRecordsVariables } from "../data/queries";
 
 const declaredByHand: BlockPropsSchema = {
   specs: { type: "table", label: "Specs", maxColumns: 3 },
@@ -158,6 +159,25 @@ describe("a field's options are scoped to the field", () => {
       moode: "all",
     });
     expect(field.type).toBe("relation");
+  });
+
+  it("accepts only the record sort grammar on relation", () => {
+    const field = fields.relation({
+      model: "post",
+      mode: "all",
+      sort: "order_asc",
+    });
+    expect(field.sort).toBe("order_asc");
+    fields.relation({ model: "post", mode: "all", sort: "createdAt_desc" });
+    // @ts-expect-error the API rejects anything but <fieldKey>_asc / <fieldKey>_desc
+    fields.relation({ model: "post", mode: "all", sort: "-createdAt" });
+    // @ts-expect-error the direction is lowercase
+    fields.relation({ model: "post", mode: "all", sort: "order_ASC" });
+    expectTypeOf<"order_asc">().toMatchTypeOf<CmssyRecordSort>();
+    expectTypeOf<"-createdAt">().not.toMatchTypeOf<CmssyRecordSort>();
+    expectTypeOf<ModelRecordsVariables["sort"]>().toEqualTypeOf<
+      CmssyRecordSort | null | undefined
+    >();
   });
 
   it("still infers what the field declares about itself", () => {

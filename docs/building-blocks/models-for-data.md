@@ -35,7 +35,7 @@ fields.relation({
   label: "Testimonials",
   model: "testimonial", // the model's slug (required)
   mode: "all", // bind every record of the model; omit for editor-picked
-  sort: "order_asc", // passed through to the delivery API; cmssy accepts <fieldKey>_asc / <fieldKey>_desc
+  sort: "order_asc", // <fieldKey>_asc or <fieldKey>_desc - see "Sorting" below
   limit: 12, // collection cap (default 50)
   multiple: true, // picked mode: pick many instead of one
 });
@@ -49,6 +49,14 @@ Two modes:
 - **picked** (the default) - the editor picks one record, or several with
   `multiple: true`. Use it when the page chooses (a featured case study, the
   three plans on a pricing page).
+
+### Sorting
+
+`sort` takes `<fieldKey>_asc` or `<fieldKey>_desc` - `order_asc`,
+`createdAt_desc`. The API rejects any other value with `BAD_USER_INPUT`, as it
+does an unknown field key - `-createdAt` and `createdAt DESC` included. The
+type (`CmssyRecordSort`) stops them at compile time. Omit `sort` to get the
+model's default sort, else newest first.
 
 ### What the component receives
 

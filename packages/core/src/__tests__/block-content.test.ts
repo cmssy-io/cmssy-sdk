@@ -75,7 +75,7 @@ describe("fields.relation builder", () => {
     const field = fields.relation({
       model: "testimonial",
       mode: "all",
-      sort: "-createdAt",
+      sort: "createdAt_desc",
       limit: 6,
     });
     expect(field).toMatchObject({
@@ -83,7 +83,7 @@ describe("fields.relation builder", () => {
       relationTo: "model:testimonial",
       relationType: "hasMany",
       relationMode: "all",
-      sort: "-createdAt",
+      sort: "createdAt_desc",
       limit: 6,
     });
     expect(field).not.toHaveProperty("model");

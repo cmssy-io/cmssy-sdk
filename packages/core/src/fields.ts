@@ -12,6 +12,7 @@ import type {
   RelationMode,
   TypedField,
 } from "@cmssy/types";
+import type { CmssyRecordSort } from "./data/queries";
 
 export type {
   BlockPropsSchema,
@@ -72,7 +73,8 @@ interface RelationFieldOptions extends BaseFieldOptions {
   model: string;
   mode?: RelationMode;
   multiple?: boolean;
-  sort?: string;
+  /** `<fieldKey>_asc` / `<fieldKey>_desc`; omit for the model's default sort. */
+  sort?: CmssyRecordSort;
   limit?: number;
 }
 

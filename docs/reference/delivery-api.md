@@ -105,6 +105,10 @@ query PublicModelRecords(
 }
 ```
 
+`$sort` is `<fieldKey>_asc` or `<fieldKey>_desc` (`CmssyRecordSort`); any other
+value, or an unknown field key, is rejected with `BAD_USER_INPUT`. Omit it for
+the model's default sort, else newest first.
+
 `MODEL_RECORDS_QUERY` and `MODEL_DEFINITIONS_QUERY` are exported from
 `@cmssy/core/internal` if you prefer the SDK's strings over your own. That entry
 point is unstable by name: it is where the adapters read from, and nothing
