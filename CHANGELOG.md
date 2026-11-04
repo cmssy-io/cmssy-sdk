@@ -6,6 +6,16 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## Unreleased
+
+**Nothing to do.** Vendored SDL synced with cmssy#3401 (CMS-2201): AI provider
+keys moved from workspaces to organizations. Removed `ai.clearProviderKey`,
+`ai.testProviderConnection`, `AiProvider.configuredProviders`, the per-provider
+`*Model` fields and the key/model fields of `UpdateAiProviderInput`; added
+`organization.ai`, `AiProvider.activeConfigId` / `modelOverride` /
+`availableConfigs` and `AiStatus.activeConfigName`. The SDK never read any of
+the removed fields.
+
 ## 19.29.0
 
 **Fix any relation `sort` outside `<fieldKey>_asc` / `<fieldKey>_desc`.** The
