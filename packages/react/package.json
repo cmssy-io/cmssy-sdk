@@ -1,6 +1,9 @@
 {
   "name": "@cmssy/react",
   "version": "19.29.0",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "React blocks, renderers, data client and editor bridge for cmssy headless sites",
   "keywords": [
     "cmssy",

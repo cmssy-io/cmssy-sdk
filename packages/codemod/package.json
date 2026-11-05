@@ -1,6 +1,9 @@
 {
   "name": "@cmssy/codemod",
   "version": "19.29.0",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Rewrites cmssy imports across major versions, so a breaking release costs minutes instead of an afternoon.",
   "keywords": [
     "cmssy",
