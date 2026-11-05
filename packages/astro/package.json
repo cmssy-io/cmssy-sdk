@@ -1,6 +1,9 @@
 {
   "name": "@cmssy/astro",
   "version": "19.29.0",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Astro bindings for cmssy headless sites: middleware, page loader, sitemap and robots.",
   "keywords": [
     "cmssy",

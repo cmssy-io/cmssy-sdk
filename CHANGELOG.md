@@ -8,6 +8,12 @@ nowhere.
 
 ## Unreleased
 
+**Nothing to do on Node 20 or newer.** Every package now declares
+`"engines": { "node": ">=20" }`. The floor is not new: `@cmssy/core` uses the
+global `crypto.subtle`, which older Node versions do not expose by default.
+npm and pnpm now warn on an older Node instead of failing at runtime. CI tests
+on Node 22.
+
 **Nothing to do.** Vendored SDL synced with cmssy#3401 (CMS-2201): AI provider
 keys moved from workspaces to organizations. Removed `ai.clearProviderKey`,
 `ai.testProviderConnection`, `AiProvider.configuredProviders`, the per-provider
