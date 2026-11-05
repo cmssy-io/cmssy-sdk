@@ -16,6 +16,10 @@ keys moved from workspaces to organizations. Removed `ai.clearProviderKey`,
 `availableConfigs` and `AiStatus.activeConfigName`. The SDK never read any of
 the removed fields.
 
+**Nothing to do.** Vendored SDL synced with cmssy#3406 (CMS-2201 follow-up):
+adds `OrgAiProvider.activeWorkspaceIds`; `AiStatus.canUseAi` is deprecated in
+favour of `isConfigured`. The SDK reads neither field.
+
 ## 19.29.0
 
 **Fix any relation `sort` outside `<fieldKey>_asc` / `<fieldKey>_desc`.** The
