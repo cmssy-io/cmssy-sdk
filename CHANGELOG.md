@@ -20,6 +20,9 @@ the removed fields.
 adds `OrgAiProvider.activeWorkspaceIds`; `AiStatus.canUseAi` is deprecated in
 favour of `isConfigured`. The SDK reads neither field.
 
+**Nothing to do.** Vendored SDL synced with cmssy#3408: `AiStatus.canUseAi`
+removed (use `isConfigured`). The SDK never read it.
+
 ## 19.29.0
 
 **Fix any relation `sort` outside `<fieldKey>_asc` / `<fieldKey>_desc`.** The
