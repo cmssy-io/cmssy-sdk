@@ -72,6 +72,100 @@ Guard on `data` being absent: the editor resolves loaders only once
 is mounted, and the first render of a freshly added block still has none. Add
 `sanitize-html` (and `@types/sanitize-html`) to your project.
 
+### Text colors, highlights and code blocks
+
+The cmssy rich text editor can color text, highlight it and tag code blocks
+with a language. It stores plain HTML with inline styles, so nothing renders
+until your sanitizer lets it through:
+
+| Editor action | Stored HTML                                                                          |
+| ------------- | ------------------------------------------------------------------------------------ |
+| Text color    | `<span style="color: #DC2626">…</span>`                                              |
+| Highlight     | `<mark data-color="#FACC1566" style="background-color: #FACC1566; color: inherit">…</mark>` |
+| Code block    | `<pre><code class="language-typescript">…</code></pre>`                              |
+
+Colors come from a fixed palette: text colors are 6-digit hex, highlight colors
+8-digit hex (translucent, so the text stays readable on light and dark
+backgrounds). The editor drops any other color it loads, but content written
+through the API or MCP never passed through the editor - keep the regexes
+below. Code languages are `typescript`, `javascript`, `json`, `bash`,
+`css`, `html`, `graphql`, `python`, `sql`, `markdown`, `yaml` and `plaintext`; a
+block left on auto-detect has no `class`.
+
+A sanitizer that strips these leaves plain, unstyled text - nothing breaks. To
+render them, extend the allowlist:
+
+```ts
+const clean = sanitizeHtml(html, {
+  allowedTags: [
+    "p", "strong", "em", "ul", "ol", "li", "a", "h2", "h3", "br",
+    "span", "mark", "pre", "code",
+  ],
+  allowedAttributes: {
+    a: ["href", "target", "rel"],
+    span: ["style"],
+    mark: ["data-color", "style"],
+    code: ["class"],
+  },
+  allowedStyles: {
+    span: { color: [/^#[0-9a-f]{6}$/i] },
+    mark: {
+      "background-color": [/^#[0-9a-f]{8}$/i],
+      color: [/^inherit$/],
+    },
+  },
+  allowedClasses: { code: [/^language-[a-z0-9]+$/] },
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+});
+```
+
+The editor colors code only while you edit; the stored code block is plain
+text. Highlight it in the same loader, **after** sanitizing, so the highlighter's
+own markup is not stripped. With [shiki](https://shiki.style) (it inlines its
+colors, so you need no theme CSS):
+
+```ts
+const CODE_BLOCK =
+  /<pre[^>]*>\s*<code(?: class="language-([a-z0-9]+)")?[^>]*>([\s\S]*?)<\/code>\s*<\/pre>/gi;
+
+function decode(source: string): string {
+  return source
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+async function highlightCode(html: string): Promise<string> {
+  const blocks = [...html.matchAll(CODE_BLOCK)];
+  if (blocks.length === 0) return html;
+  const { codeToHtml } = await import("shiki");
+  let out = "";
+  let cursor = 0;
+  for (const block of blocks) {
+    const [full, lang = "plaintext", code] = block;
+    const index = block.index ?? 0;
+    const source = decode(code).replace(/\n$/, "");
+    const options = {
+      themes: { light: "github-light", dark: "github-dark" },
+      defaultColor: "light",
+    } as const;
+    const highlighted = await codeToHtml(source, { ...options, lang }).catch(
+      () => codeToHtml(source, { ...options, lang: "plaintext" }),
+    );
+    out += html.slice(cursor, index) + highlighted;
+    cursor = index + full.length;
+  }
+  return out + html.slice(cursor);
+}
+```
+
+Then return `{ html: await highlightCode(clean) }` from the loader. Add `shiki`
+to your project; like `sanitize-html`, it is dynamically imported and stays out
+of the client bundle. For a dark site, switch shiki's dual themes with its
+[`--shiki-dark` CSS variables](https://shiki.style/guide/dual-themes).
+
 ## List child pages (a blog index)
 
 There is no SDK helper for listing pages under a parent - you write the query and
