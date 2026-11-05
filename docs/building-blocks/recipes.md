@@ -86,7 +86,9 @@ until your sanitizer lets it through:
 
 Colors come from a fixed palette: text colors are 6-digit hex, highlight colors
 8-digit hex (translucent, so the text stays readable on light and dark
-backgrounds). Code languages are `typescript`, `javascript`, `json`, `bash`,
+backgrounds). The editor drops any other color it loads, but content written
+through the API or MCP never passed through the editor - keep the regexes
+below. Code languages are `typescript`, `javascript`, `json`, `bash`,
 `css`, `html`, `graphql`, `python`, `sql`, `markdown`, `yaml` and `plaintext`; a
 block left on auto-detect has no `class`.
 
