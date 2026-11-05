@@ -80,8 +80,8 @@ until your sanitizer lets it through:
 
 | Editor action | Stored HTML                                                                          |
 | ------------- | ------------------------------------------------------------------------------------ |
-| Text color    | `<span style="color: #dc2626">…</span>`                                              |
-| Highlight     | `<mark data-color="#facc1566" style="background-color: #facc1566; color: inherit">…</mark>` |
+| Text color    | `<span style="color: #DC2626">…</span>`                                              |
+| Highlight     | `<mark data-color="#FACC1566" style="background-color: #FACC1566; color: inherit">…</mark>` |
 | Code block    | `<pre><code class="language-typescript">…</code></pre>`                              |
 
 Colors come from a fixed palette: text colors are 6-digit hex, highlight colors
