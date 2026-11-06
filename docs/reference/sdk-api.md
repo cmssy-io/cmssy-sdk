@@ -287,6 +287,15 @@ returns the parsed `CmssyWebhookEvent` and throws `CmssyWebhookError` on any
 failure - missing or malformed header, bad signature, stale timestamp, invalid
 JSON. It is async: forgetting `await` means the signature is never checked.
 
+`CmssyWebhookEvent` is a union discriminated on `event`: compare `event.event`
+and `event.data` takes that event's shape - `order.*` an order payload,
+`shipment.*` and `return.*` the order plus the shipment or return, `account.*`
+a `CmssyWebhookAccountRequest`, `price_list.updated` / `sales_channel.updated`
+the pricing change, `content.changed` and the authoring events
+(`page.published`, `record.deleted`, ...) a `subject`. Only order, shipment and
+return events carry `data.order`; narrow first (`event.event === ...` or
+`"order" in event.data`).
+
 `body` must be the **raw** request text (`await req.text()`) - re-serializing
 parsed JSON changes bytes and the signature will not match.
 
@@ -295,8 +304,14 @@ for a rotation window: hold the new and the previous secret at once and either
 verifies. A non-string is rejected rather than stringified into the key.
 
 Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
-`CmssyWebhookOrder`, `CmssyWebhookReturn`, `CmssyWebhookAccountEvent`,
-`CmssyWebhookAccountRequest`, `CmssyWebhookTaxTreatment`. An order webhook
+`CmssyWebhookEventName`, one type per member (`CmssyWebhookOrderEvent`,
+`CmssyWebhookShipmentEvent`, `CmssyWebhookReturnEvent`,
+`CmssyWebhookAccountEvent`, `CmssyWebhookPricingEvent`,
+`CmssyWebhookContentEvent`, `CmssyWebhookAuthoringEvent`), their payloads
+(`CmssyWebhookOrderPayload`, `CmssyWebhookShipmentPayload`,
+`CmssyWebhookReturnPayload`, `CmssyWebhookAccountRequest`,
+`CmssyWebhookContentChange`, `CmssyWebhookSubject`) and `CmssyWebhookOrder`,
+`CmssyWebhookShipment`, `CmssyWebhookReturn`, `CmssyWebhookTaxTreatment`. An order webhook
 carries `tax` and `taxTreatment` (both optional - older deliveries lack them),
 and `channel` is optional too. All from `@cmssy/core`. A Next app that only needs the
 `content.changed` webhook to expire its cache mounts

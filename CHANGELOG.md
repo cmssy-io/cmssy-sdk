@@ -8,6 +8,28 @@ nowhere.
 
 ## Unreleased
 
+**Only if a webhook handler reads `event.data` without checking
+`event.event`.** `@cmssy/types` 0.73.0: `CmssyWebhookEvent`, which
+`verifyCmssyWebhook` returns, is now a union discriminated on `event` instead of
+one order-shaped type, so account, pricing, content and authoring deliveries
+are no longer typed as orders. After `if (event.event ===
+"account.password_reset_requested")`, `event.data.token` compiles with no cast -
+drop any `event.data as unknown as CmssyWebhookAccountRequest`. What stops
+compiling:
+
+- `event.data.order` (or `.shipment`, `.return`, `.previous`) on an
+  unnarrowed event. Narrow first: compare `event.event`, or `"order" in
+  event.data`.
+- `CmssyWebhookEvent["data"]["shipment"]` and similar indexed types. Use
+  `CmssyWebhookShipment`, `CmssyWebhookReturn`, or the member types
+  `CmssyWebhookOrderEvent` / `CmssyWebhookShipmentEvent` /
+  `CmssyWebhookReturnEvent`.
+- A function typed `(event: CmssyWebhookEvent)` that reads order fields: type it
+  with the member it handles, e.g. `CmssyWebhookOrderEvent |
+  CmssyWebhookShipmentEvent`.
+
+Runtime is unchanged, and so is `createCmssyRevalidateRoute`.
+
 **Nothing to do on Node 20 or newer.** Every package now declares
 `"engines": { "node": ">=20" }`. The floor is not new: `@cmssy/core` uses the
 global `crypto.subtle`, which older Node versions do not expose by default.

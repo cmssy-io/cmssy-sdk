@@ -115,6 +115,6 @@
   },
   "dependencies": {
     "@cmssy/core": "workspace:*",
-    "@cmssy/types": "0.72.0"
+    "@cmssy/types": "0.73.0"
   }
 }
