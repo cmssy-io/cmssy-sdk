@@ -89,9 +89,13 @@ your app builds the link and sends the mail with whatever provider it uses.
 
 ```ts
 const event = await verifyCmssyWebhook({ body, signatureHeader, secret });
-if (event.event.startsWith("account.")) {
-  const { data } = event as unknown as CmssyWebhookAccountEvent;
-  await sendMail(data.login, linkFor(event.event, data.token));
+if (
+  event.event === "account.verification_requested" ||
+  event.event === "account.password_reset_requested" ||
+  event.event === "account.login_change_requested"
+) {
+  // event.data is CmssyWebhookAccountRequest - no cast.
+  await sendMail(event.data.login, linkFor(event.event, event.data.token));
 }
 ```
 

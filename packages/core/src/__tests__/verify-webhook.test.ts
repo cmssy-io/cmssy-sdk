@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import { createHmac } from "crypto";
 import {
   verifyCmssyWebhook,
   CmssyWebhookError,
+  type CmssyWebhookAccountRequest,
   type CmssyWebhookEvent,
+  type CmssyWebhookShipmentPayload,
+  type CmssyWebhookSubject,
 } from "../verify-webhook";
 
 const SECRET = "s".repeat(64);
@@ -73,10 +76,39 @@ describe("verifyCmssyWebhook", () => {
     });
     expect(event.event).toBe("order.paid");
     expect(event.id).toBe("wh_123");
+    if (event.event !== "order.paid") throw new Error("not order.paid");
     expect(event.data.order.paymentStatus).toBe("paid");
     expect(event.data.order.tax).toBe(0);
     expect(event.data.order.taxTreatment?.kind).toBe("reverse_charge");
     expect(event.data.order.taxTreatment?.buyerVatId).toBe("DE123456789");
+  });
+
+  it("returns an event whose data narrows on event", async () => {
+    const body = JSON.stringify({
+      id: "wh_456",
+      event: "account.password_reset_requested",
+      createdAt: "2026-06-13T00:00:00.000Z",
+      data: {
+        workspaceId: "ws1",
+        modelSlug: "account",
+        recordId: "r1",
+        login: "member@example.com",
+        token: "tok_1",
+        expiresAt: "2026-06-13T01:00:00.000Z",
+      },
+    } satisfies CmssyWebhookEvent);
+    const event = await verifyCmssyWebhook({
+      body,
+      signatureHeader: `t=${now},v1=${sign(SECRET, now, body)}`,
+      secret: SECRET,
+      now,
+    });
+    expectTypeOf(event).toEqualTypeOf<CmssyWebhookEvent>();
+    if (event.event !== "account.password_reset_requested") {
+      throw new Error("not a password reset");
+    }
+    expectTypeOf(event.data).toEqualTypeOf<CmssyWebhookAccountRequest>();
+    expect(event.data.token).toBe("tok_1");
   });
 
   it("ignores header part order and extra parts", async () => {
@@ -288,5 +320,29 @@ describe("rotation overlap (CMS-1111)", () => {
     await expect(
       verifyCmssyWebhook({ body, signatureHeader: header, secret: ["", ""], now }),
     ).rejects.toThrow(/Missing webhook secret/);
+  });
+});
+
+describe("CmssyWebhookEvent narrowing", () => {
+  it("types data from event, with no cast", () => {
+    const narrow = (event: CmssyWebhookEvent) => {
+      if (event.event === "shipment.label_requested") {
+        expectTypeOf(event.data).toEqualTypeOf<CmssyWebhookShipmentPayload>();
+      }
+      if (event.event === "content.changed") {
+        expectTypeOf(event.data.subject).toEqualTypeOf<CmssyWebhookSubject>();
+      }
+      if (event.event === "page.published") {
+        expectTypeOf(event.data.subject.kind).toEqualTypeOf<"page">();
+        expectTypeOf(event.data.subject.action).toEqualTypeOf<"published">();
+      }
+      if (event.event === "account.verification_requested") {
+        // @ts-expect-error an account event carries no order
+        void event.data.order;
+      }
+      // @ts-expect-error not every delivery carries an order: narrow first
+      void event.data.order;
+    };
+    expect(narrow).toBeTypeOf("function");
   });
 });
