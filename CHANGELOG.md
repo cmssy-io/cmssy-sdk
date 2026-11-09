@@ -6,6 +6,11 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.31.0
+
+**No.** `@cmssy/types` 0.74.0: `CmssyWebhookEvent` gains the `media.restored`
+event, sent when a file comes back from the media trash.
+
 ## 19.30.0
 
 **Only if a webhook handler reads `event.data` without checking
