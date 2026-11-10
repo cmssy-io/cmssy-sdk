@@ -210,7 +210,7 @@ function toPageRefs(value: unknown): PageRef[] {
   return items.map(toPageRef).filter((ref): ref is PageRef => ref !== null);
 }
 
-/** Walks `path` (repeater key / row index pairs) into the server-resolved content. */
+/** Walks `path` (container keys, plus a row index after each repeater key) into the server-resolved content. */
 function fallbackHolder(
   resolved: Record<string, unknown> | undefined,
   path: readonly (string | number)[],

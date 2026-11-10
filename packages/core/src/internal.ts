@@ -50,7 +50,7 @@ export {
 } from "./locale";
 export { localizedPath } from "./seo-paths";
 export { buildBlockContext } from "./block-context";
-export { assertShowWhenTargets } from "./show-when-targets";
+export { unreachableShowWhenTargets } from "./show-when-targets";
 
 export { resolveInitialTarget } from "./bridge/messages";
 export { cmssySecretsMatch } from "./secret-match";

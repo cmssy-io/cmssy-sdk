@@ -369,4 +369,21 @@ describe("showWhen", () => {
       showWhen: { equals: true },
     });
   });
+
+  it("is accepted by the builders that narrow or rebuild their options", () => {
+    const when = { field: "kind", equals: "image" } as const;
+    const built = [
+      fields.media({ showWhen: when }),
+      fields.media({ multiple: true, showWhen: when }),
+      fields.relation({ model: "post", showWhen: when }),
+      fields.repeater({ itemSchema: {}, showWhen: when }),
+      fields.object({ itemSchema: {}, showWhen: when }),
+      fields.pageSelector({ showWhen: when }),
+      fields.table({ showWhen: when }),
+      fields.multiselect({ options: ["a"], showWhen: when }),
+    ];
+    expect(built.map((field) => field.showWhen)).toEqual(
+      built.map(() => when),
+    );
+  });
 });

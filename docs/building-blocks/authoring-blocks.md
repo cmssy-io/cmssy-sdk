@@ -187,10 +187,11 @@ resolved like top-level ones, at any nesting of objects and repeaters.
 `showWhen` hides a field in the editor until a sibling holds a value:
 `{ field, equals }`, `{ field, notEquals }`, `{ field, notEmpty: true }` or
 `{ field, isEmpty: true }`. `field` names a key **at the same level** - inside
-an object or a repeater row, a key of that object or row. `defineBlock` throws
-on a `field` that names no sibling, so a typo fails when the module loads,
-not as a field that never shows. A hidden field keeps its stored value and is
-not checked against its rules.
+an object or a repeater row, a key of that object or row - and, at the top
+level, a field on the same tab. `defineBlock` logs a `console.warn` for a
+`field` that breaks either rule, so a typo shows up in the dev console instead
+of as a condition that never works. A hidden field keeps its stored value and
+is not checked against its rules.
 
 ## The component contract
 

@@ -14,13 +14,18 @@ types it as that record. Every `fields.*` helper accepts `showWhen`
 (`{ field, equals | notEquals | notEmpty | isEmpty }`), which hides the field
 in the editor until a sibling at the same level holds a value.
 
-**Check one thing if you use `showWhen` in a hand-written schema:**
-`defineBlock` now throws when a `showWhen.field` names no sibling at the same
-level (inside an object or repeater row, a key of that object or row). Before,
-such a field never showed in the editor.
+`defineBlock` logs a `console.warn` when a `showWhen.field` names no sibling at
+the same level (inside an object or repeater row, a key of that object or row),
+names the field itself, or names a top-level field on another tab - the editor
+reads a condition only from the field's own level and tab. It never throws.
 
 Relations, page selectors and forms inside an object field are resolved like
-top-level ones. `@cmssy/types` 0.76.0.
+top-level ones. Media inside an object, and `showWhen` inside objects and
+repeater rows in the editor, need cmssy from the CMS-2226 release on; older
+cmssy delivers the stored media reference and shows every sub-field.
+`@cmssy/types` 0.76.0.
+
+## 19.31.1
 
 **Nothing to do.** `@cmssy/types` 0.75.1: a whitespace-only value is now
 checked by `minLength`, `maxLength` and `pattern`; `required` still reads it as
