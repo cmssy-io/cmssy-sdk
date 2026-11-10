@@ -6,7 +6,7 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## Unreleased
+## 19.31.0
 
 **Nothing to do.** `@cmssy/types` 0.75.0: every `fields.*` helper accepts
 `validation` (`minLength`, `maxLength`, `min`, `max`, `maxDecimals`, `pattern`,
