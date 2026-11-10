@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/remix",
-  "version": "19.30.0",
+  "version": "19.31.0",
   "engines": {
     "node": ">=20"
   },
@@ -59,7 +59,7 @@
   },
   "peerDependencies": {
     "react-router": ">=7",
-    "@cmssy/react": "^19.30.0"
+    "@cmssy/react": "^19.31.0"
   },
   "devDependencies": {
     "@cmssy/react": "workspace:*",
