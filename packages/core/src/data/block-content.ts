@@ -87,7 +87,7 @@ export type FieldVisitor = (
 
 /**
  * Visits every declared field of a block's values, descending into repeater
- * rows so a field nested in a repeater is reached on the same terms as a
+ * rows and object fields so a nested field is reached on the same terms as a
  * top-level one.
  *
  * `copyRows` is for callers that write through the holder they are handed. The
@@ -134,6 +134,15 @@ export function walkBlockFields(
           ]);
         }
       });
+      continue;
+    }
+    if (field.type === "object") {
+      const itemSchema = field.itemSchema;
+      const stored = values[key];
+      if (!itemSchema || !isRecord(stored)) continue;
+      const group = options.copyRows ? { ...stored } : stored;
+      if (options.copyRows) values[key] = group;
+      walkBlockFields(group, itemSchema, visit, options, [...path, key]);
       continue;
     }
     visit(values, key, field, path);

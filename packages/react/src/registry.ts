@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { CmssyBlockContext, InferBlockContent } from "@cmssy/core";
 import type { BlockPropsSchema, FieldDefinition } from "@cmssy/core";
+import { assertShowWhenTargets } from "@cmssy/core/internal";
 
 export interface BlockProps<P extends BlockPropsSchema, D = unknown> {
   content: InferBlockContent<P>;
@@ -82,6 +83,7 @@ export function defineBlock<
     }>;
   } & ContentGuard<C, P>,
 ): BlockDefinition {
+  assertShowWhenTargets(def.type, def.props);
   return def as unknown as BlockDefinition;
 }
 

@@ -39,6 +39,7 @@ type BaseFieldOptions = Pick<
   | "placeholder"
   | "tab"
   | "localized"
+  | "showWhen"
 > & { validation?: FieldValidation };
 
 type ItemCountOptions = Pick<FieldOptions, "minItems" | "maxItems">;
@@ -71,6 +72,9 @@ type RepeaterFieldOptions = BaseFieldOptions &
     | "addButtonLabel"
     | "collapsible"
   >;
+
+type ObjectFieldOptions = BaseFieldOptions &
+  Required<Pick<FieldOptions, "itemSchema">>;
 
 type TableFieldOptions = BaseFieldOptions & Pick<FieldOptions, "maxColumns">;
 
@@ -113,6 +117,12 @@ type RepeaterValue<O> = O extends {
 }
   ? InferBlockContent<Schema>[]
   : Record<string, unknown>[];
+
+type ObjectValue<O> = O extends {
+  itemSchema: infer Schema extends BlockPropsSchema;
+}
+  ? InferBlockContent<Schema>
+  : Record<string, unknown>;
 
 type RelationValue<O> = O extends { mode: "all" } | { multiple: true }
   ? CmssyModelRecord[]
@@ -187,6 +197,9 @@ export const fields = {
   repeater: <const O extends Only<O, RepeaterFieldOptions, "repeater">>(
     opts: O,
   ) => build("repeater", opts) as TypedField<RepeaterValue<O>, Declared<O>>,
+
+  object: <const O extends Only<O, ObjectFieldOptions, "object">>(opts: O) =>
+    build("object", opts) as TypedField<ObjectValue<O>, Declared<O>>,
 
   relation: <const O extends Only<O, RelationFieldOptions, "relation">>(
     opts: O,

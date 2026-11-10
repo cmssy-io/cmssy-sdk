@@ -12,6 +12,87 @@ import { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
 
 const Dummy = () => null;
 
+describe("defineBlock showWhen targets", () => {
+  it("accepts a condition on a sibling, at the top level and inside an object", () => {
+    const block = defineBlock({
+      type: "feature",
+      props: {
+        layout: fields.select({ options: ["wide", "narrow"] }),
+        note: fields.text({ showWhen: { field: "layout", equals: "wide" } }),
+        image: fields.object({
+          itemSchema: {
+            src: fields.media(),
+            size: fields.select({
+              options: ["sm", "lg"],
+              showWhen: { field: "src", notEmpty: true },
+            }),
+          },
+        }),
+      },
+      component: Dummy,
+    });
+    expect(block.type).toBe("feature");
+  });
+
+  it("refuses a condition on a field that does not exist, naming the block, field and key", () => {
+    expect(() =>
+      defineBlock({
+        type: "feature",
+        props: {
+          caption: fields.text({ showWhen: { field: "imgae", notEmpty: true } }),
+        },
+        component: Dummy,
+      }),
+    ).toThrow(
+      'cmssy: block "feature" field "caption" has showWhen on "imgae", which is not a field next to it',
+    );
+  });
+
+  it("refuses a condition that reaches out of its object to a parent's field", () => {
+    expect(() =>
+      defineBlock({
+        type: "feature",
+        props: {
+          layout: fields.select({ options: ["wide"] }),
+          image: fields.object({
+            itemSchema: {
+              size: fields.text({ showWhen: { field: "layout", equals: "wide" } }),
+            },
+          }),
+        },
+        component: Dummy,
+      }),
+    ).toThrow('field "image.size" has showWhen on "layout"');
+  });
+
+  it("refuses a condition inside a repeater row on a key that is not in the row", () => {
+    expect(() =>
+      defineBlock({
+        type: "cards",
+        props: {
+          items: fields.repeater({
+            itemSchema: {
+              title: fields.text(),
+              badge: fields.text({ showWhen: { field: "titel", notEmpty: true } }),
+            },
+          }),
+        },
+        component: Dummy,
+      }),
+    ).toThrow('field "items.badge" has showWhen on "titel"');
+  });
+
+  it("refuses a field that shows on itself", () => {
+    expect(() =>
+      defineBlock({
+        type: "loop",
+        props: { note: fields.text({ showWhen: { field: "note", notEmpty: true } }) },
+        component: Dummy,
+      }),
+    ).toThrow('field "note" has showWhen on "note"');
+  });
+});
+
 describe("defineBlock", () => {
   it("returns the definition unchanged", () => {
     const props = { heading: fields.text({ required: true }) };

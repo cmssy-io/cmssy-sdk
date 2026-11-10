@@ -89,12 +89,13 @@ from the schema:
 | `fields.color`        | Color picker              | `string`                                       | `defaultValue`                                                                                                                    |
 | `fields.table`        | Table (columns and rows)  | `TableValue`                                   | `maxColumns`                                                                                                                      |
 | `fields.repeater`     | Repeatable group          | array of its `itemSchema`                      | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible`                                                                  |
+| `fields.object`       | Group of fields           | record of its `itemSchema`                     | `itemSchema`                                                                                                                      |
 | `fields.pageSelector` | Page picker               | `PageRef[]`                                    | `pageType`, `multiple`                                                                                                            |
 | `fields.json`         | JSON                      | `JsonValue`                                    | -                                                                                                                                 |
 | `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit`, `minItems`, `maxItems` - see [Models for data](./models-for-data.md)                |
 
 Every control accepts `label`, `helperText`, `required`, `defaultValue`,
-`placeholder`, `tab`, `localized` and `validation` (`minLength`, `maxLength`,
+`placeholder`, `tab`, `localized`, `showWhen` and `validation` (`minLength`, `maxLength`,
 `min`, `max`, `maxDecimals`, `pattern`, `message`). Declared rules go out in the
 block manifest, and cmssy checks content against them. The **Notable options** column is the rest
 of what each control takes, and it is now the whole list: a control rejects an
@@ -155,6 +156,41 @@ follows (`{ title: string; links?: { label?: string }[] }[]`). One limit:
 AI content generation fills the first level of a repeater only and skips a
 repeater nested in it. Before nesting, check [Models for data](./models-for-data.md):
 rows with an identity of their own belong in a model, not in a repeater.
+
+### Grouping a field with its own settings
+
+`fields.object` holds one record instead of a list of them. Use it when a value
+comes with settings that only make sense next to it - an image and how wide it
+renders:
+
+```ts
+image: fields.object({
+  label: "Image",
+  itemSchema: {
+    src: fields.media({ label: "Image" }),
+    size: fields.select({
+      label: "Size",
+      options: ["sm", "md", "lg"],
+      showWhen: { field: "src", notEmpty: true },
+    }),
+    fullWidth: fields.boolean({ label: "Full width" }),
+  },
+}),
+
+// content.image → { src?: ResolvedMedia; size?: "sm" | "md" | "lg"; fullWidth?: boolean } | undefined
+```
+
+The editor draws the sub-fields as one group. Media inside an object is
+resolved before delivery and relations, page selectors and forms inside it are
+resolved like top-level ones, at any nesting of objects and repeaters.
+
+`showWhen` hides a field in the editor until a sibling holds a value:
+`{ field, equals }`, `{ field, notEquals }`, `{ field, notEmpty: true }` or
+`{ field, isEmpty: true }`. `field` names a key **at the same level** - inside
+an object or a repeater row, a key of that object or row. `defineBlock` throws
+on a `field` that names no sibling, so a typo fails when the module loads,
+not as a field that never shows. A hidden field keeps its stored value and is
+not checked against its rules.
 
 ## The component contract
 
