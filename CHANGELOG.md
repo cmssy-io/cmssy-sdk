@@ -6,7 +6,21 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## 19.31.1
+## 19.32.0
+
+**Nothing to do.** `fields.object({ itemSchema })` groups fields into one
+record - an image with its own size and full-width settings - and `content`
+types it as that record. Every `fields.*` helper accepts `showWhen`
+(`{ field, equals | notEquals | notEmpty | isEmpty }`), which hides the field
+in the editor until a sibling at the same level holds a value.
+
+**Check one thing if you use `showWhen` in a hand-written schema:**
+`defineBlock` now throws when a `showWhen.field` names no sibling at the same
+level (inside an object or repeater row, a key of that object or row). Before,
+such a field never showed in the editor.
+
+Relations, page selectors and forms inside an object field are resolved like
+top-level ones. `@cmssy/types` 0.76.0.
 
 **Nothing to do.** `@cmssy/types` 0.75.1: a whitespace-only value is now
 checked by `minLength`, `maxLength` and `pattern`; `required` still reads it as
