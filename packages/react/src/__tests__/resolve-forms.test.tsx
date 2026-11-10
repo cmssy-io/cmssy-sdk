@@ -27,6 +27,24 @@ describe("collectFormIds", () => {
     ]);
   });
 
+  it("collects a form id declared inside an object field", () => {
+    const schemas = {
+      signup: {
+        panel: fields.object({
+          itemSchema: { title: fields.text(), form: fields.form() },
+        }),
+      },
+    };
+    const blocks: RawBlock[] = [
+      {
+        id: "a",
+        type: "signup",
+        content: { en: { panel: { title: "Join", form: "f3" } } },
+      },
+    ];
+    expect(collectFormIds(blocks, schemas, "en", "en")).toEqual(["f3"]);
+  });
+
   it("ignores empty or non-string form values", () => {
     const blocks: RawBlock[] = [
       { id: "a", type: "contact", content: { en: { formId: "" } } },

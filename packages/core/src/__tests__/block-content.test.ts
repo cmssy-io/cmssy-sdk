@@ -482,6 +482,115 @@ describe("fields nested in a repeater", () => {
   });
 });
 
+describe("fields nested in an object", () => {
+  const schemas: BlockSchemaMap = {
+    feature: {
+      media: fields.object({
+        label: "Media",
+        itemSchema: {
+          caption: fields.text(),
+          category: fields.relation({ model: "category" }),
+        },
+      }),
+    },
+  };
+
+  it("resolves a relation declared inside an object field", async () => {
+    const { fetch, calls } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const content: Record<string, unknown> = {
+      media: { caption: "Pumps", category: "c1" },
+    };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "feature", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(content.media).toEqual({
+      caption: "Pumps",
+      category: record("c1", { name: "Pumps" }),
+    });
+  });
+
+  it("resolves a relation in an object inside a repeater row", async () => {
+    const { fetch } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const nested: BlockSchemaMap = {
+      cards: {
+        items: fields.repeater({
+          label: "Items",
+          itemSchema: {
+            link: fields.object({
+              itemSchema: { category: fields.relation({ model: "category" }) },
+            }),
+          },
+        }),
+      },
+    };
+    const content: Record<string, unknown> = {
+      items: [{ link: { category: "c1" } }],
+    };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "cards", content }],
+      nested,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(content.items).toEqual([
+      { link: { category: record("c1", { name: "Pumps" }) } },
+    ]);
+  });
+
+  it("copies the object instead of writing through to the stored content", async () => {
+    const { fetch } = routerFetch({
+      byIds: () => [record("c1", { name: "Pumps" })],
+    });
+    const stored = { caption: "Pumps", category: "c1" };
+    const content: Record<string, unknown> = { media: stored };
+
+    await resolveRelationContent(
+      config,
+      [{ type: "feature", content }],
+      schemas,
+      "en",
+      { fetch, workspaceId: "ws1" },
+    );
+
+    expect(stored.category).toBe("c1");
+  });
+
+  it("leaves an object value that is not a record untouched", () => {
+    const content: Record<string, unknown> = { media: "legacy" };
+    normalizeBlockContent(content, schemas.feature!);
+    expect(content.media).toBe("legacy");
+  });
+
+  it("reaches a page selector declared inside an object field", () => {
+    const schema = {
+      cta: fields.object({
+        itemSchema: { target: fields.pageSelector({ multiple: false }) },
+      }),
+    };
+    const content: Record<string, unknown> = {
+      cta: { target: [{ slug: "about", displayName: {} }] },
+    };
+    normalizeBlockContent(content, schema);
+    expect(content.cta).toEqual({
+      target: { slug: "about", displayName: {} },
+    });
+  });
+});
+
 describe("pageSelector normalization", () => {
   const single = { parentPage: fields.pageSelector({ multiple: false }) };
   const many = { pages: fields.pageSelector() };

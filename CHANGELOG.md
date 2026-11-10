@@ -6,6 +6,25 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.33.0
+
+**Nothing to do.** `fields.object({ itemSchema })` groups fields into one
+record - an image with its own size and full-width settings - and `content`
+types it as that record. Every `fields.*` helper accepts `showWhen`
+(`{ field, equals | notEquals | notEmpty | isEmpty }`), which hides the field
+in the editor until a sibling at the same level holds a value.
+
+`defineBlock` logs a `console.warn` when a `showWhen.field` names no sibling at
+the same level (inside an object or repeater row, a key of that object or row),
+names the field itself, or names a top-level field on another tab - the editor
+reads a condition only from the field's own level and tab. It never throws.
+
+Relations, page selectors and forms inside an object field are resolved like
+top-level ones. Media inside an object, and `showWhen` inside objects and
+repeater rows in the editor, need cmssy from the CMS-2226 release on (cmssy-io/cmssy#3493); older
+cmssy delivers the stored media reference and shows every sub-field.
+`@cmssy/types` 0.76.0.
+
 ## 19.32.0
 
 **Nothing to do.** Each entry in `cmssy:invisible-blocks` now says why the

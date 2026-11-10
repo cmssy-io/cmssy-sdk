@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { CmssyBlockContext, InferBlockContent } from "@cmssy/core";
 import type { BlockPropsSchema, FieldDefinition } from "@cmssy/core";
+import { unreachableShowWhenTargets } from "@cmssy/core/internal";
 
 export interface BlockProps<P extends BlockPropsSchema, D = unknown> {
   content: InferBlockContent<P>;
@@ -82,6 +83,9 @@ export function defineBlock<
     }>;
   } & ContentGuard<C, P>,
 ): BlockDefinition {
+  for (const problem of unreachableShowWhenTargets(def.type, def.props)) {
+    console.warn(problem);
+  }
   return def as unknown as BlockDefinition;
 }
 

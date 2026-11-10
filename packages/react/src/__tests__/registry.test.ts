@@ -1,4 +1,4 @@
-import { describe, it, expect, expectTypeOf } from "vitest";
+import { describe, it, expect, expectTypeOf, vi } from "vitest";
 import type { ResolvedMedia } from "@cmssy/types";
 import {
   defineBlock,
@@ -11,6 +11,141 @@ import { fields } from "@cmssy/core";
 import { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
 
 const Dummy = () => null;
+
+describe("defineBlock showWhen targets", () => {
+  function warningsOf(define: () => unknown): string[] {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      define();
+      return warn.mock.calls.map((call) => String(call[0]));
+    } finally {
+      warn.mockRestore();
+    }
+  }
+
+  it("stays quiet for conditions on siblings", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "feature",
+          props: {
+            layout: fields.select({ options: ["wide", "narrow"] }),
+            note: fields.text({ showWhen: { field: "layout", equals: "wide" } }),
+            image: fields.object({
+              itemSchema: {
+                src: fields.media(),
+                size: fields.select({
+                  options: ["sm", "lg"],
+                  showWhen: { field: "src", notEmpty: true },
+                }),
+              },
+            }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("warns, without throwing, on a field that does not exist, naming the block, field and key", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "feature",
+          props: {
+            caption: fields.text({
+              showWhen: { field: "imgae", notEmpty: true },
+            }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([
+      'cmssy: block "feature" field "caption" has showWhen on "imgae", which is not a field next to it',
+    ]);
+  });
+
+  it("warns on a condition that reaches out of its object to a parent's field", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "feature",
+          props: {
+            layout: fields.select({ options: ["wide"] }),
+            image: fields.object({
+              itemSchema: {
+                size: fields.text({
+                  showWhen: { field: "layout", equals: "wide" },
+                }),
+              },
+            }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([
+      'cmssy: block "feature" field "image.size" has showWhen on "layout", which is not a field next to it',
+    ]);
+  });
+
+  it("warns on a condition inside a repeater row on a key that is not in the row", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "cards",
+          props: {
+            items: fields.repeater({
+              itemSchema: {
+                title: fields.text(),
+                badge: fields.text({
+                  showWhen: { field: "titel", notEmpty: true },
+                }),
+              },
+            }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([
+      'cmssy: block "cards" field "items.badge" has showWhen on "titel", which is not a field next to it',
+    ]);
+  });
+
+  it("warns on a field that shows on itself", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "loop",
+          props: {
+            note: fields.text({ showWhen: { field: "note", notEmpty: true } }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([
+      'cmssy: block "loop" field "note" has showWhen on "note", which is not a field next to it',
+    ]);
+  });
+
+  it("warns on a sibling on another tab, which the editor never reads the condition from", () => {
+    expect(
+      warningsOf(() =>
+        defineBlock({
+          type: "feature",
+          props: {
+            fullWidth: fields.boolean({ tab: "style" }),
+            caption: fields.text({
+              showWhen: { field: "fullWidth", equals: true },
+            }),
+          },
+          component: Dummy,
+        }),
+      ),
+    ).toEqual([
+      'cmssy: block "feature" field "caption" has showWhen on "fullWidth", which is on the style tab, not the content tab',
+    ]);
+  });
+});
 
 describe("defineBlock", () => {
   it("returns the definition unchanged", () => {

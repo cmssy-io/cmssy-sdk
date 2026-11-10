@@ -1,5 +1,9 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
-import type { BlockPropsSchema, InferBlockContent } from "@cmssy/types";
+import type {
+  BlockPropsSchema,
+  InferBlockContent,
+  ResolvedMediaValue,
+} from "@cmssy/types";
 import { fields } from "../fields";
 import type { CmssyRecordSort, ModelRecordsVariables } from "../data/queries";
 
@@ -288,5 +292,98 @@ describe("a field's options are scoped to the field", () => {
       heading: string;
       align?: "left" | "right";
     }>();
+  });
+});
+
+describe("fields.object", () => {
+  const image = fields.object({
+    label: "Image",
+    itemSchema: {
+      src: fields.media({ label: "Image" }),
+      size: fields.select({ label: "Size", options: ["sm", "lg"] }),
+      fullWidth: fields.boolean({ label: "Full width" }),
+    },
+  });
+
+  it("emits an object field with its sub-fields under itemSchema", () => {
+    expect(image.type).toBe("object");
+    expect(Object.keys(image.itemSchema ?? {})).toEqual([
+      "src",
+      "size",
+      "fullWidth",
+    ]);
+    expect(image.itemSchema?.size).toMatchObject({
+      type: "select",
+      options: ["sm", "lg"],
+    });
+  });
+
+  it("types the content as the record its sub-fields declare", () => {
+    const schema = {
+      image,
+      cover: fields.object({
+        required: true,
+        itemSchema: { alt: fields.text({ required: true }) },
+      }),
+    };
+    type Content = InferBlockContent<typeof schema>;
+
+    expectTypeOf<Content>().toEqualTypeOf<{
+      cover: { alt: string };
+      image?: {
+        src?: ResolvedMediaValue<false>;
+        size?: "sm" | "lg";
+        fullWidth?: boolean;
+      };
+    }>();
+  });
+
+  it("refuses an object without sub-fields and an option it does not have", () => {
+    // @ts-expect-error an object field is its sub-fields
+    fields.object({ label: "Empty" });
+    fields.object({
+      itemSchema: {},
+      // @ts-expect-error maxItems counts a repeater's rows, an object has one
+      maxItems: 2,
+    });
+  });
+});
+
+describe("showWhen", () => {
+  it("goes out on the wire as written, on any builder", () => {
+    const size = fields.select({
+      options: ["sm", "lg"],
+      showWhen: { field: "src", notEmpty: true },
+    });
+    const caption = fields.text({
+      showWhen: { field: "fullWidth", equals: false },
+    });
+
+    expect(size.showWhen).toEqual({ field: "src", notEmpty: true });
+    expect(caption.showWhen).toEqual({ field: "fullWidth", equals: false });
+  });
+
+  it("names the sibling it reads", () => {
+    fields.text({
+      // @ts-expect-error a condition without a field reads nothing
+      showWhen: { equals: true },
+    });
+  });
+
+  it("is accepted by the builders that narrow or rebuild their options", () => {
+    const when = { field: "kind", equals: "image" } as const;
+    const built = [
+      fields.media({ showWhen: when }),
+      fields.media({ multiple: true, showWhen: when }),
+      fields.relation({ model: "post", showWhen: when }),
+      fields.repeater({ itemSchema: {}, showWhen: when }),
+      fields.object({ itemSchema: {}, showWhen: when }),
+      fields.pageSelector({ showWhen: when }),
+      fields.table({ showWhen: when }),
+      fields.multiselect({ options: ["a"], showWhen: when }),
+    ];
+    expect(built.map((field) => field.showWhen)).toEqual(
+      built.map(() => when),
+    );
   });
 });
