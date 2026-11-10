@@ -6,6 +6,7 @@ import type {
   FieldType,
   FieldTypeValueMap,
   FieldDefinition,
+  FieldValidation,
   InferBlockContent,
   PageRef,
   ResolvedMediaValue,
@@ -38,9 +39,13 @@ type BaseFieldOptions = Pick<
   | "placeholder"
   | "tab"
   | "localized"
->;
+> & { validation?: FieldValidation };
+
+type ItemCountOptions = Pick<FieldOptions, "minItems" | "maxItems">;
 
 type ChoiceFieldOptions = BaseFieldOptions & Pick<FieldOptions, "options">;
+
+type MultiselectFieldOptions = ChoiceFieldOptions & ItemCountOptions;
 
 type MediaFieldOptions = BaseFieldOptions &
   Pick<
@@ -69,19 +74,28 @@ type RepeaterFieldOptions = BaseFieldOptions &
 
 type TableFieldOptions = BaseFieldOptions & Pick<FieldOptions, "maxColumns">;
 
-interface RelationFieldOptions extends BaseFieldOptions {
-  model: string;
-  mode?: RelationMode;
-  multiple?: boolean;
-  /** `<fieldKey>_asc` / `<fieldKey>_desc`; omit for the model's default sort. */
-  sort?: CmssyRecordSort;
-  limit?: number;
-}
+type RelationFieldOptions = BaseFieldOptions &
+  ItemCountOptions & {
+    model: string;
+    mode?: RelationMode;
+    multiple?: boolean;
+    /** `<fieldKey>_asc` / `<fieldKey>_desc`; omit for the model's default sort. */
+    sort?: CmssyRecordSort;
+    limit?: number;
+  };
 
 type Only<O, Shape, Field extends string> = Shape & {
   [
     Key in Exclude<keyof O, keyof Shape>
   ]: `fields.${Field} has no option: ${Key & string}`;
+};
+
+type MediaOnly<O> = Only<O, MediaFieldOptions & ItemCountOptions, "media"> & {
+  [Key in Extract<keyof O, keyof ItemCountOptions>]: O extends {
+    multiple: true;
+  }
+    ? number
+    : `fields.media counts items only with multiple: true`;
 };
 
 type OptionValue<O> = O extends {
@@ -151,13 +165,14 @@ export const fields = {
   select: choice("select"),
   radio: choice("radio"),
 
-  multiselect: <const O extends Only<O, ChoiceFieldOptions, "multiselect">>(
+  multiselect: <
+    const O extends Only<O, MultiselectFieldOptions, "multiselect">,
+  >(
     opts: O,
   ) => build("multiselect", opts) as TypedField<OptionValue<O>[], Declared<O>>,
 
-  media: <const O extends Only<O, MediaFieldOptions, "media">>(
-    opts: O = {} as O,
-  ) => build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
+  media: <const O extends MediaOnly<O>>(opts: O = {} as O) =>
+    build("media", opts) as TypedField<MediaValue<O>, Declared<O>>,
 
   pageSelector: <
     const O extends Only<O, PageSelectorFieldOptions, "pageSelector">,

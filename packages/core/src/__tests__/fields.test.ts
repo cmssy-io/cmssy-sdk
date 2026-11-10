@@ -180,6 +180,103 @@ describe("a field's options are scoped to the field", () => {
     >();
   });
 
+  it("accepts a validation rule on every field", () => {
+    expect(
+      fields.text({
+        label: "Heading",
+        validation: { maxLength: 60, pattern: "slug", message: "Too long" },
+      }),
+    ).toStrictEqual({
+      type: "text",
+      label: "Heading",
+      validation: { maxLength: 60, pattern: "slug", message: "Too long" },
+    });
+    expect(
+      fields.number({ label: "Price", validation: { min: 0, maxDecimals: 2 } }),
+    ).toStrictEqual({
+      type: "number",
+      label: "Price",
+      validation: { min: 0, maxDecimals: 2 },
+    });
+    fields.richText({ validation: { maxLength: 500 } });
+    fields.select({ options: ["a"], validation: { message: "Pick one" } });
+    fields.repeater({ itemSchema: {}, validation: { message: "Fix rows" } });
+    fields.relation({ model: "post", validation: { message: "Pick posts" } });
+    fields.media({ validation: { message: "Add an image" } });
+  });
+
+  it("refuses a validation rule spelled wrong", () => {
+    const field = fields.text({
+      label: "Heading",
+      // @ts-expect-error maxLenght is maxLength
+      validation: { maxLenght: 60 },
+    });
+    expect(field.type).toBe("text");
+  });
+
+  it("accepts item counts on multiselect, relation and multiple media", () => {
+    expect(
+      fields.multiselect({ options: ["a", "b"], minItems: 1, maxItems: 2 }),
+    ).toStrictEqual({
+      type: "multiselect",
+      label: "",
+      options: ["a", "b"],
+      minItems: 1,
+      maxItems: 2,
+    });
+    expect(
+      fields.relation({
+        model: "post",
+        multiple: true,
+        minItems: 1,
+        maxItems: 3,
+      }),
+    ).toStrictEqual({
+      type: "relation",
+      label: "",
+      multiple: true,
+      minItems: 1,
+      maxItems: 3,
+      relationTo: "model:post",
+      relationType: "hasMany",
+      relationMode: "picked",
+    });
+    expect(
+      fields.media({ multiple: true, minItems: 2, maxItems: 6, maxSize: 1024 }),
+    ).toStrictEqual({
+      type: "media",
+      label: "",
+      multiple: true,
+      minItems: 2,
+      maxItems: 6,
+      maxSize: 1024,
+    });
+  });
+
+  it("refuses item counts on a single media field", () => {
+    // @ts-expect-error one image has no count to bound
+    const field = fields.media({ label: "Logo", maxItems: 3 });
+    expect(field.type).toBe("media");
+  });
+
+  it("refuses item counts on a field holding one value", () => {
+    const field = fields.select({
+      options: ["a"],
+      // @ts-expect-error a select holds one value
+      maxItems: 2,
+    });
+    expect(field.type).toBe("select");
+  });
+
+  it("refuses a media size cap on a field that holds no file", () => {
+    const field = fields.text({
+      label: "Heading",
+      // @ts-expect-error maxSize bounds an upload
+      maxSize: 1024,
+    });
+    expect(field.type).toBe("text");
+  });
+
   it("still infers what the field declares about itself", () => {
     const schema = {
       heading: fields.text({ label: "Heading", required: true }),

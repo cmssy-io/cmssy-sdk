@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## Unreleased
+
+**Nothing to do.** `@cmssy/types` 0.75.0: every `fields.*` helper accepts
+`validation` (`minLength`, `maxLength`, `min`, `max`, `maxDecimals`, `pattern`,
+`message`), and `fields.multiselect`, `fields.relation` and
+`fields.media({ multiple: true })` accept `minItems` / `maxItems`, as
+`fields.repeater` already did. Declared rules go out in the block manifest as
+written. A count on a single media field, or on a field holding one value,
+does not compile.
+
+**Nothing to do.** Vendored SDL synced with production: media trash
+(`media.trash`, `restore`, `purge`), `MEDIA_*` webhook events and usage next
+steps. The SDK reads none of them.
+
 ## 19.30.0
 
 **Only if a webhook handler reads `event.data` without checking

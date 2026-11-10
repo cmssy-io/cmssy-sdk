@@ -42,6 +42,37 @@ const layout = defineCmssyLayout({
 });
 
 describe("buildBlockManifest", () => {
+  it("carries the rules a block declares into the schema it pushes", () => {
+    const manifest = buildBlockManifest([
+      {
+        type: "gallery",
+        props: {
+          title: fields.text({
+            required: true,
+            validation: { maxLength: 60, message: "Keep it short" },
+          }),
+          images: fields.media({ multiple: true, minItems: 2, maxItems: 6 }),
+          tags: fields.multiselect({ options: ["a", "b"], maxItems: 1 }),
+          posts: fields.relation({
+            model: "post",
+            multiple: true,
+            minItems: 1,
+          }),
+        },
+      },
+    ]);
+
+    expect(manifest.blocks[0]?.schema).toMatchObject({
+      title: {
+        required: true,
+        validation: { maxLength: 60, message: "Keep it short" },
+      },
+      images: { multiple: true, minItems: 2, maxItems: 6 },
+      tags: { maxItems: 1 },
+      posts: { minItems: 1 },
+    });
+  });
+
   it("serializes blocks with the schemas and meta the handshake sends, byte for byte", () => {
     const manifest = buildBlockManifest([hero, header], {
       category: "Site",

@@ -71,30 +71,32 @@ Full shape:
 carries the type of the value it holds, which is what lets `content` be derived
 from the schema:
 
-| Control               | Editor input              | `content` type                                 | Notable options                                                                            |
-| --------------------- | ------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `fields.text`         | One-line text             | `string`                                       | `defaultValue`, `placeholder`, `required`                                                  |
-| `fields.textarea`     | Multi-line text           | `string`                                       | `defaultValue`, `placeholder`                                                              |
-| `fields.richText`     | Rich text (HTML)          | `string`                                       | `required`                                                                                 |
-| `fields.markdown`     | Markdown                  | `string`                                       | `required`                                                                                 |
-| `fields.number`       | Number                    | `number`                                       | `defaultValue`                                                                             |
-| `fields.boolean`      | Toggle                    | `boolean`                                      | `defaultValue`                                                                             |
-| `fields.date`         | Date picker               | `string`                                       | `defaultValue`                                                                             |
-| `fields.media`        | Media picker (image/file) | `ResolvedMedia`, `ResolvedMedia[]`             | `multiple`, `acceptedTypes`, `maxSize`, `aspectRatio`, `aspectRatios`, `localized`         |
-| `fields.link`         | Internal/external link    | `string`                                       | -                                                                                          |
-| `fields.url`          | URL                       | `string`                                       | `required`                                                                                 |
-| `fields.select`       | Single choice             | union of its `options`                         | `options`, `defaultValue`                                                                  |
-| `fields.radio`        | Single choice (radios)    | union of its `options`                         | `options`                                                                                  |
-| `fields.multiselect`  | Multiple choice           | array of its `options`                         | `options`                                                                                  |
-| `fields.color`        | Color picker              | `string`                                       | `defaultValue`                                                                             |
-| `fields.table`        | Table (columns and rows)  | `TableValue`                                   | `maxColumns`                                                                               |
-| `fields.repeater`     | Repeatable group          | array of its `itemSchema`                      | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible`                           |
-| `fields.pageSelector` | Page picker               | `PageRef[]`                                    | `pageType`, `multiple`                                                                     |
-| `fields.json`         | JSON                      | `JsonValue`                                    | -                                                                                          |
-| `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit` - see [Models for data](./models-for-data.md) |
+| Control               | Editor input              | `content` type                                 | Notable options                                                                                                                   |
+| --------------------- | ------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `fields.text`         | One-line text             | `string`                                       | `defaultValue`, `placeholder`, `required`                                                                                         |
+| `fields.textarea`     | Multi-line text           | `string`                                       | `defaultValue`, `placeholder`                                                                                                     |
+| `fields.richText`     | Rich text (HTML)          | `string`                                       | `required`                                                                                                                        |
+| `fields.markdown`     | Markdown                  | `string`                                       | `required`                                                                                                                        |
+| `fields.number`       | Number                    | `number`                                       | `defaultValue`                                                                                                                    |
+| `fields.boolean`      | Toggle                    | `boolean`                                      | `defaultValue`                                                                                                                    |
+| `fields.date`         | Date picker               | `string`                                       | `defaultValue`                                                                                                                    |
+| `fields.media`        | Media picker (image/file) | `ResolvedMedia`, `ResolvedMedia[]`             | `multiple`, `acceptedTypes`, `maxSize`, `aspectRatio`, `aspectRatios`, `localized`, `minItems`/`maxItems` (with `multiple: true`) |
+| `fields.link`         | Internal/external link    | `string`                                       | -                                                                                                                                 |
+| `fields.url`          | URL                       | `string`                                       | `required`                                                                                                                        |
+| `fields.select`       | Single choice             | union of its `options`                         | `options`, `defaultValue`                                                                                                         |
+| `fields.radio`        | Single choice (radios)    | union of its `options`                         | `options`                                                                                                                         |
+| `fields.multiselect`  | Multiple choice           | array of its `options`                         | `options`, `minItems`, `maxItems`                                                                                                 |
+| `fields.color`        | Color picker              | `string`                                       | `defaultValue`                                                                                                                    |
+| `fields.table`        | Table (columns and rows)  | `TableValue`                                   | `maxColumns`                                                                                                                      |
+| `fields.repeater`     | Repeatable group          | array of its `itemSchema`                      | `itemSchema`, `itemLabel`, `minItems`, `maxItems`, `collapsible`                                                                  |
+| `fields.pageSelector` | Page picker               | `PageRef[]`                                    | `pageType`, `multiple`                                                                                                            |
+| `fields.json`         | JSON                      | `JsonValue`                                    | -                                                                                                                                 |
+| `fields.relation`     | Model record binding      | `CmssyModelRecord[]`, or single-or-`undefined` | `model`, `mode`, `multiple`, `sort`, `limit`, `minItems`, `maxItems` - see [Models for data](./models-for-data.md)                |
 
 Every control accepts `label`, `helperText`, `required`, `defaultValue`,
-`placeholder`, `tab` and `localized`. The **Notable options** column is the rest
+`placeholder`, `tab`, `localized` and `validation` (`minLength`, `maxLength`,
+`min`, `max`, `maxDecimals`, `pattern`, `message`). Declared rules go out in the
+block manifest, and cmssy checks content against them. The **Notable options** column is the rest
 of what each control takes, and it is now the whole list: a control rejects an
 option belonging to some other field, so `fields.text({ aspectRatio: "16:9" })`
 is a compile error rather than a manifest key the editor drops. A typo in an
