@@ -6,6 +6,12 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.31.1
+
+**Nothing to do.** `@cmssy/types` 0.75.1: a whitespace-only value is now
+checked by `minLength`, `maxLength` and `pattern`; `required` still reads it as
+empty. The SDK pins the version the cmssy backend builds against.
+
 ## 19.31.0
 
 **Nothing to do.** `@cmssy/types` 0.75.0: every `fields.*` helper accepts
