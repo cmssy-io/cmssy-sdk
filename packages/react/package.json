@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/react",
-  "version": "19.31.0",
+  "version": "19.31.1",
   "engines": {
     "node": ">=20"
   },
@@ -115,6 +115,6 @@
   },
   "dependencies": {
     "@cmssy/core": "workspace:*",
-    "@cmssy/types": "0.75.0"
+    "@cmssy/types": "0.75.1"
   }
 }

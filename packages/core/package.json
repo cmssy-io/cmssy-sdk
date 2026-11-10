@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/core",
-  "version": "19.31.0",
+  "version": "19.31.1",
   "engines": {
     "node": ">=20"
   },
@@ -95,7 +95,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
-    "@cmssy/types": "0.75.0",
+    "@cmssy/types": "0.75.1",
     "jose": "^6.2.3"
   }
 }
