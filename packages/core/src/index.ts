@@ -228,6 +228,7 @@ export type {
   ShortcutMessage,
   InvisibleBlock,
   InvisibleBlocksMessage,
+  InvisibleReason,
   AppToEditorMessage,
   SelectMessage,
   PatchMessage,

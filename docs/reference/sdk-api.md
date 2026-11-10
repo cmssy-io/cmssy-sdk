@@ -268,7 +268,14 @@ there.
 
 Message types: `AppToEditorMessage`, `EditorToAppMessage`, `ReadyMessage`,
 `SelectMessage`, `PatchMessage`, `ClickMessage`, `BoundsMessage`,
-`ParentReadyMessage`.
+`ParentReadyMessage`, `InvisibleBlocksMessage`.
+
+`InvisibleBlocksMessage.blocks` is an `InvisibleBlock[]` (`{ blockId, blockType,
+reason }`) of blocks that were in view long enough and are not seen.
+`InvisibleReason` is `"empty"` (the component rendered nothing - allowed; the
+editor marks it in the Layers panel without a warning) or `"transparent"` (copy
+or media is laid out but fully transparent, usually an entry animation that never
+ran in the editor).
 
 ### Locale
 

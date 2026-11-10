@@ -6,7 +6,7 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
-## 19.32.0
+## 19.33.0
 
 **Nothing to do.** `fields.object({ itemSchema })` groups fields into one
 record - an image with its own size and full-width settings - and `content`
@@ -21,9 +21,19 @@ reads a condition only from the field's own level and tab. It never throws.
 
 Relations, page selectors and forms inside an object field are resolved like
 top-level ones. Media inside an object, and `showWhen` inside objects and
-repeater rows in the editor, need cmssy from the CMS-2226 release on; older
+repeater rows in the editor, need cmssy from the CMS-2226 release on (cmssy-io/cmssy#3493); older
 cmssy delivers the stored media reference and shows every sub-field.
 `@cmssy/types` 0.76.0.
+
+## 19.32.0
+
+**Nothing to do.** Each entry in `cmssy:invisible-blocks` now says why the
+block is unseen: `reason: "empty"` when the component rendered nothing (it
+returned `null`, so the block takes up no space) and `"transparent"` when its
+copy or media is laid out but fully transparent (usually an entry animation
+that never ran in the editor). The editor marks an empty block in the Layers
+panel without a warning, and keeps the animation notice for transparent blocks
+only. `InvisibleReason` is exported from `@cmssy/core`.
 
 ## 19.31.1
 
