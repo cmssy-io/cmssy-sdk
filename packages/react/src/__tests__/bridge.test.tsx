@@ -1230,6 +1230,36 @@ describe("invisible block reporting", () => {
     vi.useRealTimers();
   });
 
+  it("reports a block whose component returned null as empty, not transparent", () => {
+    render(
+      <CmssyEditablePage
+        page={hiddenPage}
+        locale="en"
+        edit={{ editorOrigin }}
+        blocks={[
+          defineBlock({
+            type: "hidden-hero",
+            label: "Hidden hero",
+            component: () => null,
+            props: hiddenHeroProps,
+          }),
+        ]}
+      />,
+    );
+
+    act(() => ViewportStub.instances[0]!.showEverything());
+    act(() => vi.advanceTimersByTime(1500));
+
+    expect(mockParent.postMessage).toHaveBeenCalledWith(
+      {
+        type: "cmssy:invisible-blocks",
+        protocolVersion: PROTOCOL_VERSION,
+        blocks: [{ blockId: "b1", blockType: "hidden-hero", reason: "empty" }],
+      },
+      editorOrigin,
+    );
+  });
+
   it("tells the editor which blocks are mounted and painting nothing", () => {
     render(
       <CmssyEditablePage
@@ -1254,7 +1284,9 @@ describe("invisible block reporting", () => {
       {
         type: "cmssy:invisible-blocks",
         protocolVersion: PROTOCOL_VERSION,
-        blocks: [{ blockId: "b1", blockType: "hidden-hero" }],
+        blocks: [
+          { blockId: "b1", blockType: "hidden-hero", reason: "transparent" },
+        ],
       },
       editorOrigin,
     );
