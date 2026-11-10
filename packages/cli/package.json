@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/cli",
-  "version": "19.31.1",
+  "version": "19.32.0",
   "engines": {
     "node": ">=20"
   },

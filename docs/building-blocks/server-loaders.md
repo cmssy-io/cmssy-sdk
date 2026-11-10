@@ -62,9 +62,9 @@ function MyBlock({
 Returning `null` when the data is empty is a legitimate answer for the public
 site - an empty product grid should not leave a heading over nothing. Know what
 it costs in the editor: a block that renders nothing occupies no space, so there
-is nothing to click. The editor names it in the invisible-blocks notice rather
-than leaving you to guess, but a block you can see is easier to fix than a block
-you are told about.
+is nothing to click. The editor marks it in the Layers panel as rendering
+nothing on this page, and selecting it there opens its properties as usual. It
+raises no warning: rendering nothing is allowed.
 
 ## Resolving loaders as the editor types
 

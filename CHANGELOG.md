@@ -6,6 +6,16 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.32.0
+
+**Nothing to do.** Each entry in `cmssy:invisible-blocks` now says why the
+block is unseen: `reason: "empty"` when the component rendered nothing (it
+returned `null`, so the block takes up no space) and `"transparent"` when its
+copy or media is laid out but fully transparent (usually an entry animation
+that never ran in the editor). The editor marks an empty block in the Layers
+panel without a warning, and keeps the animation notice for transparent blocks
+only. `InvisibleReason` is exported from `@cmssy/core`.
+
 ## 19.31.1
 
 **Nothing to do.** `@cmssy/types` 0.75.1: a whitespace-only value is now

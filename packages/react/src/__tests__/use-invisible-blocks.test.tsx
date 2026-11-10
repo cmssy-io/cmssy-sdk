@@ -76,7 +76,7 @@ describe("useInvisibleBlocks", () => {
     act(() => observer.enter(block));
     act(() => vi.advanceTimersByTime(DWELL_MS));
 
-    expect(report).toHaveBeenCalledWith([{ blockId: "b1", blockType: "hero" }]);
+    expect(report).toHaveBeenCalledWith([{ blockId: "b1", blockType: "hero", reason: "transparent" }]);
   });
 
   it("reports a block that rendered nothing at all", () => {
@@ -94,7 +94,26 @@ describe("useInvisibleBlocks", () => {
     expect(
       report,
       "a block whose component returned null is the case the editor most needs to name",
-    ).toHaveBeenCalledWith([{ blockId: "b1", blockType: "product-grid" }]);
+    ).toHaveBeenCalledWith([{ blockId: "b1", blockType: "product-grid", reason: "empty" }]);
+  });
+
+  it("re-reports an empty block as transparent once it renders unpainted copy", () => {
+    const host = document.createElement("div");
+    host.setAttribute("data-block-id", "b1");
+    host.setAttribute("data-block-type", "hero");
+    document.body.appendChild(host);
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(host));
+    act(() => vi.advanceTimersByTime(DWELL_MS));
+    host.innerHTML = `<div style="opacity:0"><h1>Real tool</h1></div>`;
+    act(() => vi.advanceTimersByTime(2000));
+
+    expect(report).toHaveBeenLastCalledWith([
+      { blockId: "b1", blockType: "hero", reason: "transparent" },
+    ]);
   });
 
   it("says nothing about a block that never came into view", () => {
@@ -130,7 +149,7 @@ describe("useInvisibleBlocks", () => {
     act(() => observer.enter(block));
     act(() => vi.advanceTimersByTime(DWELL_MS));
     expect(report).toHaveBeenLastCalledWith([
-      { blockId: "b1", blockType: "hero" },
+      { blockId: "b1", blockType: "hero", reason: "transparent" },
     ]);
 
     block.querySelector<HTMLElement>("div")!.style.opacity = "1";
