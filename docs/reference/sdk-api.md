@@ -218,7 +218,15 @@ folder is a working example, `codegen` included.
 
 `fields.` builders: `text`, `textarea`, `richText`, `markdown`, `number`, `date`,
 `datetime`, `boolean`, `color`, `link`, `url`, `email`, `table`, `json`, `form`,
-`pageSelector`, `select`, `radio`, `multiselect`, `media`, `repeater`, `relation`.
+`pageSelector`, `select`, `radio`, `multiselect`, `media`, `repeater`, `object`, `relation`.
+
+`fields.object({ itemSchema })` holds one record, where `fields.repeater` holds rows. Its
+value is `InferBlockContent` of `itemSchema`, and a key is optional unless its sub-field
+is `required: true`. Every builder takes `showWhen: { field, equals | notEquals |
+notEmpty | isEmpty }`, a single condition naming a sibling at the same level (inside an
+object or a row, that item's own sub-fields; at the top level, a field on the same tab).
+`defineBlock` logs a `console.warn` for a target it cannot reach; it never throws. Block
+fields take this single condition, not the `FieldConditionGroup` forms use.
 
 ### Media
 
