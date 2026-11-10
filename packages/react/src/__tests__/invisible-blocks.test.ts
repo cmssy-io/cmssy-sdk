@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
-import { effectiveOpacity, isBlockPainted } from "../bridge/invisible-blocks";
+import { effectiveOpacity, blockPaint } from "../bridge/invisible-blocks";
 
 function mount(html: string): HTMLElement {
   document.body.innerHTML = html;
@@ -13,14 +13,14 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("isBlockPainted", () => {
+describe("blockPaint", () => {
   it("calls a block invisible when its only text sits under a transparent wrapper", () => {
     const block = mount(
       `<div data-block-id="b1" data-block-type="hero">
          <div style="opacity:0;transform:translateY(12px)"><h1>Real tool</h1></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("calls the same block painted once the wrapper reaches full opacity", () => {
@@ -29,7 +29,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:1"><h1>Real tool</h1></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("reads a block as painted when half its copy shows", () => {
@@ -39,7 +39,7 @@ describe("isBlockPainted", () => {
          <p>Visible paragraph</p>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("calls a block invisible when one stray node survives and the rest of the copy does not", () => {
@@ -51,7 +51,7 @@ describe("isBlockPainted", () => {
          <p>Comparison reflects standard plans</p>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("does not let a decorative svg vouch for copy that is gone", () => {
@@ -64,7 +64,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:0"><h1>Real tool</h1><p>Decide in ten seconds</p></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("does not count text that never paints as copy", () => {
@@ -79,7 +79,7 @@ describe("isBlockPainted", () => {
          <p>Decide in ten seconds</p>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("still judges a block that has no copy on its media", () => {
@@ -88,7 +88,7 @@ describe("isBlockPainted", () => {
          <img alt="" src="a.png" />
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("treats visibility:hidden the same as full transparency", () => {
@@ -97,7 +97,7 @@ describe("isBlockPainted", () => {
          <div style="visibility:hidden"><h1>Real tool</h1></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("counts media, not only text", () => {
@@ -106,7 +106,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:0"><img alt="" src="x.png" /></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("leaves a block with nothing to paint alone", () => {
@@ -115,7 +115,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:0"></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("does not call a merely faded block invisible", () => {
@@ -124,7 +124,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:0.5"><h1>Real tool</h1></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("does not count copy that the viewport hides with display:none", () => {
@@ -140,9 +140,9 @@ describe("isBlockPainted", () => {
        </div>`,
     );
     expect(
-      isBlockPainted(block),
+      blockPaint(block),
       "a responsive header hides its desktop links on a phone; copy that is not laid out is not an animation that never ran",
-    ).toBe(true);
+    ).toBe("painted");
   });
 
   it("ignores an unrun animation inside a drawer that is display:none", () => {
@@ -155,9 +155,9 @@ describe("isBlockPainted", () => {
        </div>`,
     );
     expect(
-      isBlockPainted(block),
+      blockPaint(block),
       "opacity:0 under a display:none ancestor is not painted anyway; counting it flags every closed mobile menu",
-    ).toBe(true);
+    ).toBe("painted");
   });
 
   it("leaves a block alone when this viewport lays out none of its copy", () => {
@@ -166,7 +166,7 @@ describe("isBlockPainted", () => {
          <aside style="display:none"><h2>Related</h2><p>Links</p></aside>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 
   it("judges media the viewport hides the same way as copy", () => {
@@ -176,9 +176,9 @@ describe("isBlockPainted", () => {
        </div>`,
     );
     expect(
-      isBlockPainted(block),
+      blockPaint(block),
       "an image the viewport does not lay out is not a candidate; with nothing laid out there is nothing to paint",
-    ).toBe(true);
+    ).toBe("painted");
   });
 
   it("still calls media invisible when the laid-out one is transparent", () => {
@@ -188,7 +188,7 @@ describe("isBlockPainted", () => {
          <div style="opacity:0"><img alt="" src="mobile.png" /></div>
        </div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("transparent");
   });
 
   it("multiplies opacity down the ancestor chain", () => {
@@ -206,7 +206,7 @@ describe("a block that rendered nothing", () => {
     const block = mount(
       `<div data-block-id="b1" data-block-type="product-grid"></div>`,
     );
-    expect(isBlockPainted(block)).toBe(false);
+    expect(blockPaint(block)).toBe("empty");
   });
 
   it("stays painted when it is empty on purpose but occupies space", () => {
@@ -214,6 +214,6 @@ describe("a block that rendered nothing", () => {
       `<div data-block-id="b1" data-block-type="spacer"></div>`,
     );
     block.getBoundingClientRect = () => ({ width: 800, height: 48 }) as DOMRect;
-    expect(isBlockPainted(block)).toBe(true);
+    expect(blockPaint(block)).toBe("painted");
   });
 });

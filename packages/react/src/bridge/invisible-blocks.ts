@@ -1,3 +1,5 @@
+import type { InvisibleReason } from "@cmssy/core";
+
 const TRANSPARENT = 0.01;
 
 const VISIBLE_TEXT_FRACTION = 0.5;
@@ -67,16 +69,22 @@ function hasArea(block: Element): boolean {
   return rect.width > 0 && rect.height > 0;
 }
 
-export function isBlockPainted(block: Element): boolean {
+export type BlockPaint = "painted" | InvisibleReason;
+
+export function blockPaint(block: Element): BlockPaint {
   if (block.childElementCount === 0 && !holdsText(block) && !hasArea(block)) {
-    return false;
+    return "empty";
   }
   const copy = laidOut(collectCopy(block));
   if (copy.length > 0) {
     const visible = copy.filter((state) => state.opacity > TRANSPARENT);
-    return visible.length >= copy.length * VISIBLE_TEXT_FRACTION;
+    return visible.length >= copy.length * VISIBLE_TEXT_FRACTION
+      ? "painted"
+      : "transparent";
   }
   const media = laidOut(collectMedia(block));
-  if (media.length === 0) return true;
-  return media.some((state) => state.opacity > TRANSPARENT);
+  if (media.length === 0) return "painted";
+  return media.some((state) => state.opacity > TRANSPARENT)
+    ? "painted"
+    : "transparent";
 }

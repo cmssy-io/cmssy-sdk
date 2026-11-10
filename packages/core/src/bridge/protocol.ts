@@ -73,9 +73,12 @@ export interface ShortcutMessage {
   action: ShortcutAction;
 }
 
+export type InvisibleReason = "empty" | "transparent";
+
 export interface InvisibleBlock {
   blockId: string;
   blockType: string;
+  reason: InvisibleReason;
 }
 
 export interface InvisibleBlocksMessage {

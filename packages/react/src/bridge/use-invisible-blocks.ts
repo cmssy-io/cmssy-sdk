@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { InvisibleBlock } from "@cmssy/core";
-import { isBlockPainted } from "./invisible-blocks";
+import { blockPaint } from "./invisible-blocks";
 
 const DWELL_MS = 1500;
 const VISIBLE_FRACTION = 0.35;
@@ -27,7 +27,7 @@ export function useInvisibleBlocks(
     const flush = () => {
       const blocks = [...invisible.values()];
       const key = blocks
-        .map((block) => `${block.blockId}:${block.blockType}`)
+        .map((block) => `${block.blockId}:${block.blockType}:${block.reason}`)
         .sort()
         .join("|");
       if (key === reported) return;
@@ -39,8 +39,9 @@ export function useInvisibleBlocks(
       const blockId = el.getAttribute("data-block-id");
       const blockType = el.getAttribute("data-block-type");
       if (!blockId || !blockType) return;
-      if (isBlockPainted(el)) invisible.delete(blockId);
-      else invisible.set(blockId, { blockId, blockType });
+      const paint = blockPaint(el);
+      if (paint === "painted") invisible.delete(blockId);
+      else invisible.set(blockId, { blockId, blockType, reason: paint });
       flush();
     };
 
@@ -81,8 +82,11 @@ export function useInvisibleBlocks(
         const blockId = el.getAttribute("data-block-id");
         if (!blockId) continue;
         present.add(blockId);
-        if (invisible.has(blockId) && isBlockPainted(el)) {
-          invisible.delete(blockId);
+        const reported = invisible.get(blockId);
+        if (reported) {
+          const paint = blockPaint(el);
+          if (paint === "painted") invisible.delete(blockId);
+          else invisible.set(blockId, { ...reported, reason: paint });
         }
       }
       for (const blockId of [...invisible.keys()]) {
