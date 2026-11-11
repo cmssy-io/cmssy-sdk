@@ -2598,12 +2598,17 @@ type MediaAsset {
 }
 
 """
-An asset's id, the name it was uploaded under and its alt map - what a field needs to label a value and to say what alt it falls back to, read without the rest of the document.
+An asset's id, the name it was uploaded under, its alt map, kind, visibility and an address the admin can load - what a field needs to label and show a value, read without the rest of the document.
 """
 type MediaAssetName {
   alt: JSON
   filename: String!
   id: ID!
+  type: String!
+
+  """Signed and short-lived when the asset is private."""
+  url: String!
+  visibility: String!
 }
 
 type MediaBrandingUsage {
@@ -2686,7 +2691,7 @@ type MediaQueries {
   list(filter: MediaFilterInput, limit: Int = 50, offset: Int = 0): MediaListResponse!
 
   """
-  The upload names of the assets asked for by id, in one projected read. An id that names nothing in this workspace is left out.
+  The upload names, kinds, visibility and loadable urls of the assets asked for by id, in one projected read. An id that names nothing in this workspace is left out.
   """
   names(ids: [ID!]!): [MediaAssetName!]!
   trash(limit: Int = 50, offset: Int = 0): MediaTrashList!
@@ -4541,6 +4546,7 @@ enum PageBulkSkipReason {
   TARGET_NOT_FOUND
   TARGET_NO_CHILDREN
   TOO_DEEP
+  VALIDATION_FAILED
 }
 
 type PageBulkSkipped {
@@ -4653,6 +4659,7 @@ type PagePresenceState {
   lockHeldByMe: Boolean!
   lockHolderId: ID
   lockHolderName: String
+  version: Int!
 }
 
 type PagePresenceUser {
@@ -5268,13 +5275,19 @@ type PropertyField {
   """The field's label per language, e.g. { en: "Size" }."""
   label: JSON!
   localized: Boolean
+  maxDecimals: Int
+  maxItems: Int
   maxLength: Int
+
+  """Largest accepted media asset, in bytes."""
+  maxSize: Float
   maxValue: Float
 
   """
   On an account model: a signed-in member may change this field on their own account.
   """
   memberCanSet: Boolean
+  minItems: Int
   minLength: Int
   minValue: Float
   multiple: Boolean
@@ -5285,6 +5298,9 @@ type PropertyField {
   required: Boolean!
   schemaProperty: String
   type: PropertyFieldType!
+
+  """Shown instead of the default message for any rule violation."""
+  validationMessage: String
 }
 
 input PropertyFieldInput {
@@ -5300,9 +5316,13 @@ input PropertyFieldInput {
   """The label per language, e.g. { en: "Size" }."""
   label: JSON!
   localized: Boolean
+  maxDecimals: Int
+  maxItems: Int
   maxLength: Int
+  maxSize: Float
   maxValue: Float
   memberCanSet: Boolean
+  minItems: Int
   minLength: Int
   minValue: Float
   multiple: Boolean
@@ -5313,6 +5333,7 @@ input PropertyFieldInput {
   required: Boolean
   schemaProperty: String
   type: PropertyFieldType!
+  validationMessage: String
 }
 
 """
