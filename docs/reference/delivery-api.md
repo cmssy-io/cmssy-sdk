@@ -75,7 +75,7 @@ query PublicModelRecords(
   $filter: JSON
   $sort: String
   $limit: Int
-  $offset: Int
+  $after: String
   $populate: [String!]
 ) {
   public {
@@ -86,7 +86,7 @@ query PublicModelRecords(
         filter: $filter
         sort: $sort
         limit: $limit
-        offset: $offset
+        after: $after
         populate: $populate
       ) {
         items {
@@ -99,11 +99,19 @@ query PublicModelRecords(
         }
         total
         hasMore
+        nextCursor
       }
     }
   }
 }
 ```
+
+Page with `after`: pass the previous page's `nextCursor` and keep the same
+`filter` and `sort`; `nextCursor` is `null` on the last page. `offset` still
+works for jumping to a page number, but the API refuses an offset above 10,000
+and cannot combine a non-zero offset with `after`, so walk a large model by
+cursor. The cursor also keeps a page stable while records are added or
+removed, which an offset does not.
 
 `$sort` is `<fieldKey>_asc` or `<fieldKey>_desc` (`CmssyRecordSort`); any other
 value, or an unknown field key, is rejected with `BAD_USER_INPUT`. Omit it for

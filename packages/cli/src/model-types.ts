@@ -266,6 +266,7 @@ export function generateModelTypes(
     `${INDENT}items: Array<CmssyRecordOf<CmssyModels[Slug]>>;`,
     `${INDENT}total: number;`,
     `${INDENT}hasMore: boolean;`,
+    `${INDENT}nextCursor: string | null;`,
     "}",
     "",
   );
