@@ -87,6 +87,7 @@ const RECORD_LIST = {
   items: [RECORD],
   total: 1,
   hasMore: false,
+  nextCursor: null,
 } satisfies CmssyRecordList;
 
 const SUBMIT_RESPONSE = {
@@ -163,6 +164,38 @@ describe("a complete delivery payload survives the read that returns it", () => 
 
     expect(data.public.model.records).toEqual(RECORD_LIST);
     expect(data.public.model.records.items[0]).toEqual(RECORD);
+  });
+
+  it("pages a model's records by the cursor the previous page handed back", async () => {
+    const requests: Array<{ query: string; variables: Record<string, unknown> }> = [];
+    const fetch: FetchLike = async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            public: {
+              model: {
+                records: { ...RECORD_LIST, hasMore: true, nextCursor: "c2" },
+              },
+            },
+          },
+        }),
+      };
+    };
+
+    const client = createCmssyClient(config);
+    const data = await client.queryScoped(
+      MODEL_RECORDS_QUERY,
+      { modelSlug: "products", after: "c1" },
+      { fetch, workspaceId: SITE_CONFIG.workspaceId },
+    );
+
+    expect(requests[0]?.variables.after).toBe("c1");
+    expect(requests[0]?.query).toContain("after: $after");
+    expect(requests[0]?.query).toMatch(/hasMore\s+nextCursor/);
+    expect(data.public.model.records.nextCursor).toBe("c2");
   });
 
   it("hands back every member of a form submit response", async () => {

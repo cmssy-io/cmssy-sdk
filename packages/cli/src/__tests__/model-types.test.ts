@@ -87,6 +87,13 @@ describe("generateModelTypes", () => {
     expect(output).toContain("Do not edit");
   });
 
+  it("gives the typed record list the cursor to its next page", () => {
+    const output = generate();
+    expect(output).toMatch(
+      /interface CmssyRecordList<[^{]+\{[^}]*hasMore: boolean;\s+nextCursor: string \| null;\s+\}/,
+    );
+  });
+
   it("makes a required field non-optional and the rest optional", () => {
     const output = generate();
     expect(output).toContain("slug: string;");

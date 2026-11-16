@@ -92,6 +92,7 @@ export interface ModelRecordsVariables {
   locale?: string | null;
   limit?: number | null;
   offset?: number | null;
+  after?: string | null;
   populate?: string[] | null;
   previewSecret?: string | null;
 }
@@ -103,13 +104,14 @@ export interface ModelRecordsResult {
 export const MODEL_RECORDS_QUERY = typedOperation<
   ModelRecordsResult,
   ModelRecordsVariables
->(`query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $populate: [String!], $previewSecret: String) {
+>(`query PublicModelRecords($workspaceId: String!, $modelSlug: String!, $filter: JSON, $sort: String, $locale: String, $limit: Int, $offset: Int, $after: String, $populate: [String!], $previewSecret: String) {
   public {
     model {
-      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, populate: $populate, previewSecret: $previewSecret) {
+      records(workspaceId: $workspaceId, modelSlug: $modelSlug, filter: $filter, sort: $sort, locale: $locale, limit: $limit, offset: $offset, after: $after, populate: $populate, previewSecret: $previewSecret) {
         items { id modelId data status createdAt updatedAt }
         total
         hasMore
+        nextCursor
       }
     }
   }
