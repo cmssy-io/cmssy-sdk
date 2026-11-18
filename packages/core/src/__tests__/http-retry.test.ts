@@ -7,6 +7,7 @@ import {
   isTransientRequestError,
   createRetryingFetch,
   postGraphql,
+  resetCmssyBuildThrottle,
 } from "../data/http";
 import { graphqlRequest } from "../data/graphql-request";
 import { CMSSY_CORE_VERSION } from "../version";
@@ -31,6 +32,10 @@ function res(
 }
 
 const OK_BODY = { data: { ping: true } };
+
+afterEach(() => {
+  resetCmssyBuildThrottle();
+});
 
 describe("postGraphql headers", () => {
   it("identifies the SDK with a user-agent the platform can recognise", async () => {
@@ -764,5 +769,179 @@ describe("postGraphql GraphQL errors", () => {
     );
     expect(failure).toBeInstanceOf(CmssyGraphqlError);
     expect((failure as CmssyGraphqlError).code).toBeUndefined();
+  });
+});
+
+describe("build throttle shared per endpoint (CMS-2268)", () => {
+  const NOW = Date.parse("2026-11-18T12:00:00Z");
+  const ENDPOINT = "https://api.cmssy.io/public/o/w/graphql";
+  const OTHER = "https://api.cmssy.io/public/o/other/graphql";
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  function call(url: string, doFetch: ReturnType<typeof vi.fn>, retry: "build" | "interactive" = "build") {
+    return postGraphql(url, "q", {}, { fetch: doFetch, label: "t", retry });
+  }
+
+  function firedAt(doFetch: ReturnType<typeof vi.fn>, times: number[]) {
+    doFetch.mockImplementation(async () => {
+      times.push(Date.now() - NOW);
+      return res(200, OK_BODY);
+    });
+  }
+
+  it("holds concurrent requests behind one 429 with Retry-After, with no new 429 meanwhile", async () => {
+    const throttled = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "10" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+    const first = call(ENDPOINT, throttled);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const times: number[] = [];
+    const others = vi.fn();
+    firedAt(others, times);
+    const second = call(ENDPOINT, others);
+    const third = call(ENDPOINT, others);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(others).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    await Promise.all([first, second, third]);
+    expect(times).toEqual([10_000, 10_000]);
+    expect(throttled).toHaveBeenCalledTimes(2);
+  });
+
+  it("holds the next request until X-RateLimit-Reset once remaining reaches the threshold", async () => {
+    const reset = String(Math.ceil((NOW + 30_000) / 1000));
+    const low = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "6", "X-RateLimit-Reset": reset }),
+    );
+    await call(ENDPOINT, low);
+
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    const pending = call(ENDPOINT, next);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(next).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    expect(times).toEqual([30_000]);
+  });
+
+  it("does not hold while remaining stays above the threshold", async () => {
+    const reset = String(Math.ceil((NOW + 30_000) / 1000));
+    const plenty = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "7", "X-RateLimit-Reset": reset }),
+    );
+    await call(ENDPOINT, plenty);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
+  });
+
+  it("still throws CmssyRequestError when the retries run out", async () => {
+    const always = vi.fn().mockResolvedValue(res(429, {}, { "Retry-After": "1" }));
+    const pending = call(ENDPOINT, always).catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(60_000);
+    const error = await pending;
+    expect(error).toBeInstanceOf(CmssyRequestError);
+    expect((error as CmssyRequestError).status).toBe(429);
+    expect(always).toHaveBeenCalledTimes(CMSSY_RETRY_MODES.build.maxRetries + 1);
+  });
+
+  it("does not pace when the rate-limit headers are missing", async () => {
+    const bare = vi.fn().mockResolvedValue(res(200, OK_BODY, { "X-RateLimit-Remaining": "0" }));
+    await call(ENDPOINT, bare);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
+  });
+
+  it("fails without waiting and holds nothing on a Retry-After above the policy", async () => {
+    const long = vi.fn().mockResolvedValue(res(429, {}, { "Retry-After": "61" }));
+    await expect(call(ENDPOINT, long)).rejects.toBeInstanceOf(CmssyRequestError);
+    expect(long).toHaveBeenCalledTimes(1);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
+  });
+
+  it("does not hold a second endpoint", async () => {
+    const throttled = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "10" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+    const first = call(ENDPOINT, throttled);
+    await vi.advanceTimersByTimeAsync(0);
+    const times: number[] = [];
+    const other = vi.fn();
+    firedAt(other, times);
+    await call(OTHER, other);
+    expect(times).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await first;
+  });
+
+  it("holds nothing after a 429 without Retry-After", async () => {
+    const monthly = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}))
+      .mockResolvedValue(res(200, OK_BODY));
+    const first = call(ENDPOINT, monthly);
+    await vi.advanceTimersByTimeAsync(0);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(60_000);
+    await first;
+  });
+
+  it("never holds an interactive request", async () => {
+    const throttled = vi
+      .fn()
+      .mockResolvedValueOnce(res(429, {}, { "Retry-After": "10" }))
+      .mockResolvedValueOnce(res(200, OK_BODY));
+    const first = call(ENDPOINT, throttled);
+    await vi.advanceTimersByTimeAsync(0);
+    const times: number[] = [];
+    const runtime = vi.fn();
+    firedAt(runtime, times);
+    await call(ENDPOINT, runtime, "interactive");
+    expect(times).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await first;
+  });
+
+  it("does not let an interactive response hold build requests", async () => {
+    const reset = String(Math.ceil((NOW + 30_000) / 1000));
+    const low = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": reset }),
+    );
+    await call(ENDPOINT, low, "interactive");
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
   });
 });
