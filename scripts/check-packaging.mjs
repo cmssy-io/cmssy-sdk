@@ -39,18 +39,20 @@ function moduleExports(program, checker, file, valuesOnly) {
 }
 
 function declaredValuesMissingAtRuntime(dir, exportsMap) {
-  const pairs = Object.entries(exportsMap).flatMap(([subpath, entry]) => {
-    const esm = entry?.import;
-    return esm?.types && esm?.default
-      ? [
-          {
-            subpath,
-            types: join(dir, esm.types),
-            runtime: join(dir, esm.default),
-          },
-        ]
-      : [];
-  });
+  const pairs = Object.entries(exportsMap).flatMap(([subpath, entry]) =>
+    ["import", "require"].flatMap((condition) => {
+      const target = entry?.[condition];
+      return target?.types && target?.default
+        ? [
+            {
+              subpath: `${subpath} (${condition})`,
+              types: join(dir, target.types),
+              runtime: join(dir, target.default),
+            },
+          ]
+        : [];
+    }),
+  );
   const program = ts.createProgram(
     pairs.flatMap((pair) => [pair.types, pair.runtime]),
     {
