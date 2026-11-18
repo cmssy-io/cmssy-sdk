@@ -6,6 +6,26 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.35.0
+
+**Nothing to do.** A static build reads each distinct layout once instead of
+once per page. A published layout slot asks for the page's layout key
+(`PublicPageLayoutKey`, 1 slot) and reads the layouts by that key
+(`PublicPageLayoutsByKey`), so pages that inherit the same layout send one
+identical request the data cache serves once. Editor and preview reads keep
+`PublicPageLayouts`. Needs the cmssy delivery API with `layoutKey` (live since
+2026-11-18).
+
+`build` mode paces itself: requests to one delivery endpoint share a hold after
+a 200 whose `X-RateLimit-Remaining` is at or below the new
+`RetryPolicy.paceBelowRemaining` (6 in `build`, 0 in `interactive`) until
+`X-RateLimit-Reset`, and after a 429 with an accepted `Retry-After`. Parallel
+pages wait for the window instead of each meeting a 429. `interactive` is never
+held, and an exhausted budget still throws `CmssyRequestError`.
+
+`cmssy types` vendors two more operations into `cmssy/operations.graphql`;
+re-run it and your codegen.
+
 ## 19.34.1
 
 **Nothing to do.** `import { FieldType } from "@cmssy/core"` (or

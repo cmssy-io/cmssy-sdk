@@ -319,10 +319,10 @@ cmssy app performs, as `.graphql` documents your own codegen types like any
 other file.
 
 ```text
-PublicSiteConfig   PublicPage        PublicPageById    PublicPages
-PublicPageMeta     PublicPageLayouts PublicModelRecords
-PublicRecordsByIds PublicForm        SubmitForm
-BuyerPrices
+PublicSiteConfig       PublicPage         PublicPageById     PublicPages
+PublicPageMeta         PublicPageLayouts  PublicPageLayoutKey
+PublicPageLayoutsByKey PublicModelRecords PublicRecordsByIds
+PublicForm             SubmitForm         BuyerPrices
 ```
 
 **Point your codegen at it, or nothing reads it.** The generated file lives

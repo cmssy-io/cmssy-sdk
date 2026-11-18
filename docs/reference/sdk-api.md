@@ -491,9 +491,17 @@ depends on the routed page (a docs sidebar) reads `context.page.path` and the
 route passes nothing.
 
 `resolveCmssyLayoutSlot` - the data half every adapter's layout slot runs on -
-takes `retry?: RetryOption`, forwarded to both delivery calls it makes (the site
+takes `retry?: RetryOption`, forwarded to every delivery call it makes (the site
 locales and the layouts). It defaults to the `build` mode; every adapter passes
-its own resolved mode straight through. It returns `groups`, the region's
+its own resolved mode straight through.
+
+A published read (no `editMode`, no `preview`) asks for the page's layout key
+first (`PublicPageLayoutKey`, 1 slot), then reads the layouts by that key
+(`PublicPageLayoutsByKey`). Pages that only inherit one layout share a key, so
+their by-key requests are byte-identical and the Next data cache (`cache`) and
+the per-render layout store answer them once. A page with no key (missing or
+unpublished) gets no groups and no second request. Editor and preview reads keep
+the per-slug `PublicPageLayouts` with the draft secret. It returns `groups`, the region's
 `settings` (`null` when nothing was authored) and `page` (`CmssyBlockPage`,
 what the layout blocks were given) next to the locale triple and, in edit
 mode, `data`/`resolvedContent`/`editorOrigin`.
@@ -614,6 +622,7 @@ error page is a worse outcome than the error page.
 | `maxDelayMs`                   | 20_000  | 1_000         |
 | `maxRetryAfterMs`              | 60_000  | 1_000         |
 | `maxTotalWaitMs`               | 180_000 | 2_000         |
+| `paceBelowRemaining`           | 6       | 0             |
 
 `CMSSY_RETRY_MODES` from `@cmssy/core` is that table at runtime. It is frozen -
 read it, do not reconfigure it; pass a policy object at the call site instead.
@@ -673,8 +682,22 @@ interface RetryPolicy {
   maxRetryAfterMs?: number; // a Retry-After above this is not waited out
   maxTotalWaitMs?: number; // wall-clock budget for the waiting itself
   retryStatuses?: readonly number[]; // [429, 503]
+  paceBelowRemaining?: number; // hold the endpoint once X-RateLimit-Remaining <= this; 0 = no pacing
 }
 ```
+
+**A build paces itself.** With `paceBelowRemaining` above 0 (the `build` mode),
+every request to one delivery endpoint in a process shares one hold. A 200 whose
+`X-RateLimit-Remaining` is at or below the threshold holds new and retried
+requests until `X-RateLimit-Reset`; a 429 with a `Retry-After` the policy
+accepts holds them for that long. Both get the same jitter as a retry. So a
+build's parallel page renders wait for the window instead of each collecting its
+own 429. The hold is per endpoint and per process: two workspaces never hold
+each other, and several build workers may each still meet one 429 per window.
+A missing header, a 429 without `Retry-After` (the monthly limit) or a
+`Retry-After` above `maxRetryAfterMs` holds nothing. The hold counts toward
+`maxTotalWaitMs`, and exhausted retries still throw `CmssyRequestError`.
+`interactive` never waits on it.
 
 `maxRetryAfterMs` bounds one wait; `maxTotalWaitMs` bounds all of them together,
 and is what makes `interactive` a promise rather than an arithmetic accident.
