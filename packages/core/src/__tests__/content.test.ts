@@ -7,7 +7,10 @@ import {
   fetchPageById,
   fetchPages,
   fetchLayouts,
+  fetchLayoutKey,
+  fetchLayoutsByKey,
   PUBLIC_PAGE_LAYOUTS_QUERY,
+  PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY,
   type FetchLike,
 } from "../content/content-client";
 
@@ -692,6 +695,67 @@ describe("fetchLayouts", () => {
   it("selects settings as a bare JSON scalar", () => {
     expect(PUBLIC_PAGE_LAYOUTS_QUERY).toMatch(/\n\s*settings\n/);
     expect(PUBLIC_PAGE_LAYOUTS_QUERY).not.toMatch(/settings\s*\{/);
+  });
+});
+
+describe("layout keys (CMS-2268)", () => {
+  const config = {
+    apiUrl: "https://api.test/graphql",
+    org: "acme",
+    workspaceSlug: "ws",
+  };
+
+  function capture(payload: unknown) {
+    const bodies: string[] = [];
+    const fetch: FetchLike = async (_url, init) => {
+      bodies.push(init.body);
+      return { ok: true, status: 200, json: async () => payload };
+    };
+    return { fetch, bodies };
+  }
+
+  it("asks for the key of the normalized page slug", async () => {
+    const { fetch, bodies } = capture({
+      data: { public: { page: { layoutKey: "k1" } } },
+    });
+    expect(await fetchLayoutKey(config, ["docs", "intro"], { fetch })).toBe("k1");
+    expect(JSON.parse(bodies[0]!).variables).toEqual({
+      workspaceSlug: "ws",
+      pageSlug: "/docs/intro",
+    });
+  });
+
+  it("passes a null key through", async () => {
+    const { fetch } = capture({ data: { public: { page: { layoutKey: null } } } });
+    expect(await fetchLayoutKey(config, "/missing", { fetch })).toBeNull();
+  });
+
+  it("sends only the workspace and the key, so every page with that key sends the same body", async () => {
+    const groups = [{ region: "header", blocks: [], settings: null }];
+    const { fetch, bodies } = capture({
+      data: { public: { page: { layoutsByKey: groups } } },
+    });
+    expect(await fetchLayoutsByKey(config, "k1", { fetch })).toEqual(groups);
+    await fetchLayoutsByKey(config, "k1", { fetch });
+    expect(JSON.parse(bodies[0]!).variables).toEqual({
+      workspaceSlug: "ws",
+      layoutKey: "k1",
+    });
+    expect(bodies[0]).not.toContain("pageSlug");
+    expect(bodies[1]).toBe(bodies[0]);
+  });
+
+  it("returns [] when the key reads nothing", async () => {
+    const { fetch } = capture({ data: { public: { page: { layoutsByKey: null } } } });
+    expect(await fetchLayoutsByKey(config, "k1", { fetch })).toEqual([]);
+  });
+
+  it("selects the same layout fields as the per-slug read", () => {
+    const selection = (query: string) =>
+      query.slice(query.indexOf(") {", query.indexOf("layouts")) + 3).trim();
+    expect(selection(PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY)).toBe(
+      selection(PUBLIC_PAGE_LAYOUTS_QUERY),
+    );
   });
 });
 

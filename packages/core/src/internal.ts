@@ -4,6 +4,8 @@ export {
   fetchPages,
   fetchPageMeta,
   fetchLayouts,
+  fetchLayoutKey,
+  fetchLayoutsByKey,
   resolveApiUrl,
 } from "./content/content-client";
 export {
