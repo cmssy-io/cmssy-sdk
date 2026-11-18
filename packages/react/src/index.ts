@@ -68,7 +68,7 @@ export {
   mediaUrls,
 } from "@cmssy/core";
 export type { MediaLike } from "@cmssy/core";
-export { MediaType, mediaTypeValues } from "@cmssy/core";
+export { FieldType, MediaType, mediaTypeValues } from "@cmssy/core";
 export type {
   BlockPropsSchema,
   FieldControl,
@@ -142,7 +142,6 @@ export { PROTOCOL_VERSION, isProtocolCompatible } from "@cmssy/core";
 export { postToEditor, parseEditorMessage, normalizeOrigin } from "@cmssy/core";
 export type { PostTarget } from "@cmssy/core";
 export type {
-  FieldType,
   FieldDefinition,
   BlockSchema,
   BlockMeta,

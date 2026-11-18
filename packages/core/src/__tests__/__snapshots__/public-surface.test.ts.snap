@@ -20,6 +20,7 @@ exports[`@cmssy/core public surface > exports exactly these names from the root 
   "CmssyWebhookError",
   "DEFAULT_CMSSY_API_URL",
   "DEFAULT_CMSSY_EDITOR_ORIGINS",
+  "FieldType",
   "MAINTENANCE_QUERY",
   "MediaType",
   "PROTOCOL_VERSION",

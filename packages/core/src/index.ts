@@ -146,6 +146,7 @@ export {
 } from "./media";
 export type { MediaLike } from "./media";
 export {
+  FieldType,
   MediaType,
   mediaTypeValues,
   CLIENT_IP_HEADER_NAME,
@@ -216,7 +217,6 @@ export {
   isProtocolCompatible,
 } from "./bridge/protocol";
 export type {
-  FieldType,
   FieldDefinition,
   BlockSchema,
   BlockMeta,
