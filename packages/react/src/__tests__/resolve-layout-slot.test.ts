@@ -34,10 +34,12 @@ const GROUPS = [
 ] satisfies CmssyLayoutGroup[];
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
+const fetchLayoutKey = vi.hoisted(() => vi.fn());
+const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual =
     await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts };
+  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -56,6 +58,8 @@ vi.mock("../components/resolve-block-data", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
+  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
+  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
     locales: ["en", "no"],
@@ -564,5 +568,114 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
         path: [],
       }),
     ).rejects.toThrow("(429)");
+  });
+});
+
+describe("resolveCmssyLayoutSlot layout keys (CMS-2268)", () => {
+  it("reads two published pages that share a key with one by-key request", async () => {
+    setup();
+    fetchLayoutKey.mockResolvedValue("shared");
+    const layoutStore = createCmssyLayoutStore();
+
+    const [home, about] = await Promise.all(
+      [[], ["about"]].map((path) =>
+        resolveCmssyLayoutSlot(CONFIG, {
+          region: "header",
+          blocks: [],
+          editMode: false,
+          path,
+          layoutStore,
+          readByLayoutKey: true,
+        }),
+      ),
+    );
+
+    expect(fetchLayoutKey.mock.calls.map((call) => call[1])).toEqual(["/", "/about"]);
+    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "shared", { retry: "build" });
+    expect(home?.groups).toBe(GROUPS);
+    expect(about?.groups).toBe(GROUPS);
+  });
+
+  it("returns no groups and makes no second request when the page has no key", async () => {
+    setup();
+    fetchLayoutKey.mockResolvedValue(null);
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: ["missing"],
+      readByLayoutKey: true,
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.settings).toBeNull();
+    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
+    expect(fetchLayouts).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["the editor", { editMode: true }],
+    ["a preview", { editMode: false, preview: true }],
+  ])("reads %s per slug, never by key", async (_label, mode) => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      path: ["about"],
+      readByLayoutKey: true,
+      ...mode,
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
+      previewSecret: CONFIG.draftSecret,
+      retry: "build",
+    });
+    expect(fetchLayoutKey).not.toHaveBeenCalled();
+    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
+  });
+
+  it("reads per slug when the caller has no cache that could share a by-key read", async () => {
+    setup();
+
+    await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: ["about"],
+    });
+
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
+      previewSecret: undefined,
+      retry: "build",
+    });
+    expect(fetchLayoutKey).not.toHaveBeenCalled();
+    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
+  });
+
+  it("degrades a throttled key read the same way as a throttled layout read", async () => {
+    setup();
+    fetchLayoutKey.mockRejectedValue(
+      new CmssyRequestError("cmssy: layout key fetch failed (429)", 429, 30_000),
+    );
+
+    const result = await resolveCmssyLayoutSlot(CONFIG, {
+      region: "header",
+      blocks: [],
+      editMode: false,
+      path: [],
+      readByLayoutKey: true,
+      onTransientLayoutFailure: "degrade",
+    });
+
+    expect(result.groups).toEqual([]);
+    expect(result.unavailable).toEqual({
+      status: 429,
+      retryAfterMs: 30_000,
+      message: "cmssy: layout key fetch failed (429)",
+    });
+    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
   });
 });

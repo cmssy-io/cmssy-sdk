@@ -8,20 +8,24 @@ nowhere.
 
 ## 19.35.0
 
-**Nothing to do.** A static build reads each distinct layout once instead of
-once per page. A published layout slot asks for the page's layout key
-(`PublicPageLayoutKey`, 1 slot) and reads the layouts by that key
-(`PublicPageLayoutsByKey`), so pages that inherit the same layout send one
-identical request the data cache serves once. Editor and preview reads keep
-`PublicPageLayouts`. Needs the cmssy delivery API with `layoutKey` (live since
-2026-11-18).
+**Nothing to do.** On Next, a `CmssyLayoutSlot` or `resolveCmssyLayout` with
+`cache` reads each distinct layout once per build instead of once per page: a
+published read asks for the page's layout key (`PublicPageLayoutKey`, 1 slot)
+and reads the layouts by that key (`PublicPageLayoutsByKey`), so pages that
+inherit the same layout send one identical request the data cache serves once.
+Without `cache`, and on every other adapter, the slot reads per slug as before;
+`resolveCmssyLayoutSlot` takes `readByLayoutKey` to opt in. Editor and preview
+reads keep `PublicPageLayouts`. Needs the cmssy delivery API with `layoutKey`
+(live since 2026-11-18).
 
-`build` mode paces itself: requests to one delivery endpoint share a hold after
-a 200 whose `X-RateLimit-Remaining` is at or below the new
-`RetryPolicy.paceBelowRemaining` (6 in `build`, 0 in `interactive`) until
-`X-RateLimit-Reset`, and after a 429 with an accepted `Retry-After`. Parallel
-pages wait for the window instead of each meeting a 429. `interactive` is never
-held, and an exhausted budget still throws `CmssyRequestError`.
+`build` mode paces itself outside the browser: requests to one delivery
+endpoint share a hold after a 200 whose `X-RateLimit-Remaining` is at or below
+the new `RetryPolicy.paceBelowRemaining` (6 in `build`, 0 in `interactive`)
+until `X-RateLimit-Reset`, and after a 429 with an accepted `Retry-After`. Each
+waiter gets its own jitter, and a hold never sleeps past `maxTotalWaitMs`. A
+retry policy object paces only when it sets `paceBelowRemaining`.
+`interactive` is never held, and an exhausted budget still throws
+`CmssyRequestError`.
 
 `cmssy types` vendors two more operations into `cmssy/operations.graphql`;
 re-run it and your codegen.

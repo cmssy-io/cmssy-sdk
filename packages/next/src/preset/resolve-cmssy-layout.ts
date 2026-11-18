@@ -25,10 +25,12 @@ export function resolveCmssyLayout<
 ): Promise<CmssyLayoutResolution<C, P>> {
   const { cache, ...rest } = options;
   const live = rest.editMode || rest.preview === true;
+  const cached = Boolean(cache) && !live;
   const fetchImpl =
-    rest.fetch ?? (cache && !live ? cmssyCachedFetch(cache) : undefined);
+    rest.fetch ?? (cached && cache ? cmssyCachedFetch(cache) : undefined);
   return resolveWithReact(config, {
     ...rest,
+    readByLayoutKey: rest.readByLayoutKey ?? cached,
     retry: rest.retry ?? nextRetryMode(),
     layoutStore: rest.layoutStore ?? requestLayoutStore(),
     ...(fetchImpl ? { fetch: fetchImpl } : {}),

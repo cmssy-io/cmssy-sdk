@@ -33,6 +33,7 @@ interface ResolveCmssyLayoutSlotBase {
   retry?: RetryOption;
   fetch?: FetchLike;
   layoutStore?: CmssyLayoutStore;
+  readByLayoutKey?: boolean;
   onTransientLayoutFailure?: "throw" | "degrade";
 }
 
@@ -83,6 +84,7 @@ export async function resolveCmssyLayoutSlot(
     retry,
     fetch: fetchImpl,
     layoutStore,
+    readByLayoutKey = false,
     onTransientLayoutFailure = "throw",
   } = options;
 
@@ -108,7 +110,7 @@ export async function resolveCmssyLayoutSlot(
       layoutStore,
       layoutStoreKey(config, { pageSlug: page.slug, previewSecret }),
       async () => {
-        if (editMode || preview) {
+        if (editMode || preview || !readByLayoutKey) {
           return fetchLayouts(config, page.slug, {
             previewSecret,
             ...requestOptions,
