@@ -27,7 +27,10 @@ export {
   layoutStoreKey,
   readThroughLayoutStore,
 } from "./data/layout-store";
-export type { CmssyLayoutStore } from "./data/layout-store";
+export type {
+  CmssyLayoutStore,
+  CmssyLayoutStoreSource,
+} from "./data/layout-store";
 export {
   SITE_CONFIG_QUERY,
   MODEL_DEFINITIONS_QUERY,

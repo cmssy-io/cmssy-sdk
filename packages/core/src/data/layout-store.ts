@@ -7,18 +7,28 @@ export function createCmssyLayoutStore(): CmssyLayoutStore {
   return new Map();
 }
 
+export type CmssyLayoutStoreSource =
+  | { pageSlug: string; previewSecret: string | undefined }
+  | { layoutKey: string };
+
 export function layoutStoreKey(
   config: CmssyClientConfig,
-  pageSlug: string,
-  previewSecret: string | undefined,
+  source: CmssyLayoutStoreSource,
 ): string {
-  return [
+  const scope = [
     resolveApiUrl(config.apiUrl),
     config.org ?? "",
     config.workspaceSlug,
-    pageSlug,
-    previewSecret ? "draft" : "published",
-  ].join("\u0000");
+  ];
+  const tail =
+    "layoutKey" in source
+      ? ["key", source.layoutKey]
+      : [
+          "page",
+          source.pageSlug,
+          source.previewSecret ? "draft" : "published",
+        ];
+  return [...scope, ...tail].join("\u0000");
 }
 
 export function readThroughLayoutStore(

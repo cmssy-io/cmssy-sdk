@@ -40,10 +40,12 @@ const PAGE = {
 };
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
+const fetchLayoutKey = vi.hoisted(() => vi.fn());
+const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 const fetchPage = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual = await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts, fetchPage };
+  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey, fetchPage };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -63,6 +65,8 @@ vi.mock("../components/resolve-block-data", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
+  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
+  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   fetchPage.mockResolvedValue(PAGE);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
@@ -200,7 +204,7 @@ describe("loadCmssyRoute (CMS-1874)", () => {
 
   it("still fails loudly when the layout is throttled, rather than returning a region that is quietly empty (CMS-2049)", async () => {
     setup();
-    fetchLayouts.mockRejectedValue(
+    fetchLayoutsByKey.mockRejectedValue(
       new CmssyRequestError("cmssy: layouts fetch failed (429)", 429, 45_000),
     );
 

@@ -7,7 +7,9 @@ import type {
   RetryOption,
 } from "@cmssy/core";
 import {
+  fetchLayoutKey,
   fetchLayouts,
+  fetchLayoutsByKey,
   layoutStoreKey,
   readThroughLayoutStore,
   type CmssyLayoutStore,
@@ -104,12 +106,26 @@ export async function resolveCmssyLayoutSlot(
   try {
     groups = await readThroughLayoutStore(
       layoutStore,
-      layoutStoreKey(config, page.slug, previewSecret),
-      () =>
-        fetchLayouts(config, page.slug, {
-          previewSecret,
-          ...requestOptions,
-        }),
+      layoutStoreKey(config, { pageSlug: page.slug, previewSecret }),
+      async () => {
+        if (editMode || preview) {
+          return fetchLayouts(config, page.slug, {
+            previewSecret,
+            ...requestOptions,
+          });
+        }
+        const layoutKey = await fetchLayoutKey(
+          config,
+          page.slug,
+          requestOptions,
+        );
+        if (!layoutKey) return [];
+        return readThroughLayoutStore(
+          layoutStore,
+          layoutStoreKey(config, { layoutKey }),
+          () => fetchLayoutsByKey(config, layoutKey, requestOptions),
+        );
+      },
     );
   } catch (error) {
     if (

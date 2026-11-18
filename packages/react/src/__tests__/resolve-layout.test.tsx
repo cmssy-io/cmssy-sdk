@@ -37,10 +37,12 @@ const GROUPS = [
 ];
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
+const fetchLayoutKey = vi.hoisted(() => vi.fn());
+const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual =
     await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts };
+  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -52,6 +54,8 @@ vi.mock("@cmssy/core/internal/locale", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
+  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
+  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
     locales: ["en", "no"],
@@ -87,7 +91,8 @@ describe("resolveCmssyLayout", () => {
       enabledLocales: ["en", "no"],
       config: CONFIG,
     });
-    expect(fetchLayouts).toHaveBeenCalledTimes(1);
+    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("builds the editable element with the resolved editor data and the page, in edit mode", async () => {
@@ -195,7 +200,7 @@ describe("resolveCmssyLayout", () => {
 
   it("tells a visitor nothing and renders no region at all", async () => {
     setup();
-    fetchLayouts.mockRejectedValue(
+    fetchLayoutsByKey.mockRejectedValue(
       new CmssyRequestError(
         "cmssy: layouts fetch failed (429) - Rate limit exceeded",
         429,
