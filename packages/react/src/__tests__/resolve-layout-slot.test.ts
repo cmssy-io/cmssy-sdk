@@ -34,12 +34,10 @@ const GROUPS = [
 ] satisfies CmssyLayoutGroup[];
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
-const fetchLayoutKey = vi.hoisted(() => vi.fn());
-const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual =
     await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey };
+  return { ...actual, fetchLayouts };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -58,8 +56,6 @@ vi.mock("../components/resolve-block-data", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
-  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
-  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
     locales: ["en", "no"],
@@ -84,13 +80,10 @@ describe("resolveCmssyLayoutSlot", () => {
     });
 
     expect(result.groups).toBe(GROUPS);
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "build",
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: "build",
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
     expect(result.data).toBeUndefined();
   });
 
@@ -124,13 +117,10 @@ describe("resolveCmssyLayoutSlot", () => {
 
     expect(result.locale).toBe("no");
     expect(result.path).toEqual(["about"]);
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/about", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
+      previewSecret: undefined,
       retry: "build",
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/about", {
-      retry: "build",
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("takes an explicit locale where there are no segments to read", async () => {
@@ -157,13 +147,10 @@ describe("resolveCmssyLayoutSlot", () => {
       page: "/",
     });
 
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "build",
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: "build",
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("hands the editor resolution the routed page - slug and path, no id (CMS-1708)", async () => {
@@ -275,13 +262,10 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     });
 
     expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: "build" });
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "build",
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: "build",
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("forwards an explicit policy to both delivery calls", async () => {
@@ -298,13 +282,10 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, {
       retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
     });
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: { maxRetries: 7, maxRetryAfterMs: 120_000 },
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("turns retry off for both delivery calls when the caller passes false", async () => {
@@ -319,13 +300,10 @@ describe("resolveCmssyLayoutSlot retry policy (CMS-1460)", () => {
     });
 
     expect(resolveSiteLocales).toHaveBeenCalledWith(CONFIG, { retry: false });
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: false,
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: false,
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 });
 
@@ -346,15 +324,11 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       retry: "build",
       fetch: own,
     });
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "build",
       fetch: own,
     });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
-      retry: "build",
-      fetch: own,
-    });
-    expect(fetchLayouts).not.toHaveBeenCalled();
   });
 
   it("adds no fetch key when the caller passes none", async () => {
@@ -386,8 +360,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       ),
     );
 
-    expect(fetchLayoutKey).toHaveBeenCalledTimes(1);
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
     expect(slots.map((slot) => slot.settings)).toEqual([
       null,
       { width: 18, sticky: true },
@@ -407,8 +380,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       });
     }
 
-    expect(fetchLayoutKey).toHaveBeenCalledTimes(3);
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(3);
+    expect(fetchLayouts).toHaveBeenCalledTimes(3);
   });
 
   it("keeps the draft and the published layout apart in one store", async () => {
@@ -430,9 +402,10 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       layoutStore,
     });
 
-    expect(fetchLayouts).toHaveBeenCalledTimes(1);
-    expect(fetchLayouts.mock.calls[0]?.[2].previewSecret).toBe(CONFIG.draftSecret);
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayouts).toHaveBeenCalledTimes(2);
+    expect(fetchLayouts.mock.calls.map((call) => call[2].previewSecret)).toEqual(
+      [CONFIG.draftSecret, undefined],
+    );
   });
 
   it("keeps two pages apart in one store", async () => {
@@ -454,17 +427,17 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       layoutStore,
     });
 
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(2);
-    expect(fetchLayoutsByKey.mock.calls.map((call) => call[1])).toEqual([
-      "key/",
-      "key/about",
+    expect(fetchLayouts).toHaveBeenCalledTimes(2);
+    expect(fetchLayouts.mock.calls.map((call) => call[1])).toEqual([
+      "/",
+      "/about",
     ]);
   });
 
   it("lets the three regions share one failure instead of asking three times", async () => {
     setup();
     const refused = new Error("cmssy: layouts fetch failed (429)");
-    fetchLayoutsByKey.mockRejectedValue(refused);
+    fetchLayouts.mockRejectedValue(refused);
     const layoutStore = createCmssyLayoutStore();
 
     const outcomes = await Promise.allSettled(
@@ -479,7 +452,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
       ),
     );
 
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
     expect(outcomes.map((outcome) => outcome.status)).toEqual([
       "rejected",
       "rejected",
@@ -489,7 +462,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
 
   it("reports a throttled layout instead of taking the page down", async () => {
     setup();
-    fetchLayoutsByKey.mockRejectedValue(
+    fetchLayouts.mockRejectedValue(
       new CmssyRequestError(
         "cmssy: layouts fetch failed (429) - Rate limit exceeded",
         429,
@@ -516,7 +489,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
 
   it("reports an unavailable upstream the same way", async () => {
     setup();
-    fetchLayoutsByKey.mockRejectedValue(
+    fetchLayouts.mockRejectedValue(
       new CmssyRequestError("cmssy: layouts fetch failed (503)", 503),
     );
 
@@ -534,7 +507,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
 
   it("still throws when the layout request was refused for a reason retrying cannot fix", async () => {
     setup();
-    fetchLayoutsByKey.mockRejectedValue(
+    fetchLayouts.mockRejectedValue(
       new CmssyRequestError("cmssy: layouts fetch failed (401)", 401),
     );
 
@@ -551,7 +524,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
 
   it("still throws when the failure is not a cmssy request error at all", async () => {
     setup();
-    fetchLayoutsByKey.mockRejectedValue(new TypeError("fetch failed"));
+    fetchLayouts.mockRejectedValue(new TypeError("fetch failed"));
 
     await expect(
       resolveCmssyLayoutSlot(CONFIG, {
@@ -579,7 +552,7 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
 
   it("throws a 429 at a caller that never asked to degrade, so no adapter silently empties a region", async () => {
     setup();
-    fetchLayoutsByKey.mockRejectedValue(
+    fetchLayouts.mockRejectedValue(
       new CmssyRequestError("cmssy: layouts fetch failed (429)", 429, 45_000),
     );
 
@@ -591,92 +564,5 @@ describe("resolveCmssyLayoutSlot fetch passthrough (CMS-952)", () => {
         path: [],
       }),
     ).rejects.toThrow("(429)");
-  });
-});
-
-describe("resolveCmssyLayoutSlot layout keys (CMS-2268)", () => {
-  it("reads two published pages that share a key with one by-key request", async () => {
-    setup();
-    fetchLayoutKey.mockResolvedValue("shared");
-    const layoutStore = createCmssyLayoutStore();
-
-    const [home, about] = await Promise.all(
-      [[], ["about"]].map((path) =>
-        resolveCmssyLayoutSlot(CONFIG, {
-          region: "header",
-          blocks: [],
-          editMode: false,
-          path,
-          layoutStore,
-        }),
-      ),
-    );
-
-    expect(fetchLayoutKey.mock.calls.map((call) => call[1])).toEqual(["/", "/about"]);
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "shared", { retry: "build" });
-    expect(home?.groups).toBe(GROUPS);
-    expect(about?.groups).toBe(GROUPS);
-  });
-
-  it("returns no groups and makes no second request when the page has no key", async () => {
-    setup();
-    fetchLayoutKey.mockResolvedValue(null);
-
-    const result = await resolveCmssyLayoutSlot(CONFIG, {
-      region: "header",
-      blocks: [],
-      editMode: false,
-      path: ["missing"],
-    });
-
-    expect(result.groups).toEqual([]);
-    expect(result.settings).toBeNull();
-    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
-    expect(fetchLayouts).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ["the editor", { editMode: true }],
-    ["a preview", { editMode: false, preview: true }],
-  ])("reads %s per slug, never by key", async (_label, mode) => {
-    setup();
-
-    await resolveCmssyLayoutSlot(CONFIG, {
-      region: "header",
-      blocks: [],
-      path: ["about"],
-      ...mode,
-    });
-
-    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/about", {
-      previewSecret: CONFIG.draftSecret,
-      retry: "build",
-    });
-    expect(fetchLayoutKey).not.toHaveBeenCalled();
-    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
-  });
-
-  it("degrades a throttled key read the same way as a throttled layout read", async () => {
-    setup();
-    fetchLayoutKey.mockRejectedValue(
-      new CmssyRequestError("cmssy: layout key fetch failed (429)", 429, 30_000),
-    );
-
-    const result = await resolveCmssyLayoutSlot(CONFIG, {
-      region: "header",
-      blocks: [],
-      editMode: false,
-      path: [],
-      onTransientLayoutFailure: "degrade",
-    });
-
-    expect(result.groups).toEqual([]);
-    expect(result.unavailable).toEqual({
-      status: 429,
-      retryAfterMs: 30_000,
-      message: "cmssy: layout key fetch failed (429)",
-    });
-    expect(fetchLayoutsByKey).not.toHaveBeenCalled();
   });
 });

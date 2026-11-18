@@ -61,12 +61,10 @@ const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
-const fetchLayoutKey = vi.hoisted(() => vi.fn());
-const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual =
     await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey };
+  return { ...actual, fetchLayouts };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -78,8 +76,6 @@ vi.mock("@cmssy/core/internal/locale", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
-  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
-  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
     locales: ["en", "no"],
@@ -115,10 +111,8 @@ describe("CmssyLayoutSlot", () => {
 
     expect(element.type).toBe(CmssyServerLayout);
     expect(element.props.groups).toBe(GROUPS);
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
-      retry: "interactive",
-    });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "interactive",
     });
   });
@@ -135,7 +129,7 @@ describe("CmssyLayoutSlot", () => {
       editable: Editable,
     });
 
-    expect(fetchLayoutKey).toHaveBeenCalledWith(
+    expect(fetchLayouts).toHaveBeenCalledWith(
       CONFIG,
       "/pricing",
       expect.anything(),
@@ -159,7 +153,7 @@ describe("CmssyLayoutSlot", () => {
       editable: Editable,
     });
 
-    expect(fetchLayoutKey).toHaveBeenCalledWith(
+    expect(fetchLayouts).toHaveBeenCalledWith(
       CONFIG,
       "/about",
       expect.anything(),
@@ -318,7 +312,7 @@ describe("CmssyLayoutSlot render prop (CMS-1708)", () => {
     expect(received?.groups).toBe(GROUPS);
     expect(received?.settings).toStrictEqual({ sticky: true });
     expect(received?.page).toStrictEqual({ slug: "/docs", path: ["docs"] });
-    expect(fetchLayoutsByKey).toHaveBeenCalledTimes(1);
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
     expect(resolveSiteLocales).toHaveBeenCalledTimes(1);
   });
 
@@ -522,11 +516,8 @@ describe("CmssyLayoutSlot data cache (CMS-952)", () => {
       retry: "interactive",
       fetch: expect.any(Function),
     });
-    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
-      retry: "interactive",
-      fetch: expect.any(Function),
-    });
-    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
+    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
+      previewSecret: undefined,
       retry: "interactive",
       fetch: expect.any(Function),
     });

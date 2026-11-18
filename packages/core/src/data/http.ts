@@ -104,7 +104,7 @@ export function resolveRetryPolicy(
     maxRetryAfterMs: retry.maxRetryAfterMs ?? base.maxRetryAfterMs,
     maxTotalWaitMs: retry.maxTotalWaitMs ?? base.maxTotalWaitMs,
     retryStatuses: retry.retryStatuses ?? base.retryStatuses,
-    paceBelowRemaining: retry.paceBelowRemaining ?? base.paceBelowRemaining,
+    paceBelowRemaining: retry.paceBelowRemaining ?? 0,
   };
 }
 
@@ -115,14 +115,17 @@ export function resetCmssyBuildThrottle(): void {
 }
 
 function pacedBy(policy: ResolvedRetryPolicy): boolean {
-  return policy.paceBelowRemaining > 0;
+  return (
+    policy.paceBelowRemaining > 0 &&
+    typeof (globalThis as { window?: unknown }).window === "undefined"
+  );
 }
 
 function holdEndpoint(url: string, until: number): void {
   if (until > (buildThrottle.get(url) ?? 0)) buildThrottle.set(url, until);
 }
 
-function heldFor(url: string): number {
+function heldUntilMs(url: string): number {
   const until = buildThrottle.get(url);
   if (until === undefined) return 0;
   const left = until - Date.now();
@@ -151,19 +154,23 @@ function observeRateLimit(
   response: FetchLikeResponse,
   policy: ResolvedRetryPolicy,
 ): void {
-  const jitter = Math.random() * policy.throttleBaseDelayMs;
   if (response.status === THROTTLE_STATUS) {
     const asked = retryAfterMs(response);
     if (asked !== null && asked <= policy.maxRetryAfterMs) {
-      holdEndpoint(url, Date.now() + asked + jitter);
+      holdEndpoint(url, Date.now() + asked);
     }
     return;
   }
   if (!response.ok) return;
   const resetAt = lowRemainingResetAt(response, policy.paceBelowRemaining);
   if (resetAt === null) return;
-  const until = Math.min(resetAt, Date.now() + policy.maxRetryAfterMs);
-  if (until > Date.now()) holdEndpoint(url, until + jitter);
+  holdEndpoint(url, Math.min(resetAt, Date.now() + policy.maxRetryAfterMs));
+}
+
+function holdToWait(url: string, policy: ResolvedRetryPolicy): number {
+  const left = heldUntilMs(url);
+  if (left <= 0) return 0;
+  return Math.round(left + Math.random() * policy.throttleBaseDelayMs);
 }
 
 function retryAfterMs(response: FetchLikeResponse): number | null {
@@ -215,7 +222,10 @@ async function fetchWithRetry(
   let waitedMs = 0;
   const send = async (): Promise<FetchLikeResponse> => {
     if (paced) {
-      const hold = Math.round(heldFor(url));
+      const hold = Math.min(
+        holdToWait(url, policy),
+        Math.max(0, policy.maxTotalWaitMs - waitedMs),
+      );
       if (hold > 0) {
         await sleep(hold, init?.signal);
         waitedMs += hold;

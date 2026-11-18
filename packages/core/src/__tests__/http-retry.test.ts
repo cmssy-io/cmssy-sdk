@@ -932,6 +932,81 @@ describe("build throttle shared per endpoint (CMS-2268)", () => {
     await first;
   });
 
+  it("does not pace on X-RateLimit-Reset alone, without a remaining count", async () => {
+    const reset = String(Math.ceil((NOW + 30_000) / 1000));
+    const resetOnly = vi.fn().mockResolvedValue(res(200, OK_BODY, { "X-RateLimit-Reset": reset }));
+    await call(ENDPOINT, resetOnly);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await call(ENDPOINT, next);
+    expect(times).toEqual([0]);
+  });
+
+  it("spreads the waiters of one hold instead of waking them together", async () => {
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.5).mockReturnValue(0);
+    const reset = String(Math.ceil((NOW + 10_000) / 1000));
+    const low = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": reset }),
+    );
+    await call(ENDPOINT, low);
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    const both = Promise.all([call(ENDPOINT, next), call(ENDPOINT, next)]);
+    await vi.advanceTimersByTimeAsync(11_000);
+    await both;
+    expect(times).toEqual([10_000, 10_500]);
+  });
+
+  it("never holds a call past its own maxTotalWaitMs", async () => {
+    const reset = String(Math.ceil((NOW + 4_000) / 1000));
+    const low = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "1", "X-RateLimit-Reset": reset }),
+    );
+    const policy = { paceBelowRemaining: 6, maxTotalWaitMs: 500 };
+    await postGraphql(ENDPOINT, "q", {}, { fetch: low, label: "t", retry: policy });
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    const pending = postGraphql(ENDPOINT, "q", {}, { fetch: next, label: "t", retry: policy });
+    await vi.advanceTimersByTimeAsync(500);
+    await pending;
+    expect(times).toEqual([500]);
+  });
+
+  it("does not pace a policy object that leaves paceBelowRemaining out", async () => {
+    const reset = String(Math.ceil((NOW + 30_000) / 1000));
+    const low = vi.fn().mockResolvedValue(
+      res(200, OK_BODY, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": reset }),
+    );
+    const policy = { maxRetries: 2 };
+    await postGraphql(ENDPOINT, "q", {}, { fetch: low, label: "t", retry: policy });
+    const times: number[] = [];
+    const next = vi.fn();
+    firedAt(next, times);
+    await postGraphql(ENDPOINT, "q", {}, { fetch: next, label: "t", retry: policy });
+    expect(times).toEqual([0]);
+  });
+
+  it("does not pace in a browser", async () => {
+    vi.stubGlobal("window", {});
+    try {
+      const reset = String(Math.ceil((NOW + 30_000) / 1000));
+      const low = vi.fn().mockResolvedValue(
+        res(200, OK_BODY, { "X-RateLimit-Remaining": "0", "X-RateLimit-Reset": reset }),
+      );
+      await call(ENDPOINT, low);
+      const times: number[] = [];
+      const next = vi.fn();
+      firedAt(next, times);
+      await call(ENDPOINT, next);
+      expect(times).toEqual([0]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("does not let an interactive response hold build requests", async () => {
     const reset = String(Math.ceil((NOW + 30_000) / 1000));
     const low = vi.fn().mockResolvedValue(
