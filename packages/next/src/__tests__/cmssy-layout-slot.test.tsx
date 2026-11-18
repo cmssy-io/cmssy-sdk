@@ -61,10 +61,12 @@ const headersMock = vi.hoisted(() => vi.fn());
 vi.mock("next/headers", () => ({ headers: headersMock }));
 
 const fetchLayouts = vi.hoisted(() => vi.fn());
+const fetchLayoutKey = vi.hoisted(() => vi.fn());
+const fetchLayoutsByKey = vi.hoisted(() => vi.fn());
 vi.mock("@cmssy/core/internal", async (importActual) => {
   const actual =
     await importActual<typeof import("@cmssy/core/internal")>();
-  return { ...actual, fetchLayouts };
+  return { ...actual, fetchLayouts, fetchLayoutKey, fetchLayoutsByKey };
 });
 
 const resolveSiteLocales = vi.hoisted(() => vi.fn());
@@ -76,6 +78,8 @@ vi.mock("@cmssy/core/internal/locale", async (importActual) => {
 
 function setup() {
   fetchLayouts.mockResolvedValue(GROUPS);
+  fetchLayoutKey.mockImplementation(async (_config, slug: string) => `key${slug}`);
+  fetchLayoutsByKey.mockResolvedValue(GROUPS);
   resolveSiteLocales.mockResolvedValue({
     defaultLocale: "en",
     locales: ["en", "no"],
@@ -516,11 +520,31 @@ describe("CmssyLayoutSlot data cache (CMS-952)", () => {
       retry: "interactive",
       fetch: expect.any(Function),
     });
-    expect(fetchLayouts).toHaveBeenCalledWith(CONFIG, "/", {
-      previewSecret: undefined,
+    expect(fetchLayoutKey).toHaveBeenCalledWith(CONFIG, "/", {
       retry: "interactive",
       fetch: expect.any(Function),
     });
+    expect(fetchLayoutsByKey).toHaveBeenCalledWith(CONFIG, "key/", {
+      retry: "interactive",
+      fetch: expect.any(Function),
+    });
+    expect(fetchLayouts).not.toHaveBeenCalled();
+  });
+
+  it("reads a visitor per slug when the slot has no cache to share a by-key read", async () => {
+    setup();
+
+    await CmssyLayoutSlot({
+      config: CONFIG,
+      blocks: [],
+      region: "header",
+      path: [],
+      editMode: false,
+      editable: Editable,
+    });
+
+    expect(fetchLayoutKey).not.toHaveBeenCalled();
+    expect(fetchLayouts).toHaveBeenCalledTimes(1);
   });
 
   it("reads a draft preview live even when the slot has a cache", async () => {

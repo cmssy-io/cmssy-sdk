@@ -245,6 +245,54 @@ export const PUBLIC_PAGE_LAYOUTS_QUERY = typedOperation<
   }
 }`);
 
+export interface PublicPageLayoutKeyVariables {
+  workspaceSlug: string;
+  pageSlug: string;
+}
+
+export interface PublicPageLayoutKeyResult {
+  public?: {
+    page?: { layoutKey?: string | null } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_LAYOUT_KEY_QUERY = typedOperation<
+  PublicPageLayoutKeyResult,
+  PublicPageLayoutKeyVariables
+>(`query PublicPageLayoutKey($workspaceSlug: String!, $pageSlug: String!) {
+  public {
+    page {
+      layoutKey(workspaceSlug: $workspaceSlug, pageSlug: $pageSlug)
+    }
+  }
+}`);
+
+export interface PublicPageLayoutsByKeyVariables {
+  workspaceSlug: string;
+  layoutKey: string;
+}
+
+export interface PublicPageLayoutsByKeyResult {
+  public?: {
+    page?: { layoutsByKey?: CmssyLayoutGroup[] | null } | null;
+  } | null;
+}
+
+export const PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY = typedOperation<
+  PublicPageLayoutsByKeyResult,
+  PublicPageLayoutsByKeyVariables
+>(`query PublicPageLayoutsByKey($workspaceSlug: String!, $layoutKey: String!) {
+  public {
+    page {
+      layoutsByKey(workspaceSlug: $workspaceSlug, layoutKey: $layoutKey) {
+        region
+        blocks { id type content style advanced order isActive }
+        settings
+      }
+    }
+  }
+}`);
+
 export function normalizeSlug(path: string | string[] | undefined): string {
   if (Array.isArray(path)) {
     const joined = path.filter(Boolean).join("/");
@@ -413,4 +461,42 @@ export async function fetchLayouts(
     },
   );
   return data?.public?.page?.layouts ?? [];
+}
+
+export async function fetchLayoutKey(
+  config: CmssyClientConfig,
+  path: string | string[] | undefined,
+  options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
+): Promise<string | null> {
+  const data = await postGraphql(
+    resolvePublicUrl(config),
+    PUBLIC_PAGE_LAYOUT_KEY_QUERY,
+    { workspaceSlug: config.workspaceSlug, pageSlug: normalizeSlug(path) },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: options.retry ?? "build",
+      label: "layout key fetch",
+    },
+  );
+  return data?.public?.page?.layoutKey ?? null;
+}
+
+export async function fetchLayoutsByKey(
+  config: CmssyClientConfig,
+  layoutKey: string,
+  options: Pick<FetchPageOptions, "fetch" | "signal" | "retry"> = {},
+): Promise<CmssyLayoutGroup[]> {
+  const data = await postGraphql(
+    resolvePublicUrl(config),
+    PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY,
+    { workspaceSlug: config.workspaceSlug, layoutKey },
+    {
+      fetch: options.fetch,
+      signal: options.signal,
+      retry: options.retry ?? "build",
+      label: "layouts by key fetch",
+    },
+  );
+  return data?.public?.page?.layoutsByKey ?? [];
 }

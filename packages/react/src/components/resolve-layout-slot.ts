@@ -7,7 +7,9 @@ import type {
   RetryOption,
 } from "@cmssy/core";
 import {
+  fetchLayoutKey,
   fetchLayouts,
+  fetchLayoutsByKey,
   layoutStoreKey,
   readThroughLayoutStore,
   type CmssyLayoutStore,
@@ -31,6 +33,7 @@ interface ResolveCmssyLayoutSlotBase {
   retry?: RetryOption;
   fetch?: FetchLike;
   layoutStore?: CmssyLayoutStore;
+  readByLayoutKey?: boolean;
   onTransientLayoutFailure?: "throw" | "degrade";
 }
 
@@ -81,6 +84,7 @@ export async function resolveCmssyLayoutSlot(
     retry,
     fetch: fetchImpl,
     layoutStore,
+    readByLayoutKey = false,
     onTransientLayoutFailure = "throw",
   } = options;
 
@@ -104,12 +108,26 @@ export async function resolveCmssyLayoutSlot(
   try {
     groups = await readThroughLayoutStore(
       layoutStore,
-      layoutStoreKey(config, page.slug, previewSecret),
-      () =>
-        fetchLayouts(config, page.slug, {
-          previewSecret,
-          ...requestOptions,
-        }),
+      layoutStoreKey(config, { pageSlug: page.slug, previewSecret }),
+      async () => {
+        if (editMode || preview || !readByLayoutKey) {
+          return fetchLayouts(config, page.slug, {
+            previewSecret,
+            ...requestOptions,
+          });
+        }
+        const layoutKey = await fetchLayoutKey(
+          config,
+          page.slug,
+          requestOptions,
+        );
+        if (!layoutKey) return [];
+        return readThroughLayoutStore(
+          layoutStore,
+          layoutStoreKey(config, { layoutKey }),
+          () => fetchLayoutsByKey(config, layoutKey, requestOptions),
+        );
+      },
     );
   } catch (error) {
     if (

@@ -29,6 +29,7 @@ export interface RetryPolicy {
   maxRetryAfterMs?: number;
   maxTotalWaitMs?: number;
   retryStatuses?: readonly number[];
+  paceBelowRemaining?: number;
 }
 
 export type CmssyRetryMode = "build" | "interactive";
@@ -50,6 +51,7 @@ export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
     maxRetryAfterMs: CMSSY_RATE_LIMIT_WINDOW_MS,
     maxTotalWaitMs: 180_000,
     retryStatuses: Object.freeze([429, 503]),
+    paceBelowRemaining: 6,
   },
   interactive: {
     maxRetries: 2,
@@ -59,6 +61,7 @@ export const CMSSY_RETRY_MODES: Record<CmssyRetryMode, ResolvedRetryPolicy> = {
     maxRetryAfterMs: 1_000,
     maxTotalWaitMs: 2_000,
     retryStatuses: Object.freeze([429, 503]),
+    paceBelowRemaining: 0,
   },
 };
 
@@ -101,7 +104,73 @@ export function resolveRetryPolicy(
     maxRetryAfterMs: retry.maxRetryAfterMs ?? base.maxRetryAfterMs,
     maxTotalWaitMs: retry.maxTotalWaitMs ?? base.maxTotalWaitMs,
     retryStatuses: retry.retryStatuses ?? base.retryStatuses,
+    paceBelowRemaining: retry.paceBelowRemaining ?? 0,
   };
+}
+
+const buildThrottle = new Map<string, number>();
+
+export function resetCmssyBuildThrottle(): void {
+  buildThrottle.clear();
+}
+
+function pacedBy(policy: ResolvedRetryPolicy): boolean {
+  return (
+    policy.paceBelowRemaining > 0 &&
+    typeof (globalThis as { window?: unknown }).window === "undefined"
+  );
+}
+
+function holdEndpoint(url: string, until: number): void {
+  if (until > (buildThrottle.get(url) ?? 0)) buildThrottle.set(url, until);
+}
+
+function heldUntilMs(url: string): number {
+  const until = buildThrottle.get(url);
+  if (until === undefined) return 0;
+  const left = until - Date.now();
+  if (left <= 0) {
+    buildThrottle.delete(url);
+    return 0;
+  }
+  return left;
+}
+
+function lowRemainingResetAt(
+  response: FetchLikeResponse,
+  threshold: number,
+): number | null {
+  const remainingRaw = response.headers?.get("x-ratelimit-remaining");
+  const resetRaw = response.headers?.get("x-ratelimit-reset");
+  if (!remainingRaw || !resetRaw) return null;
+  const remaining = Number(remainingRaw);
+  const reset = Number(resetRaw);
+  if (!Number.isFinite(remaining) || !Number.isFinite(reset)) return null;
+  return remaining <= threshold ? reset * 1000 : null;
+}
+
+function observeRateLimit(
+  url: string,
+  response: FetchLikeResponse,
+  policy: ResolvedRetryPolicy,
+): void {
+  if (response.status === THROTTLE_STATUS) {
+    const asked = retryAfterMs(response);
+    if (asked !== null && asked <= policy.maxRetryAfterMs) {
+      holdEndpoint(url, Date.now() + asked);
+    }
+    return;
+  }
+  if (!response.ok) return;
+  const resetAt = lowRemainingResetAt(response, policy.paceBelowRemaining);
+  if (resetAt === null) return;
+  holdEndpoint(url, Math.min(resetAt, Date.now() + policy.maxRetryAfterMs));
+}
+
+function holdToWait(url: string, policy: ResolvedRetryPolicy): number {
+  const left = heldUntilMs(url);
+  if (left <= 0) return 0;
+  return Math.round(left + Math.random() * policy.throttleBaseDelayMs);
 }
 
 function retryAfterMs(response: FetchLikeResponse): number | null {
@@ -149,8 +218,25 @@ async function fetchWithRetry(
     return { response: await doFetch(url, init), waitedMs: 0 };
   }
 
-  let response = await doFetch(url, init);
+  const paced = pacedBy(policy);
   let waitedMs = 0;
+  const send = async (): Promise<FetchLikeResponse> => {
+    if (paced) {
+      const hold = Math.min(
+        holdToWait(url, policy),
+        Math.max(0, policy.maxTotalWaitMs - waitedMs),
+      );
+      if (hold > 0) {
+        await sleep(hold, init?.signal);
+        waitedMs += hold;
+      }
+    }
+    const sent = await doFetch(url, init);
+    if (paced) observeRateLimit(url, sent, policy);
+    return sent;
+  };
+
+  let response = await send();
   for (let attempt = 0; attempt < policy.maxRetries; attempt++) {
     if (response.ok || !policy.retryStatuses.includes(response.status)) {
       return { response, waitedMs };
@@ -177,7 +263,7 @@ async function fetchWithRetry(
     );
     await sleep(wait, init?.signal);
     waitedMs += wait;
-    response = await doFetch(url, init);
+    response = await send();
   }
   return { response, waitedMs };
 }

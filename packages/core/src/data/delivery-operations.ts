@@ -2,6 +2,8 @@ import {
   PUBLIC_PAGES_QUERY,
   PUBLIC_PAGE_BY_ID_QUERY,
   PUBLIC_PAGE_LAYOUTS_QUERY,
+  PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY,
+  PUBLIC_PAGE_LAYOUT_KEY_QUERY,
   PUBLIC_PAGE_META_QUERY,
   PUBLIC_PAGE_QUERY,
 } from "../content/content-client";
@@ -43,6 +45,16 @@ export const CMSSY_DELIVERY_OPERATIONS: readonly CmssyDeliveryOperation[] = [
   {
     purpose: "Header, footer and the other layout regions for a page.",
     document: PUBLIC_PAGE_LAYOUTS_QUERY,
+  },
+  {
+    purpose:
+      "The layout key of a page - pages that inherit one layout share it.",
+    document: PUBLIC_PAGE_LAYOUT_KEY_QUERY,
+  },
+  {
+    purpose:
+      "Layout regions by that key - one cached read for every page sharing it.",
+    document: PUBLIC_PAGE_LAYOUTS_BY_KEY_QUERY,
   },
   {
     purpose: "Records of one model - the typed half of `cmssy types`.",
