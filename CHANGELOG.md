@@ -6,6 +6,13 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.34.1
+
+**Nothing to do.** `import { FieldType } from "@cmssy/core"` (or
+`@cmssy/react`) typechecked but threw at load - the typings named `FieldType`
+as a value, the bundles did not ship it. Both entries now export the
+`FieldType` constant, like `MediaType`. Type-only imports are unchanged.
+
 ## 19.34.0
 
 **Nothing to do.** Model records page by cursor. `MODEL_RECORDS_QUERY` takes

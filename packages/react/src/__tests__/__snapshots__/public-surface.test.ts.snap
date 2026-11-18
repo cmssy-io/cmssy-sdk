@@ -8,6 +8,7 @@ exports[`@cmssy/react public surface > exports exactly these names 1`] = `
   "CmssyRequestError",
   "CmssyServerLayout",
   "CmssyServerPage",
+  "FieldType",
   "MediaType",
   "PROTOCOL_VERSION",
   "UnknownBlock",
