@@ -64,6 +64,33 @@ function laidOut(elements: Element[]): Paint[] {
   return elements.map(paint).filter((state) => state.laidOut);
 }
 
+function textArea(el: Element): number {
+  let total = 0;
+  for (const node of el.childNodes) {
+    if (node.nodeType !== 3 || !node.textContent?.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    if (typeof range.getClientRects !== "function") continue;
+    for (const rect of range.getClientRects()) {
+      total += Math.max(0, rect.width) * Math.max(0, rect.height);
+    }
+  }
+  return total;
+}
+
+function visibleCopyShare(copy: Element[]): number | null {
+  const states = copy
+    .map((el) => ({ paint: paint(el), area: textArea(el) }))
+    .filter((state) => state.paint.laidOut);
+  if (states.length === 0) return null;
+  const total = states.reduce((sum, state) => sum + state.area, 0);
+  const weight = (state: { area: number }) => (total > 0 ? state.area : 1);
+  const visible = states
+    .filter((state) => state.paint.opacity > TRANSPARENT)
+    .reduce((sum, state) => sum + weight(state), 0);
+  return visible / (total > 0 ? total : states.length);
+}
+
 function hasArea(block: Element): boolean {
   const rect = block.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
@@ -75,12 +102,9 @@ export function blockPaint(block: Element): BlockPaint {
   if (block.childElementCount === 0 && !holdsText(block) && !hasArea(block)) {
     return "empty";
   }
-  const copy = laidOut(collectCopy(block));
-  if (copy.length > 0) {
-    const visible = copy.filter((state) => state.opacity > TRANSPARENT);
-    return visible.length >= copy.length * VISIBLE_TEXT_FRACTION
-      ? "painted"
-      : "transparent";
+  const share = visibleCopyShare(collectCopy(block));
+  if (share !== null) {
+    return share >= VISIBLE_TEXT_FRACTION ? "painted" : "transparent";
   }
   const media = laidOut(collectMedia(block));
   if (media.length === 0) return "painted";

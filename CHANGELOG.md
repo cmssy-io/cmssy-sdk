@@ -6,6 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.36.1
+
+**Nothing to do.** The editor no longer reports a block as "mounted but draws
+nothing" because many of its small labels wait at opacity 0 while its main copy
+shows. A block's copy is now weighed by the screen area its text itself takes, so
+a large visible headline outweighs staged scene labels, and a short footnote
+still cannot vouch for a section whose copy is gone. Without layout (no area at
+all) the check falls back to counting text nodes, as before.
+
 ## 19.36.0
 
 **Nothing to do, one line recommended.** Set `apiToken` in your server config
