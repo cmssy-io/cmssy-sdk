@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import type { InvisibleBlock } from "@cmssy/core";
-import { blockPaint } from "./invisible-blocks";
+import { blockPaint, isAnimatingIn } from "./invisible-blocks";
 
 const DWELL_MS = 1500;
+const CONFIRM_MS = 3000;
 const VISIBLE_FRACTION = 0.35;
 const SWEEP_MS = 2000;
 
@@ -21,6 +22,7 @@ export function useInvisibleBlocks(
 
     const timers = new Map<Element, ReturnType<typeof setTimeout>>();
     const observed = new WeakSet<Element>();
+    const suspects = new WeakSet<Element>();
     const invisible = new Map<string, InvisibleBlock>();
     let reported = "";
 
@@ -35,13 +37,33 @@ export function useInvisibleBlocks(
       reportRef.current(blocks);
     };
 
+    const schedule = (el: Element, delay: number) => {
+      timers.set(
+        el,
+        setTimeout(() => {
+          timers.delete(el);
+          judge(el);
+        }, delay),
+      );
+    };
+
     const judge = (el: Element) => {
       const blockId = el.getAttribute("data-block-id");
       const blockType = el.getAttribute("data-block-type");
       if (!blockId || !blockType) return;
       const paint = blockPaint(el);
-      if (paint === "painted") invisible.delete(blockId);
-      else invisible.set(blockId, { blockId, blockType, reason: paint });
+      if (paint === "painted") {
+        suspects.delete(el);
+        invisible.delete(blockId);
+        flush();
+        return;
+      }
+      if (!suspects.has(el) || isAnimatingIn(el)) {
+        suspects.add(el);
+        schedule(el, CONFIRM_MS);
+        return;
+      }
+      invisible.set(blockId, { blockId, blockType, reason: paint });
       flush();
     };
 
@@ -57,16 +79,11 @@ export function useInvisibleBlocks(
               clearTimeout(pending);
               timers.delete(entry.target);
             }
+            suspects.delete(entry.target);
             continue;
           }
           if (pending) continue;
-          timers.set(
-            entry.target,
-            setTimeout(() => {
-              timers.delete(entry.target);
-              judge(entry.target);
-            }, DWELL_MS),
-          );
+          schedule(entry.target, DWELL_MS);
         }
       },
       { threshold: VISIBLE_FRACTION },

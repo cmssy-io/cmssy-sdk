@@ -88,3 +88,14 @@ export function blockPaint(block: Element): BlockPaint {
     ? "painted"
     : "transparent";
 }
+
+function settles(animation: Animation): boolean {
+  if (animation.playState !== "running") return false;
+  const end = animation.effect?.getComputedTiming().endTime;
+  return typeof end === "number" && Number.isFinite(end);
+}
+
+export function isAnimatingIn(block: Element): boolean {
+  if (typeof block.getAnimations !== "function") return false;
+  return block.getAnimations({ subtree: true }).some(settles);
+}

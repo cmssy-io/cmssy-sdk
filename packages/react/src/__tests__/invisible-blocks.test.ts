@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
-import { effectiveOpacity, blockPaint } from "../bridge/invisible-blocks";
+import {
+  effectiveOpacity,
+  blockPaint,
+  isAnimatingIn,
+} from "../bridge/invisible-blocks";
 
 function mount(html: string): HTMLElement {
   document.body.innerHTML = html;
@@ -215,5 +219,44 @@ describe("a block that rendered nothing", () => {
     );
     block.getBoundingClientRect = () => ({ width: 800, height: 48 }) as DOMRect;
     expect(blockPaint(block)).toBe("painted");
+  });
+});
+
+describe("isAnimatingIn", () => {
+  function withAnimations(animations: Animation[]): HTMLElement {
+    const block = mount(`<div data-block-id="b1" data-block-type="hero"></div>`);
+    (block as HTMLElement & { getAnimations: () => Animation[] }).getAnimations =
+      () => animations;
+    return block;
+  }
+
+  function animation(endTime: number, playState: AnimationPlayState = "running") {
+    return {
+      playState,
+      effect: { getComputedTiming: () => ({ endTime }) },
+    } as unknown as Animation;
+  }
+
+  it("holds a block while an animation that will end is running", () => {
+    expect(isAnimatingIn(withAnimations([animation(600)]))).toBe(true);
+  });
+
+  it("ignores endless animations, which never settle", () => {
+    expect(
+      isAnimatingIn(withAnimations([animation(Number.POSITIVE_INFINITY)])),
+    ).toBe(false);
+  });
+
+  it("ignores paused and finished animations", () => {
+    expect(
+      isAnimatingIn(
+        withAnimations([animation(600, "paused"), animation(600, "finished")]),
+      ),
+    ).toBe(false);
+  });
+
+  it("reads nothing as animating where the browser has no getAnimations", () => {
+    const block = mount(`<div data-block-id="b1" data-block-type="hero"></div>`);
+    expect(isAnimatingIn(block)).toBe(false);
   });
 });

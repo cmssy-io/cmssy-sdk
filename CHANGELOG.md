@@ -6,6 +6,15 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.35.1
+
+**Nothing to do.** The editor's "block is mounted but draws nothing" notice no
+longer flashes for a block whose entry animation is still playing. A block is
+reported only when it stays unpainted on two checks 3s apart, and not while a
+finite animation is running inside it; endless decorative loops do not hold the
+check. A block whose entry animation never runs is still reported, about 3s
+later than before.
+
 ## 19.35.0
 
 **Nothing to do.** On Next, a `CmssyLayoutSlot` or `resolveCmssyLayout` with
