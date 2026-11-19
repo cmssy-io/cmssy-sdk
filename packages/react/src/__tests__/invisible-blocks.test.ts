@@ -17,12 +17,21 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function size(block: HTMLElement, sizes: Record<string, [number, number]>) {
-  for (const [selector, [width, height]] of Object.entries(sizes)) {
-    for (const el of block.querySelectorAll(selector)) {
-      el.getBoundingClientRect = () => new DOMRect(0, 0, width, height);
-    }
-  }
+const clientRects = Range.prototype.getClientRects;
+
+afterEach(() => {
+  Range.prototype.getClientRects = clientRects;
+});
+
+function size(sizes: Record<string, [number, number]>) {
+  Range.prototype.getClientRects = function (this: Range) {
+    const holder = this.startContainer.parentElement;
+    const match = Object.entries(sizes).find(([selector]) =>
+      holder?.matches(selector),
+    );
+    const rects = match ? [new DOMRect(0, 0, match[1][0], match[1][1])] : [];
+    return rects as unknown as DOMRectList;
+  };
 }
 
 describe("blockPaint", () => {
@@ -79,11 +88,24 @@ describe("blockPaint", () => {
          <div class="toast" style="opacity:0"><span class="label">Saved</span></div>
        </section>`,
     );
-    size(block, { h1: [900, 160], ".cta": [140, 44], ".label": [60, 16] });
+    size({ h1: [900, 160], ".cta": [140, 44], ".label": [60, 16] });
     expect(
       blockPaint(block),
       "2 of 9 text nodes paint, but they are most of the copy on screen; decorative labels staged for a scene are not an entry animation that never ran",
     ).toBe("painted");
+  });
+
+  it("weighs a paragraph's own words apart from the hidden span inside it", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="hero">
+         <p>Hi <span style="opacity:0">a long sentence that has not faded in yet</span></p>
+       </div>`,
+    );
+    size({ p: [20, 20], span: [400, 20] });
+    expect(
+      blockPaint(block),
+      "the paragraph's box covers its hidden span; only the text it paints itself may count for it",
+    ).toBe("transparent");
   });
 
   it("still calls a laid-out block invisible when only a long footnote survives", () => {
@@ -95,7 +117,7 @@ describe("blockPaint", () => {
          <p class="note">Comparison reflects standard plans</p>
        </div>`,
     );
-    size(block, { h2: [800, 60], "div p": [800, 120], ".note": [300, 14] });
+    size({ h2: [800, 60], "div p": [800, 120], ".note": [300, 14] });
     expect(blockPaint(block)).toBe("transparent");
   });
 

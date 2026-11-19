@@ -64,14 +64,23 @@ function laidOut(elements: Element[]): Paint[] {
   return elements.map(paint).filter((state) => state.laidOut);
 }
 
-function area(el: Element): number {
-  const rect = el.getBoundingClientRect();
-  return Math.max(0, rect.width) * Math.max(0, rect.height);
+function textArea(el: Element): number {
+  let total = 0;
+  for (const node of el.childNodes) {
+    if (node.nodeType !== 3 || !node.textContent?.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    if (typeof range.getClientRects !== "function") continue;
+    for (const rect of range.getClientRects()) {
+      total += Math.max(0, rect.width) * Math.max(0, rect.height);
+    }
+  }
+  return total;
 }
 
 function visibleCopyShare(copy: Element[]): number | null {
   const states = copy
-    .map((el) => ({ paint: paint(el), area: area(el) }))
+    .map((el) => ({ paint: paint(el), area: textArea(el) }))
     .filter((state) => state.paint.laidOut);
   if (states.length === 0) return null;
   const total = states.reduce((sum, state) => sum + state.area, 0);

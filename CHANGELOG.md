@@ -10,7 +10,7 @@ nowhere.
 
 **Nothing to do.** The editor no longer reports a block as "mounted but draws
 nothing" because many of its small labels wait at opacity 0 while its main copy
-shows. A block's copy is now weighed by the screen area each text node takes, so
+shows. A block's copy is now weighed by the screen area its text itself takes, so
 a large visible headline outweighs staged scene labels, and a short footnote
 still cannot vouch for a section whose copy is gone. Without layout (no area at
 all) the check falls back to counting text nodes, as before.
