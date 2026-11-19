@@ -240,10 +240,10 @@ Content is chosen **server-side**:
 Toggle dev-mode in the editor, then refresh your local site to see the change.
 There is no URL flag - the editor is the single control, per user.
 
-> **Scope.** The token is read only in development and never reaches the browser
-> (it is sent server-to-server on the delivery fetch). A production build ignores
-> `devToken` entirely. The same token set as `apiToken` keeps working in
-> production: it only budgets delivery reads, it opens no draft. The overlay reflects the **token
+> **Scope.** As `devToken` the token is read only in development; a production
+> build ignores `devToken` entirely. As `apiToken` it is read in production too,
+> where it only budgets delivery reads and opens no draft. Either way it travels
+> server-to-server and never reaches the browser. The overlay reflects the **token
 > user's** saved dev draft (shown to whoever loads that dev server); it never
 > changes published content.
 

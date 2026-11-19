@@ -10,14 +10,17 @@ nowhere.
 
 **Nothing to do, one line recommended.** Set `apiToken` in your server config
 (`apiToken: process.env.CMSSY_API_TOKEN`, a `cs_…` token scoped to the
-workspace) and every delivery read the SDK makes outside a browser sends it in
+workspace) and the delivery reads the SDK makes outside a browser send it in
 `x-cmssy-api-token`: pages, layouts, site config, `graphqlRequest` with
-`public: true` and the preflight probe. The delivery API then budgets those reads
+`public: true` and the edit-route diagnostics. Dev-preview reads keep the
+per-IP budget: they authenticate with `devToken`. The delivery API then budgets those reads
 per workspace instead of per egress IP, so a static build or SSR region that
 leaves through a few addresses stops hitting 429s. The token never leaves a
 browser build: the SDK drops it when `window` exists and
-`defineCmssyRouteConfig` throws on it there. A header you pass yourself still
-wins, and the admin endpoint never gets it. Until the cmssy delivery API with
+`defineCmssyRouteConfig` throws on it there. An `x-cmssy-api-token` you pass in
+`headers` still wins, in any casing, and the admin endpoint never gets it.
+Delivery reads need no write permission, so a token of a read-only user is
+enough. `cmssy init` templates now carry the line. Until the cmssy delivery API with
 token-only budgeting (CMS-2272) is live, the header changes nothing.
 
 ## 19.35.1

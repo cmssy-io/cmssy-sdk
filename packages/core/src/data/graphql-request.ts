@@ -1,7 +1,7 @@
 import {
   resolveApiUrl,
   resolvePublicUrl,
-  deliveryTokenHeaders,
+  withDeliveryToken,
   type CmssyClientConfig,
   type FetchLike,
 } from "../content/content-client";
@@ -38,7 +38,7 @@ export async function graphqlRequest<
       fetch: options.fetch,
       signal: options.signal,
       headers: options.public
-        ? { ...deliveryTokenHeaders(config), ...options.headers }
+        ? withDeliveryToken(config, options.headers)
         : options.headers,
       retry: options.retry,
       label,

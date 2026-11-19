@@ -13,6 +13,7 @@ import { createCmssyClient } from "../data/client";
 import { graphqlRequest } from "../data/graphql-request";
 import { clearWorkspaceIdCache } from "../data/settings-client";
 import { checkWorkspaceReachable } from "../preflight";
+import { collectEditDiagnostics } from "../edit-diagnostics";
 
 const base = {
   apiUrl: "https://api.test/graphql",
@@ -166,5 +167,39 @@ describe("apiToken on the preflight probe (CMS-2272)", () => {
     });
     await checkWorkspaceReachable({ ...base, apiToken: "cs_server", fetch });
     expect(calls[0]?.headers[TOKEN_HEADER]).toBe("cs_server");
+  });
+});
+
+describe("a token header the caller passes (CMS-2272)", () => {
+  it("replaces the config token whatever its casing", async () => {
+    const { fetch, calls } = capturingFetch();
+    await graphqlRequest(
+      { ...base, apiToken: "cs_server" },
+      "query { __typename }",
+      {},
+      { fetch, public: true, headers: { "X-Cmssy-Api-Token": "cs_caller" } },
+    );
+    expect(calls[0]?.headers).toEqual({
+      "content-type": "application/json",
+      "user-agent": expect.any(String),
+      "X-Cmssy-Api-Token": "cs_caller",
+    });
+  });
+});
+
+describe("apiToken on the edit-route diagnostics (CMS-2272)", () => {
+  it("sends the token with every diagnostics probe", async () => {
+    const { fetch, calls } = capturingFetch({
+      data: { public: { siteConfig: { workspaceId: "w1" } } },
+    });
+    await collectEditDiagnostics({
+      config: { ...base, draftSecret: "s1", apiToken: "cs_server" },
+      providedSecret: "wrong",
+      fetch,
+    });
+    expect(calls.length).toBeGreaterThan(0);
+    for (const call of calls) {
+      expect(call.headers[TOKEN_HEADER]).toBe("cs_server");
+    }
   });
 });

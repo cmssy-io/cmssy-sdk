@@ -53,6 +53,16 @@ export function deliveryTokenHeaders(
   return { [API_TOKEN_HEADER_NAME]: token };
 }
 
+export function withDeliveryToken(
+  config: Pick<CmssyClientConfig, "apiToken">,
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  const own = Object.keys(headers).some(
+    (name) => name.toLowerCase() === API_TOKEN_HEADER_NAME,
+  );
+  return own ? headers : { ...deliveryTokenHeaders(config), ...headers };
+}
+
 export interface FetchLikeResponse {
   ok: boolean;
   status: number;

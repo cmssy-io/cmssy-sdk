@@ -106,14 +106,18 @@ leaked credential, and a browser can put any address in the second header, so
 never spread the pair into a client-side fetch.
 
 **A server that only reads content sends the token alone.** Set `apiToken` in
-the config (`process.env.CMSSY_API_TOKEN`) and every delivery read the SDK
-makes outside a browser - pages, layouts, site config, `graphqlRequest` with
-`public: true`, the preflight probe - carries it in `x-cmssy-api-token`. A token
-scoped to the workspace being read, with no visitor address, spends the
+the config (`process.env.CMSSY_API_TOKEN`) and the delivery reads the SDK makes
+outside a browser - pages, layouts, site config, `graphqlRequest` with
+`public: true`, the edit-route diagnostics - carry it in `x-cmssy-api-token`. A
+token scoped to the workspace being read, with no visitor address, spends the
 workspace budget instead of the per-IP one, so a static build or an SSR region
-leaving through a few egress addresses is not capped like a single visitor. The
-SDK never sends it from a browser, `defineCmssyRouteConfig` refuses it there,
-and a header you pass yourself wins over it. The admin endpoint never gets it.
+leaving through a few egress addresses is not capped like a single visitor. A
+dev-preview read authenticates with `devToken` in `Authorization`, so it stays
+on the per-IP budget. The SDK never sends the token where `window` exists,
+`defineCmssyRouteConfig` refuses it there, an `x-cmssy-api-token` you pass in
+`headers` (any casing) replaces it, and the admin endpoint never gets it. The
+token only has to be scoped to the workspace: delivery reads need no write
+permission, so prefer a token of a user whose role only reads.
 
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
@@ -148,7 +152,7 @@ work, so an app never needs `graphql` at runtime just to print a document it
 already generated.
 
 `CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string;
-channel?: string }` - `apiUrl` [defaults to cmssy cloud](./delivery-api.md);
+channel?: string; apiToken?: string }` - `apiUrl` [defaults to cmssy cloud](./delivery-api.md);
 `org` + `workspaceSlug` form the org-scoped delivery path
 `{apiBase}/public/{org}/{workspaceSlug}/graphql`, where `apiBase` is `apiUrl`
 with its trailing `/graphql` stripped (default `https://api.cmssy.io`). A

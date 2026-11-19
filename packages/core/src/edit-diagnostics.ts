@@ -12,6 +12,7 @@ export interface EditDiagnosticsConfig {
   org?: string;
   workspaceSlug?: string;
   draftSecret?: string;
+  apiToken?: string;
 }
 
 export interface EditDiagnosticsInput {
@@ -78,6 +79,7 @@ export async function collectEditDiagnostics(
       apiUrl: config.apiUrl,
       org,
       workspaceSlug,
+      apiToken: config.apiToken,
       ...(input.fetch ? { fetch: input.fetch } : {}),
     };
     const reachable = await checkWorkspaceReachable(preflight);

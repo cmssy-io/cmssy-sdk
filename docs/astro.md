@@ -150,6 +150,11 @@ A page costs several delivery calls: the site locales, the layouts, the page.
 Pre-render enough of them at once and the delivery API answers `429` with a
 `Retry-After`.
 
+Set `apiToken: process.env.CMSSY_API_TOKEN` in the config first. A server read
+that carries a token scoped to the workspace spends the workspace budget, not
+the per-IP one, so a build leaving through a few egress addresses is not capped
+like a single visitor. See [the SDK reference](./reference/sdk-api.md).
+
 A prerendered page and an on-demand one want opposite things from that 429. The
 build should wait it out - a page 45s late is cheaper than a failed deploy. A
 visitor should not be parked for 45s to maybe avoid an error page. Tell the
