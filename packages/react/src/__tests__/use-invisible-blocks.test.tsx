@@ -38,6 +38,20 @@ class FakeIntersectionObserver {
 }
 
 const DWELL_MS = 1500;
+const CONFIRM_MS = 3000;
+const SETTLED_MS = DWELL_MS + CONFIRM_MS;
+
+function animation(endTime: number, playState: AnimationPlayState = "running") {
+  return {
+    playState,
+    effect: { getComputedTiming: () => ({ endTime }) },
+  } as unknown as Animation;
+}
+
+function animate(el: Element, animations: () => Animation[]) {
+  (el as Element & { getAnimations: () => Animation[] }).getAnimations =
+    animations;
+}
 
 function Probe({ report }: { report: (blocks: InvisibleBlock[]) => void }) {
   useInvisibleBlocks(true, "b1:hero", report);
@@ -74,7 +88,7 @@ describe("useInvisibleBlocks", () => {
 
     const observer = FakeIntersectionObserver.instances[0]!;
     act(() => observer.enter(block));
-    act(() => vi.advanceTimersByTime(DWELL_MS));
+    act(() => vi.advanceTimersByTime(SETTLED_MS));
 
     expect(report).toHaveBeenCalledWith([{ blockId: "b1", blockType: "hero", reason: "transparent" }]);
   });
@@ -89,7 +103,7 @@ describe("useInvisibleBlocks", () => {
 
     const observer = FakeIntersectionObserver.instances[0]!;
     act(() => observer.enter(host));
-    act(() => vi.advanceTimersByTime(DWELL_MS));
+    act(() => vi.advanceTimersByTime(SETTLED_MS));
 
     expect(
       report,
@@ -107,7 +121,7 @@ describe("useInvisibleBlocks", () => {
 
     const observer = FakeIntersectionObserver.instances[0]!;
     act(() => observer.enter(host));
-    act(() => vi.advanceTimersByTime(DWELL_MS));
+    act(() => vi.advanceTimersByTime(SETTLED_MS));
     host.innerHTML = `<div style="opacity:0"><h1>Real tool</h1></div>`;
     act(() => vi.advanceTimersByTime(2000));
 
@@ -140,6 +154,74 @@ describe("useInvisibleBlocks", () => {
     expect(report).not.toHaveBeenCalled();
   });
 
+  it("does not report a block whose entry animation finishes after the first look", () => {
+    const block = blockMarkup("opacity:0");
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(block));
+    act(() => vi.advanceTimersByTime(DWELL_MS + 1000));
+    expect(report).not.toHaveBeenCalled();
+
+    block.querySelector<HTMLElement>("div")!.style.opacity = "1";
+    act(() => vi.advanceTimersByTime(CONFIRM_MS * 3));
+
+    expect(report).not.toHaveBeenCalled();
+  });
+
+  it("waits out a running entry animation, then reports the block if it stays hidden", () => {
+    const block = blockMarkup("opacity:0");
+    let running = [animation(8000)];
+    animate(block, () => running);
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(block));
+    act(() => vi.advanceTimersByTime(SETTLED_MS + CONFIRM_MS * 2));
+    expect(report).not.toHaveBeenCalled();
+
+    running = [];
+    act(() => vi.advanceTimersByTime(CONFIRM_MS));
+
+    expect(report).toHaveBeenCalledWith([
+      { blockId: "b1", blockType: "hero", reason: "transparent" },
+    ]);
+  });
+
+  it("does not let an endless decorative animation hide an entry animation that never ran", () => {
+    const block = blockMarkup("opacity:0");
+    animate(block, () => [animation(Number.POSITIVE_INFINITY)]);
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(block));
+    act(() => vi.advanceTimersByTime(SETTLED_MS));
+
+    expect(report).toHaveBeenCalledWith([
+      { blockId: "b1", blockType: "hero", reason: "transparent" },
+    ]);
+  });
+
+  it("starts the confirmation over when the block leaves the viewport in between", () => {
+    const block = blockMarkup("opacity:0");
+    const report = vi.fn();
+    render(<Probe report={report} />);
+
+    const observer = FakeIntersectionObserver.instances[0]!;
+    act(() => observer.enter(block));
+    act(() => vi.advanceTimersByTime(DWELL_MS + 1000));
+    act(() => observer.leave(block));
+    act(() => observer.enter(block));
+    act(() => vi.advanceTimersByTime(DWELL_MS));
+    expect(report).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(CONFIRM_MS));
+    expect(report).toHaveBeenCalledTimes(1);
+  });
+
   it("withdraws a report once the block paints", () => {
     const block = blockMarkup("opacity:0");
     const report = vi.fn();
@@ -147,7 +229,7 @@ describe("useInvisibleBlocks", () => {
 
     const observer = FakeIntersectionObserver.instances[0]!;
     act(() => observer.enter(block));
-    act(() => vi.advanceTimersByTime(DWELL_MS));
+    act(() => vi.advanceTimersByTime(SETTLED_MS));
     expect(report).toHaveBeenLastCalledWith([
       { blockId: "b1", blockType: "hero", reason: "transparent" },
     ]);

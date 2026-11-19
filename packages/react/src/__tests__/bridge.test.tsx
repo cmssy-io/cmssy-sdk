@@ -1248,7 +1248,7 @@ describe("invisible block reporting", () => {
     );
 
     act(() => ViewportStub.instances[0]!.showEverything());
-    act(() => vi.advanceTimersByTime(1500));
+    act(() => vi.advanceTimersByTime(4500));
 
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       {
@@ -1278,7 +1278,7 @@ describe("invisible block reporting", () => {
     );
 
     act(() => ViewportStub.instances[0]!.showEverything());
-    act(() => vi.advanceTimersByTime(1500));
+    act(() => vi.advanceTimersByTime(4500));
 
     expect(mockParent.postMessage).toHaveBeenCalledWith(
       {
