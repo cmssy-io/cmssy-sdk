@@ -213,6 +213,20 @@ describe("createCmssyPage", () => {
     );
   });
 
+  it("carries the server apiToken to the page read and the client (CMS-2272)", async () => {
+    fetchPage.mockResolvedValue(PAGE);
+    const Page = createCmssyPage({ ...CONFIG, apiToken: "cs_server" }, BLOCKS);
+    await Page({ params: params(["about"]) });
+    expect(fetchPage).toHaveBeenCalledWith(
+      expect.objectContaining({ apiToken: "cs_server" }),
+      ["about"],
+      expect.anything(),
+    );
+    expect(createCmssyClient).toHaveBeenCalledWith(
+      expect.objectContaining({ apiToken: "cs_server" }),
+    );
+  });
+
   it("renders draft CONTENT without the editor in draft-mode preview (CMS-948)", async () => {
     draftEnabled = true;
     fetchPage.mockResolvedValue(PAGE);

@@ -98,12 +98,26 @@ failure is a `CmssyRequestError` with `status`, as before.
 `API_TOKEN_HEADER_NAME` (`x-cmssy-api-token`, an API token scoped to the
 workspace) in `headers` on every delivery request, and the delivery API counts
 its per-IP limits - the caller gate, cart, checkout, member sign-in - per visitor
-instead of per server. Either header alone, an unscoped token or a token for
+instead of per server. The address alone, an unscoped token or a token for
 another workspace is ignored and the request is keyed by the connecting address.
 The token header signs nobody in: `Authorization` stays free for the visitor's
 member session. Both headers are for your server only: a token in a browser is a
 leaked credential, and a browser can put any address in the second header, so
 never spread the pair into a client-side fetch.
+
+**A server that only reads content sends the token alone.** Set `apiToken` in
+the config (`process.env.CMSSY_API_TOKEN`) and the delivery reads the SDK makes
+outside a browser - pages, layouts, site config, `graphqlRequest` with
+`public: true`, the edit-route diagnostics - carry it in `x-cmssy-api-token`. A
+token scoped to the workspace being read, with no visitor address, spends the
+workspace budget instead of the per-IP one, so a static build or an SSR region
+leaving through a few egress addresses is not capped like a single visitor. A
+dev-preview read authenticates with `devToken` in `Authorization`, so it stays
+on the per-IP budget. The SDK never sends the token where `window` exists,
+`defineCmssyRouteConfig` refuses it there, an `x-cmssy-api-token` you pass in
+`headers` (any casing) replaces it, and the admin endpoint never gets it. The
+token only has to be scoped to the workspace: delivery reads need no write
+permission, so prefer a token of a user whose role only reads.
 
 `CmssyOperationInput<Result, Variables>` is "a plain query string, or a document
 that carries these types" - `CmssyTypedDocument` from graphql-codegen, or a
@@ -138,7 +152,7 @@ work, so an app never needs `graphql` at runtime just to print a document it
 already generated.
 
 `CmssyClientConfig` is `{ apiUrl?: string; org: string; workspaceSlug: string;
-channel?: string }` - `apiUrl` [defaults to cmssy cloud](./delivery-api.md);
+channel?: string; apiToken?: string }` - `apiUrl` [defaults to cmssy cloud](./delivery-api.md);
 `org` + `workspaceSlug` form the org-scoped delivery path
 `{apiBase}/public/{org}/{workspaceSlug}/graphql`, where `apiBase` is `apiUrl`
 with its trailing `/graphql` stripped (default `https://api.cmssy.io`). A
@@ -839,6 +853,7 @@ interface CmssyConfig {
   apiUrl?: string; // default https://api.cmssy.io/graphql
   editorOrigin?: string | string[]; // one origin, a list, or a comma-separated string; default https://cmssy.io + https://www.cmssy.io
   devToken?: string; // cs_… API token; opts into editor-controlled dev preview (development only)
+  apiToken?: string; // cs_… API token scoped to the workspace; sent on server-side delivery reads so they spend the workspace budget, not the per-IP one
   siteUrl?: string; // canonical origin, for your own SEO code
   resolveLocale?: () => string | Promise<string>; // fallback for URLs that carry no language; the workspace owns the locale set
   layout?: CmssyLayout; // defineCmssyLayout({ regions }) - the regions a layout block can live in; absent = header + footer

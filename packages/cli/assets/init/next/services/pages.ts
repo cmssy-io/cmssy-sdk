@@ -25,6 +25,7 @@ const client = createCmssyClient({
   apiUrl: cmssy.apiUrl,
   org: cmssy.org,
   workspaceSlug: cmssy.workspaceSlug,
+  apiToken: cmssy.apiToken,
 });
 
 export async function publishedPaths(): Promise<{ path: string[] }[]> {

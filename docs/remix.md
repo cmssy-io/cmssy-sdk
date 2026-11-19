@@ -107,6 +107,11 @@ A route costs several delivery calls: the site locales, the layouts, the page.
 Ask for enough of them at once and the delivery API answers `429` with a
 `Retry-After`.
 
+Set `apiToken: process.env.CMSSY_API_TOKEN` in the config first. A server read
+that carries a token scoped to the workspace spends the workspace budget, not
+the per-IP one, so a build leaving through a few egress addresses is not capped
+like a single visitor. See [the SDK reference](./reference/sdk-api.md).
+
 The loader runs while a visitor holds the connection open, so it defaults to the
 **`interactive`** mode: 2 retries, nothing above a 1s `Retry-After`, 2s of
 waiting in total. A `Retry-After: 45` is not waited out - you get the error, and

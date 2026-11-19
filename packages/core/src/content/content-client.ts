@@ -1,3 +1,4 @@
+import { API_TOKEN_HEADER_NAME } from "@cmssy/types";
 import type {
   CmssyClientConfig as CmssyBaseClientConfig,
   RawBlock,
@@ -14,6 +15,7 @@ import { postGraphql, type RetryOption } from "../data/http";
 
 export interface CmssyClientConfig extends CmssyBaseClientConfig {
   channel?: string;
+  apiToken?: string;
 }
 
 export type {
@@ -41,6 +43,24 @@ export function resolveApiUrl(apiUrl: string | undefined): string {
 export function resolvePublicUrl(config: CmssyClientConfig): string {
   const base = resolveApiUrl(config.apiUrl).replace(/\/graphql\/?$/, "");
   return `${base}/public/${config.org}/${config.workspaceSlug}/graphql`;
+}
+
+export function deliveryTokenHeaders(
+  config: Pick<CmssyClientConfig, "apiToken">,
+): Record<string, string> {
+  const token = config.apiToken?.trim();
+  if (!token || typeof window !== "undefined") return {};
+  return { [API_TOKEN_HEADER_NAME]: token };
+}
+
+export function withDeliveryToken(
+  config: Pick<CmssyClientConfig, "apiToken">,
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  const own = Object.keys(headers).some(
+    (name) => name.toLowerCase() === API_TOKEN_HEADER_NAME,
+  );
+  return own ? headers : { ...deliveryTokenHeaders(config), ...headers };
 }
 
 export interface FetchLikeResponse {
@@ -327,7 +347,7 @@ export async function fetchPage(
   const previewSecret = trimmedSecret ? trimmedSecret : null;
   const devToken = options.devToken?.trim();
   const devPreview = Boolean(options.devPreview && devToken);
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = deliveryTokenHeaders(config);
   if (devPreview && devToken) {
     headers["authorization"] = `Bearer ${devToken}`;
     if (options.workspaceId) {
@@ -387,6 +407,7 @@ export async function fetchPageById(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "page-by-id fetch",
     },
@@ -412,6 +433,7 @@ export async function fetchPages(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "pages fetch",
     },
@@ -433,6 +455,7 @@ export async function fetchPageMeta(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "page meta fetch",
     },
@@ -456,6 +479,7 @@ export async function fetchLayouts(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "layouts fetch",
     },
@@ -475,6 +499,7 @@ export async function fetchLayoutKey(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "layout key fetch",
     },
@@ -494,6 +519,7 @@ export async function fetchLayoutsByKey(
     {
       fetch: options.fetch,
       signal: options.signal,
+      headers: deliveryTokenHeaders(config),
       retry: options.retry ?? "build",
       label: "layouts by key fetch",
     },
