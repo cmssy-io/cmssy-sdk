@@ -1517,6 +1517,11 @@ input CreateManualOrderInput {
   currency: String
   customerEmail: String!
   customerId: ID
+
+  """
+  At most one order per workspace carries a given key. While that order exists, a repeat with the same key creates nothing and returns it as the first call created it; the repeat's own input is ignored.
+  """
+  idempotencyKey: String
   items: [ManualOrderItemInput!]!
 
   """
@@ -1608,6 +1613,11 @@ input CreatePriceListInput {
 
 input CreateReturnInput {
   carrier: String
+
+  """
+  At most one return per order carries a given key. A repeat with the same key opens nothing and returns the order with the return the first call opened, whatever its status since; the repeat's own input is ignored.
+  """
+  idempotencyKey: String
   lines: [ReturnLineInput!]!
   note: String
   orderId: ID!
