@@ -17,6 +17,14 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+function size(block: HTMLElement, sizes: Record<string, [number, number]>) {
+  for (const [selector, [width, height]] of Object.entries(sizes)) {
+    for (const el of block.querySelectorAll(selector)) {
+      el.getBoundingClientRect = () => new DOMRect(0, 0, width, height);
+    }
+  }
+}
+
 describe("blockPaint", () => {
   it("calls a block invisible when its only text sits under a transparent wrapper", () => {
     const block = mount(
@@ -55,6 +63,39 @@ describe("blockPaint", () => {
          <p>Comparison reflects standard plans</p>
        </div>`,
     );
+    expect(blockPaint(block)).toBe("transparent");
+  });
+
+  it("reads a hero as painted when its headline shows and most of its small labels wait at opacity 0", () => {
+    const block = mount(
+      `<section data-block-id="b1" data-block-type="hero">
+         <h1>Content and a store your agent can run.</h1>
+         <a class="cta">Try it free</a>
+         <div class="admin" style="opacity:0">
+           <span class="label">Pages</span><span class="label">Products</span>
+           <span class="label">Models</span><span class="label">Media</span>
+           <span class="label">3 variants</span><span class="label">$349</span>
+         </div>
+         <div class="toast" style="opacity:0"><span class="label">Saved</span></div>
+       </section>`,
+    );
+    size(block, { h1: [900, 160], ".cta": [140, 44], ".label": [60, 16] });
+    expect(
+      blockPaint(block),
+      "2 of 9 text nodes paint, but they are most of the copy on screen; decorative labels staged for a scene are not an entry animation that never ran",
+    ).toBe("painted");
+  });
+
+  it("still calls a laid-out block invisible when only a long footnote survives", () => {
+    const block = mount(
+      `<div data-block-id="b1" data-block-type="comparison-table">
+         <div style="opacity:0">
+           <h2>Headline</h2><p>One</p><p>Two</p><p>Three</p><p>Four</p>
+         </div>
+         <p class="note">Comparison reflects standard plans</p>
+       </div>`,
+    );
+    size(block, { h2: [800, 60], "div p": [800, 120], ".note": [300, 14] });
     expect(blockPaint(block)).toBe("transparent");
   });
 

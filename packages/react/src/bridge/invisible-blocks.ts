@@ -64,6 +64,24 @@ function laidOut(elements: Element[]): Paint[] {
   return elements.map(paint).filter((state) => state.laidOut);
 }
 
+function area(el: Element): number {
+  const rect = el.getBoundingClientRect();
+  return Math.max(0, rect.width) * Math.max(0, rect.height);
+}
+
+function visibleCopyShare(copy: Element[]): number | null {
+  const states = copy
+    .map((el) => ({ paint: paint(el), area: area(el) }))
+    .filter((state) => state.paint.laidOut);
+  if (states.length === 0) return null;
+  const total = states.reduce((sum, state) => sum + state.area, 0);
+  const weight = (state: { area: number }) => (total > 0 ? state.area : 1);
+  const visible = states
+    .filter((state) => state.paint.opacity > TRANSPARENT)
+    .reduce((sum, state) => sum + weight(state), 0);
+  return visible / (total > 0 ? total : states.length);
+}
+
 function hasArea(block: Element): boolean {
   const rect = block.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
@@ -75,12 +93,9 @@ export function blockPaint(block: Element): BlockPaint {
   if (block.childElementCount === 0 && !holdsText(block) && !hasArea(block)) {
     return "empty";
   }
-  const copy = laidOut(collectCopy(block));
-  if (copy.length > 0) {
-    const visible = copy.filter((state) => state.opacity > TRANSPARENT);
-    return visible.length >= copy.length * VISIBLE_TEXT_FRACTION
-      ? "painted"
-      : "transparent";
+  const share = visibleCopyShare(collectCopy(block));
+  if (share !== null) {
+    return share >= VISIBLE_TEXT_FRACTION ? "painted" : "transparent";
   }
   const media = laidOut(collectMedia(block));
   if (media.length === 0) return "painted";
