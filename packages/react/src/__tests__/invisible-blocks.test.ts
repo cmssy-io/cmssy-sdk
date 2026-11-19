@@ -117,7 +117,7 @@ describe("blockPaint", () => {
          <p class="note">Comparison reflects standard plans</p>
        </div>`,
     );
-    size({ h2: [800, 60], "div p": [800, 120], ".note": [300, 14] });
+    size({ h2: [800, 60], "div[style] p": [800, 120], ".note": [300, 14] });
     expect(blockPaint(block)).toBe("transparent");
   });
 
