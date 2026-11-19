@@ -44,13 +44,14 @@ export function defineCmssyRouteConfig<L extends CmssyLayout = CmssyLayout>(
     const carried = [
       ...(config.draftSecret === undefined ? [] : ["draftSecret"]),
       ...(config.devToken === undefined ? [] : ["devToken"]),
+      ...(config.apiToken === undefined ? [] : ["apiToken"]),
     ];
     if (carried.length > 0) {
       throw new Error(
-        `cmssy: ${carried.join(" and ")} reached the browser. Anyone loading ` +
+        `cmssy: ${carried.join(", ").replace(/, (?=[^,]*$)/, " and ")} reached the browser. Anyone loading ` +
           "the page can read a value in the bundle: a draft secret opens every " +
-          "unpublished draft in the workspace, and a devToken is an API " +
-          "credential that writes to it. Keep both on a server build " +
+          "unpublished draft in the workspace, and a devToken or apiToken is an " +
+          "API credential for it. Keep them on a server build " +
           "(@cmssy/next, @cmssy/astro or Vite SSR) and leave them out of a " +
           "client-side config.",
       );

@@ -60,6 +60,7 @@ export interface CmssyConfig<L extends CmssyLayout = CmssyLayout> {
   channel?: string;
   draftSecret: string;
   devToken?: string;
+  apiToken?: string;
   editorOrigin?: string | string[];
   siteUrl?: string;
   resolveLocale?: () => string | Promise<string>;

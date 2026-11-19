@@ -6,6 +6,20 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.36.0
+
+**Nothing to do, one line recommended.** Set `apiToken` in your server config
+(`apiToken: process.env.CMSSY_API_TOKEN`, a `cs_…` token scoped to the
+workspace) and every delivery read the SDK makes outside a browser sends it in
+`x-cmssy-api-token`: pages, layouts, site config, `graphqlRequest` with
+`public: true` and the preflight probe. The delivery API then budgets those reads
+per workspace instead of per egress IP, so a static build or SSR region that
+leaves through a few addresses stops hitting 429s. The token never leaves a
+browser build: the SDK drops it when `window` exists and
+`defineCmssyRouteConfig` throws on it there. A header you pass yourself still
+wins, and the admin endpoint never gets it. Until the cmssy delivery API with
+token-only budgeting (CMS-2272) is live, the header changes nothing.
+
 ## 19.35.1
 
 **Nothing to do.** The editor's "block is mounted but draws nothing" notice no

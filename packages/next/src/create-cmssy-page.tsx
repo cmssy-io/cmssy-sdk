@@ -126,6 +126,7 @@ function buildCmssyPageRenderer(
     org: config.org,
     workspaceSlug: config.workspaceSlug,
     channel: config.channel,
+    apiToken: config.apiToken,
   };
   const client = createCmssyClient(clientConfig);
   const retryOptions = { retry: options?.retry ?? nextRetryMode() };

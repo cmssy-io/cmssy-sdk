@@ -1,5 +1,6 @@
 import {
   resolvePublicUrl,
+  deliveryTokenHeaders,
   type CmssyClientConfig,
   type FetchLike,
 } from "./content/content-client";
@@ -106,6 +107,7 @@ async function postPreflightQuery<Result, Variables>(
       headers: {
         "content-type": "application/json",
         "user-agent": CMSSY_USER_AGENT,
+        ...deliveryTokenHeaders(config),
       },
       body: JSON.stringify({ query: documentText(query), variables }),
     });
