@@ -160,8 +160,16 @@ query PublicPagesByType(
 }
 ```
 
-`byType` also takes `pageType`, `sortBy`, `includeDrafts`, `previewSecret` and
-`customFieldFilters`; `limit` defaults to 9, not to unbounded.
+`byType` also takes `pageType`, `sortBy`, `includeDrafts`, `previewSecret`,
+`customFieldFilters` and `locale`; `limit` defaults to 9, not to unbounded.
+
+`locale` picks the language of media alt text in `customFields`. A page's custom
+fields are not stored per language, so without it a media value (a post's cover
+image, say) carries the alt of the workspace default language only. Pass the
+language the page renders in - `context.locale.current` in a block loader - and
+each media value carries the asset's alt in that language, falling back to the
+default language, then to any language that has one. A language the workspace
+has not enabled reads as the default language.
 
 This powers a blog or docs index - see the [listing recipe](../building-blocks/recipes.md).
 
