@@ -131,6 +131,7 @@ query PublicPagesByType(
   $search: String
   $limit: Int
   $offset: Int
+  $locale: String
 ) {
   public {
     page {
@@ -140,6 +141,7 @@ query PublicPagesByType(
         search: $search
         limit: $limit
         offset: $offset
+        locale: $locale
       ) {
         items {
           id
@@ -160,8 +162,8 @@ query PublicPagesByType(
 }
 ```
 
-`byType` also takes `pageType`, `sortBy`, `includeDrafts`, `previewSecret`,
-`customFieldFilters` and `locale`; `limit` defaults to 9, not to unbounded.
+`byType` also takes `pageType`, `sortBy`, `includeDrafts`, `previewSecret` and
+`customFieldFilters`; `limit` defaults to 9, not to unbounded.
 
 `locale` picks the language of media alt text in `customFields`. A page's custom
 fields are not stored per language, so without it a media value (a post's cover

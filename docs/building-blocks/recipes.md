@@ -232,6 +232,12 @@ export const PUBLIC_PAGES_BY_TYPE = typedOperation<
 }`);
 ```
 
+A card that shows a cover image needs two more things: select `customFields`,
+and pass `locale: $locale` to `byType` with `context.locale.current` from the
+block loader. Custom fields are not stored per language, so without `locale` the
+cover's alt text comes back in the workspace default language on every
+translated page (see [Delivery API](../reference/delivery-api.md)).
+
 `typedOperation` marks the string with what it sends and what it returns; at
 runtime it is still the same string. The call below then checks the variables
 and infers the result with no generic to repeat - and `queryScoped` still
