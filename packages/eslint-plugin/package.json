@@ -1,6 +1,6 @@
 {
   "name": "@cmssy/eslint-plugin",
-  "version": "19.36.1",
+  "version": "19.37.0",
   "engines": {
     "node": ">=20"
   },

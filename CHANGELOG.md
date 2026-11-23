@@ -6,6 +6,18 @@ A breaking change without a migration note is not a release - it is a trap. Two
 consumers shipped a dead editor because 4.0.0 moved the edit path and said so
 nowhere.
 
+## 19.37.0
+
+**Nothing to do.** `CmssyWebhookEvent` gains the `job.ended` member: cmssy sends
+it once each time a record import or a product bulk job ends (completed, failed
+or cancelled). Compare `event.event === "job.ended"` and `event.data.job` is
+typed, discriminated on `kind` - `record_import` counts
+`created/updated/unchanged/invalid/failed`, `product_delete` and
+`product_update` count `deleted/updated/skipped`. `CmssyWebhookJobEvent`,
+`CmssyWebhookJobEnded` and `CmssyWebhookEndedJob` are exported from
+`@cmssy/core`. A handler with an exhaustive `switch` over `event.event` needs a
+`job.ended` case. `@cmssy/types` 0.78.0.
+
 ## 19.36.1
 
 **Nothing to do.** The editor no longer reports a block as "mounted but draws
