@@ -5,6 +5,7 @@ import {
   CmssyWebhookError,
   type CmssyWebhookAccountRequest,
   type CmssyWebhookEvent,
+  type CmssyWebhookJobEnded,
   type CmssyWebhookShipmentPayload,
   type CmssyWebhookSubject,
 } from "../verify-webhook";
@@ -335,6 +336,14 @@ describe("CmssyWebhookEvent narrowing", () => {
       if (event.event === "page.published") {
         expectTypeOf(event.data.subject.kind).toEqualTypeOf<"page">();
         expectTypeOf(event.data.subject.action).toEqualTypeOf<"published">();
+      }
+      if (event.event === "job.ended") {
+        expectTypeOf(event.data).toEqualTypeOf<CmssyWebhookJobEnded>();
+        if (event.data.job.kind === "record_import") {
+          expectTypeOf(event.data.job.counts.created).toEqualTypeOf<number>();
+          // @ts-expect-error a record import counts no deleted rows
+          void event.data.job.counts.deleted;
+        }
       }
       if (event.event === "account.verification_requested") {
         // @ts-expect-error an account event carries no order

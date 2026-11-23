@@ -321,7 +321,9 @@ JSON. It is async: forgetting `await` means the signature is never checked.
 and `event.data` takes that event's shape - `order.*` an order payload,
 `shipment.*` and `return.*` the order plus the shipment or return, `account.*`
 a `CmssyWebhookAccountRequest`, `price_list.updated` / `sales_channel.updated`
-the pricing change, `content.changed` and the authoring events
+the pricing change, `job.ended` the job that ended (`data.job`, discriminated
+on `kind`: a `record_import` or a product bulk job, each with its own `counts`),
+`content.changed` and the authoring events
 (`page.published`, `record.deleted`, ...) a `subject`. Only order, shipment and
 return events carry `data.order`; narrow first (`event.event === ...` or
 `"order" in event.data`).
@@ -336,11 +338,12 @@ verifies. A non-string is rejected rather than stringified into the key.
 Also exported: `VerifyCmssyWebhookOptions`, `CmssyWebhookEvent`,
 `CmssyWebhookEventName`, one type per member (`CmssyWebhookOrderEvent`,
 `CmssyWebhookShipmentEvent`, `CmssyWebhookReturnEvent`,
-`CmssyWebhookAccountEvent`, `CmssyWebhookPricingEvent`,
+`CmssyWebhookAccountEvent`, `CmssyWebhookPricingEvent`, `CmssyWebhookJobEvent`,
 `CmssyWebhookContentEvent`, `CmssyWebhookAuthoringEvent`), their payloads
 (`CmssyWebhookOrderPayload`, `CmssyWebhookShipmentPayload`,
 `CmssyWebhookReturnPayload`, `CmssyWebhookAccountRequest`,
-`CmssyWebhookContentChange`, `CmssyWebhookSubject`) and `CmssyWebhookOrder`,
+`CmssyWebhookContentChange`, `CmssyWebhookSubject`, `CmssyWebhookJobEnded`,
+`CmssyWebhookEndedJob`) and `CmssyWebhookOrder`,
 `CmssyWebhookShipment`, `CmssyWebhookReturn`, `CmssyWebhookTaxTreatment`. An order webhook
 carries `tax` and `taxTreatment` (both optional - older deliveries lack them),
 and `channel` is optional too. All from `@cmssy/core`. A Next app that only needs the
